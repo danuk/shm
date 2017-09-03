@@ -1,0 +1,7 @@
+AddDefaultCharset UTF-8
+
+ErrorDocument 403 /403.html
+ErrorDocument 404 /404.html
+
+SetEnv PERL5LIB /home/clients/websites/w_shm/perl5/lib/perl5:/home/clients/websites/w_shm/shm/lib:/home/clients/websites/w_shm/shm/conf
+

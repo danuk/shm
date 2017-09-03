@@ -1,0 +1,32 @@
+package Core::SubServices;
+
+use v5.14;
+use parent 'Core::Base';
+use Core::Base;
+
+sub table { return 'subservices' };
+
+sub structure {
+    return {
+        ss_id => '@',
+        service_id => '?',
+        subservice_id => '?',
+    }
+}
+
+sub id {
+    my $self = shift;
+
+    unless ( $self->{service_id} ) {
+        get_service('logger')->error("Can't get service_id");
+    }
+    return $self->{service_id};
+}
+
+sub list {
+    my $self = shift;
+
+    return $self->SUPER::list( where => { service_id => $self->id } );
+}
+
+1;

@@ -1,0 +1,97 @@
+package Core::Transport::Ssh;
+
+use parent 'Core::Base';
+
+use v5.14;
+use utf8;
+use Core::Base;
+use Net::OpenSSH;
+use JSON;
+use File::Temp;
+
+sub send {
+    my $self = shift;
+    my %args = (
+        server_id => undef, # for autoload server
+        ip => undef,
+        host => undef,
+        user => 'ssm',
+        private_key => undef,
+        private_key_file => '/root/.ssh/id_dsa_shm',
+        port => 22,
+        timeout => 10,
+        payload => undef,
+        @_,
+    );
+
+    my %server = (
+        defined $args{server_id} ? ( %{ get_service('server', _id => $args{server_id} )->get } ) : (),
+        map( $args{$_} ? ($_ => $args{$_}) : (), keys %args ),
+    );
+
+    my $data = $server{payload};
+    my $cmd = 'test create'; #$server{payload}->{cmd};
+
+    my $key_file = $server{private_key_file};
+
+    if ( $server{private_key} ) {
+        my $tmp_fh = File::Temp->new( UNLINK => 1, SUFFIX => '.key' );
+        say $tmp_fh $server{private_key};
+        $tmp_fh->seek( 0, SEEK_END );
+        $key_file = $tmp_fh->filename;
+    }
+
+    $server{host}//= $server{ip};
+    my $host = join('@', $server{user}, $server{host} );
+
+    get_service('logger')->debug('SSH: trying connect to ' . $host );
+
+    my $ssh = Net::OpenSSH->new(
+        $host,
+        port => $server{port},
+        key_path => $key_file,
+        passphrase => undef,
+        batch_mode => 1,
+        timeout => $server{timeout},
+        kill_ssh_on_timeout => 1,
+        strict_mode => 0,
+        master_opts => [-o => "StrictHostKeyChecking=no" ],
+    );
+
+    if ( $ssh->error ) {
+        get_service('logger')->warning( $ssh->error );
+        return FAIL, { error => $ssh->error };
+    }
+
+    my ( $out, $err ) = $ssh->capture2(
+        {
+            tty => 0,
+            timeout => 10,
+            stdin_data => $data ? to_json( $data ) : '',
+        },
+        split(' ', $cmd ),
+    );
+    my $ret_code = $?>>8;
+
+    get_service('logger')->debug("SSH RET_CODE: $ret_code");
+
+    if ( $err ) {
+        chomp $err;
+        get_service('logger')->debug("SSH STDERR: $err");
+    }
+
+    my $data;
+
+    if ( $ret_code == 0 ) {
+        eval { $data = JSON->new->relaxed->decode( $out ); 1 };
+        $data//= $out;
+    }
+
+    return $ret_code == 0 ? SUCCESS : FAIL, {
+        ret_code => $ret_code,
+        data => $data,
+        error => $err,
+    };
+}
+
+1;
