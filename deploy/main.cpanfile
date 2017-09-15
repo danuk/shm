@@ -4,8 +4,7 @@ requires 'HTML::Template';
 requires 'MIME::Lite';
 requires 'Time::DaysInMonth';
 requires 'Date::Calc';
-requires 'JSON';
+requires 'JSON', '>= 2.94';
 requires 'Test::MockTime';
 requires 'SQL::Abstract';
-requires 'Net::OpenSSH';
-requires 'IO::Pty'; # for SSH
+requires 'Net::OpenSSH', '>= 0.74';
