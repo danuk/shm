@@ -7,6 +7,7 @@ my $cgi = CGI->new;
 my %in = $cgi->Vars;
 
 use CGI::Carp qw(fatalsToBrowser);
+use Session;
 
 use Core::System::ServiceManager qw( get_service );
 my $cfg = get_service('config')->get;
@@ -39,7 +40,7 @@ unless ( $cli->id( $client->{client_id} )->user->auth( login => trim($in{login})
 	exit 0;
 }
 
-my $session = new Session undef, %{ $cfg->{session_config} };
+my $session = Session->new( undef, %{ $cfg->{session_config} } );
 my $session_id = $session->session_id();
 
 $session->set( client_id => $cli->id() );
