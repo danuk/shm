@@ -75,6 +75,8 @@ sub process_one {
     $self->{spool}//= $self->list_for_all_users();
     my $task = shift @{ $self->{spool}//=[] } or return undef;
 
+    get_service('config')->local('user_id', $task->{user_id } );
+
     if ( $task->{server_gid} ) {
         my @servers = get_service('ServerGroups', _id => $task->{server_gid} )->get_servers;
         unless ( @servers ) {
