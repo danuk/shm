@@ -62,8 +62,6 @@ sub get_service {
     my $name = shift;
     my %args = @_;
 
-    # Разрешаем глобально сохранять некоторые значения
-    map( $data->{ $_ } = $args{ $_ }, grep( exists $args{ $_ }, qw/user_id dbh/ ) );
     return undef unless $name;
 
     my $service_name = $name;

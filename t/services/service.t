@@ -9,7 +9,7 @@ use v5.14;
 $ENV{SHM_TEST} = 1;
 
 use SHM;
-my $us = SHM->new( user_id => 40092 )->user->services;
+SHM->new( user_id => 40092 );
 
 use Core::System::ServiceManager qw( get_service );
 

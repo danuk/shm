@@ -36,7 +36,7 @@ sub next {
 
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
-                                        user_id => $self->{user_id},
+                                        user_id => $self->user_id,
                                         order => [ 'withdraw_id' => 'asc' ],
                                         where => { user_service_id => $self->usi, withdraw_id => $self->id },
     );
@@ -53,7 +53,7 @@ sub next {
 sub add {
     my $self = shift;
     my %args = (
-        user_id => $self->{user_id},
+        user_id => $self->user_id,
         user_service_id => $self->{usi},
         @_,
     );

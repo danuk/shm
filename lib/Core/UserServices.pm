@@ -68,7 +68,7 @@ sub all {
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
                                         join => { table => 'services', using => ['service_id'] },
-                                        user_id => $self->{user_id},
+                                        user_id => $self->user_id,
     );
 
     my $res = $self->query_by_name( $query, 'user_service_id', @vars );
@@ -152,7 +152,7 @@ sub childs {
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
                                         join => { table => 'services', using => ['service_id'] },
-                                        user_id => $self->{user_id},
+                                        user_id => $self->user_id,
                                         where => { parent => { in => $self->res_by_arr } },
     );
 
@@ -168,7 +168,7 @@ sub parents {
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
                                         join => { table => 'services', using => ['service_id'] },
-                                        user_id => $self->{user_id},
+                                        user_id => $self->user_id,
                                         where => { parent => undef },
     );
 
@@ -185,7 +185,7 @@ sub tree {
 
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
-                                        user_id => $self->{user_id},
+                                        user_id => $self->user_id,
                                         where => @parents ? { -or => [ { user_service_id => { in => \@parents } },
                                                     { parent => { '!=' => undef } },
                                                 ]} : '',

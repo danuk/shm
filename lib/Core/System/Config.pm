@@ -20,14 +20,40 @@ sub new {
     unless ( $config ) {
         require 'shm.conf';
     }
-    return bless(\%args, $class);
+    my $self = bless(\%args, $class);
+    $self->{config} = {
+        global => $config,
+        session => $session_config,
+    };
+    return $self;
 }
 
 sub get {
-    return {
-        config => $config,
-        session_config => $session_config,
-    };
+    my $self = shift;
+    my $section = shift;
+
+    my $config = $self->{config};
+    return $config unless $section;
+
+    return wantarray ? %{ $config->{ $section }||={} } : $config->{ $section };
+}
+
+sub global {
+    my $self = shift;
+    return $self->get('global');
+}
+
+sub local {
+    my $self = shift;
+    my $section = shift;
+    my $new_data = shift;
+
+    if ( $new_data ) {
+        $self->{config}->{local}->{ $section } = $new_data;
+    }
+
+    return $self->get('local') unless $section;
+    return $self->get('local')->{ $section };
 }
 
 1;
