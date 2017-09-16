@@ -3,7 +3,7 @@
 use v5.14;
 
 use SHM qw(:all);
-my $us = SHM->new()->user->services;
+my $us = SHM->new()->services;
 
 use Core::Utils qw(
     parse_args
