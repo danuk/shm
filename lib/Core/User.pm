@@ -90,8 +90,6 @@ sub auth {
     my ( $data ) = $self->query("SELECT user_id FROM users WHERE block=0 and BINARY UNHEX(login) = ? and BINARY UNHEX(password) = ?", $args{login}, $args{pass} );
     return undef unless $data;
 
-    say Dumper $data;
-
     get_service('config')->local('user_id', $data->{user_id} );
 
     return $self;
