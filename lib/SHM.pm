@@ -67,9 +67,10 @@ sub new {
         my $session = validate_session();
         print_not_authorized() unless $session;
 
-        $user->id( $args->{user_id} ) || confess ("User not found");
+        my $user_id = $session->get('user_id');
+        $user->id( $user_id ) || confess ("User not found");
 
-        print STDERR 'USER_ID: ' . $user->id;
+        print STDERR 'USER_ID: ' . $user_id;
     }
     return $user;
 }
@@ -84,7 +85,7 @@ sub validate_session {
 
     my $session_id = $cookies{session_id}->value;
 
-    my $session = new Session $session_id, %{ get_service('config')->get->{session_config} };
+    my $session = new Session $session_id, %{ get_service('config')->get('session') };
     return undef if not defined($session);
 
     my $ip = $session->get('ip');

@@ -115,8 +115,9 @@ INSERT INTO `pays_history` VALUES
 
 INSERT INTO `servers` VALUES 
 (1,1,NULL,'ssh','localhost','127.0.0.1',100,0,0,1,NULL),
-(24,0,NULL,'ssh','localhost','127.0.0.1',100,0,0,1,NULL),
+(3,0,NULL,'ssh','127.0.0.1','192.168.1.102',100,0,0,1,NULL),
 (4,0,NULL,'ssh','127.0.0.1','192.168.1.102',100,0,0,1,NULL),
+(24,0,NULL,'ssh','localhost','127.0.0.1',100,0,0,1,NULL),
 (25,5,NULL,'mail',NULL,NULL,100,0,0,1,NULL);
 
 INSERT INTO `servers_groups` VALUES 
