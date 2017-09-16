@@ -5,7 +5,7 @@ use v5.14;
 use SHM qw(:all);
 use Core::System::ServiceManager qw( get_service );
 
-my $us = SHM->new()->user->services;
+my $us = SHM->new()->services;
 
 my $data = $us->tree->with('settings')->get;
 
