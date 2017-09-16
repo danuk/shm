@@ -57,6 +57,16 @@ sub id {
     return $self->{ $key_field } || $self->res->{ $key_field };
 }
 
+sub dbh {
+    my $self = shift;
+    return get_service('config')->local->{dbh} || die "Can't connect to db";
+}
+
+sub user_id {
+    my $self = shift;
+    return get_service('config')->local->{user_id};
+}
+
 sub res {
     my $self = shift;
     my $res = shift;

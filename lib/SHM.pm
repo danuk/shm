@@ -12,6 +12,7 @@ use Session;
 use JSON;
 
 use Core::System::ServiceManager qw( get_service );
+use Core::Sql::Data;
 
 use base qw(Exporter);
 
@@ -27,7 +28,6 @@ our %EXPORT_TAGS = (
     all => \@EXPORT_OK,
 );
 
-my %client;
 my $dbh;
 my $dbh_main;
 my $bhm;
@@ -43,24 +43,22 @@ sub new {
     my $class = shift;
 
     my $args = {
-        client_id => undef,
         user_id => undef,
         skip_check_auth => undef,
         @_,
     };
 
-    my $client = get_service('client');
-
-    $args->{client_id} ||= $ENV{CLIENT_ID};
     $args->{user_id} ||= $ENV{USER_ID};
 
-    if ( $args->{client_id} ) {
-        confess ("Client not found") unless $client->id( $args->{client_id} );
-    }
+    # Connect to db
+    my $config = get_service('config');
+    my $dbh = Core::Sql::Data::db_connect( %{ $config->global->{database} } );
+    $config->local('dbh', $dbh );
 
+    my $user = get_service('user');
     if ( $args->{user_id} ) {
-        confess ("User not found") unless $client->user->id( $args->{user_id} );
-    } elsif ( not $args->{skip_check_auth} ) {
+        $user->id( $args->{user_id} ) || confess ("User not found");
+    } elsif ( !$args->{skip_check_auth} ) {
 
         if ($0=~/\/(admin|spool)\//) {
             print_json( { status => 403, msg => 'Forbidden' } );
@@ -69,10 +67,11 @@ sub new {
         my $session = validate_session();
         print_not_authorized() unless $session;
 
-        $client->id( $session->get('client_id') )->user->id( $session->get('user_id') );
-        print STDERR 'CLIENT_ID: '. $session->get('client_id') . ', USER_ID: ' . $session->get('user_id');
+        $user->id( $args->{user_id} ) || confess ("User not found");
+
+        print STDERR 'USER_ID: ' . $user->id;
     }
-    return $client;
+    return $user;
 }
 
 

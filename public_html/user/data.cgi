@@ -1,11 +1,9 @@
 #!/usr/bin/perl
 
 use v5.14;
-
 use SHM qw(:all);
-my $cli = SHM->new();
 
-my $res = $cli->user->get;
+my $res = SHM->new()->get;
 
 delete $res->{password};
 

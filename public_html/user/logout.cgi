@@ -1,9 +1,9 @@
 #!/usr/bin/perl
 
-use strict;
-
+use v5.14;
 use SHM qw(:all);
-my $cli = SHM->new();
+
+my $user = SHM->new();
 
 my $session = validate_session();
 

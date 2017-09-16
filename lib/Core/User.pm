@@ -7,25 +7,6 @@ use Core::Base;
 use Core::Utils;
 use Core::Const;
 
-sub new {
-    my $proto  = shift;
-    my $class = ref($proto) || $proto;
-
-    my $args = {
-        id => 'user',
-        user_id => -1,
-        @_,
-    };
-
-    $args->{dbh} = Core::Sql::Data::db_connect( map{ $_ => delete $args->{$_} } qw(db_name db_host db_user db_pass) );
-    return undef unless $args->{dbh};
-
-    get_service('', dbh => $args->{dbh} );
-
-    my $self = bless( $args, $class );
-    return $self;
-}
-
 use vars qw($AUTOLOAD);
 
 sub AUTOLOAD {
@@ -87,12 +68,12 @@ sub id {
     my $user_id = shift;
 
     unless ( $user_id ) {
-        return $self->{user_id} || confess('User not loaded');
+        return $self->user_id || confess('User not loaded');
     }
 
-    return $self if $self->{user_id} && $self->{user_id} == $user_id;
+    return $self if $self->res->{user_id} == $user_id;
 
-    $self->{user_id} = $user_id;
+    get_service('config')->local('user_id', $user_id );
     $self->data;
 
     return $self;
@@ -106,11 +87,12 @@ sub auth {
         @_,
     );
 
-    my $data = $self->query("SELECT user_id FROM users WHERE block=0 and BINARY UNHEX(login) = ? and BINARY UNHEX(password) = ?", $args{login}, $args{pass} );
+    my ( $data ) = $self->query("SELECT user_id FROM users WHERE block=0 and BINARY UNHEX(login) = ? and BINARY UNHEX(password) = ?", $args{login}, $args{pass} );
     return undef unless $data;
 
-    $self->{user_id} = $data->[0]->{user_id};
-    get_service('', user_id => $data->[0]->{user_id} );
+    say Dumper $data;
+
+    get_service('config')->local('user_id', $data->{user_id} );
 
     return $self;
 }
@@ -124,8 +106,6 @@ sub data {
     my $self = shift;
 
     $self->res( scalar $self->get );
-
-    get_service('', user_id => $self->res->{user_id} );
     return $self->res;
 }
 
@@ -147,12 +127,12 @@ sub set_balance {
 
     my $data = join(',', map( "$_=$_+?", keys %args ) );
 
-    return $self->do("UPDATE users SET $data WHERE user_id=?", values %args, $self->{user_id} );
+    return $self->do("UPDATE users SET $data WHERE user_id=?", values %args, $self->user_id );
 }
 
 sub pays {
     my $self = shift;
-    return get_service('pay', user_id => $self->{user_id});
+    return get_service('pay');
 }
 
 1;

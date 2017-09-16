@@ -12,7 +12,7 @@ use Core::System::ServiceManager qw( get_service );
 $ENV{SHM_TEST} = 1;
 
 use SHM;
-my $srv = SHM->new( user_id => 40092 )->user->services;
+my $srv = SHM->new( user_id => 40092 )->services;
 
 use Core::Billing;
 

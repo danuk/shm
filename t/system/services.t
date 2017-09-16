@@ -3,12 +3,10 @@ use v5.14;
 use Test::More;
 use Data::Dumper;
 
+use SHM;
 use Core::System::ServiceManager qw( get_service );
 
-my $client = get_service('client')->id(1);
-is ( $client->id, 1);
-
-my $user = get_service('user', $client->user_db )->id(40092);
+my $user = SHM->new( user_id => 40092 );
 is ( $user->id, 40092 );
 
 my $us = get_service('us', _id => 101 );

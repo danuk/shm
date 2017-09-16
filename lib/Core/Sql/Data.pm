@@ -53,7 +53,7 @@ sub db_connect {
 
 sub insert_id {
     my $self = shift;
-    return $self->{dbh}->{'mysql_insertid'};
+    return $self->dbh->{'mysql_insertid'};
 }
 
 sub found_rows {
@@ -63,7 +63,7 @@ sub found_rows {
 
 sub affected_rows {
     my $self = shift;
-    return $self->{dbh}->rows < 1 ? 0 : $self->{dbh}->rows;
+    return $self->dbh->rows < 1 ? 0 : $self->dbh->rows;
 }
 
 sub do {
@@ -73,7 +73,7 @@ sub do {
 
     get_service('logger')->debug('SQL Query: "', $query, '" Binds: [' . join(',', @args ) ."]" );
 
-    my $res = $self->{dbh}->do( $query, undef, @args ) or die $self->{dbh}->errstr;
+    my $res = $self->dbh->do( $query, undef, @args ) or die $self->dbh->errstr;
     return $res eq '0E0' ? 0 : $res;
 }
 
@@ -84,8 +84,8 @@ sub query {
 
     get_service('logger')->debug('SQL Query: "', $query, '" Binds: [' . join(',', @args ) ."]" );
 
-    my $sth = $self->{dbh}->prepare_cached( $query ) or die $self->{dbh}->errstr;
-    $sth->execute( @args ) or $self->{dbh}->errstr;
+    my $sth = $self->dbh->prepare_cached( $query ) or die $self->dbh->errstr;
+    $sth->execute( @args ) or $self->dbh->errstr;
 
     my @res;
 
@@ -93,7 +93,8 @@ sub query {
         push @res, $ref;
     }
     $sth->finish;
-    return scalar(@res) ? \@res : undef;
+
+    return wantarray ? @res : \@res;
 }
 
 sub query_by_name {
@@ -104,7 +105,7 @@ sub query_by_name {
 
     get_service('logger')->debug('SQL Query: "', $query, '" Binds: [' . join(',', @args ) ."]" );
 
-    return $self->{dbh}->selectall_hashref( $query, $key_field, undef, @args );
+    return $self->dbh->selectall_hashref( $query, $key_field, undef, @args );
 }
 
 sub convert_sql_structure_data {
@@ -173,7 +174,11 @@ sub clean_query_args {
                 if ( $params->{is_update} ) {
                     unless ( $args->{where}{ $f } ) {
                         # Добавляем во WHERE ключевое поле
-                        $args->{where}{ $f } = $self->{ $f };
+                        if ( exists $self->{ $f } ) {
+                            $args->{where}{ $f } = $self->{ $f };
+                        } elsif ( $self->can( $f ) ) {
+                            $args->{where}{ $f } = $self->$f;
+                        }
                         logger->error( "`$f` required" ) unless $args->{where}{ $f };
                     }
                     # Запрещаем обновлять ключевое поле
@@ -187,7 +192,12 @@ sub clean_query_args {
 
             if ( $params->{is_list} ) {
                 if ( $v eq '!' ) { # получаем автоматически
-                    $args->{ $f } ||= $self->{ $f } || logger->error( "Can't get `$f` from self" );
+                    if ( exists $self->{ $f } ) {
+                        $args->{ $f } = $self->{ $f };
+                    } elsif ( $self->can( $f ) ) {
+                        $args->{ $f } = $self->$f;
+                    }
+                    logger->error( "Can't get `$f` from self" ) unless $args->{ $f };
                 }
                 next;
             }
@@ -196,7 +206,12 @@ sub clean_query_args {
             # Below rules only for insert
 
             if ( $v eq '!' ) { # получаем автоматически
-                $args->{ $f } ||= $self->{ $f } || logger->error( "Can't get `$f` from self" );
+                if ( exists $self->{ $f } ) {
+                    $args->{ $f } = $self->{ $f };
+                } elsif ( $self->can( $f ) ) {
+                    $args->{ $f } = $self->$f;
+                }
+                logger->error( "Can't get `$f` from self" ) unless $args->{ $f };
             } elsif ( $v eq '?' ) {
                 logger->error( "`$f` required" ) if not exists $args->{$f};
             } elsif ( $v eq 'now' ) {
@@ -289,7 +304,7 @@ sub get {
     my $self = shift;
 
     my ( $ret ) = $self->list( where => { $self->get_table_key => $self->id }, @_ );
-    return wantarray ? %{ $ret } : $ret;
+    return wantarray ? %{ $ret||={} } : $ret;
 }
 
 sub get_table_key {

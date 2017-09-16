@@ -29,7 +29,7 @@ sub pays {
 
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
-                                        user_id => $self->{user_id},
+                                        user_id => $self->user_id,
                                         range => { field => 'date', start => $args{start}, stop => $args{stop} },
                                         calc => 1,
                                         in => { pay_id => $self->res_by_arr },
