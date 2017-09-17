@@ -3,7 +3,7 @@
 use v5.14;
 
 use SHM qw(:all);
-my $cli = SHM->new();
+my $user = SHM->new();
 
 my %in = parse_args();
 
@@ -14,7 +14,7 @@ sub usage {
 
 usage unless ( $in{action} && $in{usi} );
 
-print_json( $cli->user->services->id( $in{usi} )->settings->get );
+print_json( $user->services->id( $in{usi} )->settings->get );
 
 exit 0;
 
