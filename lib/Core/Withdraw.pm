@@ -70,7 +70,25 @@ sub add {
 
 sub list_for_api {
     my $self = shift;
-    return $self->SUPER::list_for_api( field => 'withdraw_date', @_ );
+    my @arr = $self->SUPER::list_for_api( field => 'withdraw_date', @_ );
+
+    my $us = get_service('UserServices')->ids(
+        user_service_id => [ map $_->{user_service_id}, @arr ]
+    )->with('settings','services')->get;
+
+    for ( @arr ) {
+        if ( exists $us->{ $_->{user_service_id} } ) {
+            my $service = $us->{ $_->{user_service_id} };
+
+            $_->{name} = get_service('service')->convert_name(
+                $service->{services}->{name},
+                $service->{settings},
+            );
+        }
+        else { $_->{name} = '' };
+        $_->{discount_date} = $_->{withdraw_date};
+    }
+    return @arr;
 }
 
 1;
