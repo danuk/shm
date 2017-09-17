@@ -62,6 +62,28 @@ sub id {
     return $self;
 }
 
+=head
+Метод позволяет загрузить сразу несколько произвольных услуг
+Пример:
+    $self->ids( user_service_id => [1,2,3] )->with(...)->get;
+=cut
+
+sub ids {
+    my $self = shift;
+    my ( $field, $values ) = @_;
+
+    unless ( ref $values eq 'ARRAY' ) {
+        get_service('logger')->error("Values must be ARRAY");
+    }
+
+    $self->{res} = $self->list(
+        where => {
+            $field => { -in => $values },
+        },
+    );
+    return $self;
+}
+
 sub all {
     my $self = shift;
 

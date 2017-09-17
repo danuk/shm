@@ -74,5 +74,7 @@ is ( exists $obj->{99}->{withdraws}, 1, 'Check withdraws load for service');
 $obj = $us->id(101)->with('settings','servers')->get;
 is ( exists $obj->{101}->{servers}->{host}, 1, 'Check service with servers');
 
+$obj = $us->ids( user_service_id => [ 99,101 ] )->with('settings')->get;
+is ( exists $obj->{101}->{settings}->{quota}, 1, 'Check load services by user_service_id array' );
 
 done_testing();
