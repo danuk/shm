@@ -3,7 +3,7 @@
 use v5.14;
 
 use SHM qw(:all);
-my $cli = SHM->new();
+my $user = SHM->new();
 
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw(
@@ -21,7 +21,7 @@ my @res = get_service('domain')->list_for_api(
     where => { subdomain_for => undef },
 );
 
-my $numRows = $cli->user->found_rows;
+my $numRows = $user->found_rows;
 
 print_header( http_content_range( http_limit, count => $numRows ) );
 print_json( \@res );
