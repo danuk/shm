@@ -41,7 +41,7 @@ sub new {
     }
 
     my $self = bless( $args, $class );
-    $self->init() if $self->can('init');
+    $self->init( %{ $args } ) if $self->can('init');
 
     return $self;
 }
