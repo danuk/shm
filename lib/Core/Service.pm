@@ -45,5 +45,13 @@ sub add {
     return get_service('service', service_id => $si );
 }
 
+sub convert_name {
+    my $self = shift;
+    my $name = shift;
+    my $settings = shift;
+
+    $name=~s/\$\{(\w+)\}/$settings->{ $1 }/gei;
+    return $name;
+}
 
 1;
