@@ -67,6 +67,8 @@ sub get_service {
     my $service_name = $name;
     if ( $args{_id} ) {
         $service_name .= '_' . $args{_id};
+    } elsif ( %args ) {
+        $service_name .= '_' . join('_', map( $args{ $_ }, sort keys %args ) );
     }
 
     if ( exists $SERVICE_MANAGER->{services}->{ $service_name } ) {
@@ -133,8 +135,10 @@ sub register_service {
     # Получаем актуальный name, сгенерированный загруженным модулем
     if ( $service->can( '_id' ) ) {
         $name = $service->_id;
-    } else {
-        $name = $name . '_' . $args{_id} if exists $args{_id};
+    } elsif ( exists $args{_id} ) {
+        $name .= '_' . $args{_id};
+    } elsif ( %args ) {
+        $name .= '_' . join('_', map( $args{ $_ }, sort keys %args ) );
     }
 
     unless ( $name ) {
