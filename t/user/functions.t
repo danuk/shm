@@ -18,4 +18,14 @@ is( $user->get_discount, '0', 'Get user discount' );
 $user->set( discount => 13 );
 is( $user->get_discount, '13', 'Get user discount after set' );
 
+my $who = get_service('user', _id => 108 );
+is ( $who->get_user_id, 108 );
+
+my @who_pays = $who->pays->list;
+is ( scalar @who_pays, 0, 'Check pays for other user');
+
+my @pays = $user->pays->list;
+is ( scalar @pays, 2, 'Check pays for main service');
+
+
 done_testing();
