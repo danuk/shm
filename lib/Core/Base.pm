@@ -64,7 +64,7 @@ sub dbh {
 
 sub user_id {
     my $self = shift;
-    return get_service('config')->local->{user_id};
+    return exists $self->{user_id} ? $self->{user_id} : get_service('config')->local->{user_id};
 }
 
 sub res {
