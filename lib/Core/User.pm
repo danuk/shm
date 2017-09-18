@@ -63,20 +63,26 @@ sub structure {
     };
 }
 
+sub init {
+    my $self = shift;
+
+    $self->{user_id}//= get_service('config')->local->{'user_id'};
+}
+
+sub _id {
+    my $self = shift;
+    return 'user_'. $self->user_id;
+}
+
 sub id {
     my $self = shift;
     my $user_id = shift;
 
-    unless ( $user_id ) {
-        return $self->user_id || confess('User not loaded');
+    if ( $user_id ) {
+        $self->{user_id} = $user_id;
+        return $self;
     }
-
-    return $self if $self->res->{user_id} == $user_id;
-
-    get_service('config')->local('user_id', $user_id );
-    $self->data;
-
-    return $self;
+    return $self->{user_id};
 }
 
 sub auth {
@@ -91,13 +97,14 @@ sub auth {
     return undef unless $data;
 
     get_service('config')->local('user_id', $data->{user_id} );
+    $self->{user_id} = $data->{user_id};
 
     return $self;
 }
 
 sub services {
     my $self = shift;
-    return get_service('UserServices');
+    return get_service('UserServices', user_id => $self->user_id );
 }
 
 sub data {
@@ -125,12 +132,17 @@ sub set_balance {
 
     my $data = join(',', map( "$_=$_+?", keys %args ) );
 
-    return $self->do("UPDATE users SET $data WHERE user_id=?", values %args, $self->user_id );
+    return $self->do("UPDATE users SET $data WHERE user_id=?", values %args, $self->{user_id} );
 }
 
 sub pays {
     my $self = shift;
-    return get_service('pay');
+    return get_service('pay', user_id => $self->{user_id} );
+}
+
+sub withdraws {
+    my $self = shift;
+    return get_service('withdraw', user_id => $self->{user_id} );
 }
 
 1;
