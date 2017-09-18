@@ -86,7 +86,7 @@ sub set {
 
 sub add {
     my $self = shift;
-    return get_service('UserServices')->add( @_ );
+    return get_service('UserServices', user_id => $self->res->{user_id} )->add( @_ );
 }
 
 sub switch_to_next {
@@ -97,7 +97,7 @@ sub switch_to_next {
 
 sub user {
     my $self = shift;
-    return get_service('user');
+    return get_service('user', _id => $self->res->{user_id} );
 }
 
 sub parent {
@@ -134,14 +134,14 @@ sub data_for_transport {
         @_,
     );
 
-    my ( $ret ) = get_service('UserServices')->
+    my ( $ret ) = get_service('UserServices', user_id => $self->res->{user_id} )->
         res( { $self->id => scalar $self->get } )->with('settings','services','withdraws')->get;
     return SUCCESS, $ret;
 }
 
 sub domains {
     my $self = shift;
-    return get_service('domain')->list_domains_for_service( user_service_id => $self->id );
+    return get_service('domain', user_id => $self->res->{user_id} )->list_domains_for_service( user_service_id => $self->id );
 }
 
 # Просмотр/обработка услуг
@@ -172,7 +172,7 @@ sub event {
         event => $e,
     );
 
-    my $spool = get_service('spool');
+    my $spool = get_service('spool', user_id => $self->res->{user_id} );
 
     for ( @commands ) {
         $spool->add(
