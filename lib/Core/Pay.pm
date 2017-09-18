@@ -43,4 +43,15 @@ sub pays {
     return $self;
 }
 
+sub list_for_api {
+    my $self = shift;
+    my @arr = $self->SUPER::list_for_api( @_ );
+
+    for ( @arr ) {
+        $_->{who_str} = get_service('user', _id => $_->{from_user_id} )->get->{full_name};
+    }
+
+    return @arr;
+}
+
 1;
