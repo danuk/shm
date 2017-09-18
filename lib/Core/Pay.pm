@@ -48,7 +48,8 @@ sub list_for_api {
     my @arr = $self->SUPER::list_for_api( @_ );
 
     for ( @arr ) {
-        $_->{who_str} = get_service('user', _id => $_->{from_user_id} )->get->{full_name};
+        my %who = get_service('user', _id => $_->{from_user_id} )->get;
+        $_->{who_str} = $who{full_name} ? $who{full_name} : 'unknown';
     }
 
     return @arr;
