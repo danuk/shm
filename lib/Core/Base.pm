@@ -5,6 +5,7 @@ use utf8;
 use parent qw( Core::Sql::Data Core::System::Service );
 use Core::System::ServiceManager qw( get_service );
 use Core::Sql::Data;
+use Carp qw(confess);
 use Data::Dumper;
 $Data::Dumper::Deepcopy = 1;
 
@@ -17,6 +18,7 @@ our @EXPORT = qw(
     TASK_SUCCESS
     TASK_FAIL
     TASK_DROP
+    confess
 );
 
 use constant SUCCESS => 1;
