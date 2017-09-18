@@ -55,9 +55,10 @@ sub new {
     my $dbh = Core::Sql::Data::db_connect( %{ $config->global->{database} } );
     $config->local('dbh', $dbh );
 
-    my $user = get_service('user');
+    my $user_id;
+
     if ( $args->{user_id} ) {
-        $user->id( $args->{user_id} ) || confess ("User not found");
+        $user_id = $args->{user_id};
     } elsif ( !$args->{skip_check_auth} ) {
 
         if ($0=~/\/(admin|spool)\//) {
@@ -67,12 +68,13 @@ sub new {
         my $session = validate_session();
         print_not_authorized() unless $session;
 
-        my $user_id = $session->get('user_id');
-        $user->id( $user_id ) || confess ("User not found");
+        $user_id = $session->get('user_id');
 
         print STDERR 'USER_ID: ' . $user_id;
     }
-    return $user;
+
+    $config->local('user_id', $user_id );
+    return get_service('user');
 }
 
 
