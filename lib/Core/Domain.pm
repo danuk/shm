@@ -18,7 +18,7 @@ sub structure {
         domain_id => '@',
         user_id => '!',
         domain => '?',
-        registered => 'now',
+        created => 'now',
         type => '?',
         zone_id => undef,
         subdomain_for => undef,
