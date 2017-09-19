@@ -73,7 +73,9 @@ sub do {
 
     get_service('logger')->debug('SQL Query: "', $query, '" Binds: [' . join(',', @args ) ."]" );
 
-    my $res = $self->dbh->do( $query, undef, @args ) or die $self->dbh->errstr;
+    my $res = $self->dbh->do( $query, undef, @args ) or do {
+        get_service('logger')->warning( $self->dbh->errstr );
+    };
     return $res eq '0E0' ? 0 : $res;
 }
 
