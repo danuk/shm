@@ -1,6 +1,8 @@
 package Core::Utils;
 
 use v5.14;
+use utf8;
+use Encode qw/_utf8_on/;
 
 use base qw(Exporter);
 
@@ -102,6 +104,8 @@ sub period_to_string {
 sub parse_args {
     my $cgi = CGI->new;
     %in = $cgi->Vars;
+
+    _utf8_on( $in{ $_ } ) for keys %in;
 
     my %cmd_opts;
     for ( @ARGV ) {
