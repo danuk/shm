@@ -1,8 +1,15 @@
 package Core::Domain;
 
 use v5.14;
+use utf8;
 use parent 'Core::Base';
 use Core::Base;
+
+use Data::Validate::Domain qw/is_domain/;
+use Net::IDN::Encode qw/domain_to_ascii/;
+
+use constant DOMAIN_EMPTY => -1;
+use constant DOMAIN_INCORRECT => -2;
 
 sub load_registrator {
     my ( $self, $name ) = @_;
@@ -141,6 +148,33 @@ sub prolongate {
 
     my $reg = $self->get_registrator->prolongate( domain_id => $args{domain_id} );
 
+}
+
+sub check_domain {
+    my $self = shift;
+    return is_domain( shift ) ? 1 : 0;
+}
+
+sub to_punycode {
+    my $self = shift;
+    my $domain = shift;
+
+    my $punycode = domain_to_ascii( $domain );
+    return $domain eq $punycode ? undef : $punycode;
+}
+
+sub add {
+    my $self = shift;
+    my %args = @_;
+
+    my $domain = lc( $args{domain} );
+    return DOMAIN_EMPTY unless $domain;
+
+    my $punycode = $self->to_punycode( $domain );
+
+    return DOMAIN_INCORRECT unless $self->check_domain( $punycode || $domain );
+
+    return $self->SUPER::add( %args, domain => $domain, punycode => $punycode );
 }
 
 sub info {

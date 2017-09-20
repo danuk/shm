@@ -8,3 +8,5 @@ requires 'JSON', '>= 2.94';
 requires 'Test::MockTime';
 requires 'SQL::Abstract';
 requires 'Net::OpenSSH', '>= 0.74';
+requires 'Net::IDN::Encode', '>=2.400';
+requires 'Data::Validate::Domain', '>=0.14';
