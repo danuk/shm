@@ -19,6 +19,9 @@ my $domain_id = $domain->add(
     domain => $in{domain},
 );
 
-print_json( { status => $domain_id ? 'ok' : 'error' } );
+print_json( $domain_id ?
+    { msg => 'successful', result => 0 } :
+    { msg =>'domain already exists', result => 1 }
+);
 
 exit 0;
