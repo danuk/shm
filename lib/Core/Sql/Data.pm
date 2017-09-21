@@ -244,6 +244,23 @@ sub set {
     return $self->do("UPDATE $table SET $data WHERE $where", values %args, values %where );
 }
 
+sub delete {
+    my $self = shift;
+    my %args = ( @_ );
+
+    $args{table} ||= $self->table;
+    my $table = delete $args{table};
+
+    clean_query_args( $self, \%args, { is_update => 1 } );
+
+    my %where = %{ $args{where} };
+    delete $args{where};
+
+    my $where = join(' and ', map( "`$_`=?", keys %where ) );
+
+    return $self->do("DELETE FROM $table WHERE $where", values %where );
+}
+
 # INSERT
 sub add {
     my $self = shift;
