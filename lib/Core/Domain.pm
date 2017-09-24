@@ -31,46 +31,30 @@ sub structure {
         subdomain_for => undef,
         punycode => undef,
         user_service_id => undef,
-        web_service_id => undef,
-        mail_service_id => undef,
-        web_redirect_service_id => undef,
         description => undef,
-        nic_id => undef,
-        nic_hdl => undef,
     }
 }
 
-sub list_domains_for_service {
+sub list_services {
     my $self = shift;
     my %args = (
         user_service_id => undef,
+        domain_id => undef,
         @_,
     );
 
-    unless ( $args{user_service_id} ) {
-        get_service('logger')->error("User_service_id not defined");
+    unless ( $args{user_service_id} || $args{domain_id} ) {
+        $args{domain_id} = $self->get->{domain_id};
     }
 
-    return $self->list(
-        where => {
-            -or => {
-                web_service_id =>  $args{user_service_id},
-                mail_service_id => $args{user_service_id},
-            },
+    $args{domain_id} = [ $args{domain_id} ] if ref $args{domain_id} eq 'SCALAR';
+    $args{user_service_id} = [ $args{user_service_id} ] if ref $args{user_service_id} eq 'SCALAR';
+
+    return get_service('DomainServices')->list( where => {
+            $args{domain_id} ? ( domain_id => { -in => $args{domain_id} } ) : (),
+            $args{user_service_id} ? ( user_service_id => { -in => $args{user_service_id } } ) : (),
         },
     );
-}
-
-sub list_services_for_domain {
-    my $self = shift;
-
-    my $domain = $self->get;
-
-    my @user_services_ids;
-    for ( qw/ web_service_id mail_service_id user_service_id / ) {
-        push @user_services_ids, $domain->{ $_ } if $domain->{ $_ };
-    }
-    return \@user_services_ids;
 }
 
 # Метод возвращает объект домена по идентификатору, имени или номеру услуги

@@ -58,20 +58,23 @@ CREATE TABLE `domains` (
   `user_id` int(11) NOT NULL,
   `domain` char(64) NOT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `type` tinyint(4) NOT NULL,
   `zone_id` int(11) DEFAULT NULL,
   `subdomain_for` int(11) DEFAULT NULL,
   `punycode` char(64) DEFAULT NULL,
   `user_service_id` int(11) DEFAULT NULL,
-  `web_service_id` int(11) DEFAULT NULL,
-  `mail_service_id` int(11) DEFAULT NULL,
-  `web_redirect_service_id` int(11) DEFAULT NULL,
-  `description` char(255) DEFAULT NULL,
-  `nic_id` int(11) DEFAULT NULL,
-  `nic_hdl` char(16) DEFAULT NULL,
   PRIMARY KEY (`domain_id`),
   UNIQUE KEY `domain` (`domain`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+
+CREATE TABLE `domains_services` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `domain_id` int(11) NOT NULL,
+  `user_service_id` int(11) NOT NULL,
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `domain_service_id` (`domain_id`,`user_service_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+
 
 CREATE TABLE `invoices` (
   `id` int(11) NOT NULL AUTO_INCREMENT,

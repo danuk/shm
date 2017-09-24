@@ -20,13 +20,28 @@ is $domain->get->{domain}, 'umci.ru';
 my @recs = $domain->get_domain( name => 'umci.ru' )->dns_records;
 is $recs[0]->{addr}, '37.46.134.76';
 
-my @domains = get_service('domain')->list_domains_for_service( user_service_id => 100 );
+my @domains = get_service('domain')->list_services( user_service_id => 100 );
 is scalar @domains, 2, 'Load domains for user_service';
 
 @recs = $domain->get_domain( user_service_id => 16 )->dns_records;
 is $recs[0]->{domain}, 'danuk.ru';
 
-is_deeply get_service('domain', _id => 6)->list_services_for_domain, [101,100,16],'Check list of services';
+my @domain_services = get_service('domain', _id => 6)->list_services;
+is_deeply( \@domain_services,
+[
+    {
+              'created' => '2017-09-23 23:54:23',
+              'domain_id' => 6,
+              'id' => 15,
+              'user_service_id' => 100
+    },
+    {
+              'created' => '2017-09-23 23:54:04',
+              'domain_id' => 6,
+              'id' => 1,
+              'user_service_id' => 101
+    },
+], 'Check list of services');
 
 is ( $domain->check_domain('test.ru'), 1, 'Check domain name' );
 is ( $domain->check_domain('test.r'), 0, 'Check wrong domain name' );

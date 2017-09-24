@@ -25,14 +25,17 @@ sub _services_records_list {
         @_,
     );
 
-    my @user_services_list_for_domain = get_service('domain', _id => $args{domain_id})->list_services_for_domain;
-    return [] unless @user_services_list_for_domain;
+    my @user_services_list_for_domain = get_service('domain', _id => $args{domain_id})->list_services;
+    return () unless @user_services_list_for_domain;
 
     my $obj = get_service('UserServices');
 
     # Загружаем услуги и их дополнительные секциии
     my @res = $obj->res(
-        scalar $obj->list( where => { user_service_id => { in => @user_services_list_for_domain } } )
+        scalar $obj->list( where => {
+                user_service_id => { in => [ map $_->{user_service_id}, @user_services_list_for_domain ] },
+            },
+        )
     )->with('services','settings','server')->get;
 
     my $domain_name = get_service('domain', _id => $args{domain_id} )->real_domain;
