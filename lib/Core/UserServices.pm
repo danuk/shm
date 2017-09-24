@@ -298,19 +298,18 @@ sub servers {
 sub domains {
     my $self = shift;
 
-    my $domain_services = get_service('DomainServices')->list( where => { user_service_id => { -in => $self->res_by_arr } } );
+    my @domain_services = get_service('domain')->list_services( user_service_id => $self->res_by_arr );
 
     my $domains = get_service('domain')->list( where => {
             domain_id => {
-                -in => [ map $domain_services->{ $_ }->{domain_id}, keys %{ $domain_services } ],
+                -in => [ map $_->{domain_id}, @domain_services ],
             },
         },
     );
 
     my %hash;
-    for ( keys %{ $domain_services } ) {
-        push @{ $hash{ $domain_services->{ $_ }->{user_service_id} } },
-            $domains->{ $domain_services->{ $_ }->{domain_id} };
+    for ( @domain_services ) {
+        push @{ $hash{ $_->{user_service_id} } }, $domains->{ $_->{domain_id} };
     }
     return %hash if wantarray;
 
