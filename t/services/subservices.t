@@ -10,7 +10,7 @@ use Core::System::ServiceManager qw( get_service );
 
 my $ret = get_service('us', _id => 99)->subservices;
 
-is_deeply( [ keys $ret ], [ 59,117,58 ], 'get sub services');
+is_deeply( keys %{ $ret } == 3 && exists $ret->{59} && exists $ret->{117} && exists $ret->{58}, 1, 'get sub services');
 
 
 done_testing();

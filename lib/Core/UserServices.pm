@@ -105,7 +105,7 @@ sub category {
 
     return $self unless $self->{res};
 
-    for ( keys $self->{res} ) {
+    for ( keys %{ $self->{res} } ) {
         if ( $self->{res}->{$_}->{category} && not exists $category{ $self->{res}->{$_}->{category} } ) {
             delete $self->{res}->{$_};
         }
@@ -169,7 +169,7 @@ sub with {
 
 sub childs {
     my $self = shift;
-    return $self unless $self->{res} && keys $self->{res};
+    return $self unless $self->{res} && keys %{ $self->{res} };
 
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
@@ -216,7 +216,7 @@ sub tree {
     my $res = $self->query_by_name( $query, 'user_service_id', @vars );
     return $self unless $res;
 
-    for (keys $res) {
+    for (keys %{ $res } ) {
         my $obj = $res->{ $_ };
 
         # Delete childs without parents
@@ -238,7 +238,7 @@ sub get {
     my $self = shift;
 
     if ( wantarray ) {
-        return map { $self->{res}->{ $_ } } keys $self->{res};
+        return map { $self->{res}->{ $_ } } keys %{ $self->{res} };
     }
 
     return delete $self->{res};
@@ -263,7 +263,7 @@ sub settings {
 
 sub settings_old {
     my $self = shift;
-    return $self unless $self->{res} && keys $self->{res};
+    return $self unless $self->{res} && keys %{ $self->{res} };
 
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
@@ -274,7 +274,7 @@ sub settings_old {
     my $res = $self->query( $query, @vars );
 
     my %hash;
-    for ( keys $res ) {
+    for ( keys %{ $res } ) {
         $hash{ $res->[ $_ ]->{user_service_id} }{ $res->[ $_ ]->{tag} } = $res->[ $_ ]->{value};
     }
     return %hash if wantarray;
@@ -287,7 +287,7 @@ sub settings_old {
 
 sub servers {
     my $self = shift;
-    return $self unless $self->{res} && keys $self->{res};
+    return $self unless $self->{res} && keys %{ $self->{res} };
 
     my $res = get_service('server')->list( where => { server_id => { in => $self->res_by_arr } } );
 

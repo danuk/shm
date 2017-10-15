@@ -3,6 +3,10 @@ use v5.14;
 use Test::More;
 use Data::Dumper;
 
+use POSIX qw(tzset);
+$ENV{TZ} = 'Europe/Moscow';
+tzset;
+
 use Test::MockTime;
 Test::MockTime::set_fixed_time('2016-12-31T21:00:00Z'); # Sun Jan  1 00:00:00 2017
 

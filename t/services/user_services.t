@@ -33,19 +33,19 @@ is_deeply( $obj, {
 }, 'get user_service from id (check full structure)');
 
 $obj = $us->parents->get;
-is_deeply( [ keys $obj ], [ 2949,99,19,16 ], 'get user_services parents');
+is_deeply( [ sort { $a <=> $b } keys %{ $obj } ], [ 16,19,99,2949 ], 'get user_services parents');
 
 $obj = $us->parents->childs->get;
-is_deeply( [ keys $obj ], [ 21,102,17,20,18,101,2950,2951,100 ], 'get user_services childs for parents');
+is_deeply( [ sort { $a <=> $b } keys %{ $obj } ], [ 17,18,20,21,100,101,102,2950,2951 ], 'get user_services childs for parents');
 
 $obj = $us->parents->category('web_tariff')->get;
-is_deeply( [ keys $obj ], [ 99 ], 'get user_services parents filtered by web_tariff');
+is_deeply( [ keys %{ $obj } ], [ 99 ], 'get user_services parents filtered by web_tariff');
 
 $obj = $us->parents->category('web_tariff')->childs->get;
-is_deeply( [ keys $obj ], [ 102, 101, 100 ], 'get user_services childs for parents filtered by web_tariff');
+is_deeply( [ sort { $a <=> $b } keys %{ $obj } ], [ 100, 101, 102 ], 'get user_services childs for parents filtered by web_tariff');
 
 $obj = $us->parents->category('web_tariff')->childs->category('web')->get;
-is_deeply( [ keys $obj ], [ 101 ], 'get user_services childs for parents filtered by web_tariff and only web child');
+is_deeply( [ keys %{ $obj } ], [ 101 ], 'get user_services childs for parents filtered by web_tariff and only web child');
 
 $obj = $us->parents->category('web_tariff')->childs->category('web')->with('settings','domains')->get;
 
