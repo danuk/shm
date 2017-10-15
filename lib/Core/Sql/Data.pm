@@ -339,7 +339,7 @@ sub get_table_key {
 
 sub res_by_arr {
     my $self = shift;
-    return $self->{res} ? [ keys $self->{res} ] : [];
+    return $self->{res} ? [ keys %{ $self->{res} } ] : [];
 }
 
 sub quote {
