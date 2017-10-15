@@ -1,5 +1,6 @@
 BEGIN;
 
+DROP TABLE IF EXISTS `acts`;
 CREATE TABLE `acts` (
   `act_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) DEFAULT NULL,
@@ -8,6 +9,7 @@ CREATE TABLE `acts` (
   PRIMARY KEY (`act_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `acts_data`;
 CREATE TABLE `acts_data` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `act_id` int(10) unsigned DEFAULT NULL,
@@ -22,6 +24,7 @@ CREATE TABLE `acts_data` (
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `apps`;
 CREATE TABLE `apps` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -32,6 +35,7 @@ CREATE TABLE `apps` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `discounts`;
 CREATE TABLE `discounts` (
   `discount_id` tinyint(4) NOT NULL,
   `title` char(64) NOT NULL,
@@ -41,6 +45,7 @@ CREATE TABLE `discounts` (
   PRIMARY KEY (`discount_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `dns_services`;
 CREATE TABLE `dns_services` (
   `dns_id` int(11) NOT NULL AUTO_INCREMENT,
   `domain_id` int(11) NOT NULL,
@@ -53,6 +58,7 @@ CREATE TABLE `dns_services` (
   PRIMARY KEY (`dns_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `domains`;
 CREATE TABLE `domains` (
   `domain_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -66,6 +72,7 @@ CREATE TABLE `domains` (
   UNIQUE KEY `domain` (`domain`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `domains_services`;
 CREATE TABLE `domains_services` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `domain_id` int(11) NOT NULL,
@@ -75,7 +82,7 @@ CREATE TABLE `domains_services` (
   UNIQUE KEY `domain_service_id` (`domain_id`,`user_service_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
-
+DROP TABLE IF EXISTS `invoices`;
 CREATE TABLE `invoices` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` int(11) DEFAULT NULL,
@@ -85,6 +92,7 @@ CREATE TABLE `invoices` (
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `pays_history`;
 CREATE TABLE `pays_history` (
   `pay_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -96,6 +104,7 @@ CREATE TABLE `pays_history` (
   PRIMARY KEY (`pay_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `servers`;
 CREATE TABLE `servers` (
   `server_id` int(11) NOT NULL AUTO_INCREMENT,
   `server_gid` int(11) DEFAULT NULL,
@@ -111,6 +120,7 @@ CREATE TABLE `servers` (
   PRIMARY KEY (`server_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `servers_groups`;
 CREATE TABLE `servers_groups` (
   `group_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` char(255) DEFAULT NULL,
@@ -119,6 +129,7 @@ CREATE TABLE `servers_groups` (
   PRIMARY KEY (`group_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `services`;
 CREATE TABLE `services` (
   `service_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` char(64) NOT NULL,
@@ -136,6 +147,7 @@ CREATE TABLE `services` (
   PRIMARY KEY (`service_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `services_commands`;
 CREATE TABLE `services_commands` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `category` char(16) NOT NULL,
@@ -145,6 +157,7 @@ CREATE TABLE `services_commands` (
   UNIQUE KEY `category` (`category`,`event`,`server_gid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `spool`;
 CREATE TABLE `spool` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -163,6 +176,7 @@ CREATE TABLE `spool` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `spool_history`;
 CREATE TABLE `spool_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `spool_id` int(11) NOT NULL,
@@ -182,6 +196,7 @@ CREATE TABLE `spool_history` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `subservices`;
 CREATE TABLE `subservices` (
   `ss_id` int(11) NOT NULL AUTO_INCREMENT,
   `service_id` int(11) NOT NULL,
@@ -189,6 +204,7 @@ CREATE TABLE `subservices` (
   PRIMARY KEY (`ss_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `user_services`;
 CREATE TABLE `user_services` (
   `user_service_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -206,6 +222,7 @@ CREATE TABLE `user_services` (
   UNIQUE KEY `user_services_idx` (`user_service_id`,`user_id`,`service_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `owner` int(11) NOT NULL DEFAULT '0',
@@ -233,6 +250,7 @@ CREATE TABLE `users` (
   PRIMARY KEY (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `withdraw_history`;
 CREATE TABLE `withdraw_history` (
   `withdraw_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -250,6 +268,7 @@ CREATE TABLE `withdraw_history` (
   PRIMARY KEY (`withdraw_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `zones`;
 CREATE TABLE `zones` (
   `zone_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` char(32) NOT NULL,
