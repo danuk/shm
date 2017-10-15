@@ -28,7 +28,7 @@ $parents = $parents->category( qw/web_tariff web_virt web_tariff web_tariff_free
 my $childs = $us->res( $parents )->childs->category('web','mail','mysql')->with('services','settings','server','domains')->get;
 
 # Add childs to structure
-for my $c ( keys $childs ) {
+for my $c ( keys %{ $childs } ) {
     $parents->{ $childs->{$c}->{parent} }->{services}->{ $childs->{$c}->{category} }->{ $childs->{$c}->{user_service_id } } = $childs->{$c};
 }
 
