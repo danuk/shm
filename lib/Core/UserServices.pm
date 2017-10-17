@@ -216,7 +216,8 @@ sub tree {
     my $res = $self->query_by_name( $query, 'user_service_id', @vars );
     return $self unless $res;
 
-    for (keys %{ $res } ) {
+    # Важен порядок переборки хеша: мы не должны удалять младшие элементы, пока не обработали старшие
+    for ( sort { $b <=> $a } keys %{ $res } ) {
         my $obj = $res->{ $_ };
 
         # Delete childs without parents
