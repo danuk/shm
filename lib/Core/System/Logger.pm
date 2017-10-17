@@ -141,7 +141,15 @@ sub make_message {
 
     my ($package, $filename, $line) = caller(1);
 
-    my $res = "$args{tag}"
+    my %tag_color = (
+        ERROR => "\033[0;31m$args{tag}\033[0m",
+        FATAL => "\033[0;31m$args{tag}\033[0m",
+        WARNING => "\033[0;33m$args{tag}\033[0m",
+        DEFAULT => "\033[0;32m$args{tag}\033[0m",
+    );
+
+    my $tag_string = $tag_color{ $args{tag} } || $tag_color{DEFAULT};
+    my $res = "$tag_string "
             . " [" . scalar(localtime) .  "]"
             . " pid: $$"
             . " message: {{ $args{msg} }}"
