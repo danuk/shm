@@ -63,21 +63,30 @@ sub send {
         return FAIL, { error => $ssh->error };
     }
 
+    my $stdin_data = $data ? to_json( $data ) : undef;
+
     my ( $out, $err ) = $ssh->capture2(
         {
             tty => 0,
             timeout => 10,
-            stdin_data => $data ? to_json( $data ) : '',
+            stdin_data => $stdin_data,
         },
         split(' ', $cmd ),
     );
     my $ret_code = $?>>8;
 
-    get_service('logger')->debug("SSH RET_CODE: $ret_code");
+    if ( $ret_code == 0 ) {
+        get_service('logger')->debug("SSH RET_CODE: $ret_code");
+    }
+    else {
+        get_service('logger')->warning("SSH RET_CODE: $ret_code");
+        get_service('logger')->warning("SSH STDIN: $stdin_data");
+        get_service('logger')->warning("SSH CMD: $cmd" );
+    }
 
     if ( $err ) {
         chomp $err;
-        get_service('logger')->debug("SSH STDERR: $err");
+        get_service('logger')->warning("SSH STDERR: $err");
     }
 
     my $data;
