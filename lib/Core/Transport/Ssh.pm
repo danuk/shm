@@ -17,7 +17,7 @@ sub send {
         host => undef,
         user => 'ssm',
         private_key => undef,
-        private_key_file => '/root/.ssh/id_dsa_shm',
+        private_key_file => get_service('config')->global->{ssh_default_ssm_key},
         port => 22,
         timeout => 10,
         payload => undef,
