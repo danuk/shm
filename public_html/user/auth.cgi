@@ -30,7 +30,7 @@ unless ( $in{login} && $in{password} ) {
 	exit 0;
 }
 
-unless ( $user->auth( login => trim($in{login}), pass => trim($in{password}) )) {
+unless ( $user->auth( login => trim($in{login}), password => trim($in{password}) )) {
     print_json( { status => 401, msg => 'Incorrect login or password' } );
 	exit 0;
 }

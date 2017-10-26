@@ -7,6 +7,8 @@ use Core::Base;
 use Core::Utils;
 use Core::Const;
 
+use Digest::SHA1 qw(sha1_hex);
+
 use vars qw($AUTOLOAD);
 
 sub AUTOLOAD {
@@ -86,6 +88,17 @@ sub id {
     return $self->{user_id};
 }
 
+sub crypt_password {
+    my $self = shift;
+    my %args = (
+        salt => undef,
+        password => undef,
+        @_,
+    );
+
+    return sha1_hex( join '--', $args{salt}, $args{password} );
+}
+
 sub auth {
     my $self = shift;
     my %args = (
@@ -94,11 +107,22 @@ sub auth {
         @_,
     );
 
-    my ( $data ) = $self->query("SELECT user_id FROM users WHERE block=0 and BINARY UNHEX(login) = ? and BINARY UNHEX(password) = ?", $args{login}, $args{pass} );
-    return undef unless $data;
+    my ( $user ) = $self->_list( where => { login => $args{login} } );
+    return undef unless $user;
 
-    get_service('config')->local('user_id', $data->{user_id} );
-    $self->{user_id} = $data->{user_id};
+    return undef if $user->{block};
+
+    my $password = $self->crypt_password(
+        salt => $args{login},
+        password => $args{password},
+    );
+
+    if ( $user->{password} ne $password ) {
+        return undef;
+    }
+
+    get_service('config')->local('user_id', $user->{user_id} );
+    $self->{user_id} = $user->{user_id};
 
     return $self;
 }
