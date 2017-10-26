@@ -127,6 +127,23 @@ sub auth {
     return $self;
 }
 
+sub reg {
+    my $self = shift;
+    my %args = (
+        login => undef,
+        password => undef,
+        @_,
+    );
+
+    my $password = $self->crypt_password(
+        salt => $args{login},
+        password => $args{password},
+    );
+
+    my $user_id = $self->add( %args, password => $password );
+    return $user_id;
+}
+
 sub services {
     my $self = shift;
     return get_service('UserServices', user_id => $self->user_id );
