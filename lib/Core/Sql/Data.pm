@@ -278,12 +278,10 @@ sub add {
     return $self->insert_id;
 }
 
-sub list {
+sub _list {
     my $self = shift;
     my %args = @_,
     my @vars;
-
-    clean_query_args( $self, \%args, { is_list => 1 } );
 
     my $query = $self->query_select( vars => \@vars, %args );
 
@@ -297,6 +295,15 @@ sub list {
 
     $self->convert_sql_structure_data( $res );
     return $res||= [];
+}
+
+sub list {
+    my $self = shift;
+    my %args = @_,
+    my @vars;
+
+    clean_query_args( $self, \%args, { is_list => 1 } );
+    return $self->_list( %args );
 }
 
 sub list_for_api {
