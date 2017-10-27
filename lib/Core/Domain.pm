@@ -26,12 +26,10 @@ sub structure {
         user_id => '!',
         domain => '?',
         created => 'now',
-        type => '?',
         zone_id => undef,
         subdomain_for => undef,
         punycode => undef,
         user_service_id => undef,
-        description => undef,
     }
 }
 
