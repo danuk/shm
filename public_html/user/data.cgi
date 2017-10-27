@@ -13,6 +13,8 @@ delete $res->{password};
 # pin
 # dog
 
+$res->{dog} = $res->{user_id};
+
 print_json( $res );
 
 exit 0;
