@@ -13,13 +13,15 @@ sub data_for_transport {
         @_,
     );
 
-    my $domain = get_service('domain')->get_domain(
+    my ( $domain_service ) = get_service('domain')->list_services(
         user_service_id => $args{user_service_id},
     );
 
-    unless ( $domain ) {
+    unless ( $domain_service ) {
         return FAIL, { error => 'domain not exists for user_service: ' . $args{user_service_id} };
     }
+
+    my $domain = get_service('domain', _id => $domain_service->{domain_id} );
 
     my @dns = $domain->dns_records;
 
