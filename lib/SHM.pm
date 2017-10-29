@@ -13,6 +13,7 @@ use JSON;
 
 use Core::System::ServiceManager qw( get_service );
 use Core::Sql::Data;
+use Scalar::Util qw(blessed);
 
 use base qw(Exporter);
 
@@ -23,6 +24,7 @@ our @EXPORT_OK = qw[
     print_header
     parse_args
     get_service
+    blessed
 ];
 
 our %EXPORT_TAGS = (
@@ -133,7 +135,6 @@ sub print_json {
     my $ref = shift || [];
     my $sort = shift;
 
-    use Scalar::Util qw(blessed);
     die 'WTF? blessed object' if blessed $ref;
 
     # if $ref contained 'status' set to header

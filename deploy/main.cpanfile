@@ -11,3 +11,4 @@ requires 'Net::OpenSSH', '>= 0.74';
 requires 'Net::IDN::Encode', '>=2.400';
 requires 'Data::Validate::Domain', '>=0.14';
 requires 'Digest::SHA1';
+requires 'Scalar::Util';
