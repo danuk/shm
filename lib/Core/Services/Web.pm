@@ -36,8 +36,10 @@ sub data_for_transport {
     );
 
     return SUCCESS, {
-        object => $object,
-        domains => \@domains,
+        payload => {
+            object => $object,
+            domains => \@domains,
+        },
         cmd => $cmd,
     };
 }

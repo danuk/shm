@@ -24,8 +24,11 @@ sub data_for_transport {
     my @dns = $domain->dns_records;
 
     return SUCCESS, {
-        domain => $domain->real_domain,
-        records => \@dns,
+        payload => {
+            domain => $domain->real_domain,
+            records => \@dns,
+        },
+        cmd => 'dns create',
     };
 }
 

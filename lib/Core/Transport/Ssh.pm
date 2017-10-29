@@ -29,8 +29,8 @@ sub send {
         map( $args{$_} ? ($_ => $args{$_}) : (), keys %args ),
     );
 
-    my $data = $server{payload};
-    my $cmd = 'test create'; #$server{payload}->{cmd};
+    my $data = $server{payload}->{payload};
+    my $cmd = $server{payload}->{cmd};
 
     my $key_file = $server{private_key_file};
 
