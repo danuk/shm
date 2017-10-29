@@ -100,6 +100,8 @@ sub process_one {
 
     my ( $status, $info ) = $spool->make_task();
 
+    get_service('logger')->warning('Task fail: ' . Dumper $info ) if $status != TASK_SUCCESS;
+
     if ( $status == TASK_SUCCESS || $status == TASK_DROP ) {
         $spool->finish_task(
             status => $status,
@@ -131,7 +133,7 @@ sub finish_task {
     );
 
     $self->write_history;
-    # TODO: $self->delete;
+    $self->delete;
 }
 
 # TODO: check max retries
