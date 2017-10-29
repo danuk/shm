@@ -159,6 +159,16 @@ sub add {
     return $self->SUPER::add( %args, domain => $domain, punycode => $punycode );
 }
 
+sub add_to_service {
+    my $self = shift;
+    my %args = (
+        user_service_id => undef,
+        @_,
+    );
+
+    return get_service('DomainServices')->add( user_service_id => $args{user_service_id}, domain_id => $self->id );
+};
+
 sub info {
     my $self = shift;
     my %args = (

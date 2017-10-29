@@ -144,6 +144,16 @@ sub domains {
     return get_service('domain', user_id => $self->res->{user_id} )->list_domains_for_service( user_service_id => $self->id );
 }
 
+sub add_domain {
+    my $self = shift;
+    my %args = (
+       domain_id => undef,
+       @_,
+    );
+
+    return get_service('domain', _id => $args{domain_id} )->add_to_service( user_service_id => $self->id );
+}
+
 # Просмотр/обработка услуг
 sub touch {
     my $self = shift;
