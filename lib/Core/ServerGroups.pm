@@ -4,7 +4,7 @@ use v5.14;
 use parent 'Core::Base';
 use Core::Base;
 
-sub table { return 'servers_group' };
+sub table { return 'servers_groups' };
 
 sub structure {
     return {
@@ -15,5 +15,26 @@ sub structure {
     }
 }
 
+# Возвращаем сервер (сервера), в зависимости от настоек группы
+sub get_servers {
+    my $self = shift;
+
+    my $group = $self->get();
+    unless ( $group ) {
+        get_service('logger')->error('ServerGroup not found for id: ' . $self->id );
+        return undef;
+    }
+
+    my @servers = get_service('server')->servers_by_group_id( gid => $self->id );
+
+    if ( $group->{type} eq 'random' ) {
+        # TODO: выбираем случайный сервер из группы, с учетом весов 
+        return $servers[0];
+    } else {
+        get_service('logger')->error('Unknown type: ' . $group->{type} );
+    }
+
+    return undef;
+}
 
 1;

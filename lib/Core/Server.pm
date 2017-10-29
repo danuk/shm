@@ -22,5 +22,14 @@ sub structure {
     }
 }
 
+sub servers_by_group_id {
+    my $self = shift;
+    my %args = (
+        gid => undef,
+        @_,
+    );
+
+    return $self->_list( where => { server_gid => $args{gid} } );
+}
 
 1;
