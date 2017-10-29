@@ -18,6 +18,37 @@ sub structure {
     }
 }
 
+my %types = (
+    'A' => 1,
+    'CNAME' => 1,
+    'MX' => 1,
+    'TXT' => 1,
+    'SRV' => 1,
+);
+
+sub validate_attributes {
+    my $self = shift;
+    my %args = @_;
+
+    my $report = get_service('report');
+
+    unless ( $types{ $args{type} } ) {
+        $report->add_error('UnknownType');
+    }
+
+    if ( exists $args{addr} ) {
+        unless ( $args{addr}=~/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/ ) {
+            $report->add_error('IncorrectIpAddress');
+        }
+    }
+
+    if ( exists $args{domain} ) {
+
+    }
+
+    return $report->is_success;
+}
+
 sub _services_records_list {
     my $self = shift;
     my %args = (
@@ -94,6 +125,27 @@ sub records {
     my @user_records = $self->_user_records_list( %args );
 
     return @services_records, @user_records;
+}
+
+sub add {
+    my $self = shift;
+    my %args = (
+        domain_id => undef,
+        domain => undef,
+        type => undef,
+        addr => undef,
+        @_,
+    );
+
+    my $report = get_service('report');
+
+    my $domain = get_service('domain', _id => $args{domain_id} )->get;
+    unless ( $domain ) {
+        $report->add_error('DomainNotFound');
+        return undef;
+    }
+
+    return $self->SUPER::add( %args );
 }
 
 1;

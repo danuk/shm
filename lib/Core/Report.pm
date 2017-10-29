@@ -13,7 +13,8 @@ sub add_error {
 
 sub errors {
     my $self = shift;
-    return $self->{errors} ? delete $self->{errors} : [];
+    my $ret = $self->{errors} ? delete $self->{errors} : [];
+    return wantarray ? @{ $ret } : $ret;
 }
 
 sub is_success {

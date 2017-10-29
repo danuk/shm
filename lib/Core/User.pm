@@ -127,6 +127,29 @@ sub auth {
     return $self;
 }
 
+sub validate_attributes {
+    my $self = shift;
+    my %args = @_;
+
+    my $report = get_service('report');
+
+    unless ( $args{login} ) {
+        $report->add_error('LoginEmpty');
+    }
+    unless ( $args{login}=~/^[\w\d@.-]{6,}$/ ) {
+        $report->add_error('LoginShortOrIncorrect');
+    }
+
+    unless ( $args{password} ) {
+        $report->add_error('PasswordEmpty');
+    }
+    if ( length $args{password} < 6 ) {
+        $report->add_error('PasswordShort');
+    }
+
+    return $report->is_success;
+}
+
 sub reg {
     my $self = shift;
     my %args = (
@@ -141,6 +164,12 @@ sub reg {
     );
 
     my $user_id = $self->add( %args, password => $password );
+
+    unless ( $user_id ) {
+        get_service('report')->add_error('LoginAlreadyExists');
+        return undef;
+    }
+
     return $user_id;
 }
 

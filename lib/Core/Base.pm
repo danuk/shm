@@ -86,6 +86,17 @@ sub res {
     return $self;
 }
 
+sub add {
+    my $self = shift;
+    my %args = @_;
+
+    if ( $self->can('validate_attributes') ) {
+        return undef unless $self->validate_attributes( %args );
+    }
+
+    return $self->SUPER::add( %args );
+}
+
 # Пробуем получить уже загруженные данные
 # Проверяем статус операции и обновляем res
 #sub set {
