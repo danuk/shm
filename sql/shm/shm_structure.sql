@@ -54,7 +54,6 @@ CREATE TABLE `dns_services` (
   `prio` tinyint(4) DEFAULT NULL,
   `addr` text,
   `ttl` tinyint(4) DEFAULT NULL,
-  `user_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`dns_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
