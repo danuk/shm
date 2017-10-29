@@ -48,7 +48,7 @@ sub awaiting_payment {
 sub create_service {
     my $args = { @_ };
 
-    for ( qw/cost service_id/ ) {
+    for ( qw/service_id/ ) {
         unless ( exists $args->{ $_ } ) {
             logger->error( "Not exists `$_` in args" );
         }
