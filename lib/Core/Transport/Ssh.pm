@@ -77,6 +77,8 @@ sub send {
 
     if ( $ret_code == 0 ) {
         get_service('logger')->debug("SSH RET_CODE: $ret_code");
+        get_service('logger')->debug("SSH STDIN: $stdin_data");
+        get_service('logger')->debug("SSH CMD: $cmd" );
     }
     else {
         get_service('logger')->warning("SSH RET_CODE: $ret_code");
