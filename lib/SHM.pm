@@ -22,6 +22,7 @@ our @EXPORT_OK = qw[
     trim
     print_header
     parse_args
+    get_service
 ];
 
 our %EXPORT_TAGS = (
@@ -136,12 +137,17 @@ sub print_json {
     die 'WTF? blessed object' if blessed $ref;
 
     # if $ref contained 'status' set to header
-    print_header( $ref ) unless $is_header;
+    print_header( ref $ref eq 'HASH' ? %{ $ref } : () ) unless $is_header;
 
-    if ($sort=~/^(-|\+)?(\w+)$/)
-        {
+    if ( ref $ref eq 'HASH' && $ref->{status} && $ref->{status}!~/^2/ ) {
+        if ( my @errors = get_service('report')->errors ) {
+            $ref->{errors} = \@errors;
+        }
+    };
+
+    if ( ref $ref eq 'ARRAY' && $sort=~/^(-|\+)?(\w+)$/) {
         my @ret = @{$ref};
-                my @sort;
+        my @sort;
 
         my ($desc, $field) = ($1, $2);
         $desc = $desc eq '-' ? 1 : 0;
@@ -166,11 +172,11 @@ sub print_json {
                 @sort = sort { $a->{$field} cmp $b->{$field} } @ret;
             }
         }
-        print to_json(\@sort, $ENV{CBI_MODE} ? undef : {pretty => 1}) . "\n";
+        print to_json(\@sort, $ENV{DEBUG} ? {pretty => 1} : () ) . "\n";
     }
     else
     {
-        print to_json($ref, $ENV{CBI_MODE} ? undef : {pretty => 1}) . "\n";
+        print to_json($ref, $ENV{DEBUG} ? {pretty => 1} : () ) . "\n";
     }
     return;
 }
