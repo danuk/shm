@@ -5,11 +5,6 @@ use v5.14;
 use SHM qw(:all);
 my $user = SHM->new();
 
-use Core::System::ServiceManager qw( get_service );
-use Core::Utils qw(
-    parse_args
-);
-
 our %in = parse_args();
 
 my $domain = get_service('domain');
@@ -19,9 +14,26 @@ my $domain_id = $domain->add(
     domain => $in{domain},
 );
 
-print_json( $domain_id > 0 ?
-    { msg => 'successful', result => 0 } :
-    { msg =>'domain already exists', result => 1 }
-);
+unless ( $domain_id ) {
+    print_json( { msg =>'domain already exists', result => 1 } );
+    exit 0;
+}
+
+use Core::Billing qw/create_service/;
+my $us = create_service( service_id => 63 );
+
+if ( blessed $us ) {
+    my @childs = map( $_->{user_service_id}, $us->childs );
+
+    for ( @childs ) {
+        get_service('us', _id => $_ )->add_domain( domain_id => $domain_id );
+    }
+}
+else {
+    print_json( { status => 503 } );
+    exit 0;
+}
+
+print_json( { msg => 'successful', result => 0 } );
 
 exit 0;
