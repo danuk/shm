@@ -16,7 +16,7 @@ my $user_id = $user->reg(
 if ( $user_id ) {
     print_json( { status => 200, msg => 'Successfully', user_id => $user_id } );
 } else {
-    print_json( { status => 401, msg => 'Incorrect login' } );
+    print_json( { status => 401 } );
 }
 
 exit 0;
