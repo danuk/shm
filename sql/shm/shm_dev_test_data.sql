@@ -122,6 +122,7 @@ INSERT INTO `domains_services` VALUES
 (15,6,100,'2017-09-23 23:54:23'),
 (16,7,100,'2017-09-23 23:54:23'),
 (17,144,1871,'2017-09-23 23:54:23'),
+(19,6,16,'2017-09-23 00:00:01'),
 (18,150,1871,'2017-09-23 23:54:23');
 
 INSERT INTO `invoices` VALUES 
@@ -166,6 +167,7 @@ INSERT INTO `services` VALUES
 
 INSERT INTO `services_commands` VALUES 
 (1,'web','create',1),
+(3,'dns','create',1),
 (2,'web_tariff','create',5);
 
 INSERT INTO `subservices` VALUES 
