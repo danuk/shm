@@ -160,7 +160,7 @@ sub clean_query_args {
                 # Преобразуем значения в JSON
                 if ( ref( $args->{ $k } ) eq 'HASH' ) {
                     my $hash = $args->{ $k };
-                    if ( ref( $self->res->{ $k } eq 'HASH' ) ) {
+                    if ( ref $self->res->{ $k } eq 'HASH' ) {
                         # Объединяем существующие данные и новые
                         $hash = { %{ $self->res->{ $k } || {} }, %{ $args->{ $k } } };
                     }
