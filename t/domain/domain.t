@@ -30,16 +30,22 @@ my @domain_services = get_service('domain', _id => 6)->list_services;
 is_deeply( \@domain_services,
 [
     {
-              'created' => '2017-09-23 23:54:23',
-              'domain_id' => 6,
-              'id' => 15,
-              'user_service_id' => 100
+        'domain_id' => 6,
+        'id' => 27,
+        'created' => '2017-10-29 15:45:04',
+        'user_service_id' => 16
     },
     {
-              'created' => '2017-09-23 23:54:04',
-              'domain_id' => 6,
-              'id' => 1,
-              'user_service_id' => 101
+        'domain_id' => 6,
+        'id' => 15,
+        'user_service_id' => 100,
+        'created' => '2017-09-23 23:54:23'
+    },
+    {
+        'user_service_id' => 101,
+        'created' => '2017-09-23 23:54:04',
+        'domain_id' => 6,
+        'id' => 1
     },
 ], 'Check list of services');
 

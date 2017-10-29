@@ -52,6 +52,7 @@ sub list_services {
             $args{domain_id} ? ( domain_id => { -in => $args{domain_id} } ) : (),
             $args{user_service_id} ? ( user_service_id => { -in => $args{user_service_id } } ) : (),
         },
+        order => [ user_service_id => 'ASC' ],
     );
 }
 
