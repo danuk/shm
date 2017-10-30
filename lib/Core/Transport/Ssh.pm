@@ -21,6 +21,7 @@ sub send {
         port => 22,
         timeout => 10,
         payload => undef,
+        cmd => undef,
         @_,
     );
 
@@ -30,7 +31,7 @@ sub send {
     );
 
     my $data = $server{payload}->{payload};
-    my $cmd = $server{payload}->{cmd};
+    my $cmd = $server{payload}->{cmd} || $args{cmd};
 
     my $key_file = $server{private_key_file};
 

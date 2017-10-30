@@ -56,6 +56,29 @@ sub list_services {
     );
 }
 
+sub ns {
+    # TODO: get ns services
+
+
+
+}
+
+sub delete {
+    my $self = shift;
+
+    get_service('dns')->delete_records( domain_id => $self->id );
+    return $self->SUPER::delete;
+}
+
+# Метод обновляет связанные услуги на NS серверах
+sub update_on_server {
+    my $self = shift;
+
+    for ( $self->ns ) {
+        get_service('us', _id => $_ )->event('update');
+    }
+}
+
 # Метод возвращает объект домена по идентификатору, имени или номеру услуги
 sub get_domain {
     my $self = shift;
@@ -91,9 +114,9 @@ sub get_domain {
     return get_service('domain', _id => $args{id} );
 }
 
-sub dns_records {
+sub dns {
     my $self = shift;
-    return get_service('dns')->records( domain_id => $self->id );
+    return get_service('dns', domain_id => $self->id );
 }
 
 # ASCII domain?
