@@ -17,13 +17,13 @@ SHM->new( user_id => 40092 );
 my $domain = get_service('domain', _id => 308 );
 is $domain->get->{domain}, 'umci.ru';
 
-my @recs = $domain->get_domain( name => 'umci.ru' )->dns_records;
+my @recs = $domain->get_domain( name => 'umci.ru' )->dns->records;
 is $recs[0]->{addr}, '37.46.134.76';
 
 my @domains = get_service('domain')->list_services( user_service_id => 100 );
 is scalar @domains, 2, 'Load domains for user_service';
 
-@recs = $domain->get_domain( user_service_id => 16 )->dns_records;
+@recs = $domain->get_domain( user_service_id => 16 )->dns->records;
 is $recs[0]->{domain}, 'danuk.ru';
 
 my @domain_services = get_service('domain', _id => 6)->list_services;
