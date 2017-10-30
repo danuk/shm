@@ -23,14 +23,13 @@ sub data_for_transport {
 
     my $domain = get_service('domain', _id => $domain_service->{domain_id} );
 
-    my @dns = $domain->dns_records;
-
     return SUCCESS, {
         payload => {
             domain => $domain->real_domain,
-            records => \@dns,
+            headers => $domain->dns->headers,
+            records => [ $domain->dns->records ],
         },
-        cmd => 'dns create',
+        cmd => undef,
     };
 }
 
