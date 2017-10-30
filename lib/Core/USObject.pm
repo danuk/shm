@@ -130,13 +130,15 @@ sub subservices {
 sub data_for_transport {
     my $self = shift;
     my %args = (
-        task => undef,
         @_,
     );
 
     my ( $ret ) = get_service('UserServices', user_id => $self->res->{user_id} )->
         res( { $self->id => scalar $self->get } )->with('settings','services','withdraws')->get;
-    return SUCCESS, $ret;
+    return SUCCESS, {
+        payload => $ret,
+        cmd => undef,
+    };
 }
 
 sub domains {
