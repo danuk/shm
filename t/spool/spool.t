@@ -32,6 +32,15 @@ my $task2 = get_service('spool')->add(
     event => 'create',
 );
 
+my $task3 = get_service('task')->res({
+    server_id => 1,
+    user_service_id => 100,
+    category => 'test',
+    event => 'create',
+})->make_task;
+
+is( $task3->{responce}->{ret_code}, 0, 'Check make_task for category `test`' );
+
 my $spool = get_service('spool');
 
 while ( $spool->process_one ){};
