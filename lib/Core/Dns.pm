@@ -114,10 +114,31 @@ sub _user_records_list {
     return @ret;
 }
 
+sub headers {
+    my $self = shift;
+    my %args = (
+        domain_id => $self->{domain_id},
+        @_,
+    );
+
+    #TODO: get actual NS servers
+
+    return {
+		ttl => 600,
+        ns => [ 'ns1.biit.ru.', 'ns2.biit.ru.' ],
+		email => 'postmaster.biit.ru.',
+		serial => time,
+		refresh => '12H',
+		retry => 600,
+		expire => '1W',
+		minimum => 600,
+	}
+}
+
 sub records {
     my $self = shift;
     my %args = (
-        domain_id => undef,
+        domain_id => $self->{domain_id},
         @_,
     );
 
@@ -145,7 +166,12 @@ sub add {
         return undef;
     }
 
-    return $self->SUPER::add( %args );
+    my $dns_record_id = $self->SUPER::add( %args );
+
+    if ( $dns_record_id ) {
+        get_service('domain', _id => $args{domain_id})->update_on_server;
+    }
+    return $dns_record_id;
 }
 
 1;
