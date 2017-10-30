@@ -37,16 +37,16 @@ sub list_services {
     my $self = shift;
     my %args = (
         user_service_id => undef,
-        domain_id => undef,
+        domain_id => $self->id,
         @_,
     );
 
     unless ( $args{user_service_id} || $args{domain_id} ) {
-        $args{domain_id} = $self->get->{domain_id};
+        get_service('logger')->error('user_service_id or domain_id must been present');
     }
 
-    $args{domain_id} = [ $args{domain_id} ] if ref $args{domain_id} eq 'SCALAR';
-    $args{user_service_id} = [ $args{user_service_id} ] if ref $args{user_service_id} eq 'SCALAR';
+    $args{domain_id} = [ $args{domain_id} ] if $args{domain_id} && ref $args{domain_id} ne 'ARRAY';
+    $args{user_service_id} = [ $args{user_service_id} ] if $args{user_service_id} && ref $args{user_service_id} ne 'ARRAY';
 
     return get_service('DomainServices')->list( where => {
             $args{domain_id} ? ( domain_id => { -in => $args{domain_id} } ) : (),
