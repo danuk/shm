@@ -57,7 +57,19 @@ is_deeply( \@domain_services,
 		'id' => 1,
 		'user_service_id' => 101,
 		'created' => '2017-09-23 23:54:04'
-	}
+	},
+	{
+		'user_service_id' => 2950,
+		'domain_id' => 6,
+		'created' => '2017-11-05 17:40:30',
+		'id' => 20
+	},
+	{
+		'id' => 21,
+		'created' => '2017-11-05 17:40:33',
+		'domain_id' => 6,
+		'user_service_id' => 2951
+	},
 ], 'Check list of services');
 
 is ( $domain->check_domain('test.ru'), 1, 'Check domain name' );
