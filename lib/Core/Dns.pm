@@ -84,17 +84,17 @@ sub _services_records_list {
 
         if ( $_->{services}->{category} eq 'web' ) {
             for ( split(/,/, $ip ) ) {
-                push @dns, { type => 'A', domain => "$domain_name", addr => $_ };
-                push @dns, { type => 'A', domain => "www.$domain_name", addr => $_ };
+                push @dns, { type => 'A', domain => "$domain_name.", addr => $_ };
+                push @dns, { type => 'A', domain => "www.$domain_name.", addr => $_ };
             }
         } elsif ( $_->{services}->{category} eq 'mail' ) {
-            push @dns, { type => 'MX', domain => "$domain_name", addr => 'mx', prio => 5 };
+            push @dns, { type => 'MX', domain => "$domain_name.", addr => 'mx', prio => 5 };
 
             for ( split(/,/, $ip ) ) {
-                push @dns, { type => 'A', domain => "mx.$domain_name",  addr => $_ };
-                push @dns, { type => 'A', domain => "pop.$domain_name",  addr => $_ };
-                push @dns, { type => 'A', domain => "smtp.$domain_name", addr => $_ };
-                push @dns, { type => 'A', domain => "imap.$domain_name", addr => $_ };
+                push @dns, { type => 'A', domain => "mx.$domain_name.",  addr => $_ };
+                push @dns, { type => 'A', domain => "pop.$domain_name.",  addr => $_ };
+                push @dns, { type => 'A', domain => "smtp.$domain_name.", addr => $_ };
+                push @dns, { type => 'A', domain => "imap.$domain_name.", addr => $_ };
             }
         }
     }
@@ -122,12 +122,13 @@ sub headers {
         @_,
     );
 
-    #TODO: get actual NS servers
+    my $domain = get_service('domain', _id => $args{domain_id} );
+    my @ns = $domain->ns;
 
     return {
 		ttl => 600,
-        ns => [ 'ns1.biit.ru.', 'ns2.biit.ru.' ],
-		email => 'postmaster.biit.ru.',
+        ns => [ map $_->{settings}->{ns}.'.', @ns ],
+		email => join('.', 'postmaster', $domain->real_domain, '' ),
 		serial => time,
 		refresh => '12H',
 		retry => 600,

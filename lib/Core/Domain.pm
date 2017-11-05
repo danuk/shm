@@ -57,10 +57,20 @@ sub list_services {
 }
 
 sub ns {
-    # TODO: get ns services
+    my $self = shift;
+    my %args = (
+        domain_id => $self->id,
+        @_,
+    );
 
+    my @domain_services = map $_->{user_service_id}, $self->list_services( domain_id => $args{domain_id} );
 
+    my @services = get_service('UserServices')->
+        ids( user_service_id => [ @domain_services ] )->
+        with('settings','services')->
+        get;
 
+    return grep $_->{services}->{category} eq 'dns', @services;
 }
 
 sub delete {

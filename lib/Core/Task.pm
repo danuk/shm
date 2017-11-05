@@ -36,6 +36,13 @@ sub make_task {
         unless ( $status ) {
             return $self->task_answer( TASK_DROP, error => 'Incorrect responce data', %{ $payload//={} } );
         }
+        if ( $task{user_service_id} ) {
+            get_service('us', _id => $task{user_service_id} )->
+                set(
+                    settings => { server_id => $task{server_id} },
+                    status => 2,
+                );
+        }
     }
 
     return $self->task_answer( $status,

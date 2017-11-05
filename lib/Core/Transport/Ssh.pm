@@ -97,6 +97,7 @@ sub send {
     if ( $ret_code == 0 ) {
         eval { $data = JSON->new->relaxed->decode( $out ); 1 };
         $data//= $out;
+        chomp $data;
     }
 
     return $ret_code == 0 ? SUCCESS : FAIL, {
