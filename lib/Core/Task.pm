@@ -63,10 +63,10 @@ sub get_transport {
     my $server_id = $self->res->{server_id};
     return undef unless $server_id;
 
-    my $server = get_service('Server', _id => $server_id )->get;
+    my $server = get_service('Server', _id => $server_id );
     return undef unless $server;
 
-    return get_service( 'Transport::' . ucfirst( $server->{transport} ) );
+    return get_service( 'Transport::' . ucfirst( $server->get->{transport} ) );
 }
 
 sub get_service_for_transport {

@@ -36,15 +36,19 @@ sub new {
         @_,
     };
     my $class = ref($proto) || $proto;
+    my $self = bless( $args, $class );
 
     # Устанавливаем идентификатор автоматически
     if ( $args->{_id} && $class->can('structure') ) {
         $args->{ $class->get_table_key } = delete $args->{_id};
+
+        # Выходим если не смогли загрузить данные по идентификатору
+        return undef unless $self->get;
     }
 
-    my $self = bless( $args, $class );
-    $self->init( %{ $args } ) if $self->can('init');
-
+    if ( $self->can('init') ) {
+        return $self->init( %{ $args } );
+    }
     return $self;
 }
 

@@ -12,7 +12,14 @@ unless ( $in{domain_id}=~/^\d+$/ ) {
     exit 0;
 }
 
-my @res = get_service('dns')->records( domain_id => $in{domain_id} );
+my $domain = get_service('domain', _id => $in{domain_id} );
+
+unless ( $domain ) {
+    print_json( { status => 404 } );
+    exit 0;
+}
+
+my @res = $domain->dns->records;
 
 print_json( \@res );
 

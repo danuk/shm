@@ -12,6 +12,7 @@ sub init {
         get_service('logger')->error("Can't load user_service with id: " . $self->id );
         return undef;
     }
+    return $self;
 }
 
 use vars qw($AUTOLOAD);
@@ -166,8 +167,8 @@ sub touch {
 sub get_category {
     my $self = shift;
 
-    my $service = get_service('service', _id => $self->get_service_id )->get;
-    return $service->{category};
+    my $service = get_service('service', _id => $self->get_service_id ) || return undef;
+    return $service->get->{category};
 }
 
 # Обработчик всех событий.

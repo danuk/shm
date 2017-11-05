@@ -70,6 +70,7 @@ sub init {
     my $self = shift;
 
     $self->{user_id}//= get_service('config')->local->{'user_id'};
+    return $self;
 }
 
 sub _id {

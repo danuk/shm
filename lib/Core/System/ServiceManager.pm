@@ -114,6 +114,9 @@ sub auto_service {
     eval "require $info{class}; 1" or return undef;
 
     my $service = $info{class}->new( %{ $data||={} }, %args );
+    unless ( $service ) {
+        return undef;
+    }
     $name = $service->register( $name, %args );
     return $name, $service;
 }
