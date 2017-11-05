@@ -209,7 +209,7 @@ sub is_pay {
     # Already withdraw
     return 2 if $wd->{withdraw_date};
 
-    my $user = $self->user->data;
+    my $user = get_service('user')->get;
 
     my $balance = $user->{balance} + $user->{credit};;
 

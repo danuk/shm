@@ -19,7 +19,7 @@ sub AUTOLOAD {
 
         unless ( my %res = $self->res ) {
             # load data if not loaded before
-            $self->data;
+            $self->get;
         }
 
         if ( exists $self->res->{ $method } ) {
@@ -130,9 +130,11 @@ sub auth {
 
 sub validate_attributes {
     my $self = shift;
+    my $method = shift;
     my %args = @_;
 
     my $report = get_service('report');
+    return $report->is_success if $method eq 'set';
 
     unless ( $args{login} ) {
         $report->add_error('LoginEmpty');
@@ -177,13 +179,6 @@ sub reg {
 sub services {
     my $self = shift;
     return get_service('UserServices', user_id => $self->user_id );
-}
-
-sub data {
-    my $self = shift;
-
-    $self->res( scalar $self->get );
-    return $self->res;
 }
 
 sub set {

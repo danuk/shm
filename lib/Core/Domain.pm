@@ -93,14 +93,14 @@ sub get_domain {
         my $domain;
 
         if ( $args{user_service_id} ) {
-            $domain = $self->get( where => { user_service_id => $args{user_service_id} } );
+            ( $domain ) = $self->list( where => { user_service_id => $args{user_service_id} } );
             unless ( $domain ) {
                 get_service('logger')->warning("domain for user_service_id: $args{user_service_id} not found");
                 return undef;
             }
         }
         elsif ( $args{name} ) {
-            $domain = $self->get( where => { -or => [ domain => $args{name}, punycode => $args{name} ] } );
+            ( $domain ) = $self->list( where => { -or => [ domain => $args{name}, punycode => $args{name} ] } );
             unless ( $domain ) {
                 get_service('logger')->warning("domain `$args{name}` not found");
                 return undef;

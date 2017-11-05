@@ -7,6 +7,7 @@ use Core::System::ServiceManager qw( get_service );
 use Core::Sql::Data;
 use Carp qw(confess);
 use Data::Dumper;
+use JSON;
 $Data::Dumper::Deepcopy = 1;
 
 our @EXPORT = qw(
@@ -90,21 +91,56 @@ sub res {
     return $self;
 }
 
-sub add {
+sub get {
     my $self = shift;
     my %args = @_;
 
-    if ( $self->can('validate_attributes') ) {
-        return undef unless $self->validate_attributes( %args );
+    my $res = $self->{res};
+    unless ( %{ $res || {} } ) {
+        $res = $self->SUPER::get( %args );
     }
 
-    return $self->SUPER::add( %args );
+    $self->{res} = $res;
+
+    return wantarray ? %{ $self->{res} } : $self->{res};
 }
 
 # Пробуем получить уже загруженные данные
 # Проверяем статус операции и обновляем res
-#sub set {
-#
-#}
+sub _add_or_set {
+    my $self = shift;
+    my $method = shift;
+    my %args = @_;
+
+    if ( $self->can('validate_attributes') ) {
+        return undef unless $self->validate_attributes( $method, %args );
+    }
+
+    # Преобразуем значения в JSON
+    my %super_args = %args;
+    for my $key ( keys %args ) {
+        my $new_value = $args{ $key };
+        if ( ref $new_value eq 'HASH' ) {
+            if ( ref $self->res->{ $key } eq 'HASH' ) {
+                # Объединяем существующие данные и новые
+                $args{ $key } = { %{ $self->res->{ $key } || {} }, %{ $args{ $key } } };
+            }
+            $super_args{ $key } = to_json( $args{ $key } );
+        }
+    }
+
+    my $ret = $method eq 'add' ? $self->SUPER::add( %super_args ) : $self->SUPER::set( %super_args ); 
+
+    if ( defined $ret && %{ $self->res } ) {
+        for ( keys %args ) {
+            $self->{res}->{ $_ } = $args{ $_ } if exists $self->{res}->{ $_ };
+        }
+    }
+    return $ret;
+
+}
+
+sub add { return shift->_add_or_set( 'add', @_ ) }
+sub set { shift->_add_or_set( 'set', @_ ) }
 
 1;

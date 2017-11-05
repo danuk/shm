@@ -28,6 +28,7 @@ my %types = (
 
 sub validate_attributes {
     my $self = shift;
+    my $method = shift;
     my %args = @_;
 
     my $report = get_service('report');
@@ -146,6 +147,15 @@ sub records {
     my @user_records = $self->_user_records_list( %args );
 
     return @services_records, @user_records;
+}
+
+sub delete_records {
+    my $self = shift;
+    my %args = (
+        domain_id => undef,
+        @_,
+    );
+    return $self->_delete( where => { domain_id => $args{domain_id} } );
 }
 
 sub add {

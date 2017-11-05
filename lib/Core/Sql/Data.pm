@@ -157,21 +157,8 @@ sub clean_query_args {
                     logger->warning( "Unknown field `$k` in table. Deleting");
                     delete $args->{ $k };
                 }
-                # Преобразуем значения в JSON
-                if ( ref( $args->{ $k } ) eq 'HASH' ) {
-                    my $hash = $args->{ $k };
-                    if ( ref $self->res->{ $k } eq 'HASH' ) {
-                        # Объединяем существующие данные и новые
-                        $hash = { %{ $self->res->{ $k } || {} }, %{ $args->{ $k } } };
-                    }
-                    $args->{ $k } = to_json( $hash );
-                    $self->res->{ $k } = $hash;
-                } else {
-                    $self->res->{ $k } = $args->{ $k };
-                }
             }
         }
-
         # Проверяем поля структуры
         while ( my( $f, $v ) = each %structure ) {
             $v = $v->{value} if ref $v eq 'HASH';
@@ -247,14 +234,17 @@ sub set {
     return $self->do("UPDATE $table SET $data WHERE $where", values %args, values %where );
 }
 
-sub delete {
+sub _delete {
     my $self = shift;
-    my %args = ( @_ );
+    my %args = (
+        check_args => 0,
+        @_,
+    );
 
     $args{table} ||= $self->table;
     my $table = delete $args{table};
 
-    clean_query_args( $self, \%args, { is_update => 1 } );
+    clean_query_args( $self, \%args, { is_update => 1 } ) if $args{check_args};
 
     my %where = %{ $args{where} };
     delete $args{where};
@@ -262,6 +252,14 @@ sub delete {
     my $where = join(' and ', map( "`$_`=?", keys %where ) );
 
     return $self->do("DELETE FROM $table WHERE $where", values %where );
+
+}
+
+sub delete {
+    my $self = shift;
+    my %args = ( @_ );
+
+    return $self->_delete( %args, check_args => 1 );
 }
 
 # INSERT
@@ -331,6 +329,10 @@ sub list_for_api {
 
 sub get {
     my $self = shift;
+
+    unless ( $self->id ) {
+        get_service('logger')->error("Can't get() unless object_id: ". $self->get_table_key );
+    }
 
     my ( $ret ) = $self->list( where => { $self->get_table_key => $self->id }, @_ );
     return wantarray ? %{ $ret||={} } : $ret;
