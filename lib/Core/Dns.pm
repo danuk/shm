@@ -3,6 +3,7 @@ package Core::Dns;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Data::Validate::Domain qw/is_domain/;
 
 sub table { return 'dns_services' };
 
@@ -32,22 +33,58 @@ sub validate_attributes {
     my %args = @_;
 
     my $report = get_service('report');
+    my $type = exists $types{ $args{type} } ? $args{type} : undef;
 
-    unless ( $types{ $args{type} } ) {
-        $report->add_error('UnknownType');
-    }
+    if ( $type eq 'A' ) {
+        $report->add_error('IncorrectIpAddress') unless $self->check_ip( $args{addr} );
+        $report->add_error('IncorrectDomain') unless $self->check_domain( $args{domain} );
 
-    if ( exists $args{addr} ) {
-        unless ( $args{addr}=~/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/ ) {
-            $report->add_error('IncorrectIpAddress');
-        }
-    }
+    } elsif ( $type eq 'CNAME' ) {
+        $report->add_error('IncorrectAddr') unless $self->check_addr( $args{addr} );
+        $report->add_error('IncorrectDomain') unless $self->check_domain( $args{domain} );
 
-    if ( exists $args{domain} ) {
+    } elsif ( $type eq 'MX' ) {
+        $report->add_error('IncorrectAddr') unless $self->check_addr( $args{addr} );
+        $report->add_error('IncorrectDomain') unless $self->check_domain( $args{domain} );
+        $report->add_error('IncorrectPrio') unless $self->check_prio( $args{prio} );
 
+    } else {
+        #$report->add_error('IncorrectType');
     }
 
     return $report->is_success;
+}
+
+sub check_ip {
+    my $self = shift;
+    my $ip = shift;
+    return $ip=~/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+}
+
+sub check_domain {
+    my $self = shift;
+    my $domain = shift;
+    return 1 if $domain eq '@';
+    return $self->check_addr( $domain );
+}
+
+sub check_addr {
+    my $self = shift;
+    my $domain = shift;
+    $domain.='.ru' unless $domain =~/\./;
+    return is_domain( $domain );
+}
+
+sub check_prio {
+    my $self = shift;
+    my $prio = shift;
+    return $prio=~/^\d+$/;
+}
+
+sub check_txt {
+    my $self = shift;
+    my $txt = shift;
+
 }
 
 sub _services_records_list {
@@ -184,7 +221,7 @@ sub add {
 
     my $report = get_service('report');
 
-    my $domain = get_service('domain', _id => $args{domain_id} )->get;
+    my $domain = get_service('domain', _id => $args{domain_id} );
     unless ( $domain ) {
         $report->add_error('DomainNotFound');
         return undef;

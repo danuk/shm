@@ -85,7 +85,7 @@ sub update_on_server {
     my $self = shift;
 
     for ( $self->ns ) {
-        get_service('us', _id => $_ )->event('update');
+        get_service('us', _id => $_->{user_service_id} )->event('update');
     }
 }
 

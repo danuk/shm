@@ -197,33 +197,7 @@ sub event {
             user_service_id => $self->id,
         );
     }
-
-    unless ( $self->can( $e ) ) {
-        confess( 'Method not exists' );
-    }
-    return $self->$e();
-}
-
-sub create {
-
-
-}
-
-sub prolongate {
-
-
-
-}
-
-sub block {
-
-
-
-}
-
-sub remove {
-
-
+    return scalar @commands;
 }
 
 1;
