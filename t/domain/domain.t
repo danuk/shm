@@ -23,30 +23,41 @@ is $recs[0]->{addr}, '37.46.134.76';
 my @domains = get_service('domain')->list_services( user_service_id => 100 );
 is scalar @domains, 2, 'Load domains for user_service';
 
-@recs = $domain->get_domain( user_service_id => 16 )->dns->records;
-is $recs[0]->{domain}, 'danuk.ru';
+my %d = get_service('domain')->get_domain( user_service_id => 16 )->get;
+is_deeply( \%d,
+{
+	'user_service_id' => 16,
+	'created' => '2017-01-01 00:00:00',
+	'subdomain_for' => undef,
+	'domain' => 'danuk.ru',
+	'zone_id' => 0,
+	'user_id' => 40092,
+	'punycode' => undef,
+	'domain_id' => 6
+}
+,'Check get_domain by user_service_id');
 
 my @domain_services = get_service('domain', _id => 6)->list_services;
 is_deeply( \@domain_services,
 [
-    {
-        'domain_id' => 6,
-        'id' => 27,
-        'created' => '2017-10-29 15:45:04',
-        'user_service_id' => 16
-    },
-    {
-        'domain_id' => 6,
-        'id' => 15,
-        'user_service_id' => 100,
-        'created' => '2017-09-23 23:54:23'
-    },
-    {
-        'user_service_id' => 101,
-        'created' => '2017-09-23 23:54:04',
-        'domain_id' => 6,
-        'id' => 1
-    },
+	{
+		'user_service_id' => 16,
+		'domain_id' => 6,
+		'id' => 19,
+		'created' => '2017-09-23 00:00:01'
+	},
+	{
+		'user_service_id' => 100,
+		'domain_id' => 6,
+		'id' => 15,
+		'created' => '2017-09-23 23:54:23'
+	},
+	{
+		'domain_id' => 6,
+		'id' => 1,
+		'user_service_id' => 101,
+		'created' => '2017-09-23 23:54:04'
+	}
 ], 'Check list of services');
 
 is ( $domain->check_domain('test.ru'), 1, 'Check domain name' );

@@ -8,6 +8,7 @@ sub add_error {
     my $self = shift;
     my $msg = shift;
 
+    get_service('logger')->warning( $msg );
     push @{ $self->{errors}||=[] }, $msg;
 }
 

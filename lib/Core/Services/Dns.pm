@@ -22,6 +22,9 @@ sub data_for_transport {
     }
 
     my $domain = get_service('domain', _id => $domain_service->{domain_id} );
+    unless ( $domain->real_domain ) {
+        return FAIL, { error => 'domain not found' };
+    }
 
     return SUCCESS, {
         payload => {

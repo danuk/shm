@@ -59,7 +59,7 @@ sub add {
     );
 
     # Заполняем стуктуру из данных услуги, если параметр не передан явно
-    my $srv = get_service('service', si => $args{service_id } )->get;
+    my $srv = get_service('service', _id => $args{service_id } )->get;
     for ( keys %{ $srv } ) {
         $args{ $_ }||= $srv->{ $_ };
     }
