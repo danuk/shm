@@ -76,7 +76,7 @@ sub ns {
 sub delete {
     my $self = shift;
 
-    get_service('dns')->delete_records( domain_id => $self->id );
+    get_service('dns')->delete_all_records( domain_id => $self->id );
     return $self->SUPER::delete;
 }
 

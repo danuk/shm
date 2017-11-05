@@ -111,7 +111,7 @@ sub _user_records_list {
 
     my @ret = $self->list( where => { domain_id => $args{domain_id} } );
 
-    delete @{ $_ }{ qw/user_id dns_id domain_id/} for @ret;
+    delete @{ $_ }{ qw/user_id domain_id/} for @ret;
     return @ret;
 }
 
@@ -150,13 +150,26 @@ sub records {
     return @services_records, @user_records;
 }
 
-sub delete_records {
+sub delete_all_records {
     my $self = shift;
     my %args = (
-        domain_id => undef,
+        domain_id => $self->{domain_id},
         @_,
     );
     return $self->_delete( where => { domain_id => $args{domain_id} } );
+}
+
+sub delete {
+    my $self = shift;
+    my %args = (
+        domain_id => $self->{domain_id},
+        dns_id => undef,
+        @_,
+    );
+    return $self->_delete( where => {
+        domain_id => $args{domain_id},
+        dns_id => $args{dns_id},
+    });
 }
 
 sub add {
