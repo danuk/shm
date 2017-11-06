@@ -170,6 +170,7 @@ INSERT INTO `services` VALUES
 INSERT INTO `services_commands` VALUES 
 (1,'web','create',1),
 (3,'dns','create',1),
+(4,'dns','update',1),
 (2,'web_tariff','create',5);
 
 INSERT INTO `subservices` VALUES 
