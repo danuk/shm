@@ -203,10 +203,15 @@ sub delete {
         dns_id => undef,
         @_,
     );
-    return $self->_delete( where => {
+    my $res = $self->_delete( where => {
         domain_id => $args{domain_id},
         dns_id => $args{dns_id},
     });
+
+    if ( $res ) {
+        get_service('domain', _id => $args{domain_id})->update_on_server;
+    }
+    return $res;
 }
 
 sub add {
