@@ -27,6 +27,7 @@ sub structure {
         no_discount => 0,
         descr => undef,
         pay_in_credit => 0,
+        config => { type => 'json', value => undef },
     };
 }
 

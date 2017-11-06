@@ -19,12 +19,20 @@ sub get {
 sub add {
     my $self = shift;
     my %args = (
+        service_id => undef,
         @_,
     );
 
+    unless ( $args{service_id} ) {
+        get_service('logger')->error('`service_id` required');
+    }
+
     delete $args{ $_ } for qw/user_service_id created expired/;
 
-    my $usi = $self->SUPER::add( %args );
+    my $usi = $self->SUPER::add(
+        %args,
+        settings => get_service( 'service', _id => $args{service_id} )->get->{config},
+    );
     delete $self->{res};
 
     unless ( $usi ) {
