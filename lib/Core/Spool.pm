@@ -54,8 +54,7 @@ sub list_for_all_users {
     my $self = shift;
     my @vars;
 
-    my $query = $self->query_select(
-        vars => \@vars,
+    return $self->_list(
         where => {
             executed => [
                 undef,
@@ -65,14 +64,13 @@ sub list_for_all_users {
         order => [ user_id => 'asc', server_id => 'asc', prio => 'desc' ],
         limit => 100,
     );
-    return $self->{spool} = $self->query( $query, @vars );
 }
 
 # обрабатывает один запрос из списка $self->{spool} (список формируется методом: list_for_all_users)
 sub process_one {
     my $self = shift;
 
-    $self->{spool}//= $self->list_for_all_users();
+    $self->{spool}//= [ $self->list_for_all_users() ];
     my $task = shift @{ $self->{spool}//=[] } or return undef;
 
     get_service('config')->local('user_id', $task->{user_id } );
