@@ -24,7 +24,7 @@ is ( get_service('service', _id => 1)->id,  1 );
  
 is ( get_service('service', _id => 1)->get->{service_id},  1 );
 
-my $pay = get_service('pay', _id => 5, foo => 1, bar => 2 );
+my $pay = get_service('pay', _id => 1, foo => 1, bar => 2 );
 is ( $pay->{foo} == 1 && $pay->{bar} == 2, 1, 'Check set variables to object' );
 
 done_testing();

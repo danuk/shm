@@ -37,7 +37,7 @@ CREATE TABLE `apps` (
 
 DROP TABLE IF EXISTS `discounts`;
 CREATE TABLE `discounts` (
-  `discount_id` tinyint(4) NOT NULL,
+  `discount_id` tinyint(4) NOT NULL AUTO_INCREMENT,
   `title` char(64) NOT NULL,
   `months` tinyint(4) NOT NULL,
   `percent` tinyint(4) NOT NULL,
