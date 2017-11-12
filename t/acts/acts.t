@@ -21,7 +21,4 @@ is( scalar( @list ), 5, 'Check count of acts list');
 my @data = get_service('ActsData')->list( where => { act_id => 195 } );
 is( $data[0]->{act_id}, 195, 'Check param in list of acts');
 
-my ( $acts_data ) = get_service('ActsData')->list( where => { id => 482 } );
-is( $acts_data->{id}, 482, 'Check param in acts_data');
-
 done_testing();

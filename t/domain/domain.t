@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Deep;
 
 use Data::Dumper;
 use v5.14;
@@ -38,39 +39,39 @@ is_deeply( \%d,
 ,'Check get_domain by user_service_id');
 
 my @domain_services = get_service('domain', _id => 6)->list_services;
-is_deeply( \@domain_services,
-[
+cmp_deeply( \@domain_services,
+bag(
 	{
+		'id' => ignore(),
 		'user_service_id' => 16,
 		'domain_id' => 6,
-		'id' => 19,
 		'created' => '2017-09-23 00:00:01'
 	},
 	{
+		'id' => ignore(),
 		'user_service_id' => 100,
 		'domain_id' => 6,
-		'id' => 15,
 		'created' => '2017-09-23 23:54:23'
 	},
 	{
+		'id' => ignore(),
 		'domain_id' => 6,
-		'id' => 1,
 		'user_service_id' => 101,
 		'created' => '2017-09-23 23:54:04'
 	},
 	{
+		'id' => ignore(),
 		'user_service_id' => 2950,
 		'domain_id' => 6,
 		'created' => '2017-11-05 17:40:30',
-		'id' => 20
 	},
 	{
-		'id' => 21,
+		'id' => ignore(),
 		'created' => '2017-11-05 17:40:33',
 		'domain_id' => 6,
 		'user_service_id' => 2951
 	},
-], 'Check list of services');
+), 'Check list of services');
 
 is ( $domain->check_domain('test.ru'), 1, 'Check domain name' );
 is ( $domain->check_domain('test.r'), 0, 'Check wrong domain name' );
