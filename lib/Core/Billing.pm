@@ -71,7 +71,7 @@ sub create_service {
     $wd->set( total => calc_total( scalar $wd->get ) );
     $us->set( withdraw_id => $wd->id );
 
-    my $ss = get_service('SubServices', service_id => $args->{service_id} )->list;
+    my $ss = get_service('service', _id => $args->{service_id} )->subservices;
     for ( keys %{ $ss } ) {
         my $us = get_service('UserServices')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
         create( $us, childs_free => 1 );

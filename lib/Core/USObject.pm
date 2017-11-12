@@ -123,11 +123,6 @@ sub get {
     return $self->res;
 }
 
-sub subservices {
-    my $self = shift;
-    return get_service('SubServices', service_id => $self->get_service_id )->list;
-}
-
 sub data_for_transport {
     my $self = shift;
     my %args = (

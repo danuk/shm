@@ -55,4 +55,9 @@ sub convert_name {
     return $name;
 }
 
+sub subservices {
+    my $self = shift;
+    return get_service('SubServices', service_id => $self->id )->list;
+}
+
 1;
