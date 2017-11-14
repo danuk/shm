@@ -71,7 +71,7 @@ sub do {
     my $query = shift;
     my @args = @_;
 
-    get_service('logger')->debug('SQL Query: "', $query, '" Binds: [' . join(',', @args ) ."]" );
+    $self->log( $query, \@args );
 
     my $res = $self->dbh->do( $query, undef, @args ) or do {
         get_service('logger')->warning( $self->dbh->errstr );
@@ -79,12 +79,24 @@ sub do {
     return $res eq '0E0' ? 0 : $res;
 }
 
+sub log {
+    my $self = shift;
+    my $query = shift;
+    my $binds = shift;
+
+    get_service('logger')->debug(
+        'SQL Query: "',
+        "\033[0;93m".$query."\033[0m",
+        '" Binds: [' . join(',', @{ $binds || [] } ) ."]"
+    );
+}
+
 sub query {
     my $self = shift;
     my $query = shift;
     my @args = @_;
 
-    get_service('logger')->debug('SQL Query: "', $query, '" Binds: [' . join(',', @args ) ."]" );
+    $self->log( $query, \@args );
 
     my $sth = $self->dbh->prepare_cached( $query ) or die $self->dbh->errstr;
     $sth->execute( @args ) or $self->dbh->errstr;
@@ -105,7 +117,7 @@ sub query_by_name {
     my $key_field = shift;
     my @args = @_;
 
-    get_service('logger')->debug('SQL Query: "', $query, '" Binds: [' . join(',', @args ) ."]" );
+    $self->log( $query, \@args );
 
     return $self->dbh->selectall_hashref( $query, $key_field, undef, @args );
 }
