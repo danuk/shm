@@ -198,8 +198,10 @@ sub set_balance {
     );
 
     my $data = join(',', map( "$_=$_+?", keys %args ) );
+    my $ret = $self->do("UPDATE users SET $data WHERE user_id=?", values %args, $self->{user_id} );
 
-    return $self->do("UPDATE users SET $data WHERE user_id=?", values %args, $self->{user_id} );
+    $self->reload() if $ret;
+    return $ret;
 }
 
 sub pays {

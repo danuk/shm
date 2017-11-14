@@ -91,6 +91,12 @@ sub res {
     return $self;
 }
 
+sub reload {
+    my $self = shift;
+    $self->{res} = {};
+    return $self->get( @_ );
+}
+
 sub get {
     my $self = shift;
     my %args = @_;
