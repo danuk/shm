@@ -43,11 +43,6 @@ sub push {
     $self->add( @_ );
 }
 
-sub list {
-    my $self = shift;
-    return $self->SUPER::list( order => [ prio => 'desc', id => 'asc' ] );
-}
-
 # формитрует и выдает список задач для исполнения
 # список формируется именно в том порядке, в котором должен выполнятся
 sub list_for_all_users {
