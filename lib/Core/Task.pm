@@ -3,6 +3,7 @@ package Core::Task;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Core::Const;
 
 sub make_task {
     my $self = shift;
@@ -37,11 +38,13 @@ sub make_task {
             return $self->task_answer( TASK_DROP, error => 'Incorrect responce data', %{ $payload//={} } );
         }
         if ( $task{user_service_id} ) {
-            get_service('us', _id => $task{user_service_id} )->
-                set(
-                    settings => { server_id => $task{server_id} },
-                    status => 2,
-                );
+            my $us = get_service('us', _id => $task{user_service_id} );
+            $us->set(
+                settings => { server_id => $task{server_id} },
+                $us->get_status == $STATUS_PROGRESS ? (
+                    status => $task{event} eq 'block' ? $STATUS_BLOCK : $STATUS_ACTIVE,
+                ) : (),
+            );
         }
     }
 
