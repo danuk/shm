@@ -24,6 +24,10 @@ sub structure {
     }
 }
 
+sub _id {
+    my $self = shift;
+    return $self->id ? 'wd_'.$self->id : 'wd';
+}
 
 sub usi {
     my $self = shift;
@@ -34,29 +38,37 @@ sub usi {
 sub next {
     my $self = shift;
 
-    my @vars;
-    my $query = $self->query_select(    vars => \@vars,
-                                        user_id => $self->user_id,
-                                        order => [ 'withdraw_id' => 'asc' ],
-                                        where => { user_service_id => $self->usi, withdraw_id => $self->id },
-    );
-
-    my $res = $self->query( $query, @vars );
-
-    if ( wantarray ) {
-        return %{ $res->[0]||={} }; # Возвращаем следующий объект в виде хеша
+    unless ( $self->res->{user_service_id} ) {
+        get_service('logger')->error("Can't get next services for unknown service");
     }
 
-    return $res || []; # Возвращаем все следующие объекты
+    my @list = $self->list(
+        where => {
+            user_service_id => $self->res->{user_service_id},
+            withdraw_id => { '>' => $self->id },
+        },
+        order => [ 'withdraw_id' => 'asc' ],
+    );
+
+    if ( wantarray ) {
+        return %{ $list[0] || {} }; # Возвращаем следующий объект в виде хеша
+    }
+
+    return \@list; # Возвращаем все следующие объекты
 }
 
 sub add {
     my $self = shift;
     my %args = (
-        user_id => $self->user_id,
-        user_service_id => $self->{usi},
+        user_service_id => $self->res->{user_service_id},
         @_,
     );
+
+    unless ( $args{user_service_id} ) {
+        get_service('logger')->error('`user_service_id` required'); 
+    }
+
+    delete @args{ qw/end_date withdraw_date/ };
 
     # Заполняем стуктуру из данных услуги, если параметр не передан явно
     my $srv = get_service('service', _id => $args{service_id } )->get;
@@ -64,8 +76,13 @@ sub add {
         $args{ $_ }||= $srv->{ $_ };
     }
 
-    $self->{withdraw_id} = $self->SUPER::add( %args );
-    return $self;
+    return $self->SUPER::add( %args );
+}
+
+sub list {
+    my $self = shift;
+    my %args = @_;
+    return $self->SUPER::list( order => [ $self->get_table_key => 'asc' ], %args );
 }
 
 sub list_for_api {

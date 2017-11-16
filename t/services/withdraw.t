@@ -23,7 +23,8 @@ is ( $wd->{cost}, '0.00', 'Get cost of current withdraw (hash mode)' );
 
 is ( $obj->withdraws->get->{cost}, '0.00', 'Get cost of current withdraw (ref mode)' );
 
-my $new_wd = $obj->withdraws->add( %{ $wd } );
+my $new_wd_id = $obj->withdraws->add( %{ $wd } );
+my $new_wd = get_service('wd', _id => $new_wd_id );
 is ( int( $new_wd->{withdraw_id} > $wd->{withdraw_id} ), 1, 'Check add new withdraw' );
 
 my %next_wd = $obj->withdraws->next;

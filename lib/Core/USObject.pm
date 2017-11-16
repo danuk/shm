@@ -3,7 +3,7 @@ package Core::USObject;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
-#use Core::Billing;
+use Core::Const;
 
 sub init {
     my $self = shift;
@@ -179,6 +179,8 @@ sub event {
         category => $category,
         event => $e,
     );
+
+    $self->set( status => $STATUS_PROGRESS ) if scalar @commands;
 
     my $spool = get_service('spool', user_id => $self->res->{user_id} );
 

@@ -61,73 +61,73 @@ is_deeply( Core::Billing::calc_month_cost( to_date => '2017-04-09 23:59:59', cos
     total => '900.00',
 },'calc_month_cost: to_date (9 day)');
 
-is( Core::Billing::calc_total_by_date_range( {
+is( Core::Billing::calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-01-31 23:59:59',
         cost            => '1000',
-}), '1000.00','calc_total_by_date_range');
+), '1000.00','calc_total_by_date_range');
 
-is( Core::Billing::calc_total_by_date_range( {
+is( Core::Billing::calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-02-28 23:59:59',
         cost            => '1000',
-}), '2000.00','calc_total_by_date_range');
+), '2000.00','calc_total_by_date_range');
 
-is( Core::Billing::calc_total_by_date_range( {
+is( Core::Billing::calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-04-30 23:59:59',
         cost            => '1000',
-}), '4000.00','calc_total_by_date_range');
+), '4000.00','calc_total_by_date_range');
 
-is( Core::Billing::calc_total_by_date_range( {
+is( Core::Billing::calc_total_by_date_range(
         withdraw_date   => '2017-01-10 12:33:00',
         end_date        => '2017-04-10 12:33:00',
         cost            => '1000',
-}), '3010.24','calc_total_by_date_range');
+), '3010.24','calc_total_by_date_range');
 
-is( Core::Billing::calc_total_by_date_range( {
+is( Core::Billing::calc_total_by_date_range(
         withdraw_date   => '2017-01-10 12:33:00',
         end_date        => '2017-05-10 12:33:00',
         cost            => '1000',
-}), '4000.00','calc_total_by_date_range');
+), '4000.00','calc_total_by_date_range');
 
 # Проверяем, что между двумя датами, различающихся на один месяц,
 # списание не месячное (более 1000 руб.). Это правильно, т.к. в месяцах разное кол-во дней
-is( Core::Billing::calc_total_by_date_range( {
+is( Core::Billing::calc_total_by_date_range(
         withdraw_date   => '2017-01-10 12:33:00',
         end_date        => '2017-02-10 12:33:00',
         cost            => '1000',
-}), '1032.91','calc_total_by_date_range');
+), '1032.91','calc_total_by_date_range');
 
 # Ранее, к дате списания прибавил месяц, и получил дату окончания
 # Проверяем, что между этими двумя датами списание равно месячному.
 # Эта ф-ия является обратной к calc_end_date_by_months
-is( Core::Billing::calc_total_by_date_range( {
+is( Core::Billing::calc_total_by_date_range(
         withdraw_date   => '2017-01-10 12:33:00',
         end_date        => '2017-02-09 14:25:55',
         cost            => '1000',
-}), '1000.00','calc_total_by_date_range');
+), '1000.00','calc_total_by_date_range');
 
 # Вычисляем стоимость короткого периода (для двух дней)
-is( Core::Billing::calc_total_by_date_range( {
+is( Core::Billing::calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-01-02 23:59:59',
         cost            => '3100',
-}), '200.00','calc_total_by_date_range (2 days on start month)');
+), '200.00','calc_total_by_date_range (2 days on start month)');
 
 # Вычисляем стоимость короткого периода (для двух дней)
-is( Core::Billing::calc_total_by_date_range( {
+is( Core::Billing::calc_total_by_date_range(
         withdraw_date   => '2017-01-10 00:00:00',
         end_date        => '2017-01-11 23:59:59',
         cost            => '3100',
-}), '200.00','calc_total_by_date_range (2 days in middle)');
+), '200.00','calc_total_by_date_range (2 days in middle)');
 
 # Вычисляем стоимость короткого периода (для двух дней с переходом месяца)
-is( Core::Billing::calc_total_by_date_range( {
+is( Core::Billing::calc_total_by_date_range(
         withdraw_date   => '2017-01-31 00:00:00',
         end_date        => '2017-02-01 23:59:59',
         cost            => '3100',
-}), '210.71','calc_total_by_date_range (2 days with jump to next month)');
+), '210.71','calc_total_by_date_range (2 days with jump to next month)');
 
 is( Core::Billing::get_service_discount( service_id => 1 ), 0, 'get service discount percent' );
 is( Core::Billing::get_service_discount( months => 2, service_id => 1 ), 0, 'get service discount percent' );

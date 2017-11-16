@@ -168,15 +168,23 @@ INSERT INTO `services` VALUES
 (112,'Почта (${QUOTA} мб)',0,1,'mail',NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL);
 
 INSERT INTO `services_commands` VALUES 
+(default,'web_tariff','create',5),
+(default,'web_tariff','prolongate',NULL),
+(default,'web_tariff','block',NULL),
+(default,'web_tariff','erase',NULL),
 (default,'web','create',1),
-(default,'web','erase',1),
-(default,'web','block',1),
-(default,'web','activate',1),
-(default,'web','update',1),
+(default,'web','erase',NULL),
+(default,'web','block',NULL),
+(default,'web','activate',NULL),
+(default,'web','update',NULL),
+(default,'mysql','create',1),
+(default,'mysql','erase',NULL),
+(default,'mysql','block',NULL),
+(default,'mysql','activate',NULL),
+(default,'mysql','update',NULL),
 (default,'dns','create',1),
-(default,'dns','erase',1),
-(default,'dns','update',1),
-(default,'web_tariff','create',5);
+(default,'dns','erase',NULL),
+(default,'dns','update',NULL);
 
 INSERT INTO `subservices` VALUES 
 (default,1,8),

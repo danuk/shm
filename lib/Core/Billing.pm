@@ -12,6 +12,7 @@ use base qw(Exporter);
 
 our @EXPORT = qw(
     create_service
+    process_service
 );
 
 use Core::Const;
@@ -46,32 +47,23 @@ sub awaiting_payment {
 }
 
 sub create_service {
-    my $args = { @_ };
+    my %args = (
+        service_id => undef,
+        @_,
+    );
 
-    for ( qw/service_id/ ) {
-        unless ( exists $args->{ $_ } ) {
+    for ( keys %args ) {
+        unless ( defined $args{ $_ } ) {
             logger->error( "Not exists `$_` in args" );
         }
     }
 
-    my $us = get_service('UserServices')->add( service_id => $args->{service_id} );
-    my $service = get_service( 'service', _id => $args->{service_id} )->get;
+    my $us = get_service('UserServices')->add( service_id => $args{service_id} );
 
-    $args->{months} ||= ( $service->{period_cost} || 1 ); # set default period cost
+    my $wd_id = get_service('wd')->add( calc_withdraw(%args), user_service_id => $us->id );
+    $us->set( withdraw_id => $wd_id );
 
-    if ( $args->{months} < $service->{period_cost} ) {
-        logger->warning("Period for new service is low. Fixing.");
-        $args->{months} = $service->{period_cost};
-    }
-
-    $args->{discount} = get_service_discount( %{ $args } );
-
-    my $wd = get_service('wd', usi => $us->id )->add( %{ $args } );
-
-    $wd->set( total => calc_total( scalar $wd->get ) );
-    $us->set( withdraw_id => $wd->id );
-
-    my $ss = get_service('service', _id => $args->{service_id} )->subservices;
+    my $ss = get_service('service', _id => $args{service_id} )->subservices;
     for ( keys %{ $ss } ) {
         my $us = get_service('UserServices')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
         create( $us, childs_free => 1 );
@@ -149,55 +141,52 @@ sub add_withdraw_next {
 
     my $wd = $self->withdraws->get;
 
-    # Reset bonuses
-    $wd->{ bonus } = 0;
+    my %wd = calc_withdraw(
+        %{ $wd },
+        months => int $wd->{months},
+        bonus => 0,
+    );
 
-    # Calc period
-    my $period_cost = get_service( 'service', _id => $wd->{service_id} )->get->{period_cost};
-
-    if ( $wd->{ months } < $period_cost ) {
-        $wd->{ months } = $period_cost;
-    } else {
-        $wd->{ months } = int( $wd->{ months } );
-    }
-
-    $wd->{ discount } = 0;
-
-    $wd->discount = get_service_discount( %{ $wd } );
-
-    $wd->total = calc_total( $wd );
-
-    return $self->withdraws->add( %{ $wd } );
+    return $self->withdraws->add( %wd );
 }
 
 # Вычисляет итоговую стоимость услуги
 # на вход принимает все аргументы списания
-sub calc_total {
-    my $wd = shift;
+sub calc_withdraw {
+    my %wd = (
+        cost => undef,
+        months => 1,
+        discount => 0,
+        qnt => 1,
+        @_,
+    );
 
-    for ( qw/cost discount qnt months/ ) {
-        unless ( exists $wd->{ $_ } ) {
+    for ( qw/ cost months discount qnt / ) {
+        unless ( defined $wd{ $_ } ) {
             logger->error( "Not exists `$_` in wd object" );
         }
     }
 
     # Вычисляем реальное кол-во месяцов для правильного подсчета стоимости
-    my $period_cost = get_service( 'service', _id => $wd->{service_id} )->get->{period_cost};
-    my $real_payment_months = sprintf("%.2f", $wd->{ months } / ($period_cost || 1) );
+    my $period_cost = get_service( 'service', _id => $wd{service_id} )->get->{period_cost};
 
-    # Вычисляем конечную дату, но не записываем её в БД. Необходима для подсчета стоимости услуги.
-    $wd->{withdraw_date} ||= now;
-    $wd->{end_date} = calc_end_date_by_months(  $wd->{withdraw_date}, $real_payment_months );
+    if ( $wd{months} < $period_cost ) {
+        $wd{months} = $period_cost;
+    }
 
-    $wd->{total} = calc_total_by_date_range( $wd );
+    my $real_payment_months = sprintf("%.2f", $wd{months} / ($period_cost || 1) );
 
-    # Применяем скидку и учитываем qnt
-    $wd->{total} = ( $wd->{total} - $wd->{total} * $wd->{discount} / 100 ) * $wd->{qnt};
+    $wd{withdraw_date}||= now;
+    $wd{end_date} = calc_end_date_by_months( $wd{withdraw_date}, $real_payment_months );
 
-    # Применяем бонусы
-    $wd->{total} -= $wd->{bonus};
+    $wd{total} = calc_total_by_date_range( %wd );
+    $wd{discount} = get_service_discount( %wd );
 
-    return $wd->{total};
+    $wd{total} = ( $wd{total} - $wd{total} * $wd{discount} / 100 ) * $wd{qnt};
+
+    $wd{total} -= $wd{bonus};
+
+    return %wd;
 }
 
 sub is_pay {
@@ -250,9 +239,7 @@ sub set_service_expire {
 
     $self->withdraws->set( end_date => $expire_date );
 
-    $self->set( expired => $expire_date,
-                status => $STATUS_PROGRESS );
-
+    $self->set( expired => $expire_date );
     return 1;
 }
 
@@ -315,15 +302,20 @@ sub calc_month_cost {
 
 # Вычисляет стоимость услуги для заданного периода
 sub calc_total_by_date_range {
-    my $wd = shift;
+    my %wd = (
+        cost => undef,
+        withdraw_date => undef,
+        end_date => undef,
+        @_,
+    );
     my $debug = 0;
 
-    for ( qw/cost withdraw_date end_date/ ) {
-        confess("`$_` required") unless $wd->{ $_ };
+    for ( keys %wd ) {
+        confess("`$_` required") unless defined $wd{ $_ };
     }
 
-    my $start = parse_date( $wd->{withdraw_date} );
-    my $stop = parse_date( $wd->{end_date} );
+    my $start = parse_date( $wd{withdraw_date} );
+    my $stop = parse_date( $wd{end_date} );
 
     my $m_diff = ( $stop->{month} + $stop->{year} * 12 ) - ( $start->{month} + $start->{year} * 12 );
     say "m_diff: ". $m_diff if $debug;
@@ -331,29 +323,29 @@ sub calc_total_by_date_range {
     my $total = 0;
 
     # calc first month
-    if ( $wd->{end_date} lt end_of_month( $wd->{withdraw_date} ) ) {
+    if ( $wd{end_date} lt end_of_month( $wd{withdraw_date} ) ) {
         # Услуга начинается и заканчивается в этом месяце
-        my $data = calc_month_cost( cost => $wd->{cost}, from_date => $wd->{withdraw_date}, to_date => $wd->{end_date} );
+        my $data = calc_month_cost( cost => $wd{cost}, from_date => $wd{withdraw_date}, to_date => $wd{end_date} );
         print "First day:\t$data->{total} [" . $data->{start} . "\t" . $data->{stop} . "]\n" if $debug;
         $total = $data->{total};
     }
     else {
         # Услуга начинается в этом месяце, а заканчивается в другом
-        my $data = calc_month_cost( cost => $wd->{cost}, from_date => $wd->{withdraw_date} );
+        my $data = calc_month_cost( cost => $wd{cost}, from_date => $wd{withdraw_date} );
         print "First day:\t$data->{total} [" . $data->{start} . "\t" . $data->{stop} . "]\n" if $debug;
         $total = $data->{total};
     }
 
     # calc middle
     if ($m_diff > 1) {
-        my $middle_total = $wd->{cost} * ( $m_diff - 1 );
+        my $middle_total = $wd{cost} * ( $m_diff - 1 );
         print "Middle: \t$middle_total\n" if $debug;
         $total += $middle_total;
     }
 
     # calc last month
     if ($m_diff > 0) {
-        my $data = calc_month_cost( cost => $wd->{cost}, to_date => $wd->{end_date} );
+        my $data = calc_month_cost( cost => $wd{cost}, to_date => $wd{end_date} );
         print "Last day:\t$data->{total} [" . $data->{start} . "\t" . $data->{stop} . "]\n" if $debug;
         $total += $data->{total};
     }
@@ -403,11 +395,18 @@ sub prolongate {
         return 0;
     }
 
-    # Для существующей услуги используем следующее/новое списание
-    my $wd =( $self->withdraws->next || add_withdraw_next( $self ) );
+    # Для существующей услуги используем текущее/следующее/новое списание
+    my $wd_id = $self->get_withdraw_id;
+    my $wd = $wd_id ? get_service('wd', _id => $wd_id ) : undef;
 
-    # Set new withdraw_id
-    $self->set( withdraw_id => $wd->id );
+    if ( $wd && $wd->res->{withdraw_date} ) {
+        if ( my %next = $self->withdraws->next ) {
+            $wd_id = $next{withdraw_id};
+        } else {
+            $wd_id = add_withdraw_next( $self );
+        }
+        $self->set( withdraw_id => $wd_id );
+    }
 
     unless ( is_pay( $self ) ) {
         logger->debug('Not have money');
@@ -423,6 +422,7 @@ sub prolongate {
 
 sub block {
     my $self = shift;
+    return 0 unless $self->get_status == $STATUS_ACTIVE;
     $self->event('block');
 }
 
@@ -446,7 +446,7 @@ sub get_service_discount {
     $args{months} ||= $service->{period_cost} || 1;
 
     for ( keys %args ) {
-        if ( !defined $args{ $_ } ) {
+        unless ( defined $args{ $_ } ) {
             logger->error("not defined required variable: $_");
         }
     }
