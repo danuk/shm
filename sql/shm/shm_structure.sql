@@ -152,7 +152,7 @@ CREATE TABLE `services_commands` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `category` char(16) NOT NULL,
   `event` char(16) NOT NULL,
-  `server_gid` int(11) NOT NULL,
+  `server_gid` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `category` (`category`,`event`,`server_gid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
