@@ -115,7 +115,8 @@ sub childs {
 
 sub withdraws {
     my $self = shift;
-    return get_service('wd', usi => $self->id, withdraw_id => $self->get_withdraw_id );
+    return undef unless $self->get_withdraw_id;
+    return get_service('wd', _id => $self->get_withdraw_id );
 }
 
 sub get {

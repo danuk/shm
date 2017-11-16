@@ -72,7 +72,7 @@ sub get_service {
     }
 
     if ( exists $SERVICE_MANAGER->{services}->{ $service_name } ) {
-        #get_service('logger')->debug('Get service with name: '. $name ) unless $name eq 'logger';
+        get_service('logger')->debug('Get service with name: ['. $service_name . ']' ) unless $name eq 'logger';
         return $SERVICE_MANAGER->{services}->{ $service_name }
     }
 
