@@ -194,15 +194,12 @@ sub childs {
 
 sub parents {
     my $self = shift;
+    my $parent = undef;
 
-    my @vars;
-    my $query = $self->query_select(    vars => \@vars,
-                                        join => { table => 'services', using => ['service_id'] },
-                                        user_id => $self->user_id,
-                                        where => { parent => undef },
+    my $res = $self->list(
+        join => { table => 'services', using => ['service_id'] },
+        where => { parent => $parent },
     );
-
-    my $res = $self->query_by_name( $query, 'user_service_id', @vars );
 
     $self->{res} = $res;
     return $self;
