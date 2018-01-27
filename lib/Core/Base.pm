@@ -55,6 +55,12 @@ sub new {
 
 sub id {
     my $self = shift;
+    my $id = shift;
+
+    if ( defined $id ) {
+        return $self->new( _id => $id );
+    }
+
     my $key_field = $self->get_table_key;
 
     unless ( $self->{ $key_field } || $self->res->{ $key_field } ) {
