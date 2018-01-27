@@ -105,6 +105,15 @@ sub parse_args {
     my $cgi = CGI->new;
     %in = $cgi->Vars;
 
+    if ( $ENV{CONTENT_TYPE} eq 'application/json' ) {
+        my $method = $ENV{REQUEST_METHOD};
+        my $json = decode_json( $in{ "${method}DATA" } );
+        if ( $json ) {
+            %in = %{ $json };
+        }
+        return %in;
+    }
+
     _utf8_on( $in{ $_ } ) for keys %in;
 
     my %cmd_opts;
