@@ -45,6 +45,18 @@ my %in;
 sub new {
     my $class = shift;
 
+    if ( $ENV{REQUEST_METHOD} eq 'OPTIONS' ) {
+        print_header(
+            'Access-Control-Allow-Origin' => $ENV{HTTP_ORIGIN},
+            'Access-Control-Allow-Credentials' => 'true',
+            'Access-Control-Allow-Headers' => 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+            'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, OPTIONS, HEAD',
+            'Vary' => 'Origin',
+            'status' => 204,
+        );
+        exit 0;
+    }
+
     my $args = {
         user_id => undef,
         skip_check_auth => undef,
@@ -117,6 +129,8 @@ sub print_header {
         type => 'application/json',
         charset => 'utf8',
         cookie => undef,
+        'Access-Control-Allow-Origin' => $ENV{HTTP_ORIGIN},
+        'Access-Control-Allow-Credentials' => 'true',
         @_,
     );
 
