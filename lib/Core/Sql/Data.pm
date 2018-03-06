@@ -237,13 +237,12 @@ sub set {
 
     clean_query_args( $self, \%args, { is_update => 1 } );
 
-    my %where = %{ $args{where} };
-    delete $args{where};
+    my $sql = SQL::Abstract->new;
+    my ( $where, @bind ) = $sql->where( delete $args{where} );
 
     my $data = join(',', map( "`$_`=?", keys %args ) );
-    my $where = join(' and ', map( "`$_`=?", keys %where ) );
 
-    return $self->do("UPDATE $table SET $data WHERE $where", values %args, values %where );
+    return $self->do("UPDATE $table SET $data $where", values %args, @bind );
 }
 
 sub _delete {
@@ -258,12 +257,10 @@ sub _delete {
 
     clean_query_args( $self, \%args, { is_update => 1 } ) if $args{check_args};
 
-    my %where = %{ $args{where} };
-    delete $args{where};
+    my $sql = SQL::Abstract->new;
+    my ( $where, @bind ) = $sql->where( $args{where} );
 
-    my $where = join(' and ', map( "`$_`=?", keys %where ) );
-
-    return $self->do("DELETE FROM $table WHERE $where", values %where );
+    return $self->do("DELETE FROM $table $where", @bind );
 
 }
 

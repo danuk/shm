@@ -33,7 +33,7 @@ sub delete_all_for_service {
     my $self = shift;
     my $service_id = shift;
 
-    return $self->_delete( where => { service_id => $service_id } );
+    return $self->_delete( where => { -or => [ service_id => $service_id, subservice_id => $service_id ] } );
 }
 
 1;
