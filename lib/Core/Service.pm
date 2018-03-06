@@ -54,4 +54,12 @@ sub subservices {
     return get_service('SubServices', service_id => $self->id )->list;
 }
 
+sub delete {
+    my $self = shift;
+    my %args = @_;
+
+    get_service('SubServices')->delete_all_for_service( $self->id );
+    return $self->SUPER::delete( %args );
+}
+
 1;

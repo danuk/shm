@@ -29,4 +29,11 @@ sub list {
     return $self->SUPER::list( where => { service_id => $self->id } );
 }
 
+sub delete_all_for_service {
+    my $self = shift;
+    my $service_id = shift;
+
+    return $self->_delete( where => { service_id => $service_id } );
+}
+
 1;
