@@ -17,7 +17,7 @@ use v5.14;
 use base qw( Exporter );
 our @EXPORT_OK = qw( $SERVICE_MANAGER get_service logger $data );
 
-our $SERVICE_MANAGER = new Core::System::ServiceManager();
+our $SERVICE_MANAGER ||= new Core::System::ServiceManager();
 our $data = {};
 
 =head2 new
@@ -58,6 +58,15 @@ our %AUTO_SERVICES = (
     },
 );
 
+sub is_registered {
+    my $service_name = shift;
+
+    if ( exists $SERVICE_MANAGER->{services}->{ $service_name } ) {
+        return $SERVICE_MANAGER->{services}->{ $service_name };
+    }
+    return undef;
+}
+
 sub get_service {
     my $name = shift;
     my %args = @_;
@@ -72,7 +81,7 @@ sub get_service {
     }
 
     if ( exists $SERVICE_MANAGER->{services}->{ $service_name } ) {
-        get_service('logger')->debug('Get service with name: ['. $service_name . ']' ) unless $name eq 'logger';
+        write_log('Get service with name: ['. $service_name . ']' );
         return $SERVICE_MANAGER->{services}->{ $service_name }
     }
 
@@ -80,18 +89,27 @@ sub get_service {
     # или undef если сервис с таким name уже зарегистрирован
     ( $name, my $service ) = $SERVICE_MANAGER->auto_service( $name, %args );
     unless ( $name ) {
-        get_service('logger')->debug('Get service with name: ['. $service_name . '] - not exists' );
+        write_log('Get service with name: ['. $service_name . '] - not exists' );
         return undef;
     }
 
-    get_service('logger')->debug('Get service with name: ['. $name . ']' );
+    write_log('Get service with name: ['. $name . ']' );
 
     return $SERVICE_MANAGER->{services}->{ $name } ||= $service;
 }
 
+sub write_log {
+    my $msg = shift;
+    my $level = shift || 'debug';
+
+    my $logger = logger();
+    return unless $logger;
+
+    $logger->$level( $msg );
+}
+
 sub logger {
-    my $self = shift;
-    return get_service('logger');
+    return is_registered('logger');
 }
 
 sub auto_service {
@@ -159,7 +177,7 @@ sub register_service {
 
     $self->{service_register}{$name} = "$subroutine at $filename line $line";
 
-    get_service('logger')->debug("Register new service with name: [$name]");
+    write_log("Register new service with name: [$name]");
 
     return $name;
 }
@@ -179,7 +197,7 @@ sub unregister_service {
     my $id = $service->get_id();
 
     unless ( $self->{services}->{$id} ) {
-        get_service('logger')->error("Service with id '" . $id . "' not registered");
+        write_log("Service with id '" . $id . "' not registered", 'error');
         return undef;
     }
 

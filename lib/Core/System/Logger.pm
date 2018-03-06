@@ -36,6 +36,8 @@ use Data::Dumper;
 
 use Core::System::ServiceManager qw(get_service $data);
 
+$SIG{__DIE__} = sub { write_log_file( @_ ) };
+
 #-------------------------------------------------------------------------------
 my $LEVEL_TRACE     = 0;
 my $LEVEL_DEBUG     = 1;
@@ -136,6 +138,7 @@ sub make_message {
         msg => '',
         tag => '',
         stacktrace => 1,
+        color => 1,
         @_,
     );
 
@@ -149,8 +152,8 @@ sub make_message {
     );
 
     my $tag_string = $tag_color{ $args{tag} } || $tag_color{DEFAULT};
-    my $res = "$tag_string "
-            . " [" . scalar(localtime) .  "]"
+    my $res = ( $args{color} ? "$tag_string\t" : '' )
+            . "[" . scalar(localtime) .  "]"
             . " pid: $$"
             . " message: {{ $args{msg} }}"
             . "\n";
@@ -198,6 +201,23 @@ sub my_warn {
     return;
 }
 
+sub write_log_file {
+    my $msg = join($, // '', @_, "\n");
+
+    use Core::System::ServiceManager;
+    my $config = Core::System::ServiceManager::is_registered( 'config' );
+    return unless $config;
+
+    if ( $config->global->{log} ) {
+        my $log = $config->global->{log}->{path} . '/' . $config->global->{log}->{file};
+        my $fd;
+        open ( $fd, ">> $log" ) or die $!;
+        print $fd $msg;
+        close $fd;
+    }
+    return 1;
+}
+
 sub trace   { shift->_log( 'TRACE', @_ ) }
 sub dump    { shift->_log( 'DEBUG', Data::Dumper->new( [@_] )->Indent(1)->Quotekeys(0)->Sortkeys(1)->Dump() ) }
 sub debug   { shift->_log( 'DEBUG', @_ ) }
@@ -224,6 +244,13 @@ sub _log {
             stacktrace => $level_number >= $self->{stacktrace_from}? 1 : 0,
         ) );
     }
+    write_log_file(
+        $self->make_message(
+            msg => $msg,
+            tag => $level,
+            color => 0,
+        )
+    );
     return $self;
 }
 
