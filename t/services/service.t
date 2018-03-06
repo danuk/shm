@@ -23,7 +23,7 @@ is ( $si->{cost}, 5 );
 $si = get_service('service', _id => 2)->get;
 
 is ( $si->{service_id}, 2 );
-is ( $si->{cost}, 100 );
+is ( $si->{cost}, '100.00' );
 
 $si = $service->add( name => 'TEST', cost => 123, category => 'new' )->get;
 is ( $si->{name}, 'TEST', 'Check create new service' );

@@ -86,7 +86,7 @@ CREATE TABLE `invoices` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` int(11) DEFAULT NULL,
   `user_id` int(11) DEFAULT NULL,
-  `total` double(10,2) DEFAULT '0.00',
+  `total` decimal(10,2) DEFAULT '0.00',
   `text` char(128) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
@@ -132,7 +132,7 @@ DROP TABLE IF EXISTS `services`;
 CREATE TABLE `services` (
   `service_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` char(64) NOT NULL,
-  `cost` double DEFAULT NULL,
+  `cost` decimal(10,2) DEFAULT NULL,
   `period_cost` tinyint(4) NOT NULL,
   `category` char(16) DEFAULT NULL,
   `next` int(11) DEFAULT '0',
