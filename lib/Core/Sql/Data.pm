@@ -143,6 +143,11 @@ sub convert_sql_structure_data {
                         next unless $json;
                         $data->{ $f } = $json;
                     }
+            } else {
+                # Hack: convert string to numeric
+                if ( $data->{ $f } =~ /:?^(-)?\d+(\.\d+)?$/ ) {
+                    $data->{ $f } += 0;
+                }
             }
         }
     }

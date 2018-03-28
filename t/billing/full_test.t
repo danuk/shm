@@ -22,7 +22,7 @@ my $us;
 
 subtest 'Prepare user for test billing' => sub {
     $user->set( balance => 2000, credit => 0, discount => 0 );
-    is( $user->get_balance, '2000.00', 'Check user balance');
+    is( $user->get_balance, 2000, 'Check user balance');
 };
 
 # Now date
@@ -33,7 +33,7 @@ subtest 'Check create service' => sub {
 
     is( $us->get_expired, '2017-01-31 23:59:59', 'Check expired date after create new service' );
     is( $us->get_status, $STATUS_PROGRESS, 'Check status of new service' );
-    is( $user->get_balance, '1000.00', 'Check user balance'); 
+    is( $user->get_balance, 1000, 'Check user balance');
 
     my @spool_list = $spool->list( where => { event => 'create' } );
 
@@ -76,12 +76,12 @@ subtest 'Check expired service and try plolongate' => sub {
 			'end_date' 		=> '2017-01-31 23:59:59',
 			'user_id' => 40092,
 			'service_id' => 4,
-			'cost' => '1000.00',
-			'qnt' => '1',
-			'months' => '1',
+			'cost' => 1000,
+			'qnt' => 1,
+			'months' => 1,
 			'discount' => 0,
-			'bonus' => '0.00',
-			'total' => '1000.00',
+			'bonus' => 0,
+			'total' => 1000,
 		},
 		{
 			'withdraw_id' => ignore(),
@@ -91,17 +91,17 @@ subtest 'Check expired service and try plolongate' => sub {
 			'end_date' 		=> '2017-02-28 23:59:57',
 			'user_id' => 40092,
 			'service_id' => 4,
-			'cost' => '1000.00',
-			'qnt' => '1',
-			'months' => '1',
+			'cost' => 1000,
+			'qnt' => 1,
+			'months' => 1,
 			'discount' => 0,
-			'bonus' => '0.00',
-			'total' => '1000.00',
+			'bonus' => 0,
+			'total' => 1000,
 		},
     ),'Check all withdraws for service');
 
     is( $us->get_status, $STATUS_PROGRESS, 'Check status of prolong service' );
-    is( $user->get_balance, '0.00', 'Check user balance'); 
+    is( $user->get_balance, 0, 'Check user balance');
 
     my @spool_list = $spool->list( where => { event => 'prolongate' } );
     my @spool_categories = map $_->{category}, @spool_list;
@@ -120,7 +120,7 @@ subtest 'Try prolongate service without have money' => sub {
 
     is( $us->get_expired, '2017-02-28 23:59:57', 'Check expired date after prolongate' );
     is( $us->get_status, $STATUS_PROGRESS, 'Check status of prolong service' );
-    is( $user->get_balance, '0.00', 'Check user balance'); 
+    is( $user->get_balance, 0, 'Check user balance');
     
     my @all_wd = get_service('wd')->list( where => { user_service_id => $us->id } );
  	cmp_deeply( $all_wd[-1], {
@@ -131,12 +131,12 @@ subtest 'Try prolongate service without have money' => sub {
 			'end_date' 		=> 	undef,
 			'user_id' => 40092,
 			'service_id' => 4,
-			'cost' => '1000.00',
-			'qnt' => '1',
-			'months' => '1',
+			'cost' => 1000,
+			'qnt' => 1,
+			'months' => 1,
 			'discount' => 0,
-			'bonus' => '0.00',
-			'total' => '1000.00',
+			'bonus' => 0,
+			'total' => 1000,
 	}, 'Check withdraw');
 
     my @spool_list = $spool->list( where => { event => 'block' } );
@@ -177,16 +177,16 @@ subtest 'Try prolongate blocked service' => sub {
 			'end_date' 		=> '2017-04-02 10:50:18',
 			'user_id' => 40092,
 			'service_id' => 4,
-			'cost' => '1000.00',
-			'qnt' => '1',
-			'months' => '1',
+			'cost' => 1000,
+			'qnt' => 1,
+			'months' => 1,
 			'discount' => 0,
-			'bonus' => '0.00',
-			'total' => '1000.00',
+			'bonus' => 0,
+			'total' => 1000,
 	}, 'Check withdraw' );
 
     is( $us->get_expired, $us->withdraws->res->{end_date}, 'Check expired date after prolongate' );
-    is( $user->get_balance, '1000.00', 'Check user balance'); 
+    is( $user->get_balance, 1000, 'Check user balance');
 
     my @spool_list = $spool->list( where => { event => 'prolongate' } );
     my @spool_categories = map $_->{category}, @spool_list;
