@@ -24,7 +24,7 @@ our @EXPORT = qw(
     insert_id
 );
 
-use Core::Utils qw( now decode_json );
+use Core::Utils qw( now decode_json force_numbers );
 use Core::System::ServiceManager qw( get_service logger );
 use SQL::Abstract;
 
@@ -145,9 +145,7 @@ sub convert_sql_structure_data {
                     }
             } else {
                 # Hack: convert string to numeric
-                if ( $data->{ $f } =~ /:?^(-)?\d+(\.\d+)?$/ ) {
-                    $data->{ $f } += 0;
-                }
+                force_numbers( $data->{ $f } );
             }
         }
     }

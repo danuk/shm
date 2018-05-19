@@ -5,7 +5,7 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
 use Core::USObject;
-use Core::Utils qw( decode_json );
+use Core::Utils qw( decode_json force_numbers );
 
 sub table { return Core::USObject->table }
 
@@ -242,6 +242,8 @@ sub tree {
 
 sub get {
     my $self = shift;
+
+    force_numbers( $self->{res} );
 
     if ( wantarray ) {
         return map { $self->{res}->{ $_ } } keys %{ $self->{res} };

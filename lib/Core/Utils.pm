@@ -18,11 +18,13 @@ our @EXPORT_OK = qw(
     string_to_utime
     utime_to_string
     decode_json
+    force_numbers
 );
 
 use Core::System::ServiceManager qw( get_service );
 use Time::DaysInMonth;
 use JSON;
+use Scalar::Util qw(looks_like_number);
 
 our %in;
 
@@ -161,6 +163,19 @@ sub decode_json {
     };
 
     return $json;
+}
+
+sub force_numbers {
+    if (ref $_[0] eq ""){
+        if ( looks_like_number($_[0]) ){
+            $_[0] += 0;
+        }
+    } elsif ( ref $_[0] eq 'ARRAY' ){
+        force_numbers($_) for @{$_[0]};
+    } elsif ( ref $_[0] eq 'HASH' ) {
+        force_numbers($_) for values %{$_[0]};
+    }
+    return $_[0];
 }
 
 1;

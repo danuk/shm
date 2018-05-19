@@ -147,7 +147,9 @@ sub trim { my $str = shift; $str=~s/^\s+|\s+$//g; $str };
 
 sub print_json {
     my $ref = shift || [];
-    my $sort = shift;
+    my %args = (
+        @_,
+    );
 
     die 'WTF? blessed object' if blessed $ref;
 
@@ -160,40 +162,11 @@ sub print_json {
         }
     };
 
-    if ( ref $ref eq 'ARRAY' && $sort=~/^(-|\+)?(\w+)$/) {
-        my @ret = @{$ref};
-        my @sort;
+    my $json = new JSON;
+    $json->canonical( 1 );
+    $json->pretty( 1 ) if $ENV{DEBUG};
 
-        my ($desc, $field) = ($1, $2);
-        $desc = $desc eq '-' ? 1 : 0;
-
-        if ($ret[0]->{$field}=~/^\-?\d+(\.\d+)?$/)
-        { # numeric sort
-            if ($desc) {
-                @sort = sort { $b->{$field} <=> $a->{$field} } @ret;
-            }
-            else
-            {
-                @sort = sort { $a->{$field} <=> $b->{$field} } @ret;
-            }
-        }
-        else
-        {
-            if ($desc) {
-                @sort = sort { $b->{$field} cmp $a->{$field} } @ret;
-            }
-            else
-            {
-                @sort = sort { $a->{$field} cmp $b->{$field} } @ret;
-            }
-        }
-        print to_json(\@sort, $ENV{DEBUG} ? {pretty => 1} : () ) . "\n";
-    }
-    else
-    {
-        print to_json($ref, $ENV{DEBUG} ? {pretty => 1} : () ) . "\n";
-    }
-    return;
+    say $json->canonical->encode( $ref );
 }
 
 1;
