@@ -215,7 +215,6 @@ CREATE TABLE `user_services` (
   `expired` datetime DEFAULT NULL,
   `status` tinyint(4) NOT NULL DEFAULT '0',
   `next` int(11) DEFAULT NULL,
-  `qnt` int(11) NOT NULL DEFAULT '1',
   `parent` int(11) DEFAULT NULL,
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`user_service_id`),

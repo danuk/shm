@@ -44,7 +44,6 @@ sub structure {
         expired => undef,
         status => 0,
         next => undef,
-        qnt => 1,
         parent => undef,
         settings => { type => 'json', value => undef },
     };
