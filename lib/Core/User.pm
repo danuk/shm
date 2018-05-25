@@ -78,17 +78,6 @@ sub _id {
     return 'user_'. $self->user_id;
 }
 
-sub id {
-    my $self = shift;
-    my $user_id = shift;
-
-    if ( $user_id ) {
-        $self->{user_id} = $user_id;
-        return $self;
-    }
-    return $self->{user_id};
-}
-
 sub crypt_password {
     my $self = shift;
     my %args = (
