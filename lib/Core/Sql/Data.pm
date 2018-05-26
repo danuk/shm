@@ -346,7 +346,7 @@ sub get {
         get_service('logger')->error("Can't get() unless object_id: ". $self->get_table_key );
     }
 
-    my ( $ret ) = $self->list( where => { $self->get_table_key => $self->id }, @_ );
+    my ( $ret ) = $self->list( where => { sprintf("%s.%s", $self->table, $self->get_table_key ) => $self->id }, @_ );
     return wantarray ? %{ $ret||={} } : $ret;
 }
 
