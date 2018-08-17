@@ -150,9 +150,11 @@ CREATE TABLE `services` (
 DROP TABLE IF EXISTS `services_commands`;
 CREATE TABLE `services_commands` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` char(128) NOT NULL,
   `category` char(16) NOT NULL,
   `event` char(16) NOT NULL,
   `server_gid` int(11) DEFAULT NULL,
+  `params` json DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `category` (`category`,`event`,`server_gid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;

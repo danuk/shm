@@ -9,9 +9,11 @@ sub table { return 'services_commands' };
 sub structure {
     return {
         id => '@',
+        name => '?',
         category => '?',    # www,mail,mysql
         event => '?',       # create,block,unblock...
         server_gid => '?',  # Group_id of servers
+        params => '?',
     }
 }
 

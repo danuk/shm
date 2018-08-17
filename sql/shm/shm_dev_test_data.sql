@@ -168,23 +168,23 @@ INSERT INTO `services` VALUES
 (112,'Почта (${QUOTA} мб)',0,1,'mail',NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL);
 
 INSERT INTO `services_commands` VALUES 
-(default,'web_tariff','create',5),
-(default,'web_tariff','prolongate',NULL),
-(default,'web_tariff','block',NULL),
-(default,'web_tariff','erase',NULL),
-(default,'web','create',1),
-(default,'web','erase',NULL),
-(default,'web','block',NULL),
-(default,'web','activate',NULL),
-(default,'web','update',NULL),
-(default,'mysql','create',1),
-(default,'mysql','erase',NULL),
-(default,'mysql','block',NULL),
-(default,'mysql','activate',NULL),
-(default,'mysql','update',NULL),
-(default,'dns','create',1),
-(default,'dns','erase',NULL),
-(default,'dns','update',NULL);
+(default,'Create web tariff','web_tariff','create',5,NULL),
+(default,'Prolongate web tariff','web_tariff','prolongate',NULL,NULL),
+(default,'Block web tariff','web_tariff','block',NULL,NULL),
+(default,'Erase web tariff','web_tariff','erase',NULL,NULL),
+(default,'Create web account','web','create',1,NULL),
+(default,'Erase web account','web','erase',NULL,NULL),
+(default,'Block web account','web','block',NULL,NULL),
+(default,'Activate web account','web','activate',NULL,NULL),
+(default,'Update web account','web','update',NULL,NULL),
+(default,'Create mysql','mysql','create',1,NULL),
+(default,'Erase mysql','mysql','erase',NULL,NULL),
+(default,'Block mysql','mysql','block',NULL,NULL),
+(default,'Activate mysql','mysql','activate',NULL,NULL),
+(default,'Update mysql','mysql','update',NULL,NULL),
+(default,'Create dns','dns','create',1,NULL),
+(default,'Erase dns','dns','erase',NULL,NULL),
+(default,'Update dns','dns','update',NULL,NULL);
 
 INSERT INTO `subservices` VALUES 
 (default,1,8),
