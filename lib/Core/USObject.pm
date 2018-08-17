@@ -133,7 +133,6 @@ sub data_for_transport {
         res( { $self->id => scalar $self->get } )->with('settings','services','withdraws')->get;
     return SUCCESS, {
         payload => $ret,
-        cmd => undef,
     };
 }
 

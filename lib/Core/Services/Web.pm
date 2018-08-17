@@ -25,22 +25,11 @@ sub data_for_transport {
 
     my $object = $us->data_for_transport;
 
-    #www create $account $domain_name,$alias $p_params{max_quota} $directory $p_params{group} $tariff_settings{inet_lock}
-    my $cmd = join(' ',
-        'www',
-        $args{task}->{event},
-        $args{task}->{user_service_id},
-        "$domains[0],www.$domains[0]",
-        $object->{settings}->{max_quota},
-        $domains[0],
-    );
-
     return SUCCESS, {
         payload => {
             object => $object,
             domains => \@domains,
         },
-        cmd => $cmd,
     };
 }
 

@@ -25,7 +25,6 @@ sub make_task {
 
     my ( $status, $responce_data ) = $transport->send(
         %task,
-        cmd => join(' ', @task{ qw/category event/ } ),
         payload => $payload,
     );
     unless ( $status ) {

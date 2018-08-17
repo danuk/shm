@@ -32,6 +32,7 @@ sub send {
 
     my $data = $server{payload}->{payload};
     my $cmd = $server{payload}->{cmd} || $args{cmd};
+    $cmd = join(' ', @args{ qw/category event/ } ) unless $cmd;
 
     my $key_file = $server{private_key_file};
 

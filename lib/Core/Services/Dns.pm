@@ -32,7 +32,6 @@ sub data_for_transport {
             headers => $domain->dns->headers,
             records => [ $domain->dns->records ],
         },
-        cmd => undef,
     };
 }
 
