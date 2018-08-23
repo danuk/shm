@@ -12,24 +12,22 @@ sub _id { return 'Services::Web' };
 sub data_for_transport {
     my $self = shift;
     my %args = (
-        task => undef,
+        user_service_id => undef,
         @_,
     );
 
-    my $us = get_service('us', _id => $args{task}->{user_service_id});
+    my $us = get_service('us', _id => $args{user_service_id});
 
     my @domains;
-    for ( $us->domains ) {
+    for ( scalar $us->domains->get ) {
         push @domains, $_->{punycode} || $_->{domain};
     }
 
     my $object = $us->data_for_transport;
 
     return SUCCESS, {
-        payload => {
-            object => $object,
-            domains => \@domains,
-        },
+        object => $object,
+        domains => \@domains,
     };
 }
 

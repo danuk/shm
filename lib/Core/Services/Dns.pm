@@ -27,11 +27,9 @@ sub data_for_transport {
     }
 
     return SUCCESS, {
-        payload => {
-            domain => $domain->real_domain,
-            headers => $domain->dns->headers,
-            records => [ $domain->dns->records ],
-        },
+        domain => $domain->real_domain,
+        headers => $domain->dns->headers,
+        records => [ $domain->dns->records ],
     };
 }
 

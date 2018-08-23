@@ -11,10 +11,10 @@ use File::Temp;
 
 sub send {
     my $self = shift;
+    my $task = shift;
     my %args = (
         server_id => undef, # for autoload server
-        ip => undef,
-        host => undef,
+        event => {},
         user => 'ssm',
         private_key => undef,
         private_key_file => get_service('config')->global->{ssh_default_ssm_key},
@@ -26,14 +26,16 @@ sub send {
     );
 
     my %server = (
-        defined $args{server_id} ? ( %{ get_service('server', _id => $args{server_id} )->get } ) : (),
+        $task->server->get,
         map( $args{$_} ? ($_ => $args{$_}) : (), keys %args ),
     );
 
-    my $data = $server{payload}->{payload};
-    my $cmd = $server{payload}->{cmd} || $args{cmd};
-    $cmd = join(' ', @args{ qw/category event/ } ) unless $cmd;
+    say Dumper( scalar $task->get );
+    say Dumper( scalar $task->event );
 
+    my $cmd = $task->make_cmd_string( $args{cmd} || $task->event->{params}->{cmd} || $server{params}->{cmd} );
+    my $stdin_data = $task->make_cmd_string( $task->event->{params}->{stdin} || $server{params}->{payload} );
+ 
     my $key_file = $server{private_key_file};
 
     if ( $server{private_key} ) {
@@ -64,8 +66,6 @@ sub send {
         get_service('logger')->warning( $ssh->error );
         return FAIL, { error => $ssh->error };
     }
-
-    my $stdin_data = $data ? to_json( $data ) : undef;
 
     my ( $out, $err ) = $ssh->capture2(
         {

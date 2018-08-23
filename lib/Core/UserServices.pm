@@ -11,11 +11,6 @@ sub table { return Core::USObject->table }
 
 sub structure { return Core::USObject->structure }
 
-sub get {
-    my $self = shift;
-    return $self->{res};
-}
-
 sub add {
     my $self = shift;
     my %args = (

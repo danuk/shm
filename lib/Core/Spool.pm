@@ -20,8 +20,7 @@ sub structure {
         user_id => '!',
         user_service_id => undef, # идентификатор услуги
 
-        category => '?',    # web,mail,mysql,etc...
-        event => '?',       # create,prolongate,block,unblock,etc...
+        event_id => '?',
 
         server_gid => undef,
         server_id => undef,

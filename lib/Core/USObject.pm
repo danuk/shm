@@ -132,13 +132,13 @@ sub data_for_transport {
     my ( $ret ) = get_service('UserServices', user_id => $self->res->{user_id} )->
         res( { $self->id => scalar $self->get } )->with('settings','services','withdraws')->get;
     return SUCCESS, {
-        payload => $ret,
+        %{ $ret },
     };
 }
 
 sub domains {
     my $self = shift;
-    return get_service('domain', user_id => $self->res->{user_id} )->list_domains_for_service( user_service_id => $self->id );
+    return get_service('domain')->get_domain( user_service_id => $self->id );
 }
 
 sub add_domain {
@@ -179,21 +179,29 @@ sub event {
         event => $e,
     );
 
-    $self->set( status => $STATUS_PROGRESS ) if scalar @commands;
+    if ( scalar @commands ) {
+        $self->set( status => $STATUS_PROGRESS );
 
-    my $spool = get_service('spool', user_id => $self->res->{user_id} );
+        my $spool = get_service('spool', user_id => $self->res->{user_id} );
 
-    for ( @commands ) {
-        $spool->add(
-            exists $self->settings->{server_id} ?
-                ( server_id => $self->settings->{server_id} ) :
-                ( server_gid => $_->{server_gid} ),
-            category => $category,
-            event => $e,
-            user_service_id => $self->id,
-        );
+        for ( @commands ) {
+            $spool->add(
+                exists $self->settings->{server_id} ?
+                    ( server_id => $self->settings->{server_id} ) :
+                    ( server_gid => $_->{server_gid} ),
+                event_id => $_->{id},
+                user_service_id => $self->id,
+            );
+        }
+        return scalar @commands;
     }
-    return scalar @commands;
+
+    # Event for service not found. Set status of service by status of children
+    my @childs
+    
+
+
+    
 }
 
 1;
