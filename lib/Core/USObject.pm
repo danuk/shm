@@ -42,7 +42,7 @@ sub structure {
         withdraw_id => undef,
         created => 'now',
         expired => undef,
-        status => 0,
+        status => $STATUS_PROGRESS,
         next => undef,
         parent => undef,
         settings => { type => 'json', value => undef },
@@ -180,7 +180,7 @@ sub event {
     );
 
     if ( scalar @commands ) {
-        $self->set( status => $STATUS_PROGRESS );
+        $self->status( $STATUS_PROGRESS );
 
         my $spool = get_service('spool', user_id => $self->res->{user_id} );
 
@@ -193,15 +193,40 @@ sub event {
                 user_service_id => $self->id,
             );
         }
-        return scalar @commands;
+    } else {
+        # Активируем услугу если для нее нет команды и у нее нет детей
+        if ( $e == $EVENT_CREATE || $e == $EVENT_PROLONGATE ) {
+            unless ( $self->children ) {
+                $self->status( $STATUS_ACTIVE );
+            }
+        }
     }
 
-    # Event for service not found. Set status of service by status of children
-    my @children
-    
+    if ( $e == $EVENT_UPDATE_CHILD_STATUS ) {
+        # Command for service not found. Set status of service by status of children
+        my %children_statuses = map { $_->{status} => 1 } $self->children;
 
+        if ( exists $children_statuses{ $STATUS_PROGRESS } ) {
+            $self->status( $STATUS_PROGRESS );
+        } elsif ( scalar (keys %children_statuses) == 1 ) {
+            $self->status( (keys %children_statuses)[0] );
+        }
+    }
+    return SUCCESS;
+}
 
-    
+sub status {
+    my $self = shift;
+    my $status = shift;
+
+    if ( $status && $self->{status} != $status ) {
+        $self->set( status => $status );
+
+        if ( my $parent = $self->parent ) {
+            $parent->event( $EVENT_UPDATE_CHILD_STATUS );
+        }
+    }
+    return $self->{status};
 }
 
 1;

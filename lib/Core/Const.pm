@@ -9,6 +9,12 @@ our @EXPORT = qw(
     $STATUS_ACTIVE
     $STATUS_BLOCK
 
+    $EVENT_CREATE
+    $EVENT_BLOCK
+    $EVENT_REMOVE
+    $EVENT_PROLONGATE
+    $EVENT_ACTIVATE
+    $EVENT_UPDATE_CHILD_STATUS
 );
 
 our $STATUS_WAIT_FOR_PAY = 0;
@@ -24,6 +30,12 @@ our $CLIENT_IP = 2;
 our $CLIENT_FIZ_NR = 3;
 our $CLIENT_JUR_NR = 4;
 
+our $EVENT_CREATE = 'create';
+our $EVENT_BLOCK = 'block';
+our $EVENT_REMOVE = 'remove';
+our $EVENT_PROLONGATE = 'prolongate';
+our $EVENT_ACTIVATE = 'activate';
+our $EVENT_UPDATE_CHILD_STATUS = 'update_chlid_status';
 
 
 1;

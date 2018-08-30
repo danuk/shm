@@ -57,10 +57,9 @@ sub make_task {
             my $us = get_service('us', _id => $self->task->{user_service_id} );
             $us->set(
                 settings => { server_id => $self->task->{server_id} },
-                $us->get_status == $STATUS_PROGRESS ? (
-                    status => $self->event->{event} eq 'block' ? $STATUS_BLOCK : $STATUS_ACTIVE,
-                ) : (),
             );
+
+            $us->status( $self->event->{event} eq $EVENT_BLOCK ? $STATUS_BLOCK : $STATUS_ACTIVE ) if $us->get_status == $STATUS_PROGRESS;
         }
     }
 

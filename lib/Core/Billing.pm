@@ -196,14 +196,15 @@ sub is_pay {
 
     my $wd = $self->withdraws->get;
     # Already withdraw
-    return 2 if $wd->{withdraw_date};
+    return $STATUS_ACTIVE if $wd->{withdraw_date};
 
     my $user = get_service('user')->get;
 
     my $balance = $user->{balance} + $user->{credit};;
 
     # No have money
-    return 0 if (   $wd->{total} > 0 &&
+    return $STATUS_WAIT_FOR_PAY if (
+                    $wd->{total} > 0 &&
                     $balance < $wd->{total} &&
                     !$user->{can_overdraft} &&
                     !$self->get_pay_in_credit );
@@ -211,7 +212,7 @@ sub is_pay {
     $self->user->set_balance( balance => -$wd->{total} );
     $self->withdraws->set( withdraw_date => now );
 
-    return 1;
+    return $STATUS_PROGRESS;
 }
 
 sub set_service_expire {
@@ -372,14 +373,14 @@ sub create {
 
     my $status = is_pay( $self );
 
-    if ( defined $status && $status == 0 ) {
+    if ( defined $status && $status == $STATUS_WAIT_FOR_PAY ) {
         logger->debug('Not have money');
         return 0;
     }
 
     set_service_expire( $self ) unless $args{children_free};
 
-    $self->event('create');
+    $self->event( $EVENT_CREATE );
     return 1;
 }
 
@@ -415,7 +416,7 @@ sub prolongate {
     }
 
     set_service_expire( $self );
-    $self->event('prolongate');
+    $self->event( $EVENT_PROLONGATE );
 
     return 1;
 }
@@ -423,12 +424,12 @@ sub prolongate {
 sub block {
     my $self = shift;
     return 0 unless $self->get_status == $STATUS_ACTIVE;
-    $self->event('block');
+    $self->event( $EVENT_BLOCK );
 }
 
 sub remove {
     my $self = shift;
-    $self->event('remove');
+    $self->event( $EVENT_REMOVE );
 }
 
 # Анализируем услугу и решаем какую скидку давать (доменам не давать)
