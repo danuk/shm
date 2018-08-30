@@ -170,7 +170,7 @@ sub with {
     return $self;
 }
 
-sub childs {
+sub children {
     my $self = shift;
     return $self unless $self->{res} && keys %{ $self->{res} };
 
@@ -220,7 +220,7 @@ sub tree {
     for ( sort { $b <=> $a } keys %{ $res } ) {
         my $obj = $res->{ $_ };
 
-        # Delete childs without parents
+        # Delete children without parents
         if ( $obj->{parent} && not exists $res->{ $obj->{parent} } ) {
             delete $res->{ $obj->{user_service_id} };
             next;

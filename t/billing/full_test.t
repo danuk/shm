@@ -205,7 +205,7 @@ sub set_service_status_deeply {
 
     $service->set( status => $status );
 
-    for ( keys %{ $service->childs } ) {
+    for ( keys %{ $service->children } ) {
         get_service('us', _id => $_ )->set( status => $status );
     }
 }

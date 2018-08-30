@@ -66,7 +66,7 @@ sub create_service {
     my $ss = get_service('service', _id => $args{service_id} )->subservices;
     for ( keys %{ $ss } ) {
         my $us = get_service('UserServices')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
-        create( $us, childs_free => 1 );
+        create( $us, children_free => 1 );
     }
 
     my $ret = process_service( $us );
@@ -366,7 +366,7 @@ sub calc_total_by_date_range {
 sub create {
     my $self = shift;
     my %args = (
-        childs_free => 0,
+        children_free => 0,
         @_,
     );
 
@@ -377,7 +377,7 @@ sub create {
         return 0;
     }
 
-    set_service_expire( $self ) unless $args{childs_free};
+    set_service_expire( $self ) unless $args{children_free};
 
     $self->event('create');
     return 1;

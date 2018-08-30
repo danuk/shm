@@ -24,12 +24,12 @@ else {
 # Add data to parents
 $parents = $parents->category( qw/web_tariff web_virt web_tariff web_tariff_free web_tariff_priv dedicated_hostin/ )->with('services','settings','withdraws')->get;
 
-# Load childs
-my $childs = $us->res( $parents )->childs->category('web','mail','mysql')->with('services','settings','server','domains')->get;
+# Load children
+my $children = $us->res( $parents )->children->category('web','mail','mysql')->with('services','settings','server','domains')->get;
 
-# Add childs to structure
-for my $c ( keys %{ $childs } ) {
-    $parents->{ $childs->{$c}->{parent} }->{services}->{ $childs->{$c}->{category} }->{ $childs->{$c}->{user_service_id } } = $childs->{$c};
+# Add children to structure
+for my $c ( keys %{ $children } ) {
+    $parents->{ $children->{$c}->{parent} }->{services}->{ $children->{$c}->{category} }->{ $children->{$c}->{user_service_id } } = $children->{$c};
 }
 
 print_json( $parents );

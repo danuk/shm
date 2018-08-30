@@ -107,7 +107,7 @@ sub parent {
     return get_service('us', _id => $self->get_parent );
 }
 
-sub childs {
+sub children {
     my $self = shift;
     return $self->list( where => { parent => $self->id } );
 }
@@ -197,7 +197,7 @@ sub event {
     }
 
     # Event for service not found. Set status of service by status of children
-    my @childs
+    my @children
     
 
 

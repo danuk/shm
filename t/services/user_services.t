@@ -35,23 +35,23 @@ is_deeply( $obj, {
 $obj = $us->parents->get;
 cmp_deeply( [ keys %{ $obj } ], bag( 16,19,99,2949 ), 'get user_services parents');
 
-$obj = $us->parents->childs->get;
-cmp_deeply( [ keys %{ $obj } ], bag( 17,18,20,21,100,101,102,2950,2951 ), 'get user_services childs for parents');
+$obj = $us->parents->children->get;
+cmp_deeply( [ keys %{ $obj } ], bag( 17,18,20,21,100,101,102,2950,2951 ), 'get user_services children for parents');
 
 $obj = $us->parents->category('web_tariff')->get;
 cmp_deeply( [ keys %{ $obj } ], bag( 99 ), 'get user_services parents filtered by web_tariff');
 
-$obj = $us->parents->category('web_tariff')->childs->get;
-cmp_deeply( [ keys %{ $obj } ], bag( 100, 101, 102 ), 'get user_services childs for parents filtered by web_tariff');
+$obj = $us->parents->category('web_tariff')->children->get;
+cmp_deeply( [ keys %{ $obj } ], bag( 100, 101, 102 ), 'get user_services children for parents filtered by web_tariff');
 
-$obj = $us->parents->category('web_tariff')->childs->category('web')->get;
-cmp_deeply( [ keys %{ $obj } ], bag( 101 ), 'get user_services childs for parents filtered by web_tariff and only web child');
+$obj = $us->parents->category('web_tariff')->children->category('web')->get;
+cmp_deeply( [ keys %{ $obj } ], bag( 101 ), 'get user_services children for parents filtered by web_tariff and only web child');
 
-$obj = $us->parents->category('web_tariff')->childs->category('web')->with('settings','domains')->get;
+$obj = $us->parents->category('web_tariff')->children->category('web')->with('settings','domains')->get;
 
-is( exists $obj->{101}->{settings}, 1, 'get user_services childs for parents filtered by web_tariff and only web child with settings' );
-is( exists $obj->{101}->{domains}, 1, 'get user_services childs for parents filtered web_tariff and only web child with domains' );
-is( $obj->{101}->{name}, 'Web хостинг (3391 мб)', 'get user_services childs for parents filtered web_tariff and only web child. Check name field fill' );
+is( exists $obj->{101}->{settings}, 1, 'get user_services children for parents filtered by web_tariff and only web child with settings' );
+is( exists $obj->{101}->{domains}, 1, 'get user_services children for parents filtered web_tariff and only web child with domains' );
+is( $obj->{101}->{name}, 'Web хостинг (3391 мб)', 'get user_services children for parents filtered web_tariff and only web child. Check name field fill' );
 
 $obj = $us->tree->get;
 is( $obj->{16}->{children}->{17}->{created}, '2014-10-02 13:47:30', 'Check full tree' );
