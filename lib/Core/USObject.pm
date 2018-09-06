@@ -107,6 +107,16 @@ sub parent {
     return get_service('us', _id => $self->get_parent );
 }
 
+sub top_parent {
+    my $self = shift;
+
+    my $root = $self->parent;
+    return unless $root;
+
+    while ( my $obj = $root->parent ) { $root = $obj };
+    return $root;
+}
+
 sub children {
     my $self = shift;
     return $self->list( where => { parent => $self->id } );
