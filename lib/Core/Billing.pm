@@ -66,12 +66,21 @@ sub create_service {
     my $ss = get_service('service', _id => $args{service_id} )->subservices;
     for ( keys %{ $ss } ) {
         my $us = get_service('UserServices')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
-        create( $us, children_free => 1 );
     }
 
-    my $ret = process_service( $us );
+    my $ret = process_service_recursive( $us );
 
     return $ret ? $us : $ret;
+}
+
+sub process_service_recursive {
+    my $service = shift;
+
+    process_service( $service );
+
+    for my $child ( $service->children ) {
+        process_service_recirsive( get_service('us', _id => $child->{user_service_id} ) );
+    }
 }
 
 # Просмотр/обработка услуг:

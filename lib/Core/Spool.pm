@@ -36,6 +36,16 @@ sub structure {
     }
 }
 
+sub exists_command {
+    my $self = shift;
+    my %args = (
+        user_service_id => undef,
+        @_,
+    );
+
+    return $self->list( where => { %args } );
+}
+
 sub push {
     my $self = shift;
 

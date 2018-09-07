@@ -175,54 +175,74 @@ sub get_category {
     return $service->get->{category};
 }
 
-# Обработчик всех событий.
-# Пытается найти модуль $category и вызвать в нём событие (метод)
-# В противном случае вызывается метод события в этом модуле
-sub event {
+sub make_commands_by_event {
     my $self = shift;
     my $e = shift;
 
-    my $category = $self->get_category;
-
     my @commands = get_service('ServicesCommands')->get_events(
-        category => $category,
+        category => $self->get_category,
         event => $e,
     );
 
     if ( scalar @commands ) {
         $self->status( $STATUS_PROGRESS );
 
-        my $spool = get_service('spool', user_id => $self->res->{user_id} );
-
         for ( @commands ) {
-            $spool->add(
+            $self->spool->add(
                 exists $self->settings->{server_id} ?
                     ( server_id => $self->settings->{server_id} ) :
                     ( server_gid => $_->{server_gid} ),
                 event_id => $_->{id},
                 user_service_id => $self->id,
+                branch => $self->top_parent,
             );
         }
-    } else {
-        # Активируем услугу если для нее нет команды и у нее нет детей
-        if ( $e == $EVENT_CREATE || $e == $EVENT_PROLONGATE ) {
-            unless ( $self->children ) {
-                $self->status( $STATUS_ACTIVE );
-            }
-        }
+    }
+    return scalar @commands;
+}
+
+sub spool {
+    my $self = shift;
+    return get_service('spool', user_id => $self->res->{user_id} );
+}
+
+sub event {
+    my $self = shift;
+    my $e = shift;
+
+    my $is_commands = $self->make_commands_by_event( $e );
+
+    unless ( $is_commands || $self->children ) {
+        $self->set_status_by_event( $e );
     }
 
-    if ( $e == $EVENT_UPDATE_CHILD_STATUS ) {
-        # Command for service not found. Set status of service by status of children
+    if ( $e == $EVENT_UPDATE_CHILD_STATUS && !$self->spool->exists_command( user_service_id => $self->id ) ) {
+        # Set status of service by status of children
         my %children_statuses = map { $_->{status} => 1 } $self->children;
 
         if ( exists $children_statuses{ $STATUS_PROGRESS } ) {
             $self->status( $STATUS_PROGRESS );
         } elsif ( scalar (keys %children_statuses) == 1 ) {
+            # Inherit children status
             $self->status( (keys %children_statuses)[0] );
         }
     }
     return SUCCESS;
+}
+
+sub set_status_by_event {
+    my $self = shift;
+    my $event = shift;
+
+    my $status;
+
+    if ( $event eq $EVENT_BLOCK || $event eq $EVENT_REMOVE ) {
+        $status = $STATUS_BLOCK;
+    } else {
+        $status = $STATUS_ACTIVE;
+    }
+
+    return $self->status( $status );
 }
 
 sub status {

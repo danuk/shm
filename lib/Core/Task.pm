@@ -58,8 +58,7 @@ sub make_task {
             $us->set(
                 settings => { server_id => $self->task->{server_id} },
             );
-
-            $us->status( $self->event->{event} eq $EVENT_BLOCK ? $STATUS_BLOCK : $STATUS_ACTIVE ) if $us->get_status == $STATUS_PROGRESS;
+            $us->set_status_by_event( $self->event->{event} );
         }
     }
 
