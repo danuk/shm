@@ -22,22 +22,6 @@ use Time::Local 'timelocal_nocheck';
 use base qw( Core::System::Service );
 use Core::System::ServiceManager qw( get_service logger );
 
-sub has_expired {
-    my $self = shift;
-
-    return 0 unless $self->get_expired;
-    return int( $self->get_expired lt now );
-}
-
-sub parent_has_expired {
-    my $self = shift;
-
-    while ( my $parent = $self->parent ) {
-        return 1 if has_expired( $parent );
-    }
-    return 0;
-}
-
 sub awaiting_payment {
     my $self = shift;
 

@@ -4,6 +4,7 @@ use v5.14;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
+use Core::Utils qw(now);
 
 sub init {
     my $self = shift;
@@ -98,6 +99,22 @@ sub switch_to_next {
 sub user {
     my $self = shift;
     return get_service('user', _id => $self->res->{user_id} );
+}
+
+sub has_expired {
+    my $self = shift;
+
+    return 0 unless $self->get_expired;
+    return int( $self->get_expired lt now );
+}
+
+sub parent_has_expired {
+    my $self = shift;
+
+    while ( my $parent = $self->parent ) {
+        return 1 if $parent->has_expired;
+    }
+    return 0;
 }
 
 sub parent {
