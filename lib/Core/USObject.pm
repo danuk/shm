@@ -238,6 +238,8 @@ sub set_status_by_event {
 
     if ( $event eq $EVENT_BLOCK || $event eq $EVENT_REMOVE ) {
         $status = $STATUS_BLOCK;
+    } elsif ( $event eq $EVENT_NOT_ENOUGH_MONEY ) {
+        $status = $STATUS_WAIT_FOR_PAY;
     } else {
         $status = $STATUS_ACTIVE;
     }

@@ -15,6 +15,7 @@ our @EXPORT = qw(
     $EVENT_PROLONGATE
     $EVENT_ACTIVATE
     $EVENT_UPDATE_CHILD_STATUS
+    $EVENT_NOT_ENOUGH_MONEY
 );
 
 our $STATUS_WAIT_FOR_PAY = 0;
@@ -31,6 +32,7 @@ our $CLIENT_FIZ_NR = 3;
 our $CLIENT_JUR_NR = 4;
 
 our $EVENT_CREATE = 'create';
+our $EVENT_NOT_ENOUGH_MONEY = 'not_enough_money';
 our $EVENT_BLOCK = 'block';
 our $EVENT_REMOVE = 'remove';
 our $EVENT_PROLONGATE = 'prolongate';
