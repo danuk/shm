@@ -13,7 +13,7 @@ sub structure {
         category => '?',    # www,mail,mysql
         event => '?',       # create,block,unblock...
         server_gid => '?',  # Group_id of servers
-        params => '?',
+        params => { type => 'json', value => undef },
     }
 }
 

@@ -136,6 +136,11 @@ sub real_domain {
     return $domain->{punycode} || $domain->{domain};
 }
 
+sub domain {
+    my $self = shift;
+    return $self->get->{domain};
+}
+
 sub get_registrator {
     my $self = shift;
 

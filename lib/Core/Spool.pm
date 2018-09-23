@@ -20,8 +20,7 @@ sub structure {
         user_id => '!',
         user_service_id => undef, # идентификатор услуги
 
-        category => '?',    # web,mail,mysql,etc...
-        event => '?',       # create,prolongate,block,unblock,etc...
+        event_id => '?',
 
         server_gid => undef,
         server_id => undef,
@@ -35,6 +34,17 @@ sub structure {
         executed => undef,  # дата и время последнего выполнения
         delayed => 0,       # задерка в секундах
     }
+}
+
+sub exists_command {
+    my $self = shift;
+    my %args = (
+        user_service_id => undef,
+        @_,
+    );
+
+    my ( $command ) = $self->list( where => { %args } );
+    return $command ? 1 : 0;
 }
 
 sub push {
@@ -116,7 +126,7 @@ sub process_one {
 sub finish_task {
     my $self = shift;
     my %args = (
-        status => undef,
+        status => TASK_SUCCESS,
         @_,
     );
 

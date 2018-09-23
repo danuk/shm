@@ -11,11 +11,6 @@ sub table { return Core::USObject->table }
 
 sub structure { return Core::USObject->structure }
 
-sub get {
-    my $self = shift;
-    return $self->{res};
-}
-
 sub add {
     my $self = shift;
     my %args = (
@@ -27,11 +22,17 @@ sub add {
         get_service('logger')->error('`service_id` required');
     }
 
+    my $service = get_service( 'service', _id => $args{service_id} );
+    unless ( $service ) {
+        get_service('logger')->warning("Can't create not existed service: $args{service_id}");
+        return undef;
+    }
+
     delete $args{ $_ } for qw/user_service_id created expired/;
 
     my $usi = $self->SUPER::add(
         %args,
-        settings => get_service( 'service', _id => $args{service_id} )->get->{config},
+        settings => $service->get->{config},
     );
     delete $self->{res};
 
@@ -175,7 +176,7 @@ sub with {
     return $self;
 }
 
-sub childs {
+sub children {
     my $self = shift;
     return $self unless $self->{res} && keys %{ $self->{res} };
 
@@ -225,7 +226,7 @@ sub tree {
     for ( sort { $b <=> $a } keys %{ $res } ) {
         my $obj = $res->{ $_ };
 
-        # Delete childs without parents
+        # Delete children without parents
         if ( $obj->{parent} && not exists $res->{ $obj->{parent} } ) {
             delete $res->{ $obj->{user_service_id} };
             next;

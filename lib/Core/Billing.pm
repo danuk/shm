@@ -12,7 +12,7 @@ use base qw(Exporter);
 
 our @EXPORT = qw(
     create_service
-    process_service
+    process_service_recursive
 );
 
 use Core::Const;
@@ -22,21 +22,7 @@ use Time::Local 'timelocal_nocheck';
 use base qw( Core::System::Service );
 use Core::System::ServiceManager qw( get_service logger );
 
-sub has_expired {
-    my $self = shift;
-
-    return 0 unless $self->get_expired;
-    return int( $self->get_expired lt now );
-}
-
-sub parent_has_expired {
-    my $self = shift;
-
-    while ( my $parent = $self->parent ) {
-        return 1 if has_expired( $parent );
-    }
-    return 0;
-}
+use Core::Billing::Honest;
 
 sub awaiting_payment {
     my $self = shift;
@@ -65,13 +51,29 @@ sub create_service {
 
     my $ss = get_service('service', _id => $args{service_id} )->subservices;
     for ( keys %{ $ss } ) {
-        my $us = get_service('UserServices')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
-        create( $us, childs_free => 1 );
+        get_service('UserServices')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
     }
 
-    my $ret = process_service( $us );
+    return process_service_recursive( $us, $EVENT_CREATE );
+}
 
-    return $ret ? $us : $ret;
+sub process_service_recursive {
+    my $service = shift;
+    my $event = shift || $EVENT_PROLONGATE;
+
+    # Дети наследуют событие родителя
+    if ( $event = process_service( $service, $event ) ) {
+        # Вызываем событие в услуге
+        $service->event( $event );
+
+        for my $child ( $service->children ) {
+            process_service_recursive(
+                get_service('us', _id => $child->{user_service_id} ),
+                $event,
+            );
+        }
+    }
+    return $service;
 }
 
 # Просмотр/обработка услуг:
@@ -80,58 +82,36 @@ sub create_service {
 # Уже заблокированная услуга проверяется на предмет поступления средств и делается попытка продлить услугу
 # Для истекшей, но активной услуги, создается акт
 # Попытка продить услугу
+# ф-я возвращает event (на вход пришел prolongate, а на выходе может быть block, если не хватило денег)
 sub process_service {
     my $self = shift;
+    my $event = shift;
 
     logger->debug('Process service: '. $self->id );
 
     unless ( $self->get_withdraw_id ) {
-        logger->warning('Withdraw not exists for service. Skipping...');
-        return undef;
+        # Бесплатная услуга
+        return $event;
     }
 
     unless ( $self->get_auto_bill ) {
         logger->debug('AUTO_BILL is OFF for service. Skipping...');
-        return 0;
+        return undef;
     }
 
-    if ( $self->get_expired eq '' && $self->get_status == $STATUS_WAIT_FOR_PAY ) {
+    unless ( $self->get_expired ) {
         # Новая услуга
         logger->debug('New service');
         return create( $self );
     }
 
-    # Услуга НЕ новая, проверяем истекла ли
-    unless ( has_expired( $self ) ) {
-        logger->warning('Service not exipred. Skipping...');
-        return 0;
+    unless ( $self->has_expired ) {
+        # Услуга не истекла
+        # Ничего не делаем с этой услугой
+        return undef;
     }
 
-    if ( $self->get_status == $STATUS_BLOCK ) {
-        # Trying prolongate
-        return prolongate( $self );
-    }
-
-    if ( $self->get_status != $STATUS_ACTIVE ) {
-        logger->debug('Service not active. Skipping');
-        return 0;
-    }
-
-    # Услуга активна и истекла
-
-    # TODO: make_service_act
-    # TODO: backup service
-
-    if ( $self->get_next == -1 ) {
-        # Удаляем услугу
-        remove( $self );
-        return 1;
-    }
-    elsif ( $self->get_next ) {
-        # Change service to new
-        change( $self );
-    }
-
+    # Продляем услугу
     return prolongate( $self );
 }
 
@@ -196,14 +176,15 @@ sub is_pay {
 
     my $wd = $self->withdraws->get;
     # Already withdraw
-    return 2 if $wd->{withdraw_date};
+    return 1 if $wd->{withdraw_date};
 
     my $user = get_service('user')->get;
 
     my $balance = $user->{balance} + $user->{credit};;
 
-    # No have money
-    return 0 if (   $wd->{total} > 0 &&
+    # No enough money
+    return 0 if (
+                    $wd->{total} > 0 &&
                     $balance < $wd->{total} &&
                     !$user->{can_overdraft} &&
                     !$self->get_pay_in_credit );
@@ -239,160 +220,47 @@ sub set_service_expire {
 
     $self->withdraws->set( end_date => $expire_date );
 
-    $self->set( expired => $expire_date );
-    return 1;
-}
-
-# Вычисляет конечную дату путем прибавления периода к заданной дате
-sub calc_end_date_by_months {
-    my $date = shift;
-    my $period = shift;
-
-    my $days = $period =~/^\d+\.(\d+)$/ ? length($1) > 1 ? int($1) : int($1) * 10 : 0;
-    my $months = int( $period );
-
-    my ( $start_year, $start_mon, $start_day, $start_hour, $start_min, $start_sec ) = split(/\D+/, $date );
-
-    my $sec_in_start = days_in_months( $date ) * 86400 - 1;
-    my $unix_stop = timelocal_nocheck( 0, 0, 0, 1 + $days , $start_mon + $months - 1, $start_year + int( ( $start_mon + $months ) / 12 ) );
-    my $sec_in_stop = days_in_months( utime_to_string( $unix_stop ) ) * 86400 - 1;
-
-    my $ttt = $sec_in_start - ( ( $start_day - 1 ) * 86400 + $start_hour * 3600 + $start_min * 60 + $start_sec );
-    $ttt = 1 if $ttt == 0;
-
-    my $diff = $sec_in_start / $ttt;
-    $diff = 1 if $diff == 0; # devision by zero
-
-    my $end_date = $unix_stop + int( $sec_in_stop - ($sec_in_stop / $diff) );
-
-    return utime_to_string( $end_date - 1 );  # 23:59:59
-}
-
-# Вычисляет стоимость в пределах одного месяца
-# На вход принимает стоимость и дату смещения
-sub calc_month_cost {
-    my $args = {
-        cost => undef,
-        to_date => undef,   # считать с начала месяца, до указанной даты [****....]
-        from_date => undef, # считать с указанной даты, до конца месяца  [....****]
-        @_,
-    };
-
-    unless ( $args->{from_date} || $args->{to_date} ) {
-        confess( 'from_date or to_date required' );
-    }
-
-    my ( $total, $start_date, $stop_date );
-
-    $start_date = $args->{from_date} || start_of_month( $args->{to_date} ) ;
-    $stop_date = $args->{to_date} || end_of_month( $args->{from_date} );
-
-    my $sec_absolute = abs( string_to_utime( $stop_date ) - string_to_utime( $start_date ) );
-
-    if ( $sec_absolute ) {
-        my $sec_in_month = days_in_months( $start_date ) * 86400 - 1;
-        $total = $args->{cost} / ( $sec_in_month / $sec_absolute );
-    }
-
-    return {    start => $start_date,
-                stop => $stop_date,
-                total => sprintf("%.2f", $total )
-    };
-}
-
-# Вычисляет стоимость услуги для заданного периода
-sub calc_total_by_date_range {
-    my %wd = (
-        cost => undef,
-        withdraw_date => undef,
-        end_date => undef,
-        @_,
-    );
-    my $debug = 0;
-
-    for ( keys %wd ) {
-        confess("`$_` required") unless defined $wd{ $_ };
-    }
-
-    my $start = parse_date( $wd{withdraw_date} );
-    my $stop = parse_date( $wd{end_date} );
-
-    my $m_diff = ( $stop->{month} + $stop->{year} * 12 ) - ( $start->{month} + $start->{year} * 12 );
-    say "m_diff: ". $m_diff if $debug;
-
-    my $total = 0;
-
-    # calc first month
-    if ( $wd{end_date} lt end_of_month( $wd{withdraw_date} ) ) {
-        # Услуга начинается и заканчивается в этом месяце
-        my $data = calc_month_cost( cost => $wd{cost}, from_date => $wd{withdraw_date}, to_date => $wd{end_date} );
-        print "First day:\t$data->{total} [" . $data->{start} . "\t" . $data->{stop} . "]\n" if $debug;
-        $total = $data->{total};
-    }
-    else {
-        # Услуга начинается в этом месяце, а заканчивается в другом
-        my $data = calc_month_cost( cost => $wd{cost}, from_date => $wd{withdraw_date} );
-        print "First day:\t$data->{total} [" . $data->{start} . "\t" . $data->{stop} . "]\n" if $debug;
-        $total = $data->{total};
-    }
-
-    # calc middle
-    if ($m_diff > 1) {
-        my $middle_total = $wd{cost} * ( $m_diff - 1 );
-        print "Middle: \t$middle_total\n" if $debug;
-        $total += $middle_total;
-    }
-
-    # calc last month
-    if ($m_diff > 0) {
-        my $data = calc_month_cost( cost => $wd{cost}, to_date => $wd{end_date} );
-        print "Last day:\t$data->{total} [" . $data->{start} . "\t" . $data->{stop} . "]\n" if $debug;
-        $total += $data->{total};
-    }
-
-    #my $d_diff = $stop->{day} - $start->{day};
-
-    #if ($d_diff < 0) {
-    #    my $days = days_in( $start->{year} , $start->{month} );
-    #    $m_diff--;
-    #    $d_diff = $days - $start->{day} + $stop->{day};
-    #}
-    #my $months = "$m_diff." . ($d_diff < 10 ? "0$d_diff" : "$d_diff");
-    #$months = $pay->{months} if $total == $pay->{total};
-
-    return sprintf("%.2f", $total );
+    return $self->set( expired => $expire_date );
 }
 
 sub create {
     my $self = shift;
     my %args = (
-        childs_free => 0,
+        children_free => 0,
         @_,
     );
 
-    my $status = is_pay( $self );
-
-    if ( defined $status && $status == 0 ) {
-        logger->debug('Not have money');
-        return 0;
+    unless ( is_pay( $self ) ) {
+        logger->debug('Not enough money');
+        return $EVENT_NOT_ENOUGH_MONEY;
     }
 
-    set_service_expire( $self ) unless $args{childs_free};
+    set_service_expire( $self ) unless $args{children_free};
 
-    $self->event('create');
-    return 1;
+    return $EVENT_CREATE;
 }
 
 sub prolongate {
     my $self = shift;
 
-    logger->debug('Prolongate service:' . $self->id );
+    logger->debug('Trying prolongate service:' . $self->id );
 
-    if ( parent_has_expired( $self ) ) {
+    if ( $self->parent_has_expired ) {
         # Не продлеваем услугу если родитель истек
         logger->debug('Parent expired. Skipped');
-        block( $self );
-        return 0;
+        return block( $self );
+    }
+
+    # TODO: make_service_act
+    # TODO: backup service
+
+    if ( $self->get_next == -1 ) {
+        # Удаляем услугу
+        return remove( $self );
+    }
+    elsif ( $self->get_next ) {
+        # Change service to new
+        # TODO: change( $self );
     }
 
     # Для существующей услуги используем текущее/следующее/новое списание
@@ -409,26 +277,23 @@ sub prolongate {
     }
 
     unless ( is_pay( $self ) ) {
-        logger->debug('Not have money');
-        block( $self );
-        return 0;
+        logger->debug('Not enough money');
+        return block( $self );
     }
 
     set_service_expire( $self );
-    $self->event('prolongate');
-
-    return 1;
+    return $self->get_status == $STATUS_BLOCK ? $EVENT_ACTIVATE : $EVENT_PROLONGATE;
 }
 
 sub block {
     my $self = shift;
     return 0 unless $self->get_status == $STATUS_ACTIVE;
-    $self->event('block');
+    return $EVENT_BLOCK;
 }
 
 sub remove {
     my $self = shift;
-    $self->event('remove');
+    return $EVENT_REMOVE;
 }
 
 # Анализируем услугу и решаем какую скидку давать (доменам не давать)

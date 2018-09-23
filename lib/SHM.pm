@@ -76,10 +76,10 @@ sub new {
         $user_id = $args->{user_id};
     } elsif ( !$args->{skip_check_auth} ) {
 
-        if ($0=~/\/(admin|spool)\//) {
-            print_json( { status => 403, msg => 'Forbidden' } );
-            exit 0;
-        }
+	    #if ($0=~/\/(admin|spool)\//) {
+	    #  print_json( { status => 403, msg => 'Forbidden' } );
+	    #exit 0;
+	    #}
         my $session = validate_session();
         print_not_authorized() unless $session;
 

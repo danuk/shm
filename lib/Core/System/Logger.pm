@@ -83,7 +83,7 @@ sub new {
 
     my $self = bless(Core::System::Service->new(%args), $class);
 
-    my $level = $ENV{DEBUG} ? 'DEBUG' : 'ERROR';
+    my $level = $ENV{DEBUG} ? ( exists $LEVELS{ $ENV{DEBUG} } ? $ENV{DEBUG} : 'DEBUG' ) : 'ERROR';
     $self->set_level_to( $level );
 
     #$self->add_stacktrace_from_level( $args{stacktrace_from} || $config->{log_stacktrace_from} || 'ERROR' );

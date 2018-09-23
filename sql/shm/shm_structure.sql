@@ -155,8 +155,7 @@ CREATE TABLE `services_commands` (
   `event` char(16) NOT NULL,
   `server_gid` int(11) DEFAULT NULL,
   `params` json DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `category` (`category`,`event`,`server_gid`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `spool`;
@@ -164,8 +163,7 @@ CREATE TABLE `spool` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `user_service_id` int(11) DEFAULT NULL,
-  `category` char(255) NOT NULL,
-  `event` char(255) NOT NULL,
+  `event_id` int(11) NOT NULL,
   `server_gid` int(11) DEFAULT NULL,
   `server_id` int(11) DEFAULT NULL,
   `data` text,
@@ -184,8 +182,7 @@ CREATE TABLE `spool_history` (
   `spool_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `user_service_id` int(11) DEFAULT NULL,
-  `category` char(255) NOT NULL,
-  `event` char(255) NOT NULL,
+  `event_id` int(11) NOT NULL,
   `server_gid` int(11) DEFAULT NULL,
   `server_id` int(11) DEFAULT NULL,
   `data` text,

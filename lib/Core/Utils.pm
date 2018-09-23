@@ -18,6 +18,7 @@ our @EXPORT_OK = qw(
     string_to_utime
     utime_to_string
     decode_json
+    to_json
     force_numbers
 );
 

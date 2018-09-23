@@ -23,9 +23,9 @@ use Core::Billing qw/create_service/;
 my $us = create_service( service_id => 63 );
 
 if ( blessed $us ) {
-    my @childs = map( $_->{user_service_id}, $us->childs );
+    my @children = map( $_->{user_service_id}, $us->children );
 
-    for ( @childs ) {
+    for ( @children ) {
         get_service('us', _id => $_ )->add_domain( domain_id => $domain_id );
     }
 }
