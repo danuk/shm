@@ -43,7 +43,8 @@ sub exists_command {
         @_,
     );
 
-    return $self->list( where => { %args } );
+    my ( $command ) = $self->list( where => { %args } );
+    return $command ? 1 : 0;
 }
 
 sub push {
@@ -125,7 +126,7 @@ sub process_one {
 sub finish_task {
     my $self = shift;
     my %args = (
-        status => undef,
+        status => TASK_SUCCESS,
         @_,
     );
 

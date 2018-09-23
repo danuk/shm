@@ -12,7 +12,7 @@ use base qw(Exporter);
 
 our @EXPORT = qw(
     create_service
-    process_service
+    process_service_recursive
 );
 
 use Core::Const;
@@ -51,22 +51,29 @@ sub create_service {
 
     my $ss = get_service('service', _id => $args{service_id} )->subservices;
     for ( keys %{ $ss } ) {
-        my $us = get_service('UserServices')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
+        get_service('UserServices')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
     }
 
-    my $ret = process_service_recursive( $us );
-
-    return $ret ? $us : $ret;
+    return process_service_recursive( $us, $EVENT_CREATE );
 }
 
 sub process_service_recursive {
     my $service = shift;
+    my $event = shift || $EVENT_PROLONGATE;
 
-    process_service( $service );
+    # Дети наследуют событие родителя
+    if ( $event = process_service( $service, $event ) ) {
+        # Вызываем событие в услуге
+        $service->event( $event );
 
-    for my $child ( $service->children ) {
-        process_service_recirsive( get_service('us', _id => $child->{user_service_id} ) );
+        for my $child ( $service->children ) {
+            process_service_recursive(
+                get_service('us', _id => $child->{user_service_id} ),
+                $event,
+            );
+        }
     }
+    return $service;
 }
 
 # Просмотр/обработка услуг:
@@ -75,58 +82,36 @@ sub process_service_recursive {
 # Уже заблокированная услуга проверяется на предмет поступления средств и делается попытка продлить услугу
 # Для истекшей, но активной услуги, создается акт
 # Попытка продить услугу
+# ф-я возвращает event (на вход пришел prolongate, а на выходе может быть block, если не хватило денег)
 sub process_service {
     my $self = shift;
+    my $event = shift;
 
     logger->debug('Process service: '. $self->id );
 
     unless ( $self->get_withdraw_id ) {
-        logger->warning('Withdraw not exists for service. Skipping...');
-        return undef;
+        # Бесплатная услуга
+        return $event;
     }
 
     unless ( $self->get_auto_bill ) {
         logger->debug('AUTO_BILL is OFF for service. Skipping...');
-        return 0;
+        return undef;
     }
 
-    if ( $self->get_expired eq '' && $self->get_status == $STATUS_WAIT_FOR_PAY ) {
+    unless ( $self->get_expired ) {
         # Новая услуга
         logger->debug('New service');
         return create( $self );
     }
 
-    # Услуга НЕ новая, проверяем истекла ли
-    unless ( has_expired( $self ) ) {
-        logger->warning('Service not exipred. Skipping...');
-        return 0;
+    unless ( $self->has_expired ) {
+        # Услуга не истекла
+        # Ничего не делаем с этой услугой
+        return undef;
     }
 
-    if ( $self->get_status == $STATUS_BLOCK ) {
-        # Trying prolongate
-        return prolongate( $self );
-    }
-
-    if ( $self->get_status != $STATUS_ACTIVE ) {
-        logger->debug('Service not active. Skipping');
-        return 0;
-    }
-
-    # Услуга активна и истекла
-
-    # TODO: make_service_act
-    # TODO: backup service
-
-    if ( $self->get_next == -1 ) {
-        # Удаляем услугу
-        remove( $self );
-        return 1;
-    }
-    elsif ( $self->get_next ) {
-        # Change service to new
-        change( $self );
-    }
-
+    # Продляем услугу
     return prolongate( $self );
 }
 
@@ -191,14 +176,14 @@ sub is_pay {
 
     my $wd = $self->withdraws->get;
     # Already withdraw
-    return $STATUS_ACTIVE if $wd->{withdraw_date};
+    return 1 if $wd->{withdraw_date};
 
     my $user = get_service('user')->get;
 
     my $balance = $user->{balance} + $user->{credit};;
 
-    # No have money
-    return $STATUS_WAIT_FOR_PAY if (
+    # No enough money
+    return 0 if (
                     $wd->{total} > 0 &&
                     $balance < $wd->{total} &&
                     !$user->{can_overdraft} &&
@@ -207,7 +192,7 @@ sub is_pay {
     $self->user->set_balance( balance => -$wd->{total} );
     $self->withdraws->set( withdraw_date => now );
 
-    return $STATUS_PROGRESS;
+    return 1;
 }
 
 sub set_service_expire {
@@ -245,29 +230,37 @@ sub create {
         @_,
     );
 
-    my $status = is_pay( $self );
-
-    if ( defined $status && $status == $STATUS_WAIT_FOR_PAY ) {
-        logger->debug('Not have money');
-        return 0;
+    unless ( is_pay( $self ) ) {
+        logger->debug('Not enough money');
+        return $EVENT_NOT_ENOUGH_MONEY;
     }
 
     set_service_expire( $self ) unless $args{children_free};
 
-    $self->event( $EVENT_CREATE );
-    return 1;
+    return $EVENT_CREATE;
 }
 
 sub prolongate {
     my $self = shift;
 
-    logger->debug('Prolongate service:' . $self->id );
+    logger->debug('Trying prolongate service:' . $self->id );
 
-    if ( parent_has_expired( $self ) ) {
+    if ( $self->parent_has_expired ) {
         # Не продлеваем услугу если родитель истек
         logger->debug('Parent expired. Skipped');
-        block( $self );
-        return 0;
+        return block( $self );
+    }
+
+    # TODO: make_service_act
+    # TODO: backup service
+
+    if ( $self->get_next == -1 ) {
+        # Удаляем услугу
+        return remove( $self );
+    }
+    elsif ( $self->get_next ) {
+        # Change service to new
+        # TODO: change( $self );
     }
 
     # Для существующей услуги используем текущее/следующее/новое списание
@@ -284,26 +277,23 @@ sub prolongate {
     }
 
     unless ( is_pay( $self ) ) {
-        logger->debug('Not have money');
-        block( $self );
-        return 0;
+        logger->debug('Not enough money');
+        return block( $self );
     }
 
     set_service_expire( $self );
-    $self->event( $EVENT_PROLONGATE );
-
-    return 1;
+    return $self->get_status == $STATUS_BLOCK ? $EVENT_ACTIVATE : $EVENT_PROLONGATE;
 }
 
 sub block {
     my $self = shift;
     return 0 unless $self->get_status == $STATUS_ACTIVE;
-    $self->event( $EVENT_BLOCK );
+    return $EVENT_BLOCK;
 }
 
 sub remove {
     my $self = shift;
-    $self->event( $EVENT_REMOVE );
+    return $EVENT_REMOVE;
 }
 
 # Анализируем услугу и решаем какую скидку давать (доменам не давать)

@@ -19,6 +19,7 @@ SHM->new( user_id => 40092 );
 my $spool = get_service('spool');
 my $user = get_service('user');
 my $us;
+my $user_services = get_service('UserServices');
 
 subtest 'Prepare user for test billing' => sub {
     $user->set( balance => 2000, credit => 0, discount => 0 );
@@ -29,41 +30,68 @@ subtest 'Prepare user for test billing' => sub {
 Test::MockTime::set_fixed_time('2017-01-01T00:00:00Z');
 
 subtest 'Check create service' => sub {
+
     $us = create_service( service_id => 4, cost => 1000, months => 1 );
 
     is( $us->get_expired, '2017-01-31 23:59:59', 'Check expired date after create new service' );
-    is( $us->get_status, $STATUS_PROGRESS, 'Check status of new service' );
-    is( $user->get_balance, 1000, 'Check user balance');
+    is( $user->get_balance, 1000, 'Check user balance after withdraw');
 
-    #    my @spool_list = $spool->list( where => { user_service_id => $us->id } );
-    #
-    #    my @spool_categories = map $_->{category}, @spool_list;
-    #    cmp_deeply( [ @spool_categories ], bag('web_tariff','web','mysql'), 'Check spool commands for create all services' );
-    #
-    #    $spool->_delete( where => { event => 'create' } );
+    is( $us->get_status, $STATUS_PROGRESS, 'Check status of new service' );
+
+    my $ch_by_service = chldrn_by_service( $us );
+
+    cmp_deeply( $ch_by_service, {
+        5 => superhashof( { status => $STATUS_ACTIVE } ),
+        8 => superhashof( { status => $STATUS_ACTIVE } ),
+        29 => superhashof( { status => $STATUS_PROGRESS } ),
+    }, 'Check children statuses' );
+
+    my @spool_list = $spool->list();
+
+    is ( scalar @spool_list, 1, 'Check count spool commands' );
+    cmp_deeply ( $spool_list[0], superhashof({
+        user_service_id => $ch_by_service->{29}->{user_service_id},
+        event_id => 8,
+    }), 'Check spool command' );
+
+    proccess_spool( $us );
+
+    is( $us->get_status, $STATUS_ACTIVE, 'Check status of service after the creation childs' );
+};
+
+# Half month later...
+Test::MockTime::set_fixed_time('2017-01-15T05:06:13Z');
+
+subtest 'Half month later. Try prolongate service' => sub {
+    my $ret = process_service_recursive( $us );
+
+    is( $us->get_expired, '2017-01-31 23:59:59', 'Check expired date after not prolongate' );
+    is( $user->get_balance, 1000, 'Check user balance after withdraw');
+
+    cmp_deeply( chldrn_by_service( $us ), {
+        5 => superhashof( { status => $STATUS_ACTIVE } ),
+        8 => superhashof( { status => $STATUS_ACTIVE } ),
+        29 => superhashof( { status => $STATUS_ACTIVE } ),
+    }, 'Check children statuses' );
 };
 
 # One month later...
-Test::MockTime::set_fixed_time('2017-02-01T00:00:00Z');
+Test::MockTime::set_fixed_time('2017-02-01T13:14:01Z');
 
-subtest 'Try process service for not active services' => sub {
-    my $ret = process_service( $us );
-
-    is( $ret, 0, 'Check status for inactive service' );
-    is( $us->get_expired, '2017-01-31 23:59:59', 'Check expired date after not prolongate' );
-};
-
-# Activate service
-set_service_status_deeply( $us, $STATUS_ACTIVE );
-
-# One month and one day later...
-Test::MockTime::set_fixed_time('2017-02-05T00:00:00Z');
-
-subtest 'Check expired service and try plolongate' => sub {
-    my $ret = process_service( $us );
-    is( $ret, 1, 'Check status for active service' );
+subtest 'One month later. Prolongate service' => sub {
+    my $ret = process_service_recursive( $us );
 
     is( $us->get_expired, '2017-02-28 23:59:57', 'Check expired date after prolongate' );
+    is( $user->get_balance, 0, 'Check user balance after withdraw');
+
+    my @children = $us->children;
+    my %ch_by_service = map { $_->{service_id} => $_ } @children;
+
+    cmp_deeply( \%ch_by_service , {
+        5 => superhashof( { status => $STATUS_ACTIVE } ),
+        8 => superhashof( { status => $STATUS_ACTIVE } ),
+        29 => superhashof( { status => $STATUS_ACTIVE } ),
+    }, 'Check children statuses' );
 
     my @all_wd = get_service('wd')->list( where => { user_service_id => $us->id } );
 
@@ -86,8 +114,8 @@ subtest 'Check expired service and try plolongate' => sub {
 		{
 			'withdraw_id' => ignore(),
 			'user_service_id' => $us->id,
-			'create_date' 	=> '2017-02-05 00:00:00',
-			'withdraw_date' => '2017-02-05 00:00:00',
+			'create_date' 	=> '2017-02-01 13:14:01',
+			'withdraw_date' => '2017-02-01 13:14:01',
 			'end_date' 		=> '2017-02-28 23:59:57',
 			'user_id' => 40092,
 			'service_id' => 4,
@@ -99,29 +127,28 @@ subtest 'Check expired service and try plolongate' => sub {
 			'total' => 1000,
 		},
     ),'Check all withdraws for service');
-
-    is( $us->get_status, $STATUS_PROGRESS, 'Check status of prolong service' );
-    is( $user->get_balance, 0, 'Check user balance');
-
-    #    my @spool_list = $spool->list( where => { event => 'prolongate' } );
-    #    my @spool_categories = map $_->{category}, @spool_list;
-    #    cmp_deeply( [ @spool_categories ], bag('web_tariff'), 'Check spool commands for prolongate services' );
-    #    $spool->_delete( where => { event => 'prolongate' } );
- 
-    set_service_status_deeply( $us, $STATUS_ACTIVE );
 };
 
 # Two month later...
 Test::MockTime::set_fixed_time('2017-03-01T00:00:00Z');
 
 subtest 'Try prolongate service without have money' => sub {
-    my $ret = process_service( $us );
-    is( $ret, 0, 'Check ret status of process_service' );
+    my $ret = process_service_recursive( $us );
 
     is( $us->get_expired, '2017-02-28 23:59:57', 'Check expired date after prolongate' );
-    is( $us->get_status, $STATUS_PROGRESS, 'Check status of prolong service' );
     is( $user->get_balance, 0, 'Check user balance');
     
+    is( $us->get_status, $STATUS_PROGRESS, 'Check status of prolong service' );
+
+    my @children = $us->children;
+    my %ch_by_service = map { $_->{service_id} => $_ } @children;
+
+    cmp_deeply( \%ch_by_service, {
+        5 => superhashof( { status => $STATUS_PROGRESS } ),
+        8 => superhashof( { status => $STATUS_BLOCK } ),
+        29 => superhashof( { status => $STATUS_PROGRESS } ),
+    }, 'Check children statuses' );
+
     my @all_wd = get_service('wd')->list( where => { user_service_id => $us->id } );
  	cmp_deeply( $all_wd[-1], {
 			'withdraw_id' => $us->get_withdraw_id,
@@ -139,17 +166,28 @@ subtest 'Try prolongate service without have money' => sub {
 			'total' => 1000,
 	}, 'Check withdraw');
 
-#    my @spool_list = $spool->list( where => { event => 'block' } );
-#    my @spool_categories = map $_->{category}, @spool_list;
-#    cmp_deeply( [ @spool_categories ], bag('web_tariff'), 'Check spool commands for prolongate services' );
-#	$spool->_delete( where => { event => 'block' } );
+    proccess_spool( $us );
 
-    set_service_status_deeply( $us, $STATUS_BLOCK );
+    cmp_deeply( chldrn_by_service( $us ), {
+        5 => superhashof( { status => $STATUS_BLOCK } ),
+        8 => superhashof( { status => $STATUS_BLOCK } ),
+        29 => superhashof( { status => $STATUS_BLOCK } ),
+    }, 'Check children statuses' );
+
+    is( $us->get_status, $STATUS_BLOCK, 'Check status of prolong service' );
 };
 
+
 subtest 'Try prolongate blocked service without have money' => sub {
-    my $ret = process_service( $us );
-    is( $ret, 0, 'Check ret status of process_service' );
+    my $ret = process_service_recursive( $us );
+
+    cmp_deeply( chldrn_by_service( $us ), {
+        5 => superhashof( { status => $STATUS_BLOCK } ),
+        8 => superhashof( { status => $STATUS_BLOCK } ),
+        29 => superhashof( { status => $STATUS_BLOCK } ),
+    }, 'Check children statuses' );
+
+    is( $us->get_status, $STATUS_BLOCK, 'Check status of prolong service' );
 
 	my @spool = $spool->list();
 	is( scalar @spool, 0, 'Check spool for empty' );
@@ -159,12 +197,11 @@ subtest 'Try prolongate blocked service without have money' => sub {
 Test::MockTime::set_fixed_time('2017-03-02T12:00:00Z');
 
 subtest 'Try prolongate blocked service' => sub {
-    $user->set( balance => 2000, credit => 0, discount => 0 );
+    $user->set( balance => 1000.03, credit => 0, discount => 0 );
 
     my $withdraw_id = $us->get_withdraw_id;
 
-    my $ret = process_service( $us );
-    is( $ret, 1, 'Check ret status of process_service' );
+    my $ret = process_service_recursive( $us );
 
     is( int($withdraw_id==$us->get_withdraw_id), 1, 'Check use current withdraw (no create new)' );
 
@@ -185,27 +222,45 @@ subtest 'Try prolongate blocked service' => sub {
 			'total' => 1000,
 	}, 'Check withdraw' );
 
-    is( $us->get_expired, $us->withdraws->res->{end_date}, 'Check expired date after prolongate' );
-    is( $user->get_balance, 1000, 'Check user balance');
+    is( $us->get_expired, $us->withdraws->res->{end_date}, 'Check expired date after activate' );
+    is( $user->get_balance, 0.03, 'Check user balance');
 
-    #    my @spool_list = $spool->list( where => { event => 'prolongate' } );
-    #    my @spool_categories = map $_->{category}, @spool_list;
-    #    cmp_deeply( [ @spool_categories ], bag('web_tariff'), 'Check spool commands for prolongate services' );
-    #    $spool->_delete( where => { event => 'prolongate' } );
+    cmp_deeply( chldrn_by_service( $us ), {
+        5 => superhashof( { status => $STATUS_PROGRESS } ),
+        8 => superhashof( { status => $STATUS_ACTIVE } ),
+        29 => superhashof( { status => $STATUS_PROGRESS } ),
+    }, 'Check children statuses after unblock' );
 
-    set_service_status_deeply( $us, $STATUS_ACTIVE );
+    is( $us->get_status, $STATUS_PROGRESS, 'Check status of prolong service after unblock' );
+
+    proccess_spool( $us );
+
+    cmp_deeply( chldrn_by_service( $us ), {
+        5 => superhashof( { status => $STATUS_ACTIVE } ),
+        8 => superhashof( { status => $STATUS_ACTIVE } ),
+        29 => superhashof( { status => $STATUS_ACTIVE } ),
+    }, 'Check children statuses after spool executes' );
+
+    is( $us->get_status, $STATUS_ACTIVE, 'Check status of prolong service after spool executes' )
 };
 
 done_testing();
 exit 0;
 
-sub set_service_status_deeply {
-    my $service = shift;
-    my $status = shift || 2;
+sub proccess_spool {
+    my $self = shift;
 
-    $service->set( status => $status );
-
-    for ( keys %{ $service->children } ) {
-        get_service('us', _id => $_ )->set( status => $status );
+    # Simulate spool proccess
+    for ( $self->spool->list ) {
+        my $task = get_service('spool', _id => $_->{id} );
+        get_service('us', _id => $_->{user_service_id} )->set_status_by_event( $task->event->{event} );
+        $task->finish_task;
     }
+}
+
+sub chldrn_by_service {
+    my $self = shift;
+
+    my %ret = map { $_->{service_id} => $_ } $self->children;
+    return \%ret;
 }

@@ -211,7 +211,7 @@ sub make_commands_by_event {
                     ( server_gid => $_->{server_gid} ),
                 event_id => $_->{id},
                 user_service_id => $self->id,
-                branch => $self->top_parent,
+                #branch => $self->top_parent,
             );
         }
     }
@@ -229,19 +229,26 @@ sub event {
 
     my $is_commands = $self->make_commands_by_event( $e );
 
-    unless ( $is_commands || $self->children ) {
+    my @children = $self->children;
+
+    unless ( $is_commands || scalar @children ) {
         $self->set_status_by_event( $e );
     }
 
-    if ( $e == $EVENT_UPDATE_CHILD_STATUS && !$self->spool->exists_command( user_service_id => $self->id ) ) {
-        # Set status of service by status of children
-        my %children_statuses = map { $_->{status} => 1 } $self->children;
+    if ( $e == $EVENT_UPDATE_CHILD_STATUS ) {
+        if ( $self->spool->exists_command( user_service_id => $self->id ) ) {
+            # TODO:
+            # unlock command
+        } else {
+            # Set status of service by status of children
+            my %children_statuses = map { $_->{status} => 1 } $self->children;
 
-        if ( exists $children_statuses{ $STATUS_PROGRESS } ) {
-            $self->status( $STATUS_PROGRESS );
-        } elsif ( scalar (keys %children_statuses) == 1 ) {
-            # Inherit children status
-            $self->status( (keys %children_statuses)[0] );
+            if ( exists $children_statuses{ $STATUS_PROGRESS } ) {
+                $self->status( $STATUS_PROGRESS );
+            } elsif ( scalar (keys %children_statuses) == 1 ) {
+                # Inherit children status
+                $self->status( (keys %children_statuses)[0] );
+            }
         }
     }
     return SUCCESS;
@@ -269,6 +276,8 @@ sub status {
     my $status = shift;
 
     if ( $status && $self->{status} != $status ) {
+        get_service('logger')->info( sprintf('Set new status for service: [usi=%d,si=%d,status=%d]',
+                $self->id, $self->get_service_id, $status ) );
         $self->set( status => $status );
 
         if ( my $parent = $self->parent ) {

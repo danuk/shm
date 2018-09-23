@@ -22,11 +22,17 @@ sub add {
         get_service('logger')->error('`service_id` required');
     }
 
+    my $service = get_service( 'service', _id => $args{service_id} );
+    unless ( $service ) {
+        get_service('logger')->warning("Can't create not existed service: $args{service_id}");
+        return undef;
+    }
+
     delete $args{ $_ } for qw/user_service_id created expired/;
 
     my $usi = $self->SUPER::add(
         %args,
-        settings => get_service( 'service', _id => $args{service_id} )->get->{config},
+        settings => $service->get->{config},
     );
     delete $self->{res};
 
