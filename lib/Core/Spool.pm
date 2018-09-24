@@ -66,7 +66,7 @@ sub list_for_all_users {
                 { '<', \[ '? - INTERVAL `delayed` SECOND', now ] },
             ],
         },
-        order => [ user_id => 'asc', server_id => 'asc', prio => 'desc' ],
+        order => [ id => 'asc' ],
         limit => 100,
     );
 }
