@@ -10,6 +10,7 @@ tzset;
 use Test::MockTime;
 Test::MockTime::set_fixed_time('2016-12-31T21:00:00Z'); # Sun Jan  1 00:00:00 2017
 
+use Core::Const;
 use base qw( Core::System::Service );
 use Core::System::ServiceManager qw( get_service );
 

@@ -3,6 +3,7 @@ package Core::Services::Web;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Core::Const;
 
 # Имя сервиса в менеджере сервисов.
 # Используем один и тот-же экземпляр для сервиса (имя сервиса не содержит идентификатор)

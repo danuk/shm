@@ -3,6 +3,7 @@ package Core::Services::Dns;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Core::Const;
 
 sub _id { return 'Services::Dns' };
 

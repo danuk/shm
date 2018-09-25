@@ -5,6 +5,7 @@ use parent 'Core::Base';
 use v5.14;
 use utf8;
 use Core::Base;
+use Core::Const;
 use Net::OpenSSH;
 use JSON;
 use File::Temp;

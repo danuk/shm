@@ -27,8 +27,8 @@ use Core::Billing::Honest;
 sub awaiting_payment {
     my $self = shift;
 
-    return 1 if (   $self->get_status == $STATUS_BLOCK ||
-                    $self->get_status == $STATUS_WAIT_FOR_PAY );
+    return 1 if (   $self->get_status == STATUS_BLOCK ||
+                    $self->get_status == STATUS_WAIT_FOR_PAY );
     return 0;
 }
 
@@ -54,12 +54,12 @@ sub create_service {
         get_service('UserServices')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
     }
 
-    return process_service_recursive( $us, $EVENT_CREATE );
+    return process_service_recursive( $us, EVENT_CREATE );
 }
 
 sub process_service_recursive {
     my $service = shift;
-    my $event = shift || $EVENT_PROLONGATE;
+    my $event = shift || EVENT_PROLONGATE;
 
     # Дети наследуют событие родителя
     if ( $event = process_service( $service, $event ) ) {
@@ -201,7 +201,7 @@ sub set_service_expire {
     my $wd = $self->withdraws->get;
     my $now = now;
 
-    if ( $self->get_expired && $self->get_status != $STATUS_BLOCK ) {
+    if ( $self->get_expired && $self->get_status != STATUS_BLOCK ) {
         # Услуга истекла (не новая) и не заблокирована ранее
         # Будем продлять с момента истечения
         $now = $self->get_expired;
@@ -232,12 +232,12 @@ sub create {
 
     unless ( is_pay( $self ) ) {
         logger->debug('Not enough money');
-        return $EVENT_NOT_ENOUGH_MONEY;
+        return EVENT_NOT_ENOUGH_MONEY;
     }
 
     set_service_expire( $self ) unless $args{children_free};
 
-    return $EVENT_CREATE;
+    return EVENT_CREATE;
 }
 
 sub prolongate {
@@ -282,18 +282,18 @@ sub prolongate {
     }
 
     set_service_expire( $self );
-    return $self->get_status == $STATUS_BLOCK ? $EVENT_ACTIVATE : $EVENT_PROLONGATE;
+    return $self->get_status == STATUS_BLOCK ? EVENT_ACTIVATE : EVENT_PROLONGATE;
 }
 
 sub block {
     my $self = shift;
-    return 0 unless $self->get_status == $STATUS_ACTIVE;
-    return $EVENT_BLOCK;
+    return 0 unless $self->get_status == STATUS_ACTIVE;
+    return EVENT_BLOCK;
 }
 
 sub remove {
     my $self = shift;
-    return $EVENT_REMOVE;
+    return EVENT_REMOVE;
 }
 
 # Анализируем услугу и решаем какую скидку давать (доменам не давать)

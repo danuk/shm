@@ -43,7 +43,7 @@ sub structure {
         withdraw_id => undef,
         created => 'now',
         expired => undef,
-        status => $STATUS_PROGRESS,
+        status => STATUS_PROGRESS,
         next => undef,
         parent => undef,
         settings => { type => 'json', value => undef },
@@ -202,7 +202,7 @@ sub make_commands_by_event {
     );
 
     if ( scalar @commands ) {
-        $self->status( $STATUS_PROGRESS );
+        $self->status( STATUS_PROGRESS );
 
         for ( @commands ) {
             $self->spool->add(
@@ -235,7 +235,7 @@ sub event {
         $self->set_status_by_event( $e );
     }
 
-    if ( $e == $EVENT_UPDATE_CHILD_STATUS ) {
+    if ( $e == EVENT_UPDATE_CHILD_STATUS ) {
         if ( $self->spool->exists_command( user_service_id => $self->id ) ) {
             # TODO:
             # unlock command
@@ -243,8 +243,8 @@ sub event {
             # Set status of service by status of children
             my %children_statuses = map { $_->{status} => 1 } $self->children;
 
-            if ( exists $children_statuses{ $STATUS_PROGRESS } ) {
-                $self->status( $STATUS_PROGRESS );
+            if ( exists $children_statuses{ (STATUS_PROGRESS) } ) {
+                $self->status( STATUS_PROGRESS );
             } elsif ( scalar (keys %children_statuses) == 1 ) {
                 # Inherit children status
                 $self->status( (keys %children_statuses)[0] );
@@ -260,12 +260,12 @@ sub set_status_by_event {
 
     my $status;
 
-    if ( $event eq $EVENT_BLOCK || $event eq $EVENT_REMOVE ) {
-        $status = $STATUS_BLOCK;
-    } elsif ( $event eq $EVENT_NOT_ENOUGH_MONEY ) {
-        $status = $STATUS_WAIT_FOR_PAY;
+    if ( $event eq EVENT_BLOCK || $event eq EVENT_REMOVE ) {
+        $status = STATUS_BLOCK;
+    } elsif ( $event eq EVENT_NOT_ENOUGH_MONEY ) {
+        $status = STATUS_WAIT_FOR_PAY;
     } else {
-        $status = $STATUS_ACTIVE;
+        $status = STATUS_ACTIVE;
     }
 
     return $self->status( $status );
@@ -281,7 +281,7 @@ sub status {
         $self->set( status => $status );
 
         if ( my $parent = $self->parent ) {
-            $parent->event( $EVENT_UPDATE_CHILD_STATUS );
+            $parent->event( EVENT_UPDATE_CHILD_STATUS );
         }
     }
     return $self->{status};

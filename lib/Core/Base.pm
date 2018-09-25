@@ -13,22 +13,8 @@ $Data::Dumper::Deepcopy = 1;
 our @EXPORT = qw(
     get_service
     Dumper
-    SUCCESS
-    FAIL
-    TASK_NEW
-    TASK_SUCCESS
-    TASK_FAIL
-    TASK_DROP
     confess
 );
-
-use constant SUCCESS => 1;
-use constant FAIL => 0;
-
-use constant TASK_NEW => 0;
-use constant TASK_SUCCESS => 1;
-use constant TASK_FAIL => 2;
-use constant TASK_DROP => 3;
 
 sub new {
     my $proto = shift;

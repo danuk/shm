@@ -3,6 +3,7 @@ package Core::Spool;
 use v5.14;
 use parent qw/Core::Task Core::Base/;
 use Core::Base;
+use Core::Const;
 use Core::Utils qw( now );
 use Core::Task;
 

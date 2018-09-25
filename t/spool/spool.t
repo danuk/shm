@@ -7,12 +7,8 @@ use Data::Dumper;
 
 $ENV{SHM_TEST} = 1;
 
-use constant TASK_NEW => 0;
-use constant TASK_SUCCESS => 1;
-use constant TASK_FAIL => 2;
-use constant TASK_DROP => 3;
-
 use SHM;
+use Core::Const;
 use Core::System::ServiceManager qw( get_service );
 
 SHM->new( user_id => 40092 );

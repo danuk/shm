@@ -36,14 +36,14 @@ subtest 'Check create service' => sub {
     is( $us->get_expired, '2017-01-31 23:59:59', 'Check expired date after create new service' );
     is( $user->get_balance, 1000, 'Check user balance after withdraw');
 
-    is( $us->get_status, $STATUS_PROGRESS, 'Check status of new service' );
+    is( $us->get_status, STATUS_PROGRESS, 'Check status of new service' );
 
     my $ch_by_service = chldrn_by_service( $us );
 
     cmp_deeply( $ch_by_service, {
-        5 => superhashof( { status => $STATUS_ACTIVE } ),
-        8 => superhashof( { status => $STATUS_ACTIVE } ),
-        29 => superhashof( { status => $STATUS_PROGRESS } ),
+        5 => superhashof( { status => STATUS_ACTIVE } ),
+        8 => superhashof( { status => STATUS_ACTIVE } ),
+        29 => superhashof( { status => STATUS_PROGRESS } ),
     }, 'Check children statuses' );
 
     my @spool_list = $spool->list();
@@ -56,7 +56,7 @@ subtest 'Check create service' => sub {
 
     proccess_spool( $us );
 
-    is( $us->get_status, $STATUS_ACTIVE, 'Check status of service after the creation childs' );
+    is( $us->get_status, STATUS_ACTIVE, 'Check status of service after the creation childs' );
 };
 
 # Half month later...
@@ -69,9 +69,9 @@ subtest 'Half month later. Try prolongate service' => sub {
     is( $user->get_balance, 1000, 'Check user balance after withdraw');
 
     cmp_deeply( chldrn_by_service( $us ), {
-        5 => superhashof( { status => $STATUS_ACTIVE } ),
-        8 => superhashof( { status => $STATUS_ACTIVE } ),
-        29 => superhashof( { status => $STATUS_ACTIVE } ),
+        5 => superhashof( { status => STATUS_ACTIVE } ),
+        8 => superhashof( { status => STATUS_ACTIVE } ),
+        29 => superhashof( { status => STATUS_ACTIVE } ),
     }, 'Check children statuses' );
 };
 
@@ -88,9 +88,9 @@ subtest 'One month later. Prolongate service' => sub {
     my %ch_by_service = map { $_->{service_id} => $_ } @children;
 
     cmp_deeply( \%ch_by_service , {
-        5 => superhashof( { status => $STATUS_ACTIVE } ),
-        8 => superhashof( { status => $STATUS_ACTIVE } ),
-        29 => superhashof( { status => $STATUS_ACTIVE } ),
+        5 => superhashof( { status => STATUS_ACTIVE } ),
+        8 => superhashof( { status => STATUS_ACTIVE } ),
+        29 => superhashof( { status => STATUS_ACTIVE } ),
     }, 'Check children statuses' );
 
     my @all_wd = get_service('wd')->list( where => { user_service_id => $us->id } );
@@ -138,15 +138,15 @@ subtest 'Try prolongate service without have money' => sub {
     is( $us->get_expired, '2017-02-28 23:59:57', 'Check expired date after prolongate' );
     is( $user->get_balance, 0, 'Check user balance');
     
-    is( $us->get_status, $STATUS_PROGRESS, 'Check status of prolong service' );
+    is( $us->get_status, STATUS_PROGRESS, 'Check status of prolong service' );
 
     my @children = $us->children;
     my %ch_by_service = map { $_->{service_id} => $_ } @children;
 
     cmp_deeply( \%ch_by_service, {
-        5 => superhashof( { status => $STATUS_PROGRESS } ),
-        8 => superhashof( { status => $STATUS_BLOCK } ),
-        29 => superhashof( { status => $STATUS_PROGRESS } ),
+        5 => superhashof( { status => STATUS_PROGRESS } ),
+        8 => superhashof( { status => STATUS_BLOCK } ),
+        29 => superhashof( { status => STATUS_PROGRESS } ),
     }, 'Check children statuses' );
 
     my @all_wd = get_service('wd')->list( where => { user_service_id => $us->id } );
@@ -169,12 +169,12 @@ subtest 'Try prolongate service without have money' => sub {
     proccess_spool( $us );
 
     cmp_deeply( chldrn_by_service( $us ), {
-        5 => superhashof( { status => $STATUS_BLOCK } ),
-        8 => superhashof( { status => $STATUS_BLOCK } ),
-        29 => superhashof( { status => $STATUS_BLOCK } ),
+        5 => superhashof( { status => STATUS_BLOCK } ),
+        8 => superhashof( { status => STATUS_BLOCK } ),
+        29 => superhashof( { status => STATUS_BLOCK } ),
     }, 'Check children statuses' );
 
-    is( $us->get_status, $STATUS_BLOCK, 'Check status of prolong service' );
+    is( $us->get_status, STATUS_BLOCK, 'Check status of prolong service' );
 };
 
 
@@ -182,12 +182,12 @@ subtest 'Try prolongate blocked service without have money' => sub {
     my $ret = process_service_recursive( $us );
 
     cmp_deeply( chldrn_by_service( $us ), {
-        5 => superhashof( { status => $STATUS_BLOCK } ),
-        8 => superhashof( { status => $STATUS_BLOCK } ),
-        29 => superhashof( { status => $STATUS_BLOCK } ),
+        5 => superhashof( { status => STATUS_BLOCK } ),
+        8 => superhashof( { status => STATUS_BLOCK } ),
+        29 => superhashof( { status => STATUS_BLOCK } ),
     }, 'Check children statuses' );
 
-    is( $us->get_status, $STATUS_BLOCK, 'Check status of prolong service' );
+    is( $us->get_status, STATUS_BLOCK, 'Check status of prolong service' );
 
 	my @spool = $spool->list();
 	is( scalar @spool, 0, 'Check spool for empty' );
@@ -226,22 +226,22 @@ subtest 'Try prolongate blocked service' => sub {
     is( $user->get_balance, 0.03, 'Check user balance');
 
     cmp_deeply( chldrn_by_service( $us ), {
-        5 => superhashof( { status => $STATUS_PROGRESS } ),
-        8 => superhashof( { status => $STATUS_ACTIVE } ),
-        29 => superhashof( { status => $STATUS_PROGRESS } ),
+        5 => superhashof( { status => STATUS_PROGRESS } ),
+        8 => superhashof( { status => STATUS_ACTIVE } ),
+        29 => superhashof( { status => STATUS_PROGRESS } ),
     }, 'Check children statuses after unblock' );
 
-    is( $us->get_status, $STATUS_PROGRESS, 'Check status of prolong service after unblock' );
+    is( $us->get_status, STATUS_PROGRESS, 'Check status of prolong service after unblock' );
 
     proccess_spool( $us );
 
     cmp_deeply( chldrn_by_service( $us ), {
-        5 => superhashof( { status => $STATUS_ACTIVE } ),
-        8 => superhashof( { status => $STATUS_ACTIVE } ),
-        29 => superhashof( { status => $STATUS_ACTIVE } ),
+        5 => superhashof( { status => STATUS_ACTIVE } ),
+        8 => superhashof( { status => STATUS_ACTIVE } ),
+        29 => superhashof( { status => STATUS_ACTIVE } ),
     }, 'Check children statuses after spool executes' );
 
-    is( $us->get_status, $STATUS_ACTIVE, 'Check status of prolong service after spool executes' )
+    is( $us->get_status, STATUS_ACTIVE, 'Check status of prolong service after spool executes' )
 };
 
 done_testing();

@@ -333,7 +333,7 @@ sub search_services_expired {
     my $query = $self->query_select(
                                 vars => \@vars,
                                 range => { field => 'expired', stop => Core::Utils::now },
-                                where => { status => $STATUS_BLOCK },
+                                where => { status => STATUS_BLOCK },
                                 order => { by => 'user_service_id' },
     );
 

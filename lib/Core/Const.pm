@@ -4,41 +4,64 @@ use v5.14;
 use base qw(Exporter);
 
 our @EXPORT = qw(
-    $STATUS_WAIT_FOR_PAY
-    $STATUS_PROGRESS
-    $STATUS_ACTIVE
-    $STATUS_BLOCK
+    SUCCESS
+    FAIL
 
-    $EVENT_CREATE
-    $EVENT_BLOCK
-    $EVENT_REMOVE
-    $EVENT_PROLONGATE
-    $EVENT_ACTIVATE
-    $EVENT_UPDATE_CHILD_STATUS
-    $EVENT_NOT_ENOUGH_MONEY
+    STATUS_WAIT_FOR_PAY
+    STATUS_PROGRESS
+    STATUS_ACTIVE
+    STATUS_BLOCK
+
+    EVENT_CREATE
+    EVENT_BLOCK
+    EVENT_REMOVE
+    EVENT_PROLONGATE
+    EVENT_ACTIVATE
+    EVENT_UPDATE_CHILD_STATUS
+    EVENT_NOT_ENOUGH_MONEY
+
+    TASK_NEW
+    TASK_SUCCESS
+    TASK_FAIL
+    TASK_DROP
 );
 
-our $STATUS_WAIT_FOR_PAY = 0;
-our $STATUS_PROGRESS = 1;
-our $STATUS_ACTIVE = 2;
-our $STATUS_BLOCK = 3;
+use constant {
+    SUCCESS => 1,
+    FAIL => 0,
+};
 
-our $STATUS_NOT_REGISTERED = 7;
+use constant {
+    STATUS_WAIT_FOR_PAY => 0,
+    STATUS_PROGRESS => 1,
+    STATUS_ACTIVE => 2,
+    STATUS_BLOCK => 3,
+};
 
-our $CLIENT_FIZ = 0;
-our $CLIENT_JUR = 1;
-our $CLIENT_IP = 2;
-our $CLIENT_FIZ_NR = 3;
-our $CLIENT_JUR_NR = 4;
+use constant {
+    CLIENT_FIZ => 0,
+    CLIENT_JUR => 1,
+    CLIENT_IP => 2,
+    CLIENT_FIZ_NR => 3,
+    CLIENT_JUR_NR => 4,
+};
 
-our $EVENT_CREATE = 'create';
-our $EVENT_NOT_ENOUGH_MONEY = 'not_enough_money';
-our $EVENT_BLOCK = 'block';
-our $EVENT_REMOVE = 'remove';
-our $EVENT_PROLONGATE = 'prolongate';
-our $EVENT_ACTIVATE = 'activate';
-our $EVENT_UPDATE_CHILD_STATUS = 'update_chlid_status';
+use constant {
+    EVENT_CREATE => 'create',
+    EVENT_NOT_ENOUGH_MONEY => 'not_enough_money',
+    EVENT_BLOCK => 'block',
+    EVENT_REMOVE => 'remove',
+    EVENT_PROLONGATE => 'prolongate',
+    EVENT_ACTIVATE => 'activate',
+    EVENT_UPDATE_CHILD_STATUS => 'update_chlid_status',
+};
 
+use constant {
+    TASK_NEW => 0,
+    TASK_SUCCESS => 1,
+    TASK_FAIL => 2,
+    TASK_DROP => 3,
+};
 
 1;
 
