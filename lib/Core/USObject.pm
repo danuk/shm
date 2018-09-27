@@ -202,7 +202,7 @@ sub make_commands_by_event {
     );
 
     if ( scalar @commands ) {
-        $self->status( STATUS_PROGRESS );
+        $self->status( STATUS_PROGRESS, event => $e );
 
         for ( @commands ) {
             $self->spool->add(
@@ -229,26 +229,36 @@ sub event {
 
     my $is_commands = $self->make_commands_by_event( $e );
 
-    my @children = $self->children;
-
-    unless ( $is_commands || scalar @children ) {
+    my ( $is_children ) = $self->children;
+    unless ( $is_commands || $is_children ) {
         $self->set_status_by_event( $e );
     }
 
-    if ( $e == EVENT_UPDATE_CHILD_STATUS ) {
-        if ( $self->spool->exists_command( user_service_id => $self->id ) ) {
-            # TODO:
-            # unlock command
-        } else {
-            # Set status of service by status of children
-            my %children_statuses = map { $_->{status} => 1 } $self->children;
+    return SUCCESS;
+}
 
-            if ( exists $children_statuses{ (STATUS_PROGRESS) } ) {
-                $self->status( STATUS_PROGRESS );
-            } elsif ( scalar (keys %children_statuses) == 1 ) {
-                # Inherit children status
-                $self->status( (keys %children_statuses)[0] );
-            }
+sub child_status_updated {
+    my $self = shift;
+    my $event = shift;
+    my %child = (
+        id => undef,
+        status => undef,
+        event => undef,
+        @_,
+    );
+
+    if ( $self->spool->exists_command( user_service_id => $self->id ) ) {
+        # TODO:
+        # unlock command
+    } else {
+        # Set status of service by status of children
+        my %children_statuses = map { $_->{status} => 1 } $self->children;
+
+        if ( exists $children_statuses{ (STATUS_PROGRESS) } ) {
+            $self->status( STATUS_PROGRESS, event => $child{event} );
+        } elsif ( scalar (keys %children_statuses) == 1 ) {
+            # Inherit children status
+            $self->status( (keys %children_statuses)[0], event => $child{event} );
         }
     }
     return SUCCESS;
@@ -268,20 +278,29 @@ sub set_status_by_event {
         $status = STATUS_ACTIVE;
     }
 
-    return $self->status( $status );
+    return $self->status( $status, event => $event );
 }
 
 sub status {
     my $self = shift;
     my $status = shift;
+    my %args = (
+        event => undef,
+        @_,
+    );
 
-    if ( $status && $self->{status} != $status ) {
+    if ( defined $status && $self->get_status != $status ) {
         get_service('logger')->info( sprintf('Set new status for service: [usi=%d,si=%d,status=%d]',
                 $self->id, $self->get_service_id, $status ) );
         $self->set( status => $status );
 
         if ( my $parent = $self->parent ) {
-            $parent->event( EVENT_UPDATE_CHILD_STATUS );
+            $parent->child_status_updated(
+                id => $self->id,
+                status => $status,
+                event => $args{event},
+            );
+            $parent->event( sprintf("%s_%s", EVENT_CHILD_PREFIX, $args{event}) ) if $args{event};
         }
     }
     return $self->{status};
