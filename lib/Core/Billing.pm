@@ -159,7 +159,12 @@ sub calc_withdraw {
     $wd{withdraw_date}||= now;
     $wd{end_date} = calc_end_date_by_months( $wd{withdraw_date}, $real_payment_months );
 
-    $wd{total} = calc_total_by_date_range( %wd );
+    if ( $wd{months} !~/^\d+$/ ) {
+        $wd{total} = calc_total_by_date_range( %wd );
+    } else {
+        $wd{total} = $wd{cost} * $real_payment_months;
+    }
+
     $wd{discount} = get_service_discount( %wd );
 
     $wd{total} = ( $wd{total} - $wd{total} * $wd{discount} / 100 ) * $wd{qnt};

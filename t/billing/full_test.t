@@ -277,7 +277,7 @@ subtest 'Check create service without money' => sub {
             'months' => 1,
             'discount' => 0,
             'bonus' => 0,
-            'total' => ignore(),
+            'total' => 1000,
     }, 'Check withdraw' );
 
     my @spool_list = $spool->list();
