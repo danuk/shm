@@ -96,36 +96,36 @@ subtest 'One month later. Prolongate service' => sub {
     my @all_wd = get_service('wd')->list( where => { user_service_id => $us->id } );
 
     cmp_deeply( \@all_wd, bag(
-		{
-			'withdraw_id' => ignore(),
-			'user_service_id' => $us->id,
-			'create_date' 	=> '2017-01-01 00:00:00',
-			'withdraw_date' => '2017-01-01 00:00:00',
-			'end_date' 		=> '2017-01-31 23:59:59',
-			'user_id' => 40092,
-			'service_id' => 4,
-			'cost' => 1000,
-			'qnt' => 1,
-			'months' => 1,
-			'discount' => 0,
-			'bonus' => 0,
-			'total' => 1000,
-		},
-		{
-			'withdraw_id' => ignore(),
-			'user_service_id' => $us->id,
-			'create_date' 	=> '2017-02-01 13:14:01',
-			'withdraw_date' => '2017-02-01 13:14:01',
-			'end_date' 		=> '2017-02-28 23:59:57',
-			'user_id' => 40092,
-			'service_id' => 4,
-			'cost' => 1000,
-			'qnt' => 1,
-			'months' => 1,
-			'discount' => 0,
-			'bonus' => 0,
-			'total' => 1000,
-		},
+        {
+            'withdraw_id' => ignore(),
+            'user_service_id' => $us->id,
+            'create_date'   => '2017-01-01 00:00:00',
+            'withdraw_date' => '2017-01-01 00:00:00',
+            'end_date'      => '2017-01-31 23:59:59',
+            'user_id' => 40092,
+            'service_id' => 4,
+            'cost' => 1000,
+            'qnt' => 1,
+            'months' => 1,
+            'discount' => 0,
+            'bonus' => 0,
+            'total' => 1000,
+        },
+        {
+            'withdraw_id' => ignore(),
+            'user_service_id' => $us->id,
+            'create_date'   => '2017-02-01 13:14:01',
+            'withdraw_date' => '2017-02-01 13:14:01',
+            'end_date'      => '2017-02-28 23:59:57',
+            'user_id' => 40092,
+            'service_id' => 4,
+            'cost' => 1000,
+            'qnt' => 1,
+            'months' => 1,
+            'discount' => 0,
+            'bonus' => 0,
+            'total' => 1000,
+        },
     ),'Check all withdraws for service');
 };
 
@@ -150,21 +150,21 @@ subtest 'Try prolongate service without have money' => sub {
     }, 'Check children statuses' );
 
     my @all_wd = get_service('wd')->list( where => { user_service_id => $us->id } );
- 	cmp_deeply( $all_wd[-1], {
-			'withdraw_id' => $us->get_withdraw_id,
-			'user_service_id' => $us->id,
-			'create_date'	=> '2017-03-01 00:00:00',
-			'withdraw_date' =>	undef, 
-			'end_date' 		=> 	undef,
-			'user_id' => 40092,
-			'service_id' => 4,
-			'cost' => 1000,
-			'qnt' => 1,
-			'months' => 1,
-			'discount' => 0,
-			'bonus' => 0,
-			'total' => 1000,
-	}, 'Check withdraw');
+    cmp_deeply( $all_wd[-1], {
+            'withdraw_id' => $us->get_withdraw_id,
+            'user_service_id' => $us->id,
+            'create_date'   => '2017-03-01 00:00:00',
+            'withdraw_date' =>  undef,
+            'end_date'      =>  undef,
+            'user_id' => 40092,
+            'service_id' => 4,
+            'cost' => 1000,
+            'qnt' => 1,
+            'months' => 1,
+            'discount' => 0,
+            'bonus' => 0,
+            'total' => 1000,
+    }, 'Check withdraw');
 
     proccess_spool( $us );
 
@@ -189,8 +189,8 @@ subtest 'Try prolongate blocked service without have money' => sub {
 
     is( $us->get_status, STATUS_BLOCK, 'Check status of prolong service' );
 
-	my @spool = $spool->list();
-	is( scalar @spool, 0, 'Check spool for empty' );
+    my @spool = $spool->list();
+    is( scalar @spool, 0, 'Check spool for empty' );
 };
 
 # 2 day later after blocking service
@@ -206,21 +206,21 @@ subtest 'Try prolongate blocked service' => sub {
     is( int($withdraw_id==$us->get_withdraw_id), 1, 'Check use current withdraw (no create new)' );
 
     my @all_wd = get_service('wd')->list( where => { user_service_id => $us->id } );
- 	cmp_deeply( $all_wd[-1], {
-			'withdraw_id' => $withdraw_id,
-			'user_service_id' => $us->id,
-			'create_date'	=> '2017-03-01 00:00:00',
-			'withdraw_date' => '2017-03-02 12:00:00', 
-			'end_date' 		=> '2017-04-02 10:50:18',
-			'user_id' => 40092,
-			'service_id' => 4,
-			'cost' => 1000,
-			'qnt' => 1,
-			'months' => 1,
-			'discount' => 0,
-			'bonus' => 0,
-			'total' => 1000,
-	}, 'Check withdraw' );
+    cmp_deeply( $all_wd[-1], {
+            'withdraw_id' => $withdraw_id,
+            'user_service_id' => $us->id,
+            'create_date'   => '2017-03-01 00:00:00',
+            'withdraw_date' => '2017-03-02 12:00:00',
+            'end_date'      => '2017-04-02 10:50:18',
+            'user_id' => 40092,
+            'service_id' => 4,
+            'cost' => 1000,
+            'qnt' => 1,
+            'months' => 1,
+            'discount' => 0,
+            'bonus' => 0,
+            'total' => 1000,
+    }, 'Check withdraw' );
 
     is( $us->get_expired, $us->withdraws->res->{end_date}, 'Check expired date after activate' );
     is( $user->get_balance, 0.03, 'Check user balance');
@@ -243,6 +243,54 @@ subtest 'Try prolongate blocked service' => sub {
 
     is( $us->get_status, STATUS_ACTIVE, 'Check status of prolong service after spool executes' )
 };
+
+subtest 'Check create service without money' => sub {
+    $us = create_service( service_id => 4, cost => 1000, months => 1 );
+
+    is( $us->get_expired, undef, 'Check expired date after create new service' );
+    is( $user->get_balance, 0.03, 'Check user balance after withdraw');
+
+    is( $us->get_status, STATUS_WAIT_FOR_PAY, 'Check status of new service' );
+
+    my $ch_by_service = chldrn_by_service( $us );
+
+    cmp_deeply( $ch_by_service, {
+        5 => superhashof( { status => STATUS_WAIT_FOR_PAY } ),
+        8 => superhashof( { status => STATUS_WAIT_FOR_PAY } ),
+        29 => superhashof( { status => STATUS_WAIT_FOR_PAY } ),
+    }, 'Check children statuses' );
+
+    my $withdraw_id = $us->get_withdraw_id;
+    is( int($withdraw_id==$us->get_withdraw_id), 1, 'Check use current withdraw (no create new)' );
+
+    my @all_wd = get_service('wd')->list( where => { user_service_id => $us->id } );
+    cmp_deeply( $all_wd[-1], {
+            'withdraw_id' => $withdraw_id,
+            'user_service_id' => $us->id,
+            'create_date'   => '2017-03-02 12:00:00',
+            'withdraw_date' => undef,
+            'end_date'      => undef,
+            'user_id' => 40092,
+            'service_id' => 4,
+            'cost' => 1000,
+            'qnt' => 1,
+            'months' => 1,
+            'discount' => 0,
+            'bonus' => 0,
+            'total' => ignore(),
+    }, 'Check withdraw' );
+
+    my @spool_list = $spool->list();
+
+    is ( scalar @spool_list, 0, 'Check count spool commands' );
+
+    $user->set( balance => 1000, credit => 0, discount => 0 );
+    process_service_recursive( $us );
+    proccess_spool( $us );
+
+    is( $us->get_status, STATUS_ACTIVE, 'Check status of non payment service after payment' );
+};
+
 
 done_testing();
 exit 0;
