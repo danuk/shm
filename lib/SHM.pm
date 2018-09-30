@@ -14,6 +14,7 @@ use JSON;
 use Core::System::ServiceManager qw( get_service );
 use Core::Sql::Data;
 use Scalar::Util qw(blessed);
+use Core::Utils qw(force_numbers);
 
 use base qw(Exporter);
 
@@ -75,21 +76,23 @@ sub new {
     if ( $args->{user_id} ) {
         $user_id = $args->{user_id};
     } elsif ( !$args->{skip_check_auth} ) {
-
-	    #if ($0=~/\/(admin|spool)\//) {
-	    #  print_json( { status => 403, msg => 'Forbidden' } );
-	    #exit 0;
-	    #}
         my $session = validate_session();
         print_not_authorized() unless $session;
-
         $user_id = $session->get('user_id');
-
-        print STDERR 'USER_ID: ' . $user_id;
     }
 
     $config->local('user_id', $user_id );
-    return get_service('user');
+    my $user = get_service('user');
+    unless ( $user ) {
+        print_not_authorized();
+    }
+
+    if ($0=~/\/(admin)\// && $user->get_gid != 1 ) {
+            print_json( { status => 403, msg => 'Forbidden' } );
+            exit 0;
+    }
+
+    return $user;
 }
 
 
@@ -166,7 +169,7 @@ sub print_json {
     $json->canonical( 1 );
     $json->pretty( 1 ) if $ENV{DEBUG};
 
-    say $json->canonical->encode( $ref );
+    say $json->canonical->encode( force_numbers( $ref ) );
 }
 
 1;

@@ -35,6 +35,11 @@ unless ( $user->auth( login => trim($in{login}), password => trim($in{password})
 	exit 0;
 }
 
+if ( $in{admin} && $user->get_gid != 1 ) {
+    print_json( { status => 403, msg => 'Forbidden' } );
+    exit 0;
+}
+
 my $session = Session->new( undef, %{ get_service('config')->get('session') } );
 my $session_id = $session->session_id();
 
