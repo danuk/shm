@@ -24,6 +24,16 @@ if ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
         print_json( { status => 400, msg => $report } );
         exit 0;
     }
+} elsif ( $ENV{REQUEST_METHOD} eq 'POST' ) {
+    my $user = get_service('user', _id => $user_id );
+    unless ( $user ) {
+        print_json( { status => 400, msg => 'User not found' } );
+        exit 0;
+    }
+    unless ( $user->set( %in ) ) {
+        print_json( { status => 400, msg => "Can't save user" } );
+        exit 0;
+    }
 } else {
     unless ( $user_id ) {
         print_header( status => 400 );

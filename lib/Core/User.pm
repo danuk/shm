@@ -174,7 +174,7 @@ sub set {
     my $self = shift;
     my %args = ( @_ );
 
-    $self->SUPER::set( %args );
+    return $self->SUPER::set( %args );
 }
 
 sub set_balance {
