@@ -47,6 +47,7 @@ sub db_connect {
     $dbh->{mysql_auto_reconnect} = 1;
 
     $dbh->do("SET CHARACTER SET UTF8");
+    $dbh->do("SET NAMES utf8 COLLATE utf8_general_ci");
 
     return $dbh;
 }
