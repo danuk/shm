@@ -18,16 +18,7 @@ our %in = parse_args();
 
 my $us = get_service('UserServices');
 
-my $user_services = $us->_list(
-    join => {
-        dir => 'left',
-        table => 'services',
-        using => ['service_id'],
-    },
-    where => { parent => $in{parent} },
-);
-
-my @res = $us->res( $user_services )->with('settings')->get;
+my @res = $us->all->with('settings','services','withdraws')->get;
 
 my $numRows = $user->found_rows;
 
