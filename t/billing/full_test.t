@@ -9,12 +9,13 @@ use SHM qw( get_service );
 use Core::Billing;
 use Core::Const;
 use POSIX qw(tzset);
-$ENV{TZ} = 'Europe/London'; #UTC+0
-tzset;
 
 $ENV{SHM_TEST} = 1;
 
 SHM->new( user_id => 40092 );
+
+$ENV{TZ} = 'Europe/London'; #UTC+0
+tzset;
 
 my $spool = get_service('spool');
 my $user = get_service('user');
