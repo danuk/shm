@@ -323,6 +323,7 @@ sub list {
 sub list_for_api {
     my $self = shift;
     my %args = (
+        admin => 0,
         field => 'date',
         start => undef,
         stop => undef,
@@ -330,7 +331,9 @@ sub list_for_api {
         @_,
     );
 
-    return $self->list(
+    my $method = $args{admin} ? '_list' : 'list';
+
+    return $self->$method(
         range => { field => $args{field}, start => $args{start}, stop => $args{stop} },
         limit => $args{limit}->{limit},
         offset => $args{limit}->{offset},
