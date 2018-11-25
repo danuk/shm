@@ -20,6 +20,7 @@ my $res;
 
 unless ( $in{object} ) {
     print_header( status => 400 );
+    print_json( { error => "Unknown object" } );
     exit 0;
 }
 
@@ -49,6 +50,7 @@ if ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
     }
     else {
         %headers = ( status => 400 );
+        $res = { error => "Can't add new object" };
     }
 }
 elsif ( $ENV{REQUEST_METHOD} eq 'POST' ) {
@@ -63,6 +65,7 @@ elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
         %headers = ( status => 204 );
     } else {
         %headers = ( status => 400 );
+        $res = { error => "Can't delete object" };
     }
 }
 else {
