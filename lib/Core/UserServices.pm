@@ -365,5 +365,16 @@ sub get_all_keys_ref {
     return \%data;
 }
 
+sub list_for_api {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    my @arr = $self->all->with('settings','services','withdraws')->get;
+
+    return @arr;
+}
+
 1;
 
