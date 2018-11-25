@@ -29,7 +29,10 @@ sub servers_by_group_id {
         @_,
     );
 
-    return $self->_list( where => { server_gid => $args{gid} } );
+    return $self->_list( where => {
+        server_gid => $args{gid},
+        enabled => 1,
+    });
 }
 
 1;

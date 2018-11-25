@@ -28,8 +28,8 @@ sub get_servers {
     my @servers = get_service('server')->servers_by_group_id( gid => $self->id );
 
     if ( $group->{type} eq 'random' ) {
-        # TODO: выбираем случайный сервер из группы, с учетом весов 
-        return $servers[0];
+        my $num_server = int rand scalar @servers;
+        return $servers[ $num_server ];
     } else {
         get_service('logger')->error('Unknown type: ' . $group->{type} );
     }
