@@ -8,6 +8,12 @@ use Core::Utils qw(now);
 
 sub init {
     my $self = shift;
+    my %args = (
+        _id => undef,
+        @_,
+    );
+
+    return $self unless $args{_id};
 
     unless ( $self->reload ) {
         get_service('logger')->error("Can't load user_service with id: " . $self->id );
@@ -147,6 +153,11 @@ sub withdraws {
 
 sub get {
     my $self = shift;
+
+    unless ( $self->{res} ) {
+        $self->reload;
+    }
+
     return $self->res;
 }
 
