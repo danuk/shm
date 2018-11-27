@@ -1,0 +1,6 @@
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule (.*) - [L]
+
+RewriteRule (.*) /admin/object.cgi?object=$1 [QSA,L]
+

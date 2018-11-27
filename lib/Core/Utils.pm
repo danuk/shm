@@ -104,6 +104,17 @@ sub period_to_string {
     }
 }
 
+sub get_uri_args {
+    my %in;
+
+    if ( $ENV{QUERY_STRING} ) {
+        delete local $ENV{REQUEST_METHOD};
+        my $q = CGI->new( $ENV{QUERY_STRING} );
+        %in = $q->Vars;
+    }
+    return %in;
+}
+
 sub parse_args {
     my $cgi = CGI->new;
     %in = $cgi->Vars;
@@ -114,7 +125,7 @@ sub parse_args {
         if ( $json ) {
             %in = %{ $json };
         }
-        return %in;
+        return %in, get_uri_args();
     }
 
     _utf8_on( $in{ $_ } ) for keys %in;

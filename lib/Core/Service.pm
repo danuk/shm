@@ -62,4 +62,25 @@ sub delete {
     return $self->SUPER::delete( %args );
 }
 
+sub list_for_api {
+    my $self = shift;
+    my %args = (
+        admin => 0,
+        parent => undef,
+        @_,
+    );
+
+    if ( $args{admin} && $args{parent} ) {
+        my $ss = get_service('SubServices');
+        my @ss_ids = $ss->_list( where => { service_id => $args{parent} } );
+        unless ( @ss_ids ) {
+            return ();
+        }
+        $args{where} = { service_id => { -in => [ map $_->{subservice_id}, @ss_ids ] } };
+    }
+
+    my @arr = $self->SUPER::list_for_api( %args );
+    return @arr;
+}
+
 1;
