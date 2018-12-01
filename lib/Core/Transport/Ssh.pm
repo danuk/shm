@@ -8,7 +8,6 @@ use Core::Base;
 use Core::Const;
 use Net::OpenSSH;
 use JSON;
-use File::Temp;
 
 sub send {
     my $self = shift;
@@ -17,8 +16,6 @@ sub send {
         server_id => undef, # for autoload server
         event => {},
         user => 'ssm',
-        private_key => undef,
-        private_key_file => get_service('config')->global->{ssh_default_ssm_key},
         port => 22,
         timeout => 10,
         payload => undef,
@@ -37,15 +34,6 @@ sub send {
     my $cmd = $task->make_cmd_string( $args{cmd} || $task->event->{params}->{cmd} || $server{params}->{cmd} );
     my $stdin_data = $task->make_cmd_string( $task->event->{params}->{stdin} || $server{params}->{payload} );
  
-    my $key_file = $server{private_key_file};
-
-    if ( $server{private_key} ) {
-        my $tmp_fh = File::Temp->new( UNLINK => 1, SUFFIX => '.key' );
-        say $tmp_fh $server{private_key};
-        $tmp_fh->seek( 0, SEEK_END );
-        $key_file = $tmp_fh->filename;
-    }
-
     $server{host}//= $server{ip};
     my $host = join('@', $server{user}, $server{host} );
 
@@ -54,7 +42,7 @@ sub send {
     my $ssh = Net::OpenSSH->new(
         $host,
         port => $server{port},
-        key_path => $key_file,
+        key_path => $task->server->key_file,
         passphrase => undef,
         batch_mode => 1,
         timeout => $server{timeout},

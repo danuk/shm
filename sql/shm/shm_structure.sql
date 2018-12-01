@@ -285,4 +285,16 @@ CREATE TABLE `zones` (
   PRIMARY KEY (`zone_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `identities`;
+CREATE TABLE `identities` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `name` char(64) NOT NULL,
+  `private_key` text NOT NULL,
+  `public_key` text,
+  `fingerprint` char(128),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+
+
 COMMIT;

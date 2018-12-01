@@ -137,7 +137,7 @@ INSERT INTO `pays_history` VALUES
 (default,40092,108,455.00,'2016-01-04 20:33:35',108,'');
 
 INSERT INTO `servers` VALUES 
-(1,1,NULL,'ssh','localhost','127.0.0.1',100,0,0,1,NULL),
+(1,1,NULL,'ssh','localhost','127.0.0.1',100,0,0,1,'{"key_id":1}'),
 (3,0,NULL,'ssh','127.0.0.1','192.168.1.102',100,0,0,1,NULL),
 (4,0,NULL,'ssh','127.0.0.1','192.168.1.102',100,0,0,1,NULL),
 (24,0,NULL,'ssh','localhost','127.0.0.1',100,0,0,1,NULL),
@@ -297,5 +297,7 @@ INSERT INTO `zones` VALUES
 (28,'spb.su',8,'whois.nic.ru','No entries found for',158,3,0,'domain_spb_su','client_ru',0,0,0),
 (29,'xxx',110,'whois.nic.xxx','NOT FOUND',175,3,0,'domain_epp_xxx','client_rrp',1,0,0),
 (30,'com.ru',8,'whois.nic.ru','No entries found for',198,3,0,'domain_com_ru','client_ru',0,0,0);
+
+INSERT INTO `identities` VALUES (1,40092,'test','-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAp790kROYX+oVfnJxF5yyaeFAa0/BLtkDdnBeYo/LmS6WbGx3UyaA\nqb29i8KQcFmEWe6gzNDOM92/lb3gNJbW0TfLI1GHP8AT7A0wYsH9/2K/1woItCjOQMkn6K\nu4XIWOykascPYiPXGiToQkftuzf4eh5u1jPWXu6MpxpLe7bjCjP0BieKoAkILghzO5+olM\n1FjA2IXPT9UMxJr97UHXC0sMz/QJR09bjw0pZ89ZKI6R+bevUzenZgcV1BEp8E1ZvQHYDQ\nvsGC38e7pyhQCIH649V2TuedGdp3aysAOofVN3rKoVeO46GWPUMcJ0rHfeK6JjlK2ApZwS\nYJ+1sYuX3wAAA9BmBrFbZgaxWwAAAAdzc2gtcnNhAAABAQCnv3SRE5hf6hV+cnEXnLJp4U\nBrT8Eu2QN2cF5ij8uZLpZsbHdTJoCpvb2LwpBwWYRZ7qDM0M4z3b+VveA0ltbRN8sjUYc/\nwBPsDTBiwf3/Yr/XCgi0KM5AySfoq7hchY7KRqxw9iI9caJOhCR+27N/h6Hm7WM9Ze7oyn\nGkt7tuMKM/QGJ4qgCQguCHM7n6iUzUWMDYhc9P1QzEmv3tQdcLSwzP9AlHT1uPDSlnz1ko\njpH5t69TN6dmBxXUESnwTVm9AdgNC+wYLfx7unKFAIgfrj1XZO550Z2ndrKwA6h9U3esqh\nV47joZY9QxwnSsd94romOUrYClnBJgn7Wxi5ffAAAAAwEAAQAAAQB69nTUA7EmXcjzr6AG\n1u5RfrRh9Ux+ssU/BI+rYAy2dNf/EmNFqGuYAWX4FN8b/AJwieOFP2pnypytf0niQs+k/W\nkCsriZmor/9YsKWXl+wzwsvUY0CdVm2A1RGM9DwwMwcy3kgAgJUkrPkz3NX+7sBNhBFrIw\nR5AhRISZYbUax4xcBUKEjL7WvWa7YRo4dGcal1OR1hahgq9cQVey4g9JmmGpVxrLjmdSMS\nZvvJ3HGzKERQw81qi1aibnx0/nbaXGshGhPlDzOflu4HAVBAjFUa8F3jp0xmZ6UkHpCzav\n/ZeCEUs3NK1dnIZKMjQ0+d2dmueC4w+QxPJn4c7Kb1jBAAAAgQDOP1ex1AsRuicwLhDK9F\nFUtL/C2ZaY9gFZI2AMtr0zWxCF6eufNzOjktwKGqcF1wdER8RDhhR5C+3tzoL77MF0mBJq\naQwHD8Fg88Non9wqg+PEu7O4ThAVCxCsFN12udGS3m3UvRP81SHtRve6jmgeDppbH+cqAt\nfeagfrZ91y7wAAAIEA1zSqG90Rl5n4b7iSrz2lisGqLcEXO/dfR5ElgRbxxjpsVsMZpuTf\nBib2pyh7m74+1gHKQXvztV3S2rWeVXrmglEwQM8UqPsCowBKw9JO9gtAC0vs6Vjp/kP3OR\nBVXq2DZR8BHOIBs5gvmSWa8a2+37IbBld+/NrTppTubNK+7M0AAACBAMeLyxqEfkJSFwJN\nleKoAfxl0i5u5vait2rp9YfQP/CGTJjJEMJ2AAch9Qo8aXPQaGi2csbNUSGsBS+OPKW92F\ncp3oGcRCg0mdMasjw0UCCse477qtWqAIB6LH4KMFCSsxYCH8GB6EfTIYmUswJhmDJm+0BC\n90B1BxJqQgZCAxdbAAAAGGFuc2libGUtZ2VuZXJhdGVkIG9uIHNobQEC\n-----END OPENSSH PRIVATE KEY-----\n',NULL,'2048 MD5:b9:4f:80:30:b7:a7:90:97:6f:2a:50:1a:74:65:dc:68 ansible-generated on shm (RSA)');
 
 COMMIT;

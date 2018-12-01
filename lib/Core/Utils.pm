@@ -20,12 +20,15 @@ our @EXPORT_OK = qw(
     decode_json
     to_json
     force_numbers
+    file_by_string
+    read_file
 );
 
 use Core::System::ServiceManager qw( get_service );
 use Time::DaysInMonth;
 use JSON;
 use Scalar::Util qw(looks_like_number);
+use File::Temp;
 
 our %in;
 
@@ -188,6 +191,26 @@ sub force_numbers {
         force_numbers($_) for values %{$_[0]};
     }
     return $_[0];
+}
+
+sub file_by_string {
+    my $string = shift;
+
+    my $fh = File::Temp->new( UNLINK => 0, SUFFIX => '.dat' );
+    print $fh $string;
+    $fh->seek( 0, SEEK_END );
+    return $fh->filename;
+}
+
+sub read_file {
+    my $file = shift;
+
+    open my $fh, $file or return undef;
+    local $/;
+    my $data = <$fh>;
+    close($fh);
+
+    return $data;
 }
 
 1;
