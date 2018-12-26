@@ -61,4 +61,16 @@ sub generate_key_pair {
 
 }
 
+sub list_for_api {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    my @arr = $self->SUPER::list_for_api( %args );
+    delete $_->{private_key} for @arr;
+
+    return @arr;
+}
+
 1;
