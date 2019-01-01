@@ -93,7 +93,7 @@ sub auth {
     my $self = shift;
     my %args = (
         login => undef,
-        pass => undef,
+        password => undef,
         @_,
     );
 
