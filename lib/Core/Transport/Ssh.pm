@@ -28,9 +28,6 @@ sub send {
         map( $args{$_} ? ($_ => $args{$_}) : (), keys %args ),
     );
 
-    say Dumper( scalar $task->get );
-    say Dumper( scalar $task->event );
-
     my $cmd = $task->make_cmd_string( $args{cmd} || $task->event->{params}->{cmd} || $server{params}->{cmd} );
     my $stdin_data = $task->make_cmd_string( $task->event->{params}->{stdin} || $server{params}->{payload} );
  
