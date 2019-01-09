@@ -31,13 +31,34 @@ sub add {
         @_,
     );
 
+    my @children = @{ delete $args{children} };
+
     my $si = $self->SUPER::add( %args );
 
     unless ( $si ) {
         logger->error( "Can't add new service" );
     }
 
+    $self->subservices(
+        services => [ map( $_->{service_id}, @children ) ],
+    );
+
     return get_service('service', service_id => $si );
+}
+
+sub set {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    my @children = @{ delete $args{children} };
+
+    $self->subservices(
+        services => [ map( $_->{service_id}, @children ) ],
+    );
+
+    return $self->SUPER::set( %args );
 }
 
 sub convert_name {
@@ -51,6 +72,25 @@ sub convert_name {
 
 sub subservices {
     my $self = shift;
+    my %args = (
+        services => undef,
+        @_,
+    );
+
+    if ( $args{services} ) {
+        my $ss = get_service('SubServices');
+
+        $ss->delete_all_for_service( $self->id );
+
+        for ( @{ $args{services} } ) {
+            $ss->add(
+                service_id => $self->id,
+                subservice_id => $_,
+            );
+        }
+        return 1;
+    }
+
     return get_service('SubServices', service_id => $self->id )->list;
 }
 
