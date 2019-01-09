@@ -3,7 +3,7 @@ package Core::Base;
 use v5.14;
 use utf8;
 use parent qw( Core::Sql::Data Core::System::Service );
-use Core::System::ServiceManager qw( get_service );
+use Core::System::ServiceManager qw( get_service logger );
 use Core::Sql::Data;
 use Carp qw(confess);
 use Data::Dumper;
@@ -14,6 +14,7 @@ our @EXPORT = qw(
     get_service
     Dumper
     confess
+    logger
 );
 
 sub new {
