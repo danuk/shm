@@ -31,7 +31,7 @@ sub add {
         @_,
     );
 
-    my @children = @{ delete $args{children} };
+    my @children = @{ delete $args{children} || [] };
 
     my $si = $self->SUPER::add( %args );
 
@@ -52,7 +52,7 @@ sub set {
         @_,
     );
 
-    my @children = @{ delete $args{children} };
+    my @children = @{ delete $args{children} || [] };
 
     $self->subservices(
         services => [ map( $_->{service_id}, @children ) ],
