@@ -28,21 +28,40 @@ sub send {
         map( $args{$_} ? ($_ => $args{$_}) : (), keys %args ),
     );
 
-    my $cmd = $task->make_cmd_string( $args{cmd} || $task->event->{params}->{cmd} || $server{params}->{cmd} );
+    my $cmd = $task->make_cmd_string( $args{cmd} || $task->event->{params}->{cmd} );
     my $stdin_data = $task->make_cmd_string( $task->event->{params}->{stdin} || $server{params}->{payload} );
- 
-    $server{host}//= $server{ip};
+
     my $host = join('@', $server{user}, $server{host} );
 
-    get_service('logger')->debug('SSH: trying connect to ' . $host );
+    return $self->exec(
+        host => $host,
+        key_id => $task->server->key_id,
+        cmd => $cmd,
+        stdin_data => $stdin_data,
+        %{ $server{params} || () },
+    );
+}
 
+sub exec {
+    my $self = shift;
+    my %args = (
+        host => undef,
+        port => 22,
+        key_id => undef,
+        timeout => 3,
+        cmd => undef,
+        stdin_data => undef,
+        @_,
+    );
+
+    get_service('logger')->debug('SSH: trying connect to ' . $args{host} );
     my $ssh = Net::OpenSSH->new(
-        $host,
-        port => $server{port},
-        key_path => $task->server->key_file,
+        $args{host},
+        port => $args{port},
+        key_path => get_service( 'Identities', _id => $args{key_id} )->private_key_file,
         passphrase => undef,
         batch_mode => 1,
-        timeout => $server{timeout},
+        timeout => $args{timeout},
         kill_ssh_on_timeout => 1,
         strict_mode => 0,
         master_opts => [-o => "StrictHostKeyChecking=no" ],
@@ -50,28 +69,31 @@ sub send {
 
     if ( $ssh->error ) {
         get_service('logger')->warning( $ssh->error );
-        return FAIL, { error => $ssh->error };
+        return FAIL, {
+            error => $ssh->error,
+            ret_code => 1,
+        };
     }
 
     my ( $out, $err ) = $ssh->capture2(
         {
             tty => 0,
             timeout => 10,
-            stdin_data => $stdin_data,
+            stdin_data => $args{stdin_data},
         },
-        split(' ', $cmd ),
+        split(' ', $args{cmd} ),
     );
     my $ret_code = $?>>8;
 
     if ( $ret_code == 0 ) {
         get_service('logger')->debug("SSH RET_CODE: $ret_code");
-        get_service('logger')->debug("SSH STDIN: $stdin_data");
-        get_service('logger')->debug("SSH CMD: $cmd" );
+        get_service('logger')->debug("SSH STDIN: $args{stdin_data}");
+        get_service('logger')->debug("SSH CMD: $args{cmd}" );
     }
     else {
         get_service('logger')->warning("SSH RET_CODE: $ret_code");
-        get_service('logger')->warning("SSH STDIN: $stdin_data");
-        get_service('logger')->warning("SSH CMD: $cmd" );
+        get_service('logger')->warning("SSH STDIN: $args{stdin_data}");
+        get_service('logger')->warning("SSH CMD: $args{cmd}" );
     }
 
     if ( $err ) {
