@@ -208,7 +208,6 @@ sub read_file {
     open my $fh, $file or return undef;
     local $/;
     my $data = <$fh>;
-    $data =~s/\n+$//g;
     close($fh);
 
     return $data;
