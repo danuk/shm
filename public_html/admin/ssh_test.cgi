@@ -13,16 +13,14 @@ use Core::Utils qw(
 our %in = parse_args();
 my $ssh = get_service( 'Transport::Ssh' );
 
-my %res = $ssh->exec(
+my (undef, my $res ) = $ssh->exec(
     host => $in{host},
     cmd => 'uname -a',
     %{ $in{params} || () },
 );
 
-$res{result} = delete $res{ (keys %res)[0] };
-
 print_header();
-print_json( \%res );
+print_json( $res );
 
 exit 0;
 
