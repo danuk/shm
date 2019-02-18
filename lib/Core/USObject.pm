@@ -71,7 +71,7 @@ sub settings {
     my $data = shift;
 
     if ( $data && ref( $data ) eq 'HASH' ) {
-        $self->res->{settings} = $data;
+        $self->res->{settings} = { %{ $data }, %{ $self->settings } };
         return $self;
     }
 

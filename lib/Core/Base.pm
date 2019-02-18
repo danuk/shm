@@ -120,15 +120,11 @@ sub _add_or_set {
     for my $key ( keys %args ) {
         my $new_value = $args{ $key };
         if ( ref $new_value eq 'HASH' ) {
-            if ( ref $self->res->{ $key } eq 'HASH' ) {
-                # Объединяем существующие данные и новые
-                $args{ $key } = { %{ $self->res->{ $key } || {} }, %{ $args{ $key } } };
-            }
             $super_args{ $key } = to_json( $args{ $key } );
         }
     }
 
-    my $ret = $method eq 'add' ? $self->SUPER::add( %super_args ) : $self->SUPER::set( %super_args ); 
+    my $ret = $method eq 'add' ? $self->SUPER::add( %super_args ) : $self->SUPER::set( %super_args );
 
     if ( defined $ret && %{ $self->res } ) {
         for ( keys %args ) {

@@ -30,10 +30,10 @@ is ( $obj->set( auto_bill => 0 ), $obj->get_auto_bill == 0, 'Check service set f
 $obj->reload;
 is ( $obj->set( auto_bill => 1 ), $obj->get_auto_bill == 1, 'Check service set function with cache: TEST 2');
 
-$obj->set( settings => { 'a' => 22 } ); # Override 'a'
-$obj->set( settings => { 'b' => 33 } ); # Override 'b'
-$obj->set( settings => { danuk => 'New value' } ); # Test add new value
-$obj->set( settings => {} ); # Test on empty add
+$obj->settings( { 'a' => 22 } ); # Override 'a'
+$obj->settings( { 'b' => 33 } ); # Override 'b'
+$obj->settings( { danuk => 'New value' } ); # Test add new value
+$obj->settings( {} ); # Test on empty add
 
 is_deeply( $obj->get_settings, {
     'quota' => '10000',
