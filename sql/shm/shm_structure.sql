@@ -288,7 +288,6 @@ CREATE TABLE `zones` (
 DROP TABLE IF EXISTS `identities`;
 CREATE TABLE `identities` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) DEFAULT NULL,
   `name` char(64) NOT NULL,
   `private_key` text NOT NULL,
   `public_key` text,

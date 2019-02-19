@@ -14,7 +14,6 @@ sub table { return 'identities' };
 sub structure {
     return {
         id => '@',
-        user_id => '!',
         name => '?',
         private_key => '?',
         public_key => undef,
