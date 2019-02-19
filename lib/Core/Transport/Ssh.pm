@@ -15,7 +15,6 @@ sub send {
     my %args = (
         server_id => undef, # for autoload server
         event => {},
-        user => 'ssm',
         port => 22,
         timeout => 10,
         payload => undef,
@@ -31,10 +30,8 @@ sub send {
     my $cmd = $task->make_cmd_string( $args{cmd} || $task->event->{params}->{cmd} );
     my $stdin_data = $task->make_cmd_string( $task->event->{params}->{stdin} || $server{params}->{payload} );
 
-    my $host = join('@', $server{user}, $server{host} );
-
     return $self->exec(
-        host => $host,
+        host => $server{host},
         key_id => $task->server->key_id,
         cmd => $cmd,
         stdin_data => $stdin_data,
