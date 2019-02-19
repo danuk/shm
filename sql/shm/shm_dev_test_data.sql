@@ -1,6 +1,6 @@
 BEGIN;
 
-INSERT INTO `acts` VALUES 
+INSERT INTO `acts` VALUES
 (default,40092,'2015-01-31 23:59:59',NULL),
 (default,40092,'2015-02-28 23:59:59',NULL),
 (default,40092,'2015-03-31 23:59:59',NULL),
@@ -8,15 +8,15 @@ INSERT INTO `acts` VALUES
 (default,40092,'2015-05-31 23:59:59',NULL),
 (default,40092,'2015-06-30 23:59:59',NULL);
 
-INSERT INTO `acts_data` VALUES 
+INSERT INTO `acts_data` VALUES
 (default,195,40092,16,19,2662,455.00,'19# Продление домена в зоне .NET: ipcalc.net','2015-10-12 00:00:01','2016-10-12 00:00:00'),
 (default,435,40092,11,2946,3518,590.00,'2946# Регистрация домена в зоне .RU: umci.ru','2016-07-29 12:36:06','2017-07-29 12:36:05');
 
-INSERT INTO `apps` VALUES 
+INSERT INTO `apps` VALUES
 (default,40092,101,'phpBB',270,'{\"db_name\":\"phpBB\",\"password\":\"OOgWCha2\",\"db_user\":\"phpBB\",\"domain\":\"work.biit.ru\",\"domain_dir\":\"utf8\",\"login\":\"Admin\",\"dir\":\"\"}'),
 (default,40092,101,'WordPress',7,'{\"db_name\":\"WordPress\",\"db_user\":\"WordPress\",\"domain\":\"ipcalc.net\",\"domain_dir\":\"ipcalc.net\",\"dir\":\"wp\"}');
 
-INSERT INTO `discounts` VALUES 
+INSERT INTO `discounts` VALUES
 (default,'1 месяц',1,0,NULL),
 (default,'3 месяца',3,10,NULL),
 (default,'6 месяцев',6,15,NULL),
@@ -24,7 +24,7 @@ INSERT INTO `discounts` VALUES
 (default,'2 года',24,30,NULL),
 (default,'3 года',36,40,NULL);
 
-INSERT INTO `dns_services` VALUES 
+INSERT INTO `dns_services` VALUES
 (default,12,'ri','A',0,'195.91.217.35',0),
 (default,12,'on','A',0,'95.84.154.134',0),
 (default,12,'ns1','A',0,'195.91.217.35',0),
@@ -127,30 +127,27 @@ INSERT INTO `domains_services` VALUES
 (default,6,2951,'2017-11-05 17:40:33'),
 (default,150,1871,'2017-09-23 23:54:23');
 
-INSERT INTO `invoices` VALUES 
+INSERT INTO `invoices` VALUES
 (default,1414222040,40092,100.00,NULL),
 (default,1414228287,40092,1000.00,NULL),
 (default,1481294791,40092,578.20,NULL);
 
-INSERT INTO `pays_history` VALUES 
+INSERT INTO `pays_history` VALUES
 (default,40092,108,455.00,'2014-10-02 14:05:39',108,''),
 (default,40092,108,455.00,'2016-01-04 20:33:35',108,'');
 
-INSERT INTO `servers` VALUES 
-(1,1,NULL,'ssh','localhost','127.0.0.1',100,0,0,1,'{"key_id":1}'),
-(3,0,NULL,'ssh','127.0.0.1','192.168.1.102',100,0,0,1,NULL),
-(4,0,NULL,'ssh','127.0.0.1','192.168.1.102',100,0,0,1,NULL),
-(24,0,NULL,'ssh','localhost','127.0.0.1',100,0,0,1,NULL),
+INSERT INTO `servers` VALUES
+(1,1,'test server (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,1,'{\"cmd\": \"test create\", \"key_id\": 1}'),
 (25,5,NULL,'mail',NULL,NULL,100,0,0,1,NULL);
 
-INSERT INTO `servers_groups` VALUES 
+INSERT INTO `servers_groups` VALUES
 (1,'Сервера Web хостинга','random',NULL),
 (2,'Сервера MySQL хостинга','random',NULL),
 (3,'Сервера Mail хостинга','random',NULL),
 (4,'Сервера DNS','random',NULL),
 (5,'Сервис email уведомлений','random',NULL);
 
-INSERT INTO `services` VALUES 
+INSERT INTO `services` VALUES
 (1,'Тариф \"Почтовый\" (${QUOTA} мб)',75,0,'web_tariff_lock',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
 (2,'Тариф MIN (${QUOTA} мб)',100,0,'web_tariff',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
 (4,'Тариф MAX (${QUOTA} мб)',200,0,'web_tariff',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
@@ -167,7 +164,7 @@ INSERT INTO `services` VALUES
 (111,'Web хостинг (${QUOTA} мб)',0,1,'web',NULL,NULL,NULL,1,NULL,NULL,'Web хостинг - услуга, позволяющая размещать ваш WEB сайт на сервере хостинга. Вы можете размещать несколько сайтов на одной площадке.',NULL,NULL),
 (112,'Почта (${QUOTA} мб)',0,1,'mail',NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL);
 
-INSERT INTO `services_commands` VALUES 
+INSERT INTO `services_commands` VALUES
 (default,'Erase web account','web','erase',NULL,'{"cmd":"www erase w_${us.parent}"}'),
 (default,'Block web account','web','block',NULL,'{"cmd":"www block w_${us.parent}"}'),
 (default,'Change password for web account','web','passwd',NULL,'{"cmd":"www passwd w_${us.parent}"}'),
@@ -184,7 +181,7 @@ INSERT INTO `services_commands` VALUES
 (default,'Update dns','dns','update',NULL,'{"cmd":"dns update","stdin":"${payload}"}'),
 (default,'Test Docker command','user1','create',1,'{"cmd":"ansible-playbook --extra-vars \'${US}\'","transport":"docker"}');
 
-INSERT INTO `subservices` VALUES 
+INSERT INTO `subservices` VALUES
 (default,1,8),
 (default,2,8),
 (default,2,5),
@@ -254,19 +251,19 @@ INSERT INTO `user_services` VALUES (16,40092,63,1,3583,'2014-10-02 13:47:30','20
 (2949,40092,11,1,3519,'2016-07-29 12:39:47','2017-07-29 12:39:46',2,12,NULL,'{\"quota\": \"0\", \"domain\": \"umci.ru\", \"nic_id\": \"2628443\", \"punycode\": \"\", \"domain_id\": \"308\", \"max_quota\": \"1000\"}'),
 (2950,40092,30,1,NULL,'2016-07-29 12:39:08',NULL,2,0,2949,'{\"ns\": \"ns1.biit.ru\", \"domain_id\": \"308\", \"server_id\": \"4\"}'),
 (2951,40092,31,1,NULL,'2016-07-29 12:39:08',NULL,1,0,2949,'{\"ns\": \"ns2.biit.ru\", \"master\": \"185.31.160.56\", \"domain_id\": \"308\", \"server_id\": \"5\"}');
-INSERT INTO `users` VALUES 
+INSERT INTO `users` VALUES
 (108,0,'','',0,'2014-09-30 14:17:37',NULL,0,0.00,0,0.00,NULL,NULL,0,0,NULL,0,'Платеж',0,0.00,NULL,NULL,NULL),
 (40092,0,'danuk','6d1834669427053343724aeed08952b09f72f879',0,'2014-09-30 14:17:37',NULL,0,-21.56,30,100000.00,NULL,NULL,0,0,1,0,'Фирсов Даниил Андреевич',0,100.00,NULL,NULL,NULL),
 (40094,0,'xims','1ad777afc152c9eaa13abb53283f8d47e8d453bb',0,'2014-10-02 14:45:43',NULL,0,0.00,30,100.00,NULL,NULL,0,0,NULL,0,'Смолев Михаил Владимирович',0,0.00,NULL,NULL,NULL);
 
-INSERT INTO `withdraw_history` VALUES 
+INSERT INTO `withdraw_history` VALUES
 (6,40092,'2014-10-02 13:47:30','2014-10-02 13:47:30',NULL,0.00,0,0.00,12,0.00,63,1,16),
 (3349,40094,'2016-02-11 11:07:01','2016-02-29 21:33:40','2016-03-31 21:23:33',0.00,0,0.00,1,0.00,2,1,1870),
 (3691,40092,'2017-01-01 00:00:01','2016-12-31 23:59:51','2017-01-31 23:59:50',0.00,0,0.00,1,0.00,110,1,99),
 (3732,40092,'2017-01-01 00:00:00','2017-01-01 00:00:00','2017-01-01 23:59:59',1004.13,0,0.00,0.01,32.39,4,1,3087),
 (3733,40092,'2017-01-01 00:00:00','2017-01-01 00:00:00','2017-01-01 23:59:59',1004.13,0,0.00,0.01,32.39,4,1,3088);
 
-INSERT INTO `zones` VALUES 
+INSERT INTO `zones` VALUES
 (1,'ru',1,'whois.ripn.net','No entries found for the selected',11,2,0,'domain_ru','client_ru',0,0,0),
 (2,'com',2,'whois.crsnic.net','No match for',13,2,0,'domain_rrp','client_rrp',1,1,0),
 (3,'net',3,'whois.crsnic.net','No match for',15,2,0,'domain_rrp','client_rrp',1,1,0),
