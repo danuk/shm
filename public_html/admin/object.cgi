@@ -18,6 +18,11 @@ my %headers;
 our %in = parse_args();
 my $res;
 
+# Switch to user
+if ( $in{user_id} ) {
+    get_service('config')->local('user_id', $in{user_id} );
+}
+
 unless ( $in{object} ) {
     print_header( status => 400 );
     print_json( { error => "Unknown object" } );
@@ -26,7 +31,7 @@ unless ( $in{object} ) {
 
 $in{object} =~s/\.\w+$//;
 # Convert to lamelcase
-$in{object} = join('', map( ucfirst $_, split /_/, $in{object} )); 
+$in{object} = join('', map( ucfirst $_, split /_/, $in{object} ));
 
 my $service_name = $in{object};
 
@@ -83,7 +88,7 @@ exit 0;
 
 sub get_service_id {
     my $service_id = $in{ $service->get_table_key } || $in{id};
-    
+
     unless ( $service_id ) {
         print_header( status => 400 );
         print_json( { error => '`id` not present' } );

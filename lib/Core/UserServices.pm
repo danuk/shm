@@ -15,6 +15,7 @@ sub add {
     my $self = shift;
     my %args = (
         service_id => undef,
+        settings => undef,
         @_,
     );
 
@@ -30,9 +31,10 @@ sub add {
 
     delete $args{ $_ } for qw/user_service_id created expired/;
 
+    $args{settings}//= $service->get->{config};
+
     my $usi = $self->SUPER::add(
         %args,
-        settings => $service->get->{config},
     );
     delete $self->{res};
 
@@ -46,7 +48,7 @@ sub add {
 sub withdraws {
     my $self = shift;
 
-    my $res = get_service('withdraw')->list( where => { withdraw_id => { in => $self->res_by_arr } } );
+    my $res = get_service('withdraw')->_list( where => { withdraw_id => { in => $self->res_by_arr } } );
 
     $self->{res} = $res;
     return $self;
@@ -55,7 +57,7 @@ sub withdraws {
 sub services {
     my $self = shift;
 
-    my $res = get_service('service')->list( where => { service_id => { in => $self->res_by_arr } } );
+    my $res = get_service('service')->_list( where => { service_id => { in => $self->res_by_arr } } );
 
     $self->{res} = $res;
     return $self;
@@ -95,11 +97,17 @@ sub ids {
 
 sub all {
     my $self = shift;
+    my %args = (
+        admin => 0,
+        usi => undef,
+        @_,
+    );
 
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
                                         join => { table => 'services', using => ['service_id'] },
-                                        user_id => $self->user_id,
+                                        $args{admin} ? () : ( user_id => $self->user_id),
+                                        $args{usi} ? ( where => { user_service_id => $args{usi} } ) : (),
     );
 
     my $res = $self->query_by_name( $query, 'user_service_id', @vars );
@@ -309,7 +317,7 @@ sub domains {
 
     my @domain_services = get_service('domain')->list_services( user_service_id => $self->res_by_arr );
 
-    my $domains = get_service('domain')->list( where => {
+    my $domains = get_service('domain')->_list( where => {
             domain_id => {
                 -in => [ map $_->{domain_id}, @domain_services ],
             },
@@ -368,12 +376,14 @@ sub get_all_keys_ref {
 sub list_for_api {
     my $self = shift;
     my %args = (
+        admin => 0,
+        usi => undef,
         @_,
     );
 
-    my @arr = $self->all->with('settings','services','withdraws')->get;
+    my @arr = $self->all( %args )->with('settings','services','withdraws')->get;
 
-    return @arr;
+    return sort { $a->{user_service_id} <=> $b->{user_service_id} } @arr;
 }
 
 1;

@@ -44,7 +44,7 @@ sub create_service {
         }
     }
 
-    my $us = get_service('UserServices')->add( service_id => $args{service_id} );
+    my $us = get_service('UserServices')->add( %args );
 
     my $wd_id = get_service('wd')->add( calc_withdraw(%args), user_service_id => $us->id );
     $us->set( withdraw_id => $wd_id );
