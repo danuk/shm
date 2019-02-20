@@ -38,7 +38,6 @@ cmp_deeply( $data,
     {
         id => $id,
         name => 'test',
-        user_id => 40092,
         fingerprint => ignore(),
         private_key => $key{private_key},
         public_key => undef,

@@ -58,7 +58,6 @@ is( $obj->{16}->{children}->{17}->{created}, '2014-10-02 13:47:30', 'Check full 
 
 $obj = $us->tree->with('settings','server')->get;
 is( $obj->{16}->{children}->{17}->{settings}->{server_id}, '4', 'Check full tree with settings' );
-is( $obj->{16}->{children}->{17}->{server}->{ip}, '192.168.1.102', 'Check server for full tree with settings' );
 
 $obj = $us->parents->tree->with('settings')->get;
 is( $obj->{16}->{children}->{17}->{settings}->{server_id}, '4', 'Check full tree with settings (tree by parents)' );
