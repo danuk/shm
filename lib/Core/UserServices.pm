@@ -100,14 +100,20 @@ sub all {
     my %args = (
         admin => 0,
         usi => undef,
+        parent => undef,
         @_,
+    );
+
+    my %where = (
+        $args{usi} ? ( user_service_id => $args{usi} ) : (),
+        $args{parent} ? ( parent => $args{parent} ) : (),
     );
 
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
                                         join => { table => 'services', using => ['service_id'] },
                                         $args{admin} ? () : ( user_id => $self->user_id),
-                                        $args{usi} ? ( where => { user_service_id => $args{usi} } ) : (),
+                                        %where ? ( where => { %where } ) : (),
     );
 
     my $res = $self->query_by_name( $query, 'user_service_id', @vars );
