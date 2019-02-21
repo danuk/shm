@@ -8,6 +8,7 @@ use Core::Base;
 use Core::Const;
 use Net::OpenSSH;
 use JSON;
+use Text::ParseWords 'shellwords';
 
 sub send {
     my $self = shift;
@@ -78,7 +79,7 @@ sub exec {
             timeout => 10,
             stdin_data => $args{stdin_data},
         },
-        split(' ', $args{cmd} ),
+        shellwords( $args{cmd} ),
     );
     my $ret_code = $?>>8;
 

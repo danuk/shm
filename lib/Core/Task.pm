@@ -5,6 +5,7 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
 use Core::Utils qw( to_json decode_json );
+use Text::ParseWords 'shellwords';
 
 sub task {
     my $self = shift;
@@ -79,19 +80,15 @@ sub make_cmd_string {
     my $self = shift;
     my $cmd = shift;
 
-    return join(' ', $self->make_cmd_args( $cmd ) );
+    $cmd =~s/\{\{\s*([A-Z0-9._]+)\s*\}\}/$self->_get_cmd_param($1)/gei;
+    return $cmd;
 }
 
 sub make_cmd_args {
     my $self = shift;
     my $cmd = shift;
 
-    my @args;
-    for my $value ( split(/\s+/, $cmd ) ) {
-        $value =~s/\$\{([A-Z0-9_.]+)\}/$self->_get_cmd_param($1)/gei;
-        push @args, $value;
-    }
-    return @args;
+    return shellwords( $self->make_cmd_string( $cmd ) );
 }
 
 sub _get_cmd_param {
@@ -119,7 +116,7 @@ sub _get_cmd_param {
     my $var = eval( $obj );
 
     if ( ref $var && scalar( @md ) ) {
-        my $md = join('->', map( $_=~/^\d+$/ ? "[$_]" : "{$_}", @md ) ); 
+        my $md = join('->', map( $_=~/^\d+$/ ? "[$_]" : "{$_}", @md ) );
         $var = eval( '$var->'.$md );
     }
 
