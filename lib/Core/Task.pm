@@ -39,18 +39,18 @@ sub make_task {
         return $self->task_answer( TASK_DROP, error => 'Transport not exist' );
     }
 
-    my ( $status, $responce_data ) = $transport->send( $self );
+    my ( $status, $response_data ) = $transport->send( $self );
     unless ( $status ) {
-        return $self->task_answer( TASK_FAIL, error => "Transport error", %{ $responce_data//={} } );
+        return $self->task_answer( TASK_FAIL, error => "Transport error", %{ $response_data//={} } );
     }
 
     my $service = $self->get_service_for_transport;
 
     if ( $status == SUCCESS ) {
-        if ( $service->can('transport_responce_data') ) {
-            my ( $status, $payload ) = $service->transport_responce_data( data => $responce_data->{data} );
+        if ( $service->can('transport_response_data') ) {
+            my ( $status, $payload ) = $service->transport_response_data( data => $response_data->{data} );
             unless ( $status ) {
-                return $self->task_answer( TASK_DROP, error => 'Incorrect responce data', %{ $payload//={} } );
+                return $self->task_answer( TASK_DROP, error => 'Incorrect response data', %{ $payload//={} } );
             }
         }
 
@@ -64,9 +64,9 @@ sub make_task {
     }
 
     return $self->task_answer( $status,
-        ret_code => $responce_data->{ret_code},
-        data => $responce_data->{data},
-        error => $responce_data->{error},
+        ret_code => $response_data->{ret_code},
+        data => $response_data->{data},
+        error => $response_data->{error},
     );
 }
 
@@ -129,7 +129,7 @@ sub task_answer {
     my %args = @_;
 
     return $status, {
-        responce => {
+        response => {
             %args,
         }
     }

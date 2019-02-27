@@ -35,7 +35,7 @@ sub data_for_transport {
 }
 
 # Сюда приходит ответ от транспорта
-sub transport_responce_data {
+sub transport_response_data {
     my $self = shift;
 
     return SUCCESS;

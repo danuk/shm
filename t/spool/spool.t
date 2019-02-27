@@ -32,7 +32,7 @@ my $task3 = get_service('task')->res({
 })->make_task;
 
 
-is( $task3->{responce}->{ret_code}, 0, 'Check make_task for category `test`' );
+is( $task3->{response}->{ret_code}, 0, 'Check make_task for category `test`' );
 
 my $spool = get_service('spool');
 

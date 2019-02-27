@@ -29,7 +29,7 @@ sub structure {
         prio => 0,          # приоритет команды
 
         status => TASK_NEW, # status выполнения команды: 0-новая, 1-выполнена, 2-ошибка
-        responce => undef,
+        response => undef,
 
         created => 'now',   # дата создания задачи
         executed => undef,  # дата и время последнего выполнения
