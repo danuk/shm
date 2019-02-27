@@ -19,7 +19,7 @@ sub structure {
         server_gid => undef,
         server_id => undef, # Пишем server_id для возможности параллельного выполнения
         data => undef,      # любые дополнительные данные
-        response => undef,  # ответ
+        response => { type => 'json', value => undef },  # ответ
         prio => 0,          # приоритет команды
 
         status => 0,        # status выполнения команды: 0-новая, 1-выполнена, 2-ошибка
