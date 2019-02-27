@@ -48,7 +48,7 @@ sub make_task {
 
     if ( $status == SUCCESS ) {
         if ( $service->can('transport_response_data') ) {
-            my ( $status, $payload ) = $service->transport_response_data( data => $response_data->{data} );
+            my ( $status, $payload ) = $service->transport_response_data( %{ $response_data || {} } );
             unless ( $status ) {
                 return $self->task_answer( TASK_DROP, error => 'Incorrect response data', %{ $payload//={} } );
             }
@@ -63,11 +63,7 @@ sub make_task {
         }
     }
 
-    return $self->task_answer( $status,
-        ret_code => $response_data->{ret_code},
-        data => $response_data->{data},
-        error => $response_data->{error},
-    );
+    return $self->task_answer( $status, %{ $response_data || {} } );
 }
 
 sub cmd {
