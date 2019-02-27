@@ -112,8 +112,8 @@ sub exec {
     return $ret_code == 0 ? SUCCESS : FAIL, {
         command => [ @shell_cmd ],
         ret_code => $ret_code,
-        data => $data,
-        error => $err,
+        stdout => $data,
+        stderr => $err,
     };
 }
 
