@@ -73,13 +73,15 @@ sub exec {
         };
     }
 
+    my @shell_cmd = shellwords( $args{cmd} );
+
     my ( $out, $err ) = $ssh->capture2(
         {
             tty => 0,
             timeout => 10,
             stdin_data => $args{stdin_data},
         },
-        shellwords( $args{cmd} ),
+        @shell_cmd,
     );
     my $ret_code = $?>>8;
 
@@ -108,6 +110,7 @@ sub exec {
     }
 
     return $ret_code == 0 ? SUCCESS : FAIL, {
+        command => [ @shell_cmd ],
         ret_code => $ret_code,
         data => $data,
         error => $err,
