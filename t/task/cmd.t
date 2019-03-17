@@ -29,7 +29,7 @@ cmp_deeply( \@cmd, [
 my $payload = $t->payload;
 is( exists $payload->{headers}, 1, 'Check payload' );
 
-@cmd = $t->make_cmd_args('service create "{{ id }}" {{us.expired}} {{domain}},www.{{domain}}');
+@cmd = $t->make_cmd_args('service create "{{ id }}" "{{us.expired}}" {{domain}},www.{{domain}}');
 
 cmp_deeply( \@cmd, [
     'service',
