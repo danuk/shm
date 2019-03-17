@@ -17,10 +17,12 @@ use Core::Utils qw(
 my %headers;
 our %in = parse_args();
 my $res;
+my $admin = 1;
 
 # Switch to user
 if ( $in{user_id} ) {
     get_service('config')->local('user_id', $in{user_id} );
+    $admin = 0;
 }
 
 unless ( $in{object} ) {
@@ -74,7 +76,7 @@ elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
     }
 }
 else {
-    my @ret = $service->list_for_api( %in, admin => 1 );
+    my @ret = $service->list_for_api( %in, admin => $admin );
     $res = \@ret;
 
     my $numRows = $user->found_rows;
