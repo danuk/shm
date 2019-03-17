@@ -93,14 +93,21 @@ CREATE TABLE `invoices` (
 
 DROP TABLE IF EXISTS `pays_history`;
 CREATE TABLE `pays_history` (
-  `pay_id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
-  `from_user_id` int(11) DEFAULT NULL,
+  `pay_system_id` int(11) NOT NULL,
   `money` decimal(10,2) NOT NULL DEFAULT '0.00',
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `who` int(11) DEFAULT NULL,
   `comment` char(255) DEFAULT NULL,
-  PRIMARY KEY (`pay_id`)
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS `pay_systems`;
+CREATE TABLE `pay_systems` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` char(255) DEFAULT NULL,
+  `params` json DEFAULT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `servers`;

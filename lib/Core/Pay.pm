@@ -8,12 +8,11 @@ sub table { return 'pays_history' };
 
 sub structure {
     return {
-        pay_id => '@',
+        id => '@',
         user_id => '!',
-        from_user_id => '?',
+        pay_system_id => '?',
         money => '?',
         date => 'now',
-        who => '?',
         comment => undef,
     }
 }
@@ -32,7 +31,7 @@ sub pays {
                                         user_id => $self->user_id,
                                         range => { field => 'date', start => $args{start}, stop => $args{stop} },
                                         calc => 1,
-                                        in => { pay_id => $self->res_by_arr },
+                                        in => { $self->get_table_key => $self->res_by_arr },
                                         %{$args{limit}},
     );
 
