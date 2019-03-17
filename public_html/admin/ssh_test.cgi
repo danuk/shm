@@ -13,10 +13,21 @@ use Core::Utils qw(
 our %in = parse_args();
 my $ssh = get_service( 'Transport::Ssh' );
 
+if ( $in{params} && $in{params}{cmd} ) {
+    my $t = get_service('Task')->res({
+        server_id => 0,
+        user_service_id => 0,
+        event_id => 0,
+    });
+
+    $in{params}{cmd} = $t->make_cmd_string( $in{params}{cmd} );
+}
+
 my (undef, my $res ) = $ssh->exec(
     host => $in{host},
-    cmd => 'uname -a',
-    %{ $in{params} || () },
+    cmd => $in{cmd} || 'uname -a',
+    key_id => 1,
+    %{ $in{params} || {} },
 );
 
 print_header();
