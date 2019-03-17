@@ -203,5 +203,23 @@ sub withdraws {
     return get_service('withdraw', user_id => $self->{user_id} );
 }
 
+sub list_for_api {
+    my $self = shift;
+    my %args = (
+        admin => 0,
+        @_,
+    );
+
+    unless ( $args{admin} ) {
+        $args{where} = { user_id => $self->id };
+    }
+
+    my @arr = $self->SUPER::list_for_api( %args );
+
+    delete $_->{password} for @arr;
+
+    return @arr;
+}
+
 1;
 
