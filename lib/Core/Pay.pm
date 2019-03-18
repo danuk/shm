@@ -42,6 +42,17 @@ sub pays {
     return $self;
 }
 
+sub add {
+    my $self = shift;
+    my %args = @_;
+
+    if ( my $res = $self->SUPER::add( %args ) ) {
+        get_service('user')->set_balance( balance => $args{money} );
+        return $res;
+    }
+    return undef;
+}
+
 sub list_for_api {
     my $self = shift;
     my @arr = $self->SUPER::list_for_api( @_ );
