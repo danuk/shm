@@ -16,6 +16,8 @@ use Core::Utils qw(
 
 my %headers;
 our %in = parse_args();
+delete $in{where};
+
 my $res;
 my $admin = 1;
 
