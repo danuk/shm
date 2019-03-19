@@ -71,12 +71,14 @@ sub list_for_api {
     my %args = (
         admin => 0,
         kind => undef,
+        id => undef,
         @_,
     );
 
-    if ( $args{kind} ) {
-        $args{where} = { kind => $args{kind} };
-    }
+    $args{where} = {
+        $args{id} ? ( $self->get_table_key => $args{id} ) : (),
+        $args{kind} ? ( kind => $args{kind} ) : (),
+    };
 
     my @arr = $self->SUPER::list_for_api( %args );
     return @arr;
