@@ -44,14 +44,14 @@ sub create_service {
         }
     }
 
-    my $us = get_service('UserServices')->add( %args );
+    my $us = get_service('UserService')->add( %args );
 
     my $wd_id = get_service('wd')->add( calc_withdraw(%args), user_service_id => $us->id );
     $us->set( withdraw_id => $wd_id );
 
     my $ss = get_service('service', _id => $args{service_id} )->subservices;
     for ( keys %{ $ss } ) {
-        get_service('UserServices')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
+        get_service('UserService')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
     }
 
     return process_service_recursive( $us, EVENT_CREATE );

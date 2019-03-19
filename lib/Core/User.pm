@@ -167,7 +167,7 @@ sub reg {
 
 sub services {
     my $self = shift;
-    return get_service('UserServices', user_id => $self->user_id );
+    return get_service('UserService', user_id => $self->user_id );
 }
 
 sub set {

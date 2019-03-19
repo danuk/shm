@@ -65,7 +65,7 @@ sub ns {
 
     my @domain_services = map $_->{user_service_id}, $self->list_services( domain_id => $args{domain_id} );
 
-    my @services = get_service('UserServices')->
+    my @services = get_service('UserService')->
         ids( user_service_id => [ @domain_services ] )->
         with('settings','services')->
         get;

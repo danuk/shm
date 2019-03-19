@@ -9,7 +9,7 @@ SHM->new( user_id => 40092 );
 
 use Core::System::ServiceManager qw( get_service );
 
-my $us = get_service('UserServices');
+my $us = get_service('UserService');
 
 my $obj = $us->id(99)->get;
 is exists $obj->{99}, 1, 'get user_service from id';

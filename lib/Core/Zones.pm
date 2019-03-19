@@ -27,9 +27,9 @@ sub structure {
 sub list_for_api {
     my $self = shift;
 
-    # TODO: this not supported ORDER because UserServices used HASH for tree...
+    # TODO: this not supported ORDER because UserService used HASH for tree...
     #my $res = $self->SUPER::list_for_api( order => [ order => 'asc' ], @_ );
-    #return my @ret = get_service('UserServices')->res( $res )->with('services')->get;
+    #return my @ret = get_service('UserService')->res( $res )->with('services')->get;
 
     my @res = $self->SUPER::list_for_api( order => [ order => 'asc' ], @_ );
 

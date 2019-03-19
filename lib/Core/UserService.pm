@@ -1,4 +1,4 @@
-package Core::UserServices;
+package Core::UserService;
 
 use v5.14;
 use parent 'Core::Base';

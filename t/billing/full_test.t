@@ -20,7 +20,7 @@ tzset;
 my $spool = get_service('spool');
 my $user = get_service('user');
 my $us;
-my $user_services = get_service('UserServices');
+my $user_services = get_service('UserService');
 
 subtest 'Prepare user for test billing' => sub {
     $user->set( balance => 2000, credit => 0, discount => 0 );
@@ -138,7 +138,7 @@ subtest 'Try prolongate service without have money' => sub {
 
     is( $us->get_expired, '2017-02-28 23:59:57', 'Check expired date after prolongate' );
     is( $user->get_balance, 0, 'Check user balance');
-    
+
     is( $us->get_status, STATUS_PROGRESS, 'Check status of prolong service' );
 
     my @children = $us->children;

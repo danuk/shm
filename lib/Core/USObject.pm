@@ -93,7 +93,7 @@ sub set {
 
 sub add {
     my $self = shift;
-    return get_service('UserServices', user_id => $self->res->{user_id} )->add( @_ );
+    return get_service('UserService', user_id => $self->res->{user_id} )->add( @_ );
 }
 
 sub switch_to_next {
@@ -167,7 +167,7 @@ sub data_for_transport {
         @_,
     );
 
-    my ( $ret ) = get_service('UserServices', user_id => $self->res->{user_id} )->
+    my ( $ret ) = get_service('UserService', user_id => $self->res->{user_id} )->
         res( { $self->id => scalar $self->get } )->with('settings','services','withdraws')->get;
     return SUCCESS, {
         %{ $ret },
@@ -208,7 +208,7 @@ sub make_commands_by_event {
     my $e = shift;
 
     my @commands = get_service('Events')->get_events(
-        kind => 'user_services',
+        kind => 'user_service',
         category => $self->get_category,
         event => $e,
     );

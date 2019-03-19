@@ -65,7 +65,7 @@ sub add {
     );
 
     unless ( $args{user_service_id} ) {
-        get_service('logger')->error('`user_service_id` required'); 
+        get_service('logger')->error('`user_service_id` required');
     }
 
     delete @args{ qw/end_date withdraw_date/ };
@@ -89,7 +89,7 @@ sub list_for_api {
     my $self = shift;
     my @arr = $self->SUPER::list_for_api( field => 'withdraw_date', @_ );
 
-    my $us = get_service('UserServices')->ids(
+    my $us = get_service('UserService')->ids(
         user_service_id => [ map $_->{user_service_id}, @arr ]
     )->with('settings','services')->get;
 

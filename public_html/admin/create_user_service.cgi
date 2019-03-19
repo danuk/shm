@@ -16,7 +16,7 @@ get_service('config')->local('user_id', $in{user_id} );
 $in{settings}||= {};
 
 if ( my $us = create_service( %in ) ) {
-    ( my $obj ) = get_service('UserServices')->list_for_api( usi => $us->id, admin => 1 );
+    ( my $obj ) = get_service('UserService')->list_for_api( usi => $us->id, admin => 1 );
     %res = %{ $obj };
 }
 

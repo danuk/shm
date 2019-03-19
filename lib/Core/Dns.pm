@@ -97,7 +97,7 @@ sub _services_records_list {
     my @user_services_list_for_domain = get_service('domain', _id => $args{domain_id})->list_services;
     return () unless @user_services_list_for_domain;
 
-    my $obj = get_service('UserServices');
+    my $obj = get_service('UserService');
 
     # Загружаем услуги и их дополнительные секциии
     my @res = $obj->res(
