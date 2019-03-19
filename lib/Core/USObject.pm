@@ -207,7 +207,8 @@ sub make_commands_by_event {
     my $self = shift;
     my $e = shift;
 
-    my @commands = get_service('ServicesCommands')->get_events(
+    my @commands = get_service('Events')->get_events(
+        kind => 'user_services',
         category => $self->get_category,
         event => $e,
     );

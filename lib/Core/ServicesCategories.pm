@@ -1,7 +1,7 @@
 package Core::ServicesCategories;
 
 use v5.14;
-use parent 'Core::ServicesCommands';
+use parent 'Core::Events';
 
 sub list {
     my $self = shift;

@@ -1,14 +1,15 @@
-package Core::ServicesCommands;
+package Core::Events;
 
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
 
-sub table { return 'services_commands' };
+sub table { return 'events' };
 
 sub structure {
     return {
         id => '@',
+        kind => '?',
         name => '?',
         category => '?',    # www,mail,mysql
         event => '?',       # create,block,unblock...
@@ -19,16 +20,18 @@ sub structure {
 
 sub get_events {
     my $self = shift;
-    my $args = {
+    my %args = (
+        kind => undef,
         category => undef,
         event => undef,
         @_,
-    };
+    );
 
     my @res = $self->list(
         where => {
-            category => $args->{category},
-            event => $args->{event},
+            $args{kind} ? ( kind => $args{kind} ) : (),
+            $args{category} ? ( category => $args{category} ) : (),
+            $args{event} ? ( event => $args{event} ) : (),
         },
     );
     return wantarray ? @res : \@res;
@@ -62,5 +65,22 @@ sub exec {
         data => $args->{data},
     );
 }
+
+sub list_for_api {
+    my $self = shift;
+    my %args = (
+        admin => 0,
+        kind => undef,
+        @_,
+    );
+
+    if ( $args{kind} ) {
+        $args{where} = { kind => $args{kind} };
+    }
+
+    my @arr = $self->SUPER::list_for_api( %args );
+    return @arr;
+}
+
 
 1;

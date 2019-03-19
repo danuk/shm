@@ -164,22 +164,22 @@ INSERT INTO `services` VALUES
 (111,'Web хостинг (${QUOTA} мб)',0,1,'web',NULL,NULL,NULL,1,NULL,NULL,'Web хостинг - услуга, позволяющая размещать ваш WEB сайт на сервере хостинга. Вы можете размещать несколько сайтов на одной площадке.',NULL,NULL),
 (112,'Почта (${QUOTA} мб)',0,1,'mail',NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL);
 
-INSERT INTO `services_commands` VALUES
-(default,'Erase web account','web','erase',NULL,'{"cmd":"www erase w_{{us.parent}}"}'),
-(default,'Block web account','web','block',NULL,'{"cmd":"www block w_{{us.parent}}"}'),
-(default,'Change password for web account','web','passwd',NULL,'{"cmd":"www passwd w_{{us.parent}}"}'),
-(default,'Notification of change password for web account','web','passwd',NULL,'{"template":"web_pass_change","transport":"mail"}'),
-(default,'Add domain to web account','domain_id','create',1,'{"cmd":"www create w_{{us.parent}} {{us.settings.domain}},www.{{us.settings.domain}} {{parent.settings.max_quota}}"}'),
-(default,'Remove domain from web account','domain_id','delete',1,'{"cmd":"www delete w_{{us.parent}} {{us.settings.domain}},www.{{us.settings.domain}}"}'),
-(default,'Activate web account','web','activate',NULL,'{"cmd":"www unblock w_{{us.parent}}"}'),
-(default,'Create mysql','mysql','create',1,'{"cmd":"mysql create -a b_{{us.id}} -b {{us.settings.db.0.name}} -u {{us.settings.db.0.login}} -p {{us.settings.db.0.password}}"}'),
-(default,'Erase mysql','mysql','erase',NULL,'{"cmd":"mysql erase b_{{us.id}}"}'),
-(default,'Block mysql','mysql','block',NULL,'{"cmd":"mysql block b_{{us.id}}"}'),
-(default,'Activate mysql','mysql','activate',NULL,'{"cmd":"mysql unblock b_{{us.id}}"}'),
-(default,'Create dns','dns','create',1,'{"cmd":"dns update","stdin":"{{payload}}"}'),
-(default,'Erase dns','dns','erase',NULL,'{"cmd":"dns erase {{us.domain}}"}'),
-(default,'Update dns','dns','update',NULL,'{"cmd":"dns update","stdin":"{{payload}}"}'),
-(default,'Test Docker command','user1','create',1,'{"cmd":"ansible-playbook --extra-vars \'{{US}}\'","transport":"docker"}');
+INSERT INTO `events` VALUES
+(default,'user_services','Erase web account','web','erase',NULL,'{"cmd":"www erase w_{{us.parent}}"}'),
+(default,'user_services','Block web account','web','block',NULL,'{"cmd":"www block w_{{us.parent}}"}'),
+(default,'user_services','Change password for web account','web','passwd',NULL,'{"cmd":"www passwd w_{{us.parent}}"}'),
+(default,'user_services','Notification of change password for web account','web','passwd',NULL,'{"template":"web_pass_change","transport":"mail"}'),
+(default,'user_services','Add domain to web account','domain_id','create',1,'{"cmd":"www create w_{{us.parent}} {{us.settings.domain}},www.{{us.settings.domain}} {{parent.settings.max_quota}}"}'),
+(default,'user_services','Remove domain from web account','domain_id','delete',1,'{"cmd":"www delete w_{{us.parent}} {{us.settings.domain}},www.{{us.settings.domain}}"}'),
+(default,'user_services','Activate web account','web','activate',NULL,'{"cmd":"www unblock w_{{us.parent}}"}'),
+(default,'user_services','Create mysql','mysql','create',1,'{"cmd":"mysql create -a b_{{us.id}} -b {{us.settings.db.0.name}} -u {{us.settings.db.0.login}} -p {{us.settings.db.0.password}}"}'),
+(default,'user_services','Erase mysql','mysql','erase',NULL,'{"cmd":"mysql erase b_{{us.id}}"}'),
+(default,'user_services','Block mysql','mysql','block',NULL,'{"cmd":"mysql block b_{{us.id}}"}'),
+(default,'user_services','Activate mysql','mysql','activate',NULL,'{"cmd":"mysql unblock b_{{us.id}}"}'),
+(default,'user_services','Create dns','dns','create',1,'{"cmd":"dns update","stdin":"{{payload}}"}'),
+(default,'user_services','Erase dns','dns','erase',NULL,'{"cmd":"dns erase {{us.domain}}"}'),
+(default,'user_services','Update dns','dns','update',NULL,'{"cmd":"dns update","stdin":"{{payload}}"}'),
+(default,'user_services','Test Docker command','user1','create',1,'{"cmd":"ansible-playbook --extra-vars \'{{US}}\'","transport":"docker"}');
 
 INSERT INTO `subservices` VALUES
 (default,1,8),

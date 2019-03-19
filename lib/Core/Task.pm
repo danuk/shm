@@ -14,7 +14,7 @@ sub task {
 
 sub event {
     my $self = shift;
-    my $e = get_service('ServicesCommands', _id => $self->task->{event_id} );
+    my $e = get_service('Events', _id => $self->task->{event_id} );
     return $e ? $e->get : undef;
 }
 
