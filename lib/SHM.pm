@@ -88,6 +88,7 @@ sub new {
     }
 
     if ($0=~/\/(admin)\// && $user->get_gid != 1 ) {
+            print_header( status => 403 );
             print_json( { status => 403, msg => 'Forbidden' } );
             exit 0;
     }
@@ -119,8 +120,8 @@ sub validate_session {
 }
 
 sub print_not_authorized {
-    print_header() unless $is_header;
-    print_json( { status => 401, msg=> "Not authorized" });
+    print_header( status => 401 );
+    print_json( { status => 401, msg=> "Not authorized" } );
     exit 0;
 }
 
