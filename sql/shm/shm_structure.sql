@@ -31,7 +31,7 @@ CREATE TABLE `apps` (
   `user_service_id` int(11) NOT NULL,
   `name` char(16) NOT NULL,
   `domain_id` int(11) DEFAULT NULL,
-  `data` json DEFAULT NULL,
+  `params` json DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 

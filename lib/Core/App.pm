@@ -13,7 +13,7 @@ sub structure {
         user_service_id => '?',
         name => '?',
         domain_id => undef,
-        data => { type => 'json', value => undef },
+        params => { type => 'json', value => undef },
     }
 }
 
