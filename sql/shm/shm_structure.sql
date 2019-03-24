@@ -181,6 +181,7 @@ CREATE TABLE `spool` (
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
+  `params` json DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 

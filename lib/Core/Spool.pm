@@ -34,18 +34,8 @@ sub structure {
         created => 'now',   # дата создания задачи
         executed => undef,  # дата и время последнего выполнения
         delayed => 0,       # задерка в секундах
+        params => { type => 'json', value => undef },
     }
-}
-
-sub exists_command {
-    my $self = shift;
-    my %args = (
-        user_service_id => undef,
-        @_,
-    );
-
-    my ( $command ) = $self->list( where => { %args } );
-    return $command ? 1 : 0;
 }
 
 sub push {

@@ -249,6 +249,16 @@ sub event {
     return SUCCESS;
 }
 
+sub spool_exists_command {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    my ( $command ) = $self->spool->list_by_params( %args );
+    return $command ? 1 : 0;
+}
+
 sub child_status_updated {
     my $self = shift;
     my $event = shift;
@@ -259,7 +269,7 @@ sub child_status_updated {
         @_,
     );
 
-    if ( $self->spool->exists_command( user_service_id => $self->id ) ) {
+    if ( $self->spool_exists_command( user_service_id => $self->id ) ) {
         # TODO:
         # unlock command
     } else {

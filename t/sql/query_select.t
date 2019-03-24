@@ -30,13 +30,6 @@ is query_select(
     undef,
     vars => \@vars,
     table => 'domains',
-    where => 'a = b and c = d',
-), "SELECT * FROM domains WHERE ( a = b and c = d )";
-
-is query_select(
-    undef,
-    vars => \@vars,
-    table => 'domains',
     where => { a => 'b', c => 'd' },
     in => { date => [ qw/1 22 3/ ] } ,
 ), "SELECT * FROM domains WHERE ( ( a = ? AND c = ? AND date IN ( ?, ?, ? ) ) )";
@@ -141,23 +134,6 @@ is query_select(
     where => { -and => [ { user_id => 1 }, { b => 2, c => 3 } ] },
 ), "SELECT * FROM test WHERE ( ( user_id = ? AND ( b = ? AND c = ? ) ) )";
 
-#is query_select(
-#    undef,
-#    vars => \@vars,
-#    table => 'test',
-#    user_id => 1,
-#    where => { b => 2, c => 3 },
-#), "SELECT * FROM test WHERE ( ( user_id = ? AND b = ? AND c = ? ) )";
-
-#is query_select(
-#    undef,
-#    vars => \@vars,
-#    table => 'test',
-#    user_id => 1,
-#    where => { b => 2, c => { in => [1,2] } },
-#), "SELECT * FROM test WHERE ( ( user_id = ? AND b = ? AND c IN ( ?, ? ) ) )" ||
-#   "SELECT * FROM test WHERE ( ( user_id = ? c IN ( ?, ? ) AND b = ? ) )" ;
-
 is query_select(
     undef,
     vars => \@vars,
@@ -167,5 +143,15 @@ is query_select(
         { parent => { '!=' => undef } },
     ]},
 ), "SELECT * FROM test WHERE ( ( user_id = ? AND ( user_service_id IN ( ?, ? ) OR parent IS NOT NULL ) ) )";
+
+is query_select(
+    undef,
+    vars => \@vars,
+    table => 'test',
+    user_id => 123,
+    where => {
+        'params.cmd' => 1,
+    },
+), q/SELECT * FROM test WHERE ( ( user_id = ? AND params.'$.cmd' = ? ) )/;
 
 done_testing();

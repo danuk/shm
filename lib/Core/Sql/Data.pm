@@ -427,8 +427,14 @@ sub query_select {
         $query .= $args{table};
     }
 
+    for ( keys %{ $args{where} } ) {
+        if ( !ref $args{where}{$_} && ~/(\w+)\.(\w+)/ ) {
+            $args{where}{ sprintf("%s->'\$.%s'", $1, $2) } = delete $args{where}{$_};
+        }
+    }
+
     if ( $args{user_id} ) {
-        $args{where} = { -and => [ { user_id => $args{user_id} }, %{ $args{where} } ] };
+        $args{where} = { -and => [ user_id => $args{user_id}, %{ $args{where} } ] };
     }
 
     if ( $args{range} && $args{range}->{field} ) {

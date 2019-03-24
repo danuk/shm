@@ -138,4 +138,15 @@ sub _add_or_set {
 sub add { return shift->_add_or_set( 'add', @_ ) }
 sub set { shift->_add_or_set( 'set', @_ ) }
 
+sub list_by_params {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    $args{ "params.$_" } = delete $args{ $_ } for keys %args;
+
+    return $self->list( where => \%args );
+}
+
 1;
