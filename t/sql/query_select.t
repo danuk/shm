@@ -149,9 +149,17 @@ is query_select(
     vars => \@vars,
     table => 'test',
     user_id => 123,
+    where => { 'table.field' => 1 },
+), "SELECT * FROM test WHERE ( ( user_id = ? AND table.field = ? ) )";
+
+is query_select(
+    undef,
+    vars => \@vars,
+    table => 'test',
+    user_id => 123,
     where => {
-        'params.cmd' => 1,
+        'params->cmd' => 1,
     },
-), q/SELECT * FROM test WHERE ( ( user_id = ? AND params.'$.cmd' = ? ) )/;
+), q/SELECT * FROM test WHERE ( ( user_id = ? AND params->'$.cmd' = ? ) )/;
 
 done_testing();

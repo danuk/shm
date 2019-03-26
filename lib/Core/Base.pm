@@ -144,7 +144,7 @@ sub list_by_params {
         @_,
     );
 
-    $args{ "params.$_" } = delete $args{ $_ } for keys %args;
+    $args{ "params->$_" } = delete $args{ $_ } for keys %args;
 
     return $self->list( where => \%args );
 }
