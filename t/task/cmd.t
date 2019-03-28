@@ -14,9 +14,18 @@ use Core::System::ServiceManager qw( get_service );
 SHM->new( user_id => 40092 );
 
 my $t = get_service('Task')->res({
-    server_id => 1,
-    user_service_id => 16,
-    event_id => 12,
+    event => {
+        kind => 'user_service',
+        name => 'update',
+        params => {
+            category => 'dns',
+            cmd => 'dns update',
+        },
+    },
+    params => {
+        user_service_id => 16,
+        server_id => 1,
+    },
 });
 
 my @cmd = $t->make_cmd_args( $t->cmd );

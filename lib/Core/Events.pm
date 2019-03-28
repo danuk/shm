@@ -10,9 +10,8 @@ sub structure {
     return {
         id => '@',
         kind => '?',
-        name => '?',
-        category => '?',    # www,mail,mysql
-        event => '?',       # create,block,unblock...
+        title => '?',
+        name => '?',       # create,block,unblock...
         server_gid => '?',  # Group_id of servers
         params => { type => 'json', value => undef },
     }
@@ -22,16 +21,16 @@ sub get_events {
     my $self = shift;
     my %args = (
         kind => undef,
+        name => undef,
         category => undef,
-        event => undef,
         @_,
     );
 
     my @res = $self->list(
         where => {
             $args{kind} ? ( kind => $args{kind} ) : (),
-            $args{category} ? ( category => $args{category} ) : (),
-            $args{event} ? ( event => $args{event} ) : (),
+            $args{name} ? ( name => $args{name} ) : (),
+            $args{category} ? ( 'params->category' => $args{category} ) : (),
         },
     );
     return wantarray ? @res : \@res;

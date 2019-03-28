@@ -209,8 +209,8 @@ sub make_commands_by_event {
 
     my @commands = get_service('Events')->get_events(
         kind => 'user_service',
+        name => $e,
         category => $self->get_category,
-        event => $e,
     );
 
     if ( scalar @commands ) {
@@ -218,12 +218,13 @@ sub make_commands_by_event {
 
         for ( @commands ) {
             $self->spool->add(
-                exists $self->settings->{server_id} ?
-                    ( server_id => $self->settings->{server_id} ) :
-                    ( server_gid => $_->{server_gid} ),
-                event_id => $_->{id},
-                user_service_id => $self->id,
-                #branch => $self->top_parent,
+                event => $_,
+                params => {
+                    exists $self->settings->{server_id} ?
+                        ( server_id => $self->settings->{server_id} ) :
+                        ( server_gid => $_->{server_gid} ),
+                    user_service_id => $self->id,
+                },
             );
         }
     }

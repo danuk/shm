@@ -17,20 +17,11 @@ sub table { return 'spool' };
 sub structure {
     return {
         id => '@',
-
         user_id => '!',
-        user_service_id => undef, # идентификатор услуги
-
-        event_id => '?',
-
-        server_gid => undef,
-        server_id => undef,
-        data => undef,      # любые дополнительные данные
+        event => { type => 'json', value => undef },
         prio => 0,          # приоритет команды
-
         status => TASK_NEW, # status выполнения команды: 0-новая, 1-выполнена, 2-ошибка
-        response => undef,
-
+        response => { type => 'json', value => undef },
         created => 'now',   # дата создания задачи
         executed => undef,  # дата и время последнего выполнения
         delayed => 0,       # задерка в секундах
@@ -71,10 +62,10 @@ sub process_one {
 
     get_service('config')->local('user_id', $task->{user_id } );
 
-    if ( $task->{server_gid} ) {
-        my @servers = get_service('ServerGroups', _id => $task->{server_gid} )->get_servers;
+    if ( $task->{event}->{server_gid} ) {
+        my @servers = get_service('ServerGroups', _id => $task->{event}->{server_gid} )->get_servers;
         unless ( @servers ) {
-            get_service('logger')->warning("Can't found servers for group: $task->{server_gid}");
+            get_service('logger')->warning("Can't found servers for group: $task->{event}->{server_gid}");
             my $spool = get_service('spool', _id => $task->{id} )->res( $task );
             $spool->finish_task(
                 status => TASK_DROP,
@@ -83,7 +74,7 @@ sub process_one {
             return TASK_DROP, {};
         }
 
-        $task->{server_id} = $servers[0]->{server_id};
+        $task->{params}->{server_id} = $servers[0]->{server_id};
 
         if ( scalar @servers > 1 ) {
             # TODO: create new tasks for all servers

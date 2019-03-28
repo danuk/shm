@@ -158,9 +158,8 @@ DROP TABLE IF EXISTS `events`;
 CREATE TABLE `events` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `kind` char(32) NOT NULL,
-  `name` char(128) NOT NULL,
-  `category` char(16) NOT NULL,
-  `event` char(16) NOT NULL,
+  `title` char(128) NOT NULL,
+  `name` char(16) NOT NULL,
   `server_gid` int(11) DEFAULT NULL,
   `params` json DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -170,12 +169,8 @@ DROP TABLE IF EXISTS `spool`;
 CREATE TABLE `spool` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
-  `user_service_id` int(11) DEFAULT NULL,
-  `event_id` int(11) NOT NULL,
-  `server_gid` int(11) DEFAULT NULL,
-  `server_id` int(11) DEFAULT NULL,
-  `data` text,
-  `response` text,
+  `response` json DEFAULT NULL,
+  `event` json NOT NULL,
   `prio` int(11) NOT NULL DEFAULT '0',
   `status` int(11) DEFAULT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -190,17 +185,14 @@ CREATE TABLE `spool_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `spool_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `user_service_id` int(11) DEFAULT NULL,
-  `event_id` int(11) NOT NULL,
-  `server_gid` int(11) DEFAULT NULL,
-  `server_id` int(11) DEFAULT NULL,
-  `data` text,
-  `response` text,
+  `response` json DEFAULT NULL,
+  `event` json DEFAULT NULL,
   `prio` int(11) NOT NULL DEFAULT '0',
   `status` int(11) DEFAULT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
+  `params` json DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 

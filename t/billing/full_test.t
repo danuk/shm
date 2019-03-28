@@ -50,9 +50,26 @@ subtest 'Check create service' => sub {
     my @spool_list = $spool->list();
 
     is ( scalar @spool_list, 1, 'Check count spool commands' );
+
     cmp_deeply ( $spool_list[0], superhashof({
-        user_service_id => $ch_by_service->{29}->{user_service_id},
-        event_id => 8,
+        status => 0,
+        executed => undef,
+        event => {
+            id => 8,
+            server_gid => 1,
+            params => {
+                category => 'mysql',
+                cmd => 'mysql create -a b_{{us.id}} -b {{us.settings.db.0.name}} -u {{us.settings.db.0.login}} -p {{us.settings.db.0.password}}'
+            },
+            name => 'create',
+            title => 'Create mysql',
+            kind => 'user_service'
+        },
+        params => {
+            user_service_id => $ch_by_service->{29}->{user_service_id},
+            server_gid => 1
+        },
+        delayed => 0,
     }), 'Check spool command' );
 
     proccess_spool( $us );
@@ -302,7 +319,7 @@ sub proccess_spool {
     # Simulate spool proccess
     for ( $self->spool->list ) {
         my $task = get_service('spool', _id => $_->{id} );
-        get_service('us', _id => $_->{user_service_id} )->set_status_by_event( $task->event->{event} );
+        get_service('us', _id => $_->{params}->{user_service_id} )->set_status_by_event( $task->event->{name} );
         $task->finish_task;
     }
 }

@@ -12,10 +12,20 @@ sub task {
     return $self->res;
 }
 
+sub params {
+    my $self = shift;
+    return $self->res->{params};
+}
+
 sub event {
     my $self = shift;
-    my $e = get_service('Events', _id => $self->task->{event_id} );
-    return $e ? $e->get : undef;
+    return $self->res->{event};
+}
+
+sub event_params {
+    my $self = shift;
+
+    return $self->event ? $self->event->{params} : {};
 }
 
 sub payload {
@@ -54,12 +64,12 @@ sub make_task {
             }
         }
 
-        if ( $self->task->{user_service_id} ) {
-            my $us = get_service('us', _id => $self->task->{user_service_id} );
+        if ( $self->params->{user_service_id} ) {
+            my $us = get_service('us', _id => $self->params->{user_service_id} );
             $us->set(
-                settings => { server_id => $self->task->{server_id} },
+                settings => { server_id => $self->params->{server_id} },
             );
-            $us->set_status_by_event( $self->event->{event} );
+            $us->set_status_by_event( $self->event->{name} );
         }
     }
 
@@ -68,7 +78,7 @@ sub make_task {
 
 sub cmd {
     my $self = shift;
-    my $cmd = $self->event->{params}->{cmd} || $self->server->get->{params}->{cmd};
+    my $cmd = $self->event_params->{cmd} || $self->server->get->{params}->{cmd};
     return undef unless $cmd;
 }
 
@@ -91,7 +101,7 @@ sub _get_cmd_param {
     my $self = shift;
     my $param = shift;;
 
-    my $usi = $self->task->{user_service_id};
+    my $usi = $self->params->{user_service_id};
 
     my %params = (
         id =>           '$usi',
@@ -134,28 +144,39 @@ sub task_answer {
 sub server {
     my $self = shift;
 
-    my $server = get_service('Server', _id => $self->task->{server_id} );
-    return undef unless $server;
+    return undef unless $self->params->{server_id};
+
+    if ( my $server = get_service('Server', _id => $self->params->{server_id} ) ) {
+        return $server;
+    }
+    return undef;
 }
 
 sub transport_name {
     my $self = shift;
 
-    return exists $self->event->{params}->{transport} ? $self->event->{params}->{transport} : $self->server->get->{transport};
+    if ( $self->event_params->{transport} ) {
+        return $self->event_params->{transport};
+    } elsif ( my $server = $self->server ) {
+        return $server->get->{transport} || undef;
+    }
+
+    return undef;
 }
 
 sub transport {
     my $self = shift;
 
-    return undef unless $self->task->{server_id};
+    return undef unless $self->params->{server_id};
+    return undef unless $self->transport_name;
     return get_service( 'Transport::' . ucfirst( $self->transport_name ) );
 }
 
 sub get_service_for_transport {
     my $self = shift;
 
-    my $service = get_service( 'Services::' . ucfirst( $self->event->{category} ), _id => $self->task->{user_service_id} );
-    $service //= get_service( 'USObject', _id => $self->task->{user_service_id} ) if $self->task->{user_service_id};
+    my $service = get_service( 'Services::' . ucfirst( $self->event_params->{category} ), _id => $self->params->{user_service_id} );
+    $service //= get_service( 'USObject', _id => $self->params->{user_service_id} ) if $self->params->{user_service_id};
 
     return $service || $self;
 }
@@ -164,7 +185,7 @@ sub data_for_transport {
     my $self = shift;
 
     my $service = $self->get_service_for_transport;
-    return $service->data_for_transport( $self->task );
+    return $service->data_for_transport( %{ $self->params } );
 }
 
 1;

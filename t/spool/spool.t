@@ -14,23 +14,49 @@ use Core::System::ServiceManager qw( get_service );
 SHM->new( user_id => 40092 );
 
 my $task1 = get_service('spool')->add(
-    server_id => 1,
-    user_service_id => 16,
-    event_id => 12,
+    event => {
+        kind => 'user_service',
+        name => 'update',
+        params => {
+            category => 'dns',
+            cmd => 'dns update',
+        },
+    },
+    params => {
+        user_service_id => 16,
+        server_id => 1,
+    },
 );
 
 my $task2 = get_service('spool')->add(
-    server_id => 162,
-    user_service_id => 16,
-    event_id => 15,
+    event => {
+        kind => 'user_service',
+        name => 'update',
+        params => {
+            category => 'dns',
+            cmd => 'dns update',
+        },
+    },
+    params => {
+        user_service_id => 16,
+        server_id => 162,
+    },
 );
 
 my $task3 = get_service('task')->res({
-    server_id => 1,
-    user_service_id => 16,
-    event_id => 14,
+    event => {
+        kind => 'user_service',
+        name => 'update',
+        params => {
+            category => 'dns',
+            cmd => 'dns update',
+        },
+    },
+    params => {
+        user_service_id => 16,
+        server_id => 1,
+    },
 })->make_task;
-
 
 is( $task3->{response}->{ret_code}, 0, 'Check make_task for category `test`' );
 

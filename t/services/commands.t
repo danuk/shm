@@ -15,7 +15,7 @@ use Core::System::ServiceManager qw( get_service );
 
 my $obj = get_service('Events');
 
-my @ret = $obj->get_events( kind => 'user_service', category => 'web', event => 'erase' );
+my @ret = $obj->get_events( kind => 'user_service', category => 'web', name => 'erase' );
 
 is @ret, 1;
 
