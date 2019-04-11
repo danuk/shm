@@ -78,6 +78,20 @@ sub _id {
     return 'user_'. $self->user_id;
 }
 
+sub events {
+    return {
+        'payment' => {
+            event => {
+                title => 'user payment',
+                params => {
+                    kind => 'UserService',
+                    method => 'activate_services',
+                },
+            },
+        },
+    };
+}
+
 sub crypt_password {
     my $self = shift;
     my %args = (
@@ -190,7 +204,22 @@ sub set_balance {
     my $ret = $self->do("UPDATE users SET $data WHERE user_id=?", values %args, $self->{user_id} );
 
     $self->reload() if $ret;
+
     return $ret;
+}
+
+sub payment {
+    my $self = shift;
+    my %args = (
+        money => undef,
+        @_,
+    );
+
+    return undef unless $args{money};
+
+    $self->set_balance( balance => $args{money} );
+
+    return $self->make_event( 'payment' );
 }
 
 sub pays {

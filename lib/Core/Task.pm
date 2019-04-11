@@ -14,7 +14,7 @@ sub task {
 
 sub params {
     my $self = shift;
-    return $self->res->{params};
+    return $self->res->{params} || {};
 }
 
 sub event {
@@ -46,7 +46,22 @@ sub make_task {
 
     my $transport = $self->transport;
     unless ( $transport ) {
-        return $self->task_answer( TASK_DROP, error => 'Transport not exist' );
+        if ( my $method = $self->event_params->{method} ) {
+            my $kind = $self;
+            if ( $self->event_params->{kind} ) {
+                $kind = get_service( $self->event_params->{kind} );
+            }
+
+            if ( $kind->can( $method ) ) {
+                $kind->$method();
+                return $self->task_answer( TASK_SUCCESS );
+            }
+            else {
+                return $self->task_answer( TASK_DROP, error => 'Method not exist' );
+            }
+        } else {
+            return $self->task_answer( TASK_DROP, error => 'Transport not exist' );
+        }
     }
 
     my ( $status, $response_data ) = $transport->send( $self );

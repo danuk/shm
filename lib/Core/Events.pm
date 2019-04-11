@@ -36,6 +36,15 @@ sub get_events {
     return wantarray ? @res : \@res;
 }
 
+sub make {
+    my $self = shift;
+    my %args = @_;
+
+    get_service('spool')->add(
+        @_,
+    );
+}
+
 sub data {
     my $self = shift;
 

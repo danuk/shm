@@ -47,7 +47,7 @@ sub add {
     my %args = @_;
 
     if ( my $res = $self->SUPER::add( %args ) ) {
-        get_service('user')->set_balance( balance => $args{money} );
+        get_service('user')->payment( money => $args{money} );
         return $res;
     }
     return undef;

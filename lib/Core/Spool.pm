@@ -7,11 +7,6 @@ use Core::Const;
 use Core::Utils qw( now );
 use Core::Task;
 
-sub id {
-    my $self = shift;
-    return $self->{id};
-}
-
 sub table { return 'spool' };
 
 sub structure {

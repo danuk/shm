@@ -138,6 +138,32 @@ sub _add_or_set {
 sub add { return shift->_add_or_set( 'add', @_ ) }
 sub set { shift->_add_or_set( 'set', @_ ) }
 
+sub kind {
+    my $self = shift;
+
+    my $kind = ref $self;
+    $kind =~s/.*:://g;
+    return lc $kind;
+}
+
+sub make_event {
+    my $self = shift;
+    my $event = shift;
+    my %args;
+
+    if ( $self->can('events') ) {
+        %args = %{ $self->events->{ $event } || {} };
+    }
+
+    unless ( $args{event} ) {
+        logger->error('Event not defined');
+    }
+
+    $args{event}->{kind}||= $self->kind;
+
+    return get_service('Events')->make( %args );
+}
+
 sub list_by_params {
     my $self = shift;
     my %args = (

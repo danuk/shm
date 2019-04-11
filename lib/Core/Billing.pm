@@ -1,7 +1,6 @@
 package Core::Billing;
 
 use v5.14;
-use Carp qw(confess);
 
 use base qw(
     Core::Pay

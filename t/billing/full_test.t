@@ -72,7 +72,7 @@ subtest 'Check create service' => sub {
         delayed => 0,
     }), 'Check spool command' );
 
-    proccess_spool( $us );
+    proccess_spool();
 
     is( $us->get_status, STATUS_ACTIVE, 'Check status of service after the creation childs' );
 };
@@ -184,7 +184,7 @@ subtest 'Try prolongate service without have money' => sub {
             'total' => 1000,
     }, 'Check withdraw');
 
-    proccess_spool( $us );
+    proccess_spool();
 
     cmp_deeply( chldrn_by_service( $us ), {
         5 => superhashof( { status => STATUS_BLOCK } ),
@@ -194,7 +194,6 @@ subtest 'Try prolongate service without have money' => sub {
 
     is( $us->get_status, STATUS_BLOCK, 'Check status of prolong service' );
 };
-
 
 subtest 'Try prolongate blocked service without have money' => sub {
     my $ret = process_service_recursive( $us );
@@ -216,10 +215,8 @@ Test::MockTime::set_fixed_time('2017-03-02T12:00:00Z');
 
 subtest 'Try prolongate blocked service' => sub {
     $user->set( balance => 1000.03, credit => 0, discount => 0 );
-
     my $withdraw_id = $us->get_withdraw_id;
-
-    my $ret = process_service_recursive( $us );
+    process_service_recursive( $us );
 
     is( int($withdraw_id==$us->get_withdraw_id), 1, 'Check use current withdraw (no create new)' );
 
@@ -251,7 +248,7 @@ subtest 'Try prolongate blocked service' => sub {
 
     is( $us->get_status, STATUS_PROGRESS, 'Check status of prolong service after unblock' );
 
-    proccess_spool( $us );
+    proccess_spool();
 
     cmp_deeply( chldrn_by_service( $us ), {
         5 => superhashof( { status => STATUS_ACTIVE } ),
@@ -304,7 +301,7 @@ subtest 'Check create service without money' => sub {
 
     $user->set( balance => 1000, credit => 0, discount => 0 );
     process_service_recursive( $us );
-    proccess_spool( $us );
+    proccess_spool();
 
     is( $us->get_status, STATUS_ACTIVE, 'Check status of non payment service after payment' );
 };
@@ -314,11 +311,9 @@ done_testing();
 exit 0;
 
 sub proccess_spool {
-    my $self = shift;
-
     # Simulate spool proccess
-    for ( $self->spool->list ) {
-        my $task = get_service('spool', _id => $_->{id} );
+    for ( $spool->list ) {
+        my $task = get_service('spool')->id( $_->{id} );
         get_service('us', _id => $_->{params}->{user_service_id} )->set_status_by_event( $task->event->{name} );
         $task->finish_task;
     }

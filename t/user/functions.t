@@ -1,6 +1,7 @@
 use v5.14;
 
 use Test::More;
+use Test::Deep;
 use Data::Dumper;
 use Core::Billing;
 
@@ -27,5 +28,30 @@ is ( scalar @who_pays, 0, 'Check pays for other user');
 my @pays = $user->pays->list;
 is ( scalar @pays, 2, 'Check pays for main service');
 
+subtest 'Try payment' => sub {
+    is( $user->get_balance, -21.56, 'Check user balance before payment');
+
+    $user->payment( money => 1000.03 );
+    is( $user->get_balance, 978.47, 'Check user balance after payment');
+
+    my $spool = get_service('spool');
+    my ( $row ) = $spool->list;
+
+    cmp_deeply( $row, superhashof({
+          user_id => 40092,
+          status => 0,
+          event => {
+              params => {
+                  kind => 'UserService',
+                  method => 'activate_services'
+              },
+              kind => 'user',
+              title => 'user payment'
+          },
+    }));
+
+    #$spool->process_one;
+    $spool->_delete();
+};
 
 done_testing();

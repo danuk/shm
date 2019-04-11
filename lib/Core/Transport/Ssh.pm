@@ -110,6 +110,11 @@ sub exec {
     }
 
     return $ret_code == 0 ? SUCCESS : FAIL, {
+        server => {
+            host => $args{host},
+            port => $args{port},
+            key_id => $args{key_id},
+        },
         command => [ @shell_cmd ],
         ret_code => $ret_code,
         stdout => $data,

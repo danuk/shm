@@ -5,6 +5,7 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
 use Core::USObject;
+use Core::Billing qw(process_service_recursive);
 use Core::Utils qw( decode_json force_numbers );
 
 sub table { return Core::USObject->table }
@@ -67,7 +68,6 @@ sub id {
     my $self = shift;
     my $usi = shift || confess("usi required");
 
-#    delete $self->{res};
     $self->{res}->{ $usi } = get_service('us', _id => $usi )->get;
 
     return $self;
@@ -340,19 +340,24 @@ sub domains {
     return $self;
 }
 
-sub search_services_expired {
+sub activate_services {
     my $self = shift;
 
-    my @vars;
-    my $query = $self->query_select(
-                                vars => \@vars,
-                                range => { field => 'expired', stop => Core::Utils::now },
-                                where => { status => STATUS_BLOCK },
-                                order => { by => 'user_service_id' },
+    my @list = $self->list(
+        where => {
+            status => { -in => [
+                STATUS_BLOCK,
+                STATUS_WAIT_FOR_PAY,
+            ]},
+        },
+        order => [ user_service_id => 'ASC' ],
     );
 
-    my $res = $self->query( $query, @vars );
-    return $res || [];
+    for ( @list ) {
+        Core::Billing::process_service_recursive(
+            get_service('USObject', _id => $_->{user_service_id})
+        );
+    }
 }
 
 sub get_all_keys_ref {
