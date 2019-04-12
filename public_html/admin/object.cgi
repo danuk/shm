@@ -81,7 +81,7 @@ else {
     my @ret = $service->list_for_api( %in, admin => $admin );
     $res = \@ret;
 
-    my $numRows = $user->found_rows;
+    my $numRows = $service->found_rows;
     %headers = http_content_range( http_limit, count => $numRows );
 }
 
