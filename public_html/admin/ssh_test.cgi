@@ -23,7 +23,7 @@ if ( $in{params} && $in{params}{cmd} ) {
     $in{params}{cmd} = $t->make_cmd_string( $in{params}{cmd} );
 }
 
-my (undef, my $res ) = $ssh->exec(
+my (undef, $res ) = $ssh->exec(
     host => $in{host},
     cmd => $in{cmd} || 'uname -a',
     key_id => 1,
