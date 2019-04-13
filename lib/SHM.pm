@@ -14,7 +14,7 @@ use JSON;
 use Core::System::ServiceManager qw( get_service );
 use Core::Sql::Data;
 use Scalar::Util qw(blessed);
-use Core::Utils qw(force_numbers);
+use Core::Utils qw(force_numbers switch_user);
 
 use base qw(Exporter);
 
@@ -81,7 +81,7 @@ sub new {
         $user_id = $session->get('user_id');
     }
 
-    $config->local('user_id', $user_id );
+    switch_user( $user_id );
     my $user = get_service('user');
     unless ( $user ) {
         print_not_authorized();

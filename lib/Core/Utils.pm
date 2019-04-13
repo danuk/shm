@@ -6,6 +6,10 @@ use Encode qw/_utf8_on/;
 
 use base qw(Exporter);
 
+our @EXPORT = qw(
+    switch_user
+);
+
 our @EXPORT_OK = qw(
     days_in_months
     parse_date
@@ -211,6 +215,13 @@ sub read_file {
     close($fh);
 
     return $data;
+}
+
+sub switch_user {
+    my $user_id = shift;
+
+    get_service('logger')->debug('Switch user to: ', $user_id );
+    get_service('config')->local('user_id', $user_id );
 }
 
 1;

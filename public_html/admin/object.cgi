@@ -23,7 +23,7 @@ my $admin = 1;
 
 # Switch to user
 if ( $in{user_id} ) {
-    get_service('config')->local('user_id', $in{user_id} );
+    switch_user( $in{user_id} );
     $admin = 0;
 }
 

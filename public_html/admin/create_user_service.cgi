@@ -11,7 +11,7 @@ our %in = parse_args();
 my $user = SHM->new();
 
 # Switch to user
-get_service('config')->local('user_id', $in{user_id} );
+switch_user( $in{user_id} );
 
 $in{settings}||= {};
 

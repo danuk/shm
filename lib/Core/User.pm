@@ -125,7 +125,7 @@ sub auth {
         return undef;
     }
 
-    get_service('config')->local('user_id', $user->{user_id} );
+    switch_user( $user->{user_id} );
     $self->{user_id} = $user->{user_id};
 
     return $self;
