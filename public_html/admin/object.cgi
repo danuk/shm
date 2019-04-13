@@ -12,6 +12,7 @@ use Core::Utils qw(
     http_limit
     http_content_range
     now
+    switch_user
 );
 
 my %headers;
