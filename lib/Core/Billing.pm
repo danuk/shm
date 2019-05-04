@@ -320,12 +320,6 @@ sub get_service_discount {
     $args{period_cost} ||= $service->{period_cost} // undef;
     $args{months} ||= $service->{period_cost} || 1;
 
-    for ( keys %args ) {
-        unless ( defined $args{ $_ } ) {
-            logger->error("not defined required variable: $_");
-        }
-    }
-
     my $percent = get_service('user')->get_discount || 0;
 
     if ( $args{period_cost} < 2 ) {

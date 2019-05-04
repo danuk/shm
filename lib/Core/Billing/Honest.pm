@@ -93,13 +93,8 @@ sub calc_total_by_date_range {
         @_,
     );
 
-    for ( keys %wd ) {
-        confess("`$_` required") unless defined $wd{ $_ };
-    }
-
     my %start = parse_date( $wd{withdraw_date} );
     my %stop = parse_date( $wd{end_date} );
-
 
     my $m_diff = ( $stop{month} + $stop{year} * 12 ) - ( $start{month} + $start{year} * 12 );
     my $total = 0;
