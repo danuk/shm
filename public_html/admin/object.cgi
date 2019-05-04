@@ -54,8 +54,8 @@ unless ( $service->can('table') ) {
 }
 
 if ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
-    if ( my $id = $service->add( %in ) ) {
-        my %data = $service->id( $id )->get;
+    if ( my $ret = $service->add( %in ) ) {
+        my %data = ref $ret ? $ret->get : $service->id( $ret )->get;
         $res = \%data;
     }
     else {
@@ -74,8 +74,8 @@ elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
         $obj->delete();
         %headers = ( status => 204 );
     } else {
-        %headers = ( status => 400 );
-        $res = { error => "Can't delete object" };
+        %headers = ( status => 404 );
+        $res = { error => "Service not found" };
     }
 }
 else {
@@ -84,6 +84,13 @@ else {
 
     my $numRows = $service->found_rows;
     %headers = http_content_range( http_limit, count => $numRows );
+}
+
+my $report = get_service('report');
+
+unless ( $report->is_success ) {
+    %headers = ( status => 400 );
+    $res = { error => $report->errors };
 }
 
 print_header( %headers );
