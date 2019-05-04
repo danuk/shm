@@ -1,6 +1,7 @@
 use v5.14;
 
 use Test::More;
+use Test::Deep;
 use Data::Dumper;
 use Core::Billing::Honest;
 
@@ -61,72 +62,157 @@ is_deeply( calc_month_cost( to_date => '2017-04-09 23:59:59', cost => '3000' ), 
     total => '900.00',
 },'calc_month_cost: to_date (9 day)');
 
-is( calc_total_by_date_range(
+
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-01-31 23:59:59',
         cost            => '1000',
-), '1000.00','calc_total_by_date_range');
+    ),
+    {
+        total => '1000.00',
+        months => '1.00',
+    }
+,'calc_total_by_date_range');
 
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
+        withdraw_date   => '2017-01-01 00:00:00',
+        end_date        => '2017-02-01 00:00:00',
+        cost            => '1000',
+    ),
+    {
+        total => '1000.00',
+        months => '1.00',
+    }
+,'calc_total_by_date_range');
+
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-02-28 23:59:59',
         cost            => '1000',
-), '2000.00','calc_total_by_date_range');
+    ),
+    {
+        total => '2000.00',
+        months => '2.00',
+    }
+,'calc_total_by_date_range');
 
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
+        withdraw_date   => '2017-01-01 00:00:00',
+        end_date        => '2017-03-01 00:00:00',
+        cost            => '1000',
+    ),
+    {
+        total => '2000.00',
+        months => '2.00',
+    }
+,'calc_total_by_date_range');
+
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-04-30 23:59:59',
         cost            => '1000',
-), '4000.00','calc_total_by_date_range');
+    ),
+    {
+        total => '4000.00',
+        months => '4.00',
+    }
+,'calc_total_by_date_range');
 
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-10 12:33:00',
         end_date        => '2017-04-10 12:33:00',
         cost            => '1000',
-), '3010.24','calc_total_by_date_range');
+    ),
+    {
+        total => '3010.24',
+        months => '3.00',
+    }
+,'calc_total_by_date_range');
 
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-10 12:33:00',
         end_date        => '2017-05-10 12:33:00',
         cost            => '1000',
-), '4000.00','calc_total_by_date_range');
+    ),
+    {
+        total => '4000.00',
+        months => '4.00',
+    }
+,'calc_total_by_date_range');
 
 # Проверяем, что между двумя датами, различающихся на один месяц,
 # списание не месячное (более 1000 руб.). Это правильно, т.к. в месяцах разное кол-во дней
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-10 12:33:00',
         end_date        => '2017-02-10 12:33:00',
         cost            => '1000',
-), '1032.91','calc_total_by_date_range');
+    ),
+    {
+        total => '1032.91',
+        months => '1.00',
+    }
+,'calc_total_by_date_range');
 
 # Ранее, к дате списания прибавил месяц, и получил дату окончания
 # Проверяем, что между этими двумя датами списание равно месячному.
 # Эта ф-ия является обратной к calc_end_date_by_months
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-10 12:33:00',
         end_date        => '2017-02-09 14:25:55',
         cost            => '1000',
-), '1000.00','calc_total_by_date_range');
+    ),
+    {
+        total => '1000.00',
+        months => '0.30', # TODO: fix me: must been '1.00'
+    }
+,'calc_total_by_date_range');
 
 # Вычисляем стоимость короткого периода (для двух дней)
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-01-02 23:59:59',
         cost            => '3100',
-), '200.00','calc_total_by_date_range (2 days on start month)');
+    ),
+    {
+        total => '200.00',
+        months => '0.02',
+    }
+,'calc_total_by_date_range (2 days on start month)');
 
 # Вычисляем стоимость короткого периода (для двух дней)
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-10 00:00:00',
         end_date        => '2017-01-11 23:59:59',
         cost            => '3100',
-), '200.00','calc_total_by_date_range (2 days in middle)');
+    ),
+    {
+        total => '200.00',
+        months => '0.02',
+    }
+,'calc_total_by_date_range (2 days in middle)');
 
 # Вычисляем стоимость короткого периода (для двух дней с переходом месяца)
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-31 00:00:00',
         end_date        => '2017-02-01 23:59:59',
         cost            => '3100',
-), '210.71','calc_total_by_date_range (2 days with jump to next month)');
+    ),
+    {
+        total => '210.71',
+        months => '0.02',
+    }
+,'calc_total_by_date_range (2 days with jump to next month)');
+
+cmp_deeply( calc_total_by_date_range(
+        withdraw_date   => '2017-10-31 00:00:00',
+        end_date        => '2018-02-01 23:59:59',
+        cost            => '3100',
+    ),
+    {
+        total => '9510.71',
+        months => '3.02',
+    }
+,'calc_total_by_date_range (jump to next year)');
+
 
 done_testing();

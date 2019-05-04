@@ -1,6 +1,7 @@
 use v5.14;
 
 use Test::More;
+use Test::Deep;
 use Data::Dumper;
 use Core::Billing::Simpler;
 
@@ -31,46 +32,92 @@ is( calc_end_date_by_months('2017-04-28 20:34:16', 1), '2017-05-28 20:34:15', 'T
 is( calc_end_date_by_months('2017-01-01 00:00:00', '0.1'), '2017-01-10 23:59:59', 'Test calc_end_date_by_months 12');
 is( calc_end_date_by_months('2017-01-01 00:00:00', '0.01'), '2017-01-01 23:59:59', 'Test calc_end_date_by_months 13');
 
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-01-01 23:59:59',
         cost            => '900',
-), '30.00','calc_total_by_date_range (one day without one second)');
+    ),
+    {
+        total => '30.00',
+        months => '0.01',
+    }
+,'calc_total_by_date_range (one day without one second)');
 
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-01-02 00:00:00',
         cost            => '900',
-), '30.00','calc_total_by_date_range (one day)');
+    ),
+    {
+        total => '30.00',
+        months => '0.01',
+    }
+,'calc_total_by_date_range (one day)');
 
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-01-01 08:00:00',
         cost            => '900',
-), '10.00','calc_total_by_date_range (third part of day)');
+    ),
+    {
+        total => '10.00',
+        months => '0.00',
+    }
+,'calc_total_by_date_range (third part of day)');
 
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-01-30 23:59:59',
         cost            => '1000',
-), '1000.00','calc_total_by_date_range (30 days)');
+    ),
+    {
+        total => '1000.00',
+        months => '1.00',
+    }
+,'calc_total_by_date_range (30 days)');
 
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
         end_date        => '2017-03-01 23:59:59',
         cost            => '1000',
-), '2000.00','calc_total_by_date_range (60 days)');
+    ),
+    {
+        total => '2000.00',
+        months => '2.00',
+    }
+,'calc_total_by_date_range (60 days)');
 
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-10 12:33:00',
         end_date        => '2017-02-09 12:33:00',
         cost            => '1000',
-), '1000.00','calc_total_by_date_range (30 days in other months)');
+    ),
+    {
+        total => '1000.00',
+        months => '1.00',
+    }
+,'calc_total_by_date_range (30 days in other months)');
 
-is( calc_total_by_date_range(
+cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-10 12:33:00',
         end_date        => '2017-02-10 12:33:00',
         cost            => '1000',
-), '1033.33','calc_total_by_date_range (31 day)');
+    ),
+    {
+        total => '1033.33',
+        months => '1.01',
+    }
+,'calc_total_by_date_range (31 day)');
+
+cmp_deeply( calc_total_by_date_range(
+        withdraw_date   => '2017-10-31 00:00:00',
+        end_date        => '2018-02-01 23:59:59',
+        cost            => '3100',
+    ),
+    {
+        total => '9713.33',
+        months => '3.04',
+    }
+,'calc_total_by_date_range (jump to next year)');
 
 done_testing();

@@ -19,6 +19,13 @@ our @EXPORT = qw(
 use Core::Const;
 use Core::Utils qw(string_to_utime utime_to_string start_of_month end_of_month parse_date days_in_months);
 use Time::Local 'timelocal_nocheck';
+use Time::DaysInMonth;
+use Data::Dumper;
+
+use Date::Calc qw(
+    Add_Delta_DHMS
+    Delta_YMD
+);
 
 # Вычисляет стоимость в пределах одного месяца
 # На вход принимает стоимость и дату смещения
@@ -90,12 +97,11 @@ sub calc_total_by_date_range {
         confess("`$_` required") unless defined $wd{ $_ };
     }
 
-    my $start = parse_date( $wd{withdraw_date} );
-    my $stop = parse_date( $wd{end_date} );
+    my %start = parse_date( $wd{withdraw_date} );
+    my %stop = parse_date( $wd{end_date} );
 
-    my $m_diff = ( $stop->{month} + $stop->{year} * 12 ) - ( $start->{month} + $start->{year} * 12 );
-    say "m_diff: ". $m_diff if $debug;
 
+    my $m_diff = ( $stop{month} + $stop{year} * 12 ) - ( $start{month} + $start{year} * 12 );
     my $total = 0;
 
     # calc first month
@@ -122,17 +128,33 @@ sub calc_total_by_date_range {
         $total += $data->{total};
     }
 
-    #my $d_diff = $stop->{day} - $start->{day};
+    return {
+        total => sprintf("%.2f", $total ),
+        months => calc_months_between_dates(\%start, \%stop),
+    };
+}
 
-    #if ($d_diff < 0) {
-    #    my $days = days_in( $start->{year} , $start->{month} );
-    #    $m_diff--;
-    #    $d_diff = $days - $start->{day} + $stop->{day};
-    #}
-    #my $months = "$m_diff." . ($d_diff < 10 ? "0$d_diff" : "$d_diff");
-    #$months = $pay->{months} if $total == $pay->{total};
+sub calc_months_between_dates {
+    my %start = %{ $_[0] };
+    my %stop = %{ $_[1] };
 
-    return sprintf("%.2f", $total );
+    @stop{ qw/year month day hour min sec/ } = Add_Delta_DHMS( @stop{ qw/year month day hour min sec/ }, 0,0,0,1 ); # add one second
+
+    my %delta;
+    @delta{ qw/year month day/ } = Delta_YMD(
+        @start{ qw/year month day/ },
+        @stop{ qw/year month day/ }
+    );
+
+    if ( $delta{day} < 0 ) {
+        my $days = days_in( @start{ qw/year month/ } );
+        $delta{month}--;
+        $delta{day} = $days - $start{day} + $stop{day};
+    }
+
+    return sprintf('%d.%02d',
+        $delta{year} * 12 + $delta{month},
+        $delta{day}),
 }
 
 1;

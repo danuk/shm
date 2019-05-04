@@ -159,7 +159,7 @@ sub calc_withdraw {
     $wd{end_date} = calc_end_date_by_months( $wd{withdraw_date}, $real_payment_months );
 
     if ( $wd{months} !~/^\d+$/ ) {
-        $wd{total} = calc_total_by_date_range( %wd );
+        $wd{total} = calc_total_by_date_range( %wd )->{total};
     } else {
         $wd{total} = $wd{cost} * $real_payment_months;
     }

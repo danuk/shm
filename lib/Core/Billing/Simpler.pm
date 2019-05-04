@@ -6,7 +6,6 @@ use Carp qw(confess);
 use base qw(Exporter);
 
 our @EXPORT = qw(
-    calc_month_cost
     calc_end_date_by_months
     calc_total_by_date_range
 );
@@ -62,13 +61,20 @@ sub calc_total_by_date_range {
 
     my $cost_day = $wd{cost} / DAYS_IN_MONTH;
     my $cost_hour = $cost_day / 24;
-    my $cost_min = $cost_hour / 60; 
+    my $cost_min = $cost_hour / 60;
 
-    return sprintf("%.2f",
-        $delta{day} * $cost_day +
-        $delta{hour} * $cost_hour +
-        $delta{min} * $cost_min
-    );
+    my $months = int( $delta{day} / DAYS_IN_MONTH );
+    my $days =  $delta{day} % DAYS_IN_MONTH;
+
+    return {
+        total =>
+            sprintf("%.2f",
+                $delta{day} * $cost_day +
+                $delta{hour} * $cost_hour +
+                $delta{min} * $cost_min
+            ),
+        months => sprintf('%d.%02d', $months, $days),
+    };
 }
 
 1;
