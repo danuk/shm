@@ -43,9 +43,17 @@ sub create_service {
         }
     }
 
+    my $service = get_service('service', _id => $args{service_id} );
+    unless ( $service ) {
+        logger->error( "Service not exists: $args{service_id}" );
+    }
+
     my $us = get_service('UserService')->add( %args );
 
-    my $wd_id = get_service('wd')->add( calc_withdraw(%args), user_service_id => $us->id );
+    my $wd_id = get_service('wd')->add(
+        calc_withdraw( $service->get, %args ),
+        user_service_id => $us->id,
+    );
     $us->set( withdraw_id => $wd_id );
 
     my $ss = get_service('service', _id => $args{service_id} )->subservices;
