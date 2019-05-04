@@ -86,7 +86,7 @@ sub process_service {
     my $self = shift;
     my $event = shift;
 
-    logger->debug('Process service: '. $self->id );
+    logger->debug('Process service: '. $self->id . " Event: [$event]" );
 
     unless ( $self->get_withdraw_id ) {
         # Бесплатная услуга
@@ -177,6 +177,12 @@ sub is_pay {
     my $self = shift;
 
     return undef unless $self->get_withdraw_id;
+    unless ( $self->withdraws ) {
+        logger->warning(
+            sprintf( "Withdraw not exists: %d", $self->get_withdraw_id ),
+        );
+        return undef;
+    }
 
     my $wd = $self->withdraws->get;
     # Already withdraw
@@ -247,11 +253,11 @@ sub create {
 sub prolongate {
     my $self = shift;
 
-    logger->debug('Trying prolongate service:' . $self->id );
+    logger->debug('Trying to prolong the service: ' . $self->id );
 
     if ( $self->parent_has_expired ) {
         # Не продлеваем услугу если родитель истек
-        logger->debug('Parent expired. Skipped');
+        logger->debug('Parent has expired. Skipped');
         return block( $self );
     }
 

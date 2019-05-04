@@ -85,7 +85,6 @@ sub calc_total_by_date_range {
         end_date => undef,
         @_,
     );
-    my $debug = 0;
 
     for ( keys %wd ) {
         confess("`$_` required") unless defined $wd{ $_ };
@@ -101,29 +100,25 @@ sub calc_total_by_date_range {
 
     # calc first month
     if ( $wd{end_date} lt end_of_month( $wd{withdraw_date} ) ) {
-        # Услуга начинается и заканчивается в этом месяце
+        # Услуга начинается и заканчивается в одном месяце
         my $data = calc_month_cost( cost => $wd{cost}, from_date => $wd{withdraw_date}, to_date => $wd{end_date} );
-        print "First day:\t$data->{total} [" . $data->{start} . "\t" . $data->{stop} . "]\n" if $debug;
         $total = $data->{total};
     }
     else {
-        # Услуга начинается в этом месяце, а заканчивается в другом
+        # Услуга начинается в одном месяце, а заканчивается в другом
         my $data = calc_month_cost( cost => $wd{cost}, from_date => $wd{withdraw_date} );
-        print "First day:\t$data->{total} [" . $data->{start} . "\t" . $data->{stop} . "]\n" if $debug;
         $total = $data->{total};
     }
 
     # calc middle
     if ($m_diff > 1) {
         my $middle_total = $wd{cost} * ( $m_diff - 1 );
-        print "Middle: \t$middle_total\n" if $debug;
         $total += $middle_total;
     }
 
     # calc last month
     if ($m_diff > 0) {
         my $data = calc_month_cost( cost => $wd{cost}, to_date => $wd{end_date} );
-        print "Last day:\t$data->{total} [" . $data->{start} . "\t" . $data->{stop} . "]\n" if $debug;
         $total += $data->{total};
     }
 
