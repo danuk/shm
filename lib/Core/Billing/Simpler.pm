@@ -63,9 +63,6 @@ sub calc_total_by_date_range {
     my $cost_hour = $cost_day / 24;
     my $cost_min = $cost_hour / 60;
 
-    my $months = int( $delta{day} / DAYS_IN_MONTH );
-    my $days =  $delta{day} % DAYS_IN_MONTH;
-
     return {
         total =>
             sprintf("%.2f",
@@ -73,8 +70,21 @@ sub calc_total_by_date_range {
                 $delta{hour} * $cost_hour +
                 $delta{min} * $cost_min
             ),
-        months => sprintf('%d.%02d', $months, $days),
+        months => calc_months_between_dates(\%start, \%stop),
     };
+}
+
+sub calc_months_between_dates {
+    my %start = %{ $_[0] };
+    my %stop = %{ $_[1] };
+
+    my %delta;
+    @delta{ qw/day hour min sec/ } = Delta_DHMS( @start{ qw/year month day hour min sec/ }, @stop{ qw/year month day hour min sec/ } );
+
+    my $months = int( $delta{day} / DAYS_IN_MONTH );
+    my $days =  $delta{day} % DAYS_IN_MONTH;
+
+    return sprintf('%d.%02d', $months, $days),
 }
 
 1;
