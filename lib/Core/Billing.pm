@@ -107,6 +107,10 @@ sub process_service {
         return undef;
     }
 
+    if ( $event eq EVENT_BLOCK ) {
+        return block( $self );
+    }
+
     unless ( $self->get_expired ) {
         # Новая услуга
         logger->debug('New service');
