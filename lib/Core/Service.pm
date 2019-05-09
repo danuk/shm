@@ -98,6 +98,17 @@ sub delete {
     my $self = shift;
     my %args = @_;
 
+    my @usi = get_service('UserService')->_list(
+        where => {
+            service_id => $self->id,
+        },
+    );
+
+    if ( @usi ) {
+        get_service('report')->add_error("Service used");
+        return undef;
+    }
+
     get_service('SubServices')->delete_all_for_service( $self->id );
     return $self->SUPER::delete( %args );
 }
