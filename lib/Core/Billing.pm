@@ -12,6 +12,7 @@ use base qw(Exporter);
 our @EXPORT = qw(
     create_service
     process_service_recursive
+    money_back
 );
 
 use Core::Const;
@@ -306,6 +307,9 @@ sub prolongate {
 sub block {
     my $self = shift;
     return 0 unless $self->get_status == STATUS_ACTIVE;
+
+    money_back( $self );
+
     return EVENT_BLOCK;
 }
 
@@ -340,6 +344,43 @@ sub get_service_discount {
 
     $percent = 50 if $percent > 50;
     return $percent;
+}
+
+sub money_back {
+    my $self = shift;
+    my $date = shift || $self->get_expired;
+
+    return undef unless $self->get_withdraw_id;
+
+    my $service = get_service('service', _id => $self->get_service_id );
+
+    # Do not return money for domains and etc.
+    return undef if $service->get->{period_cost} > 1;
+
+    my $wd = $self->withdraws;
+    my %wd = $wd->get;
+
+    return undef unless $wd{end_date};
+    return undef if $wd{create_date} gt $date;
+
+    my $ret = calc_total_by_date_range(
+        %wd,
+        end_date => $date,
+    );
+
+    my $delta = $wd{total} - $ret->{total};
+
+    return undef if $delta < 0;
+
+    $wd->set(
+        months => $ret->{months},
+        total => $ret->{total},
+        end_date => $date,
+    );
+
+    $self->user->set_balance( balance => $delta );
+
+    return $delta;
 }
 
 1;
