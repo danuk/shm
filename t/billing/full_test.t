@@ -307,6 +307,34 @@ subtest 'Check create service without money' => sub {
     is( $us->get_status, STATUS_ACTIVE, 'Check status of non payment service after payment' );
 };
 
+Test::MockTime::set_fixed_time('2018-01-15T00:00:00Z');
+subtest 'Delete user service' => sub {
+
+    $us->stop();
+    proccess_spool();
+
+    $us->delete();
+
+    my @user_services = get_service('UserService')->id( $us->id )->tree->get;
+    is( scalar @user_services, 0, 'Check that the service is deleted');
+
+    my $wd = $us->withdraws->get;
+    cmp_deeply( $wd, {
+            'withdraw_id' => $us->get_withdraw_id,
+            'user_service_id' => $us->id,
+            'create_date'   => '2018-01-01 00:00:00',
+            'withdraw_date' => '2018-01-01 00:00:00',
+            'end_date'      => '2018-01-15 00:00:00',
+            'user_id' => 40092,
+            'service_id' => 4,
+            'cost' => 1000,
+            'qnt' => 1,
+            'months' => '0.14',
+            'discount' => 0,
+            'bonus' => 0,
+            'total' => '451.61',
+    }, 'Check withdraw' );
+};
 
 done_testing();
 exit 0;

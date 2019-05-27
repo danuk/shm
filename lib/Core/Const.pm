@@ -11,6 +11,7 @@ our @EXPORT = qw(
     STATUS_PROGRESS
     STATUS_ACTIVE
     STATUS_BLOCK
+    STATUS_REMOVED
 
     EVENT_CREATE
     EVENT_BLOCK
@@ -37,6 +38,7 @@ use constant {
     STATUS_PROGRESS => 1,
     STATUS_ACTIVE => 2,
     STATUS_BLOCK => 3,
+    STATUS_REMOVED => 4,
 };
 
 use constant {

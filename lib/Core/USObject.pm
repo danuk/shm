@@ -96,6 +96,33 @@ sub add {
     return get_service('UserService', user_id => $self->res->{user_id} )->add( @_ );
 }
 
+sub can_delete {
+    my $self = shift;
+
+    return 1 if $self->get_status == STATUS_BLOCK ||
+                $self->get_status == STATUS_WAIT_FOR_PAY;
+    return 0;
+}
+
+sub delete {
+    my $self = shift;
+    my %args = @_;
+
+    for ( $self->children ) {
+        $self->id( $_->{user_service_id} )->delete();
+    }
+
+    if ( $self->get_status == STATUS_REMOVED ) {
+        return $self->SUPER::delete();
+    } elsif ( $self->can_delete() ) {
+        $self->event( EVENT_REMOVE );
+    } else {
+        get_service('report')->add_error( sprintf('User service %d is active', $self->id) );
+    }
+
+    return undef;
+}
+
 sub switch_to_next {
     my $self = shift;
 
@@ -169,6 +196,7 @@ sub data_for_transport {
 
     my ( $ret ) = get_service('UserService', user_id => $self->res->{user_id} )->
         res( { $self->id => scalar $self->get } )->with('settings','services','withdraws')->get;
+
     return SUCCESS, {
         %{ $ret },
     };
@@ -192,8 +220,9 @@ sub add_domain {
 # Просмотр/обработка услуг
 sub touch {
     my $self = shift;
+    my $e = shift || EVENT_PROLONGATE;
 
-    $self->Core::Billing::process_service();
+    $self->Core::Billing::process_service_recursive( $e );
 }
 
 sub get_category {
@@ -293,8 +322,10 @@ sub set_status_by_event {
 
     my $status;
 
-    if ( $event eq EVENT_BLOCK || $event eq EVENT_REMOVE ) {
+    if ( $event eq EVENT_BLOCK ) {
         $status = STATUS_BLOCK;
+    } elsif ( $event eq EVENT_REMOVE ) {
+        $status = STATUS_REMOVED;
     } elsif ( $event eq EVENT_NOT_ENOUGH_MONEY ) {
         $status = STATUS_WAIT_FOR_PAY;
     } else {
@@ -313,8 +344,9 @@ sub status {
     );
 
     if ( defined $status && $self->get_status != $status ) {
-        get_service('logger')->info( sprintf('Set new status for service: [usi=%d,si=%d,status=%d]',
-                $self->id, $self->get_service_id, $status ) );
+        get_service('logger')->info( sprintf('Set new status for service: [usi=%d,si=%d,e=%s,status=%d]',
+                $self->id, $self->get_service_id, $args{event}, $status ) );
+
         $self->set( status => $status );
 
         if ( my $parent = $self->parent ) {
@@ -323,10 +355,22 @@ sub status {
                 status => $status,
                 event => $args{event},
             );
-            $parent->event( sprintf("%s_%s", EVENT_CHILD_PREFIX, $args{event}) ) if $args{event};
         }
+
+        $self->delete() if $status == STATUS_REMOVED;
     }
     return $self->{status};
+}
+
+sub stop {
+    my $self = shift;
+
+    return 0 unless $self->get_expired;
+    return 0 if $self->get_expired lt now;
+    return 0 if $self->get_status != STATUS_ACTIVE;
+
+    $self->set( expired => now );
+    $self->touch( EVENT_BLOCK );
 }
 
 1;
