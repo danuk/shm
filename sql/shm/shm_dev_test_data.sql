@@ -165,13 +165,10 @@ INSERT INTO `services` VALUES
 (112,'Почта (${QUOTA} мб)',0,1,'mail',NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL);
 
 INSERT INTO `events` VALUES
-(default,'user_service','Erase web account','erase',NULL,'{"category":"web","cmd":"www erase w_{{us.parent}}"}'),
-(default,'user_service','Block web account','block',NULL,'{"category":"web","cmd":"www block w_{{us.parent}}"}'),
 (default,'user_service','Chanor web account','passwd',NULL,'{"category":"web","cmd":"www passwd w_{{us.parent}}"}'),
 (default,'user_service','Notification of change password for web account','passwd',NULL,'{"category":"web","template":"web_pass_change","transport":"mail"}'),
 (default,'user_service','Add domain to web account','create',1,'{"category":"domain_add","cmd":"www create w_{{us.parent}} {{us.settings.domain}},www.{{us.settings.domain}} {{parent.settings.max_quota}}"}'),
 (default,'user_service','Remove domain from web account','delete',1,'{"category":"domain_add","cmd":"www delete w_{{us.parent}} {{us.settings.domain}},www.{{us.settings.domain}}"}'),
-(default,'user_service','Activate web account','activate',NULL,'{"category":"web","cmd":"www unblock w_{{us.parent}}"}'),
 (default,'user_service','Create mysql','create',1,'{"category":"mysql","cmd":"mysql create -a b_{{us.id}} -b {{us.settings.db.0.name}} -u {{us.settings.db.0.login}} -p {{us.settings.db.0.password}}"}'),
 (default,'user_service','Erase mysql','erase',NULL,'{"category":"mysql","cmd":"mysql erase b_{{us.id}}"}'),
 (default,'user_service','Block mysql','block',NULL,'{"category":"mysql","cmd":"mysql block b_{{us.id}}"}'),

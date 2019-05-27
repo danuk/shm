@@ -55,7 +55,7 @@ subtest 'Check create service' => sub {
         status => 0,
         executed => undef,
         event => {
-            id => 8,
+            id => ignore(),
             server_gid => 1,
             params => {
                 category => 'mysql',
@@ -162,7 +162,7 @@ subtest 'Try prolongate service without have money' => sub {
     my %ch_by_service = map { $_->{service_id} => $_ } @children;
 
     cmp_deeply( \%ch_by_service, {
-        5 => superhashof( { status => STATUS_PROGRESS } ),
+        5 => superhashof( { status => STATUS_BLOCK } ),
         8 => superhashof( { status => STATUS_BLOCK } ),
         29 => superhashof( { status => STATUS_PROGRESS } ),
     }, 'Check children statuses' );
@@ -241,7 +241,7 @@ subtest 'Try prolongate blocked service' => sub {
     is( $user->get_balance, 0.03, 'Check user balance');
 
     cmp_deeply( chldrn_by_service( $us ), {
-        5 => superhashof( { status => STATUS_PROGRESS } ),
+        5 => superhashof( { status => STATUS_ACTIVE } ),
         8 => superhashof( { status => STATUS_ACTIVE } ),
         29 => superhashof( { status => STATUS_PROGRESS } ),
     }, 'Check children statuses after unblock' );
@@ -259,6 +259,7 @@ subtest 'Try prolongate blocked service' => sub {
     is( $us->get_status, STATUS_ACTIVE, 'Check status of prolong service after spool executes' )
 };
 
+Test::MockTime::set_fixed_time('2018-01-01T00:00:00Z');
 subtest 'Check create service without money' => sub {
     $us = create_service( service_id => 4, cost => 1000, months => 1 );
 
@@ -282,7 +283,7 @@ subtest 'Check create service without money' => sub {
     cmp_deeply( $all_wd[-1], {
             'withdraw_id' => $withdraw_id,
             'user_service_id' => $us->id,
-            'create_date'   => '2017-03-02 12:00:00',
+            'create_date'   => '2018-01-01 00:00:00',
             'withdraw_date' => undef,
             'end_date'      => undef,
             'user_id' => 40092,
@@ -311,11 +312,11 @@ done_testing();
 exit 0;
 
 sub proccess_spool {
-    # Simulate spool proccess
-    for ( $spool->list ) {
-        my $task = get_service('spool')->id( $_->{id} );
-        get_service('us', _id => $_->{params}->{user_service_id} )->set_status_by_event( $task->event->{name} );
-        $task->finish_task;
+    my $spool = get_service('spool');
+
+    while ( my @list = $spool->list ) {
+        while ( $spool->process_one() ) {};
+        $spool->{spool} = undef;
     }
 }
 
