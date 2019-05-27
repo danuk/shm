@@ -11,6 +11,7 @@ sub structure {
     return {
         spool_id => '?',
         %{ $self->SUPER::structure },
+        created => '?', # use date of `spool`. Do not use `now`
     }
 }
 
