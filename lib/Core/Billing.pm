@@ -362,8 +362,9 @@ sub money_back {
     return undef if $service->get->{period_cost} > 1;
 
     my $wd = $self->withdraws;
-    my %wd = $wd->get;
+    return undef unless $wd;
 
+    my %wd = $wd->get;
     return undef unless $wd{end_date};
     return undef if $wd{create_date} gt $date;
 

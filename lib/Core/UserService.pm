@@ -6,7 +6,7 @@ use Core::Base;
 use Core::Const;
 use Core::USObject;
 use Core::Billing qw(process_service_recursive);
-use Core::Utils qw( decode_json force_numbers );
+use Core::Utils qw( decode_json force_numbers now );
 
 sub table { return Core::USObject->table }
 
@@ -360,6 +360,28 @@ sub activate_services {
     }
 }
 
+sub list_expired_services {
+    my $self = shift;
+    my %args = (
+        admin => 0,
+        @_,
+    );
+
+    my $method = $args{admin} ? '_list' : 'list';
+
+    return $self->$method(
+        where => {
+            status => STATUS_ACTIVE,
+            auto_bill => 1,
+            expired => { '<', now },
+        },
+        order => [
+            user_id => 'ASC',
+            user_service_id => 'ASC',
+        ],
+    );
+}
+
 sub get_all_keys_ref {
     my $obj = shift;
     my %data;
@@ -389,6 +411,7 @@ sub list_for_api {
     my %args = (
         admin => 0,
         usi => undef,
+        parent => { '=', undef }, # parent IS NULL
         @_,
     );
 
