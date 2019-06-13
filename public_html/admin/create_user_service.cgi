@@ -4,6 +4,9 @@ use v5.14;
 
 use SHM qw(:all);
 use Core::Billing;
+use Core::Utils qw(
+    switch_user
+);
 
 my %res;
 our %in = parse_args();
