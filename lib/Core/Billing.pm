@@ -97,6 +97,11 @@ sub process_service {
 
     logger->debug('Process service: '. $self->id . " Event: [$event]" );
 
+    if ( $self->get_status == STATUS_PROGRESS ) {
+        logger->debug('Service in progress. Skipping...');
+        return undef;
+    }
+
     unless ( $self->get_withdraw_id ) {
         # Бесплатная услуга
         return $event;
@@ -366,6 +371,7 @@ sub money_back {
 
     my %wd = $wd->get;
     return undef unless $wd{end_date};
+    return undef if $wd{end_date} le $date;
     return undef if $wd{create_date} gt $date;
 
     my $ret = calc_total_by_date_range(

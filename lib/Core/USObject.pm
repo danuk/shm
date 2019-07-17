@@ -222,7 +222,7 @@ sub touch {
     my $self = shift;
     my $e = shift || EVENT_PROLONGATE;
 
-    $self->Core::Billing::process_service_recursive( $e );
+    return $self->Core::Billing::process_service_recursive( $e );
 }
 
 sub get_category {
@@ -365,11 +365,9 @@ sub status {
 sub stop {
     my $self = shift;
 
-    return 0 unless $self->get_expired;
-    return 0 if $self->get_expired lt now;
     return 0 if $self->get_status != STATUS_ACTIVE;
 
-    $self->set( expired => now );
+    $self->set( expired => now ) if $self->get_expired gt now;
     $self->touch( EVENT_BLOCK );
 }
 
