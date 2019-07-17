@@ -108,6 +108,14 @@ sub finish_task {
         @_,
     );
 
+    if ( $args{status} != TASK_SUCCESS ) {
+        if ( $self->params->{user_service_id} ) {
+            if ( my $us = get_service('us', _id => $self->params->{user_service_id} ) ) {
+                $us->set( status => STATUS_ERROR );
+            }
+        }
+    }
+
     $self->set(
         executed => now,
         %args,
