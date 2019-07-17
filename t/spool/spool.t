@@ -64,15 +64,16 @@ my $spool = get_service('spool');
 
 while ( $spool->process_one ){};
 
+is( ($spool->list)[0]->{status}, TASK_STUCK, "Server: 162 not exists" );
+
 my @ret = get_service('SpoolHistory')->list(
     where => { spool_id => { -in => [ $task1, $task2 ] } },
     order => [ spool_id => 'ASC' ],
 );
 
 is( $ret[0]->{status}, TASK_SUCCESS, 'Send test message for test services' );
-is( $ret[1]->{status}, TASK_DROP, "Server: 162 not exists" );
 
-my @list = $spool->list;
+my @list = $spool->list( where => { status => { '!=', TASK_STUCK } } );
 is ( @list, 0, 'Check for empty spool' );
 
 done_testing();

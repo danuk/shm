@@ -56,6 +56,10 @@ sub process_one {
     $self->{spool}//= [ $self->list_for_all_users() ];
     my $task = shift @{ $self->{spool}//=[] } or return undef;
 
+    if ( $task->{status} == TASK_STUCK ) {
+        return TASK_STUCK, error => 'Task stuck. Skip.';
+    }
+
     switch_user( $task->{user_id } );
 
     if ( $task->{event}->{server_gid} ) {
@@ -64,10 +68,10 @@ sub process_one {
             get_service('logger')->warning("Can't found servers for group: $task->{event}->{server_gid}");
             my $spool = get_service('spool', _id => $task->{id} )->res( $task );
             $spool->finish_task(
-                status => TASK_DROP,
+                status => TASK_STUCK,
                 error => "Can't found servers for group",
             );
-            return TASK_DROP, {};
+            return TASK_STUCK, {};
         }
 
         $task->{params}->{server_id} = $servers[0]->{server_id};
@@ -83,7 +87,7 @@ sub process_one {
 
     get_service('logger')->warning('Task fail: ' . Dumper $info ) if $status != TASK_SUCCESS;
 
-    if ( $status == TASK_SUCCESS || $status == TASK_DROP ) {
+    if ( $status == TASK_SUCCESS ) {
         $spool->finish_task(
             status => $status,
             %{ $info },
@@ -94,6 +98,8 @@ sub process_one {
             status => TASK_FAIL,
             %{ $info },
         );
+    } else {
+        $spool->set( status => $status );
     }
 
     #TODO: destroy spool object

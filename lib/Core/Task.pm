@@ -41,7 +41,7 @@ sub make_task {
     my %info;
 
     unless ( $self->event ) {
-        return $self->task_answer( TASK_DROP, error => 'Event not exists' );
+        return $self->task_answer( TASK_STUCK, error => 'Event not exists' );
     }
 
     my $transport = $self->transport;
@@ -57,10 +57,10 @@ sub make_task {
                 return $self->task_answer( TASK_SUCCESS );
             }
             else {
-                return $self->task_answer( TASK_DROP, error => 'Method not exist' );
+                return $self->task_answer( TASK_STUCK, error => 'Method not exist' );
             }
         } else {
-            return $self->task_answer( TASK_DROP, error => 'Transport not exist' );
+            return $self->task_answer( TASK_STUCK, error => 'Transport not exist' );
         }
     }
 
@@ -75,7 +75,7 @@ sub make_task {
         if ( $service->can('transport_response_data') ) {
             my ( $status, $payload ) = $service->transport_response_data( %{ $response_data || {} } );
             unless ( $status ) {
-                return $self->task_answer( TASK_DROP, error => 'Incorrect response data', %{ $payload//={} } );
+                return $self->task_answer( TASK_STUCK, error => 'Incorrect response data', %{ $payload//={} } );
             }
         }
 
