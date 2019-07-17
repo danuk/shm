@@ -3,7 +3,8 @@ package Core::Sql::Data;
 use v5.14;
 use Carp qw(confess);
 
-use DBI;
+use DBI qw(:sql_types);
+use Scalar::Util qw(looks_like_number);
 use Data::Dumper;
 use JSON;
 use utf8;
@@ -100,7 +101,13 @@ sub query {
     $self->log( $query, \@args );
 
     my $sth = $self->dbh->prepare_cached( $query ) or die $self->dbh->errstr;
-    $sth->execute( @args ) or $self->dbh->errstr;
+
+    for ( 0..scalar( @args )-1 ) {
+        $sth->bind_param( $_+1, $args[$_],
+            looks_like_number($args[$_]) ? SQL_INTEGER : ()
+        );
+    }
+    $sth->execute() or die $self->dbh->errstr;
 
     my @res;
 
