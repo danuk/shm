@@ -172,7 +172,10 @@ sub list_by_params {
 
     $args{ "params->$_" } = delete $args{ $_ } for keys %args;
 
-    return $self->list( where => \%args );
+    return $self->list(
+        where => \%args,
+        order => [ $self->get_table_key => 'ASC' ],
+    );
 }
 
 1;
