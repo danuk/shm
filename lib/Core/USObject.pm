@@ -178,16 +178,6 @@ sub withdraws {
     return get_service('wd', _id => $self->get_withdraw_id );
 }
 
-sub get {
-    my $self = shift;
-
-    unless ( $self->{res} ) {
-        $self->reload;
-    }
-
-    return $self->res;
-}
-
 sub data_for_transport {
     my $self = shift;
     my %args = (
