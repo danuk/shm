@@ -279,6 +279,7 @@ sub spool_commands {
 sub spool_exists_command {
     my $self = shift;
     my %args = (
+        user_service_id => $self->id,
         @_,
     );
 
@@ -296,7 +297,7 @@ sub child_status_updated {
         @_,
     );
 
-    if ( $self->spool_exists_command( user_service_id => $self->id ) ) {
+    if ( $self->spool_exists_command() ) {
         # TODO:
         # unlock command
     } else {
