@@ -116,6 +116,8 @@ sub query {
     }
     $sth->finish;
 
+    logger->debug("\033[0;93m". 'SQL result: found rows:' ."\033[0m " . scalar @res );
+
     return wantarray ? @res : \@res;
 }
 
@@ -436,7 +438,7 @@ sub query_select {
 
     for my $k ( keys %{ $args{where} } ) {
         if ( !ref $args{where}{$k} && $k=~/(\w+)->(\w+)/ ) {
-            $args{where}{ sprintf("%s->'\$.%s'", $1, $2) } = delete $args{where}{$k};
+            $args{where}{ sprintf("%s->'\$.%s'", $1, $2) } = force_numbers( delete $args{where}{$k} );
         }
     }
 
