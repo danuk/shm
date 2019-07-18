@@ -39,7 +39,7 @@ sub next {
     my $self = shift;
 
     unless ( $self->res->{user_service_id} ) {
-        get_service('logger')->error("Can't get next services for unknown service");
+        logger->error("Can't get next services for unknown service");
     }
 
     my @list = $self->list(
@@ -65,7 +65,7 @@ sub add {
     );
 
     unless ( $args{user_service_id} ) {
-        get_service('logger')->error('`user_service_id` required');
+        logger->error('`user_service_id` required');
     }
 
     delete @args{ qw/end_date withdraw_date/ };

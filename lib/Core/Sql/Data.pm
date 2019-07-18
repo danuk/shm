@@ -38,7 +38,7 @@ sub db_connect {
         @_,
     );
 
-    get_service('logger')->debug("MySQL connect: " . join(':', @args{ qw/db_host db_name db_user/ } ) );
+    logger->debug("MySQL connect: " . join(':', @args{ qw/db_host db_name db_user/ } ) );
 
     my $dbh = DBI->connect( "DBI:mysql:database=$args{db_name};host=$args{db_host}", $args{db_user}, $args{db_pass} );
     confess("Can't connect to database") unless $dbh;
@@ -76,7 +76,7 @@ sub do {
     $self->log( $query, \@args );
 
     my $res = $self->dbh->do( $query, undef, @args ) or do {
-        get_service('logger')->warning( $self->dbh->errstr );
+        logger->warning( $self->dbh->errstr );
     };
     return $res eq '0E0' ? 0 : $res;
 }
@@ -86,7 +86,7 @@ sub log {
     my $query = shift;
     my $binds = shift;
 
-    get_service('logger')->debug(
+    logger->debug(
         'SQL Query: "',
         "\033[0;93m".$query."\033[0m",
         '" Binds: [' . join(',', @{ $binds || [] } ) ."]"
@@ -160,7 +160,7 @@ sub convert_sql_structure_data {
         }
     }
     else {
-        get_service('logger')->error('Unknown type of data');
+        logger->error('Unknown type of data');
     }
 }
 
@@ -356,7 +356,7 @@ sub get {
     my $self = shift;
 
     unless ( $self->id ) {
-        get_service('logger')->error("Can't get() unless object_id: ". $self->get_table_key );
+        logger->error("Can't get() unless object_id: ". $self->get_table_key );
     }
 
     my ( $ret ) = $self->list( where => { sprintf("%s.%s", $self->table, $self->get_table_key ) => $self->id }, @_ );
@@ -405,13 +405,13 @@ sub query_select {
     );
 
     unless ( $args{table} ) {
-        get_service('logger')->error("Can't get table") unless $self;
+        logger->error("Can't get table") unless $self;
         $args{table} = $self->can( 'table' ) ? $self->table : die 'Table required';
     }
 
     if ( $args{where} && ref $args{where} ) {
         if ( ref $args{where} ne 'HASH' ) {
-            get_service('logger')->error('WHERE not HASH!');
+            logger->error('WHERE not HASH!');
         }
     }
     $args{where}||= {};
@@ -462,12 +462,12 @@ sub query_select {
                 $args{where} = { $args{range}->{field} => { '<=' => $args{range}->{stop} }, %{ $args{where} } };
         }
         else {
-            get_service('logger')->warning("`start` or `stop` must been defined for range");
+            logger->warning("`start` or `stop` must been defined for range");
         }
     }
 
     if ( $args{in} ) {
-        get_service('logger')->warning('Method IN is deprecated');
+        logger->warning('Method IN is deprecated');
         while ( my ( $field, $items ) = each %{ $args{in} } ) {
             next unless scalar @{ $items };
             $args{where} = { $field => { in => $items }, %{ $args{where} } };
@@ -497,6 +497,11 @@ sub query_select {
     }
 
     return $query;
+}
+
+sub logger {
+    state $log ||= get_service('logger');
+    return $log;
 }
 
 1;

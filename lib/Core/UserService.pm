@@ -21,12 +21,12 @@ sub add {
     );
 
     unless ( $args{service_id} ) {
-        get_service('logger')->error('`service_id` required');
+        logger->error('`service_id` required');
     }
 
     my $service = get_service( 'service', _id => $args{service_id} );
     unless ( $service ) {
-        get_service('logger')->warning("Can't create not existed service: $args{service_id}");
+        logger->warning("Can't create not existed service: $args{service_id}");
         return undef;
     }
 
@@ -84,7 +84,7 @@ sub ids {
     my ( $field, $values ) = @_;
 
     unless ( ref $values eq 'ARRAY' ) {
-        get_service('logger')->error("Values must be ARRAY");
+        logger->error("Values must be ARRAY");
     }
 
     $self->{res} = $self->list(
@@ -157,7 +157,7 @@ sub with {
         next unless ( $self->can( $method ) );
 
         if ( not exists $binds{ $method } or not exists $keys->{ $binds{ $method } } ) {
-            get_service('logger')->warning("Key field not exist for `$method`. May be forgot load settings?");
+            logger->warning("Key field not exist for `$method`. May be forgot load settings?");
             next;
         }
 

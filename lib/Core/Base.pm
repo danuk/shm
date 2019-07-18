@@ -51,7 +51,7 @@ sub id {
     my $key_field = $self->get_table_key;
 
     unless ( $self->{ $key_field } || $self->res->{ $key_field } ) {
-        get_service('logger')->warning('identifier not defined for class ' . ref $self);
+        logger->warning('identifier not defined for class ' . ref $self);
         return undef;
     }
     return $self->{ $key_field } || $self->res->{ $key_field };
@@ -77,7 +77,7 @@ sub res {
     }
 
     if ( ref $res ne 'HASH' ) {
-        get_service('logger')->error("Can't set SCALAR data to resource");
+        logger->error("Can't set SCALAR data to resource");
     }
 
     $self->{res} = $res;
@@ -176,6 +176,11 @@ sub list_by_params {
         where => \%args,
         order => [ $self->get_table_key => 'ASC' ],
     );
+}
+
+sub logger {
+    state $log ||= get_service('logger');
+    return $log;
 }
 
 1;

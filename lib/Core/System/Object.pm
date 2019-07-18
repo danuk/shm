@@ -36,7 +36,7 @@ sub _eval_extra_attributes {
         if ( $self->get__extra() ) {
             my $extra = eval 'my ' . $self->get__extra();
             if($@){
-                get_service('logger')->error( 'Can not evaling data: '.$@.'; FIELD: _extra; ID: '.$self->get_id() );
+                logger->error( 'Can not evaling data: '.$@.'; FIELD: _extra; ID: '.$self->get_id() );
                 return undef;
             } else {
                 $self->{_extra_attributes_} = $extra;
@@ -328,7 +328,7 @@ sub AUTOLOAD {
 
     my $method = our $AUTOLOAD;
 
-    get_service('logger')->error("Unknown method has been called: " . $method);
+    logger->error("Unknown method has been called: " . $method);
 
     return undef;
 }

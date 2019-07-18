@@ -16,7 +16,7 @@ sub init {
     return $self unless $args{_id};
 
     unless ( $self->reload ) {
-        get_service('logger')->error("Can't load user_service with id: " . $self->id );
+        logger->error("Can't load user_service with id: " . $self->id );
         return undef;
     }
     return $self;
@@ -342,7 +342,7 @@ sub status {
     );
 
     if ( defined $status && $self->get_status != $status ) {
-        get_service('logger')->info( sprintf('Set new status for service: [usi=%d,si=%d,e=%s,status=%d]',
+        logger->info( sprintf('Set new status for service: [usi=%d,si=%d,e=%s,status=%d]',
                 $self->id, $self->get_service_id, $args{event}, $status ) );
 
         $self->set( status => $status );

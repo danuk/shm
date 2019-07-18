@@ -32,7 +32,7 @@ sub add {
     $args{fingerprint} ||= $self->make_fingerprint( file_by_string( $args{private_key} ) );
 
     unless ( $args{fingerprint} ) {
-        get_service('logger')->error("Can't create fingerprint.");
+        logger->error("Can't create fingerprint.");
         return undef;
     }
     return $self->SUPER::add( %args );

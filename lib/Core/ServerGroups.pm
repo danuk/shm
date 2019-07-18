@@ -21,7 +21,7 @@ sub get_servers {
 
     my $group = $self->get();
     unless ( $group ) {
-        get_service('logger')->error('ServerGroup not found for id: ' . $self->id );
+        logger->error('ServerGroup not found for id: ' . $self->id );
         return undef;
     }
 
@@ -31,7 +31,7 @@ sub get_servers {
         my $num_server = int rand scalar @servers;
         return $servers[ $num_server ];
     } else {
-        get_service('logger')->error('Unknown type: ' . $group->{type} );
+        logger->error('Unknown type: ' . $group->{type} );
     }
 
     return undef;

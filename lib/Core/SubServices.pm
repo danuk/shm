@@ -18,7 +18,7 @@ sub id {
     my $self = shift;
 
     unless ( $self->{service_id} ) {
-        get_service('logger')->error("Can't get service_id");
+        logger->error("Can't get service_id");
     }
     return $self->{service_id};
 }

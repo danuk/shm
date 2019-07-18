@@ -52,7 +52,7 @@ sub exec {
         @_,
     );
 
-    get_service('logger')->debug('SSH: trying connect to ' . $args{host} );
+    logger->debug('SSH: trying connect to ' . $args{host} );
     my $ssh = Net::OpenSSH->new(
         $args{host},
         port => $args{port},
@@ -66,7 +66,7 @@ sub exec {
     );
 
     if ( $ssh->error ) {
-        get_service('logger')->warning( $ssh->error );
+        logger->warning( $ssh->error );
         return FAIL, {
             error => $ssh->error,
             ret_code => 1,
@@ -86,19 +86,19 @@ sub exec {
     my $ret_code = $?>>8;
 
     if ( $ret_code == 0 ) {
-        get_service('logger')->debug("SSH RET_CODE: $ret_code");
-        get_service('logger')->debug("SSH STDIN: $args{stdin_data}");
-        get_service('logger')->debug("SSH CMD: $args{cmd}" );
+        logger->debug("SSH RET_CODE: $ret_code");
+        logger->debug("SSH STDIN: $args{stdin_data}");
+        logger->debug("SSH CMD: $args{cmd}" );
     }
     else {
-        get_service('logger')->warning("SSH RET_CODE: $ret_code");
-        get_service('logger')->warning("SSH STDIN: $args{stdin_data}");
-        get_service('logger')->warning("SSH CMD: $args{cmd}" );
+        logger->warning("SSH RET_CODE: $ret_code");
+        logger->warning("SSH STDIN: $args{stdin_data}");
+        logger->warning("SSH CMD: $args{cmd}" );
     }
 
     if ( $err ) {
         chomp $err;
-        get_service('logger')->warning("SSH STDERR: $err");
+        logger->warning("SSH STDERR: $err");
     }
 
     my $data;

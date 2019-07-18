@@ -42,7 +42,7 @@ sub list_services {
     );
 
     unless ( $args{user_service_id} || $args{domain_id} ) {
-        get_service('logger')->error('user_service_id or domain_id must been present');
+        logger->error('user_service_id or domain_id must been present');
     }
 
     $args{domain_id} = [ $args{domain_id} ] if $args{domain_id} && ref $args{domain_id} ne 'ARRAY';
@@ -105,19 +105,19 @@ sub get_domain {
         if ( $args{user_service_id} ) {
             ( $domain ) = $self->list( where => { user_service_id => $args{user_service_id} } );
             unless ( $domain ) {
-                get_service('logger')->warning("domain for user_service_id: $args{user_service_id} not found");
+                logger->warning("domain for user_service_id: $args{user_service_id} not found");
                 return undef;
             }
         }
         elsif ( $args{name} ) {
             ( $domain ) = $self->list( where => { -or => [ domain => $args{name}, punycode => $args{name} ] } );
             unless ( $domain ) {
-                get_service('logger')->warning("domain `$args{name}` not found");
+                logger->warning("domain `$args{name}` not found");
                 return undef;
             }
         }
         else {
-            get_service('logger')->error('`id` or `name` or `user_service_id` required');
+            logger->error('`id` or `name` or `user_service_id` required');
         }
         $args{id} = $domain->{domain_id};
     }

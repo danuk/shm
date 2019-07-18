@@ -49,7 +49,7 @@ sub data {
     my $self = shift;
 
     unless ( $self->id && $self->{res} ) {
-        get_service('logger')->error("Data not loaded");
+        logger->error("Data not loaded");
     }
     return wantarray ? @{ $self->{res} } : $self->{res};
 }

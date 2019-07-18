@@ -26,7 +26,7 @@ sub AUTOLOAD {
             return $self->res->{ $method };
         }
         else {
-            get_service('logger')->warning("Field `$method` not exists in structure. User not found?");
+            logger->warning("Field `$method` not exists in structure. User not found?");
             return undef;
         }
     } elsif ( $AUTOLOAD=~/::DESTROY$/ ) {

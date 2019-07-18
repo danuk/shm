@@ -65,7 +65,7 @@ sub process_one {
     if ( $task->{event}->{server_gid} ) {
         my @servers = get_service('ServerGroups', _id => $task->{event}->{server_gid} )->get_servers;
         unless ( @servers ) {
-            get_service('logger')->warning("Can't found servers for group: $task->{event}->{server_gid}");
+            logger->warning("Can't found servers for group: $task->{event}->{server_gid}");
             my $spool = get_service('spool', _id => $task->{id} )->res( $task );
             $spool->finish_task(
                 status => TASK_STUCK,
@@ -85,7 +85,7 @@ sub process_one {
 
     my ( $status, $info ) = $spool->make_task();
 
-    get_service('logger')->warning('Task fail: ' . Dumper $info ) if $status != TASK_SUCCESS;
+    logger->warning('Task fail: ' . Dumper $info ) if $status != TASK_SUCCESS;
 
     if ( $status == TASK_SUCCESS ) {
         $spool->finish_task(
