@@ -40,7 +40,7 @@ $in{object} = join('', map( ucfirst $_, split /_/, $in{object} ));
 
 my $service_name = $in{object};
 
-our $service = get_service( $service_name );
+our $service = get_service( $service_name, ( $in{id} ? ( _id => $in{id} ) : () ) );
 unless ( $service ) {
     print_header( status => 400 );
     print_json( { error => "`$service_name` not exists" } );
@@ -79,8 +79,21 @@ elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
     }
 }
 else {
-    my @ret = $service->list_for_api( %in, admin => $admin );
-    $res = \@ret;
+    if ( my $method = $in{method} ) {
+        if ( $service->can( $method ) ) {
+            $res = $service->$method( %in, admin => $admin );
+            if ( !ref $res ) {
+                $res = [ $res ];
+            }
+        }
+        else {
+            %headers = ( status => 404 );
+            $res = { error => "Method not found" };
+        }
+    } else {
+        my @ret = $service->list_for_api( %in, admin => $admin );
+        $res = \@ret;
+    }
 
     my $numRows = $service->found_rows;
     %headers = http_content_range( http_limit, count => $numRows );
