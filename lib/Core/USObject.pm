@@ -269,6 +269,13 @@ sub event {
     return SUCCESS;
 }
 
+sub spool_commands {
+    my $self = shift;
+
+    my @arr = $self->spool->list_by_params( user_service_id => $self->id );
+    return \@arr;
+}
+
 sub spool_exists_command {
     my $self = shift;
     my %args = (
