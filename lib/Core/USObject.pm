@@ -369,4 +369,10 @@ sub stop {
     $self->touch( EVENT_BLOCK );
 }
 
+sub list_for_api {
+    my $self = shift;
+
+    return scalar $self->get;
+}
+
 1;
