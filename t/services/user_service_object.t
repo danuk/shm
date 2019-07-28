@@ -17,7 +17,6 @@ use Core::System::ServiceManager qw( get_service );
 my $obj = get_service('us', _id => 99);
 
 is ( $obj->id, 99, 'Get user_service_id' );
-is ( $obj->reload, 1, 'Test reload()' );
 
 is ( $obj->top_parent, undef, 'Test get top_parent for root service');
 is ( get_service('us', _id => 665 )->top_parent->id, 99, 'Test get top_parent for child' );
@@ -27,7 +26,6 @@ is ( $obj->get_expired, '2017-01-31 23:59:50', 'Check getter for expired field' 
 is ( get_service('us', _id => 101 )->parent->get_user_service_id, 99, 'Check load parent service' );
 
 is ( $obj->set( auto_bill => 0 ), $obj->get_auto_bill == 0, 'Check service set function with cache: TEST 1');
-$obj->reload;
 is ( $obj->set( auto_bill => 1 ), $obj->get_auto_bill == 1, 'Check service set function with cache: TEST 2');
 
 $obj->settings( { 'a' => 22 } ); # Override 'a'

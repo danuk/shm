@@ -6,22 +6,6 @@ use Core::Base;
 use Core::Const;
 use Core::Utils qw(now);
 
-sub init {
-    my $self = shift;
-    my %args = (
-        _id => undef,
-        @_,
-    );
-
-    return $self unless $args{_id};
-
-    unless ( $self->reload ) {
-        logger->error("Can't load user_service with id: " . $self->id );
-        return undef;
-    }
-    return $self;
-}
-
 use vars qw($AUTOLOAD);
 
 sub AUTOLOAD {
@@ -54,16 +38,6 @@ sub structure {
         parent => undef,
         settings => { type => 'json', value => undef },
     };
-}
-
-sub reload {
-    my $self = shift;
-
-    my $data = $self->SUPER::get;
-    return undef unless $data;
-
-    $self->res( $data );
-    return 1;
 }
 
 sub settings {
