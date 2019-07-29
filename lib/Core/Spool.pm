@@ -149,6 +149,23 @@ sub retry_task {
     $self->write_history;
 }
 
+sub manual_retry {
+    my $self = shift;
+    my %args = (
+        event => undef,
+        @_,
+    );
+
+    $self->set(
+        event => $args{event},
+        status => TASK_NEW,
+        executed => undef,
+        delayed => 0,
+    ) if $args{event};
+
+    return $self->get;
+}
+
 sub write_history {
     my $self = shift;
 
