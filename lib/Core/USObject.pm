@@ -321,6 +321,8 @@ sub status {
 
         $self->set( status => $status );
 
+        $self->delete() if $status == STATUS_REMOVED;
+
         if ( my $parent = $self->parent ) {
             $parent->child_status_updated(
                 id => $self->id,
@@ -328,8 +330,6 @@ sub status {
                 event => $args{event},
             );
         }
-
-        $self->delete() if $status == STATUS_REMOVED;
     }
     return $self->{status};
 }
