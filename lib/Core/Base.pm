@@ -8,6 +8,7 @@ use Core::Sql::Data;
 use Carp qw(confess);
 use Data::Dumper;
 use JSON;
+use Core::Utils qw( force_numbers );
 $Data::Dumper::Deepcopy = 1;
 
 our @EXPORT = qw(
@@ -120,7 +121,7 @@ sub _add_or_set {
     for my $key ( keys %args ) {
         my $new_value = $args{ $key };
         if ( ref $new_value eq 'HASH' ) {
-            $super_args{ $key } = to_json( $args{ $key } );
+            $super_args{ $key } = to_json( force_numbers $args{ $key } );
         }
     }
 
