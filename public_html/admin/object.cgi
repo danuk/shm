@@ -65,9 +65,24 @@ if ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
 }
 elsif ( $ENV{REQUEST_METHOD} eq 'POST' ) {
     $service = $service->id( get_service_id() );
-    $service->set( %in );
-    my %ret = $service->get;
-    $res = \%ret;
+
+    if ( my $method = $in{method} ) {
+        if ( $service->can( $method ) ) {
+            $res = $service->$method( %in, admin => $admin );
+            if ( !ref $res ) {
+                $res = [ $res ];
+            }
+        }
+        else {
+            %headers = ( status => 404 );
+            $res = { error => "Method not found" };
+        }
+    }
+    else {
+        $service->set( %in );
+        my %ret = $service->get;
+        $res = \%ret;
+    }
 }
 elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
     if ( my $obj = $service->id( get_service_id() ) ) {
