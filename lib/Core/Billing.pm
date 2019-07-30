@@ -27,8 +27,8 @@ use Core::Billing::Honest;
 sub awaiting_payment {
     my $self = shift;
 
-    return 1 if (   $self->get_status == STATUS_BLOCK ||
-                    $self->get_status == STATUS_WAIT_FOR_PAY );
+    return 1 if (   $self->get_status eq STATUS_BLOCK ||
+                    $self->get_status eq STATUS_WAIT_FOR_PAY );
     return 0;
 }
 
@@ -103,7 +103,7 @@ sub process_service {
 #        return undef;
 #    }
 
-    if ( $self->get_status == STATUS_PROGRESS ) {
+    if ( $self->get_status eq STATUS_PROGRESS ) {
         logger->debug('Service in progress. Skipping...');
         return undef;
     }
@@ -235,7 +235,7 @@ sub set_service_expire {
     my $wd = $self->withdraws->get;
     my $now = now;
 
-    if ( $self->get_expired && $self->get_status != STATUS_BLOCK ) {
+    if ( $self->get_expired && $self->get_status ne STATUS_BLOCK ) {
         # Услуга истекла (не новая) и не заблокирована ранее
         # Будем продлять с момента истечения
         $now = $self->get_expired;
@@ -316,12 +316,12 @@ sub prolongate {
     }
 
     set_service_expire( $self );
-    return $self->get_status == STATUS_BLOCK ? EVENT_ACTIVATE : EVENT_PROLONGATE;
+    return $self->get_status eq STATUS_BLOCK ? EVENT_ACTIVATE : EVENT_PROLONGATE;
 }
 
 sub block {
     my $self = shift;
-    return 0 unless $self->get_status == STATUS_ACTIVE;
+    return 0 unless $self->get_status eq STATUS_ACTIVE;
 
     money_back( $self );
 

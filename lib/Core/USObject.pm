@@ -73,8 +73,8 @@ sub add {
 sub can_delete {
     my $self = shift;
 
-    return 1 if $self->get_status == STATUS_BLOCK ||
-                $self->get_status == STATUS_WAIT_FOR_PAY;
+    return 1 if $self->get_status eq STATUS_BLOCK ||
+                $self->get_status eq STATUS_WAIT_FOR_PAY;
     return 0;
 }
 
@@ -86,7 +86,7 @@ sub delete {
         $self->id( $_->{user_service_id} )->delete();
     }
 
-    if ( $self->get_status == STATUS_REMOVED ) {
+    if ( $self->get_status eq STATUS_REMOVED ) {
         return $self->SUPER::delete();
     } elsif ( $self->can_delete() ) {
         $self->event( EVENT_REMOVE );
@@ -315,13 +315,13 @@ sub status {
         @_,
     );
 
-    if ( defined $status && $self->get_status != $status ) {
+    if ( defined $status && $self->get_status ne $status ) {
         logger->info( sprintf('Set new status for service: [usi=%d,si=%d,e=%s,status=%d]',
                 $self->id, $self->get_service_id, $args{event}, $status ) );
 
         $self->set( status => $status );
 
-        $self->delete() if $status == STATUS_REMOVED;
+        $self->delete() if $status eq STATUS_REMOVED;
 
         if ( my $parent = $self->parent ) {
             $parent->child_status_updated(
@@ -337,12 +337,12 @@ sub status {
 sub stop {
     my $self = shift;
 
-    return 0 if $self->get_status != STATUS_ACTIVE;
+    return 0 if $self->get_status ne STATUS_ACTIVE;
 
     $self->set( expired => now ) if $self->get_expired gt now;
     $self->touch( EVENT_BLOCK );
 
-    if ( $self->get_status != STATUS_BLOCK ) {
+    if ( $self->get_status ne STATUS_BLOCK ) {
         $self->set( status => STATUS_PROGRESS );
     }
 }

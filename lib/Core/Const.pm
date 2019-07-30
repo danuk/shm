@@ -36,13 +36,13 @@ use constant {
 };
 
 use constant {
-    STATUS_INIT => -1,
-    STATUS_WAIT_FOR_PAY => 0,
-    STATUS_PROGRESS => 1,
-    STATUS_ACTIVE => 2,
-    STATUS_BLOCK => 3,
-    STATUS_REMOVED => 4,
-    STATUS_ERROR => 5,
+    STATUS_INIT => 'INIT',
+    STATUS_WAIT_FOR_PAY => 'NOT PAID',
+    STATUS_PROGRESS => 'PROGRESS',
+    STATUS_ACTIVE => 'ACTIVE',
+    STATUS_BLOCK => 'BLOCK',
+    STATUS_REMOVED => 'REMOVED',
+    STATUS_ERROR => 'ERROR',
 };
 
 use constant {

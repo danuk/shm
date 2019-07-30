@@ -213,7 +213,7 @@ CREATE TABLE `user_services` (
   `withdraw_id` int(11) DEFAULT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `expired` datetime DEFAULT NULL,
-  `status` tinyint(4) NOT NULL DEFAULT '0',
+  `status` char(8) NOT NULL,
   `next` int(11) DEFAULT NULL,
   `parent` int(11) DEFAULT NULL,
   `settings` json DEFAULT NULL,

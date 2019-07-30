@@ -7,6 +7,7 @@ use Data::Dumper;
 use SHM;
 SHM->new( user_id => 40092 );
 
+use Core::Const;
 use Core::System::ServiceManager qw( get_service );
 
 my $us = get_service('UserService');
@@ -19,7 +20,7 @@ is_deeply( $obj, {
         parent => undef,
         next => 0,
         auto_bill => 1,
-        status => 2,
+        status => STATUS_ACTIVE,
         service_id => 110,
         user_service_id => 99,
         settings => {
