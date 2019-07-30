@@ -37,7 +37,7 @@ subtest 'Check create service' => sub {
     is( $us->get_expired, '2017-01-31 23:59:59', 'Check expired date after create new service' );
     is( $user->get_balance, 1000, 'Check user balance after withdraw');
 
-    is( $us->get_status, STATUS_PROGRESS, 'Check status of new service' );
+    is( $us->get_status, STATUS_INIT, 'Check status of new service' );
 
     my $ch_by_service = chldrn_by_service( $us );
 

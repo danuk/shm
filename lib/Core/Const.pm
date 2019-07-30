@@ -7,6 +7,7 @@ our @EXPORT = qw(
     SUCCESS
     FAIL
 
+    STATUS_INIT
     STATUS_WAIT_FOR_PAY
     STATUS_PROGRESS
     STATUS_ACTIVE
@@ -35,6 +36,7 @@ use constant {
 };
 
 use constant {
+    STATUS_INIT => -1,
     STATUS_WAIT_FOR_PAY => 0,
     STATUS_PROGRESS => 1,
     STATUS_ACTIVE => 2,

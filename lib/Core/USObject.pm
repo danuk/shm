@@ -33,7 +33,7 @@ sub structure {
         withdraw_id => undef,
         created => 'now',
         expired => undef,
-        status => STATUS_PROGRESS,
+        status => STATUS_INIT,
         next => undef,
         parent => undef,
         settings => { type => 'json', value => undef },
