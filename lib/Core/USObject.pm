@@ -280,7 +280,7 @@ sub child_status_updated {
     return SUCCESS;
 }
 
-sub set_status_by_event {
+sub status_by_event {
     my $self = shift;
     my $event = shift;
 
@@ -295,6 +295,14 @@ sub set_status_by_event {
     } else {
         $status = STATUS_ACTIVE;
     }
+    return $status;
+}
+
+sub set_status_by_event {
+    my $self = shift;
+    my $event = shift;
+
+    my $status = $self->status_by_event( $event );
 
     return $self->status( $status, event => $event );
 }
