@@ -97,6 +97,12 @@ sub process_service {
 
     logger->debug('Process service: '. $self->id . " Event: [$event]" );
 
+#    TODO: do not execute event twice
+#    if ( $self->get_status == $self->status_by_event( $event ) ) {
+#        logger->debug('Service already processed. Skipping...');
+#        return undef;
+#    }
+
     if ( $self->get_status == STATUS_PROGRESS ) {
         logger->debug('Service in progress. Skipping...');
         return undef;
