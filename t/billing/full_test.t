@@ -156,7 +156,7 @@ subtest 'Try prolongate service without have money' => sub {
     is( $us->get_expired, '2017-02-28 23:59:57', 'Check expired date after prolongate' );
     is( $user->get_balance, 0, 'Check user balance');
 
-    is( $us->get_status, STATUS_PROGRESS, 'Check status of prolong service' );
+    is( $us->get_status, STATUS_ACTIVE, 'Check status of prolong service' );
 
     my @children = $us->children;
     my %ch_by_service = map { $_->{service_id} => $_ } @children;
@@ -246,7 +246,7 @@ subtest 'Try prolongate blocked service' => sub {
         29 => superhashof( { status => STATUS_PROGRESS } ),
     }, 'Check children statuses after unblock' );
 
-    is( $us->get_status, STATUS_PROGRESS, 'Check status of prolong service after unblock' );
+    is( $us->get_status, STATUS_BLOCK, 'Check status of prolong service after unblock' );
 
     proccess_spool();
 

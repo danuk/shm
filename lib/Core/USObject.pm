@@ -271,19 +271,11 @@ sub child_status_updated {
         @_,
     );
 
-    if ( $self->spool_exists_command() ) {
-        # TODO:
-        # unlock command
-    } else {
-        # Set status of service by status of children
-        my %children_statuses = map { $_->{status} => 1 } $self->children;
+    my %children_statuses = map { $_->{status} => 1 } $self->children;
 
-        if ( exists $children_statuses{ (STATUS_PROGRESS) } ) {
-            $self->status( STATUS_PROGRESS, event => $child{event} );
-        } elsif ( scalar (keys %children_statuses) == 1 ) {
-            # Inherit children status
-            $self->status( (keys %children_statuses)[0], event => $child{event} );
-        }
+    if ( scalar (keys %children_statuses) == 1 ) {
+        # Inherit children status
+        $self->status( (keys %children_statuses)[0], event => $child{event} );
     }
     return SUCCESS;
 }
@@ -341,6 +333,10 @@ sub stop {
 
     $self->set( expired => now ) if $self->get_expired gt now;
     $self->touch( EVENT_BLOCK );
+
+    if ( $self->get_status != STATUS_BLOCK ) {
+        $self->set( status => STATUS_PROGRESS );
+    }
 }
 
 sub list_for_api {
