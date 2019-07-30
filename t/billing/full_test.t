@@ -52,7 +52,7 @@ subtest 'Check create service' => sub {
     is ( scalar @spool_list, 1, 'Check count spool commands' );
 
     cmp_deeply ( $spool_list[0], superhashof({
-        status => 0,
+        status => TASK_NEW,
         executed => undef,
         event => {
             id => ignore(),
@@ -342,7 +342,9 @@ exit 0;
 sub proccess_spool {
     my $spool = get_service('spool');
 
-    while ( my @list = $spool->list ) {
+    while ( my @list = $spool->list(
+            where => { status => { '!=', TASK_STUCK } }
+    ) ) {
         while ( $spool->process_one() ) {};
         $spool->{spool} = undef;
     }

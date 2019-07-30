@@ -39,7 +39,7 @@ subtest 'Try payment' => sub {
 
     cmp_deeply( $row, superhashof({
           user_id => 40092,
-          status => 0,
+          status => 'NEW',
           event => {
               params => {
                   kind => 'UserService',

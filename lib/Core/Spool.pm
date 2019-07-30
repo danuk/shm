@@ -56,7 +56,7 @@ sub process_one {
     $self->{spool}//= [ $self->list_for_all_users() ];
     my $task = shift @{ $self->{spool}//=[] } or return undef;
 
-    if ( $task->{status} == TASK_STUCK ) {
+    if ( $task->{status} eq TASK_STUCK ) {
         return TASK_STUCK, error => 'Task stuck. Skip.';
     }
 
@@ -85,15 +85,15 @@ sub process_one {
 
     my ( $status, $info ) = $spool->make_task();
 
-    logger->warning('Task fail: ' . Dumper $info ) if $status != TASK_SUCCESS;
+    logger->warning('Task fail: ' . Dumper $info ) if $status ne TASK_SUCCESS;
 
-    if ( $status == TASK_SUCCESS ) {
+    if ( $status eq TASK_SUCCESS ) {
         $spool->finish_task(
             status => $status,
             %{ $info },
         );
     }
-    elsif ( $status == TASK_FAIL ) {
+    elsif ( $status eq TASK_FAIL ) {
         $spool->retry_task(
             status => TASK_FAIL,
             %{ $info },
@@ -114,7 +114,7 @@ sub finish_task {
         @_,
     );
 
-    if ( $args{status} != TASK_SUCCESS ) {
+    if ( $args{status} ne TASK_SUCCESS ) {
         if ( $self->params->{user_service_id} ) {
             if ( my $us = get_service('us', _id => $self->params->{user_service_id} ) ) {
                 $us->set( status => STATUS_ERROR );

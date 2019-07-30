@@ -64,10 +64,10 @@ use constant {
 };
 
 use constant {
-    TASK_NEW => 0,
-    TASK_SUCCESS => 1,
-    TASK_FAIL => 2,
-    TASK_STUCK => 3,
+    TASK_NEW => 'NEW',
+    TASK_SUCCESS => 'SUCCESS',
+    TASK_FAIL => 'FAIL',
+    TASK_STUCK => 'STUCK',
 };
 
 1;

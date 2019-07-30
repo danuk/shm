@@ -88,7 +88,7 @@ sub make_task {
         }
     }
 
-    return $self->task_answer( $status, %{ $response_data || {} } );
+    return $self->task_answer( $status ? TASK_SUCCESS : TASK_FAIL, %{ $response_data || {} } );
 }
 
 sub cmd {
