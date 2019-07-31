@@ -192,8 +192,7 @@ sub touch {
 sub get_category {
     my $self = shift;
 
-    my $service = get_service('service', _id => $self->get_service_id ) || return undef;
-    return $service->get->{category};
+    return $self->service->get->{category};
 }
 
 sub make_commands_by_event {
@@ -332,6 +331,11 @@ sub status {
         }
     }
     return $self->{status};
+}
+
+sub service {
+    my $self = shift;
+    return get_service('service', _id => $self->get_service_id);
 }
 
 sub stop {
