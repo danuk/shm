@@ -116,17 +116,19 @@ sub _get_cmd_param {
     my $self = shift;
     my $param = shift;;
 
-    my $usi = $self->params->{user_service_id};
+    my $usi = get_service('us', _id => $self->params->{user_service_id} );
 
     my %params = (
-        id =>           '$usi',
+        id =>           '$usi->id',
         user_id =>      'get_service("user")->get_user_id',
-        us =>           'scalar get_service("us", _id => $usi)->get',
+        user =>         'get_service("user")->get',
+        us =>           'scalar $usi->get',
+        service =>      'scalar $usi->service->get',
         task =>         'scalar $self->task',
         payload =>      '$self->payload',
-        parent =>       'scalar get_service("us", _id => $usi)->parent->get',
-        domain =>       'get_service("domain")->get_domain( user_service_id => $usi )->real_domain',
-        domain_idn =>   'get_service("domain")->get_domain( user_service_id => $usi )->domain',
+        parent =>       'scalar $usi->parent->get',
+        domain =>       'get_service("domain")->get_domain( user_service_id => $usi->id )->real_domain',
+        domain_idn =>   'get_service("domain")->get_domain( user_service_id => $usi->id )->domain',
     );
 
     my ( $main_param, @md ) = split(/\./, $param );
