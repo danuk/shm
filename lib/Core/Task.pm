@@ -4,8 +4,6 @@ use v5.14;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
-use Core::Utils qw( to_json decode_json );
-use Text::ParseWords 'shellwords';
 
 sub task {
     my $self = shift;
@@ -95,55 +93,6 @@ sub cmd {
     my $self = shift;
     my $cmd = $self->event_params->{cmd} || $self->server->get->{params}->{cmd};
     return undef unless $cmd;
-}
-
-sub make_cmd_string {
-    my $self = shift;
-    my $cmd = shift;
-
-    $cmd =~s/\{\{\s*([A-Z0-9._]+)\s*\}\}/$self->_get_cmd_param($1)/gei;
-    return $cmd;
-}
-
-sub make_cmd_args {
-    my $self = shift;
-    my $cmd = shift;
-
-    return shellwords( $self->make_cmd_string( $cmd ) );
-}
-
-sub _get_cmd_param {
-    my $self = shift;
-    my $param = shift;;
-
-    my $usi = get_service('us', _id => $self->params->{user_service_id} );
-
-    my %params = (
-        id =>           '$usi->id',
-        user_id =>      'get_service("user")->get_user_id',
-        user =>         'get_service("user")->get',
-        us =>           'scalar $usi->get',
-        service =>      'scalar $usi->service->get',
-        task =>         'scalar $self->task',
-        payload =>      '$self->payload',
-        parent =>       'scalar $usi->parent->get',
-        domain =>       'get_service("domain")->get_domain( user_service_id => $usi->id )->real_domain',
-        domain_idn =>   'get_service("domain")->get_domain( user_service_id => $usi->id )->domain',
-    );
-
-    my ( $main_param, @md ) = split(/\./, $param );
-
-    my $obj = $params{ lc( $main_param ) };
-    return $main_param unless $obj;
-
-    my $var = eval( $obj );
-
-    if ( ref $var && scalar( @md ) ) {
-        my $md = join('->', map( $_=~/^\d+$/ ? "[$_]" : "{$_}", @md ) );
-        $var = eval( '$var->'.$md );
-    }
-
-    return ref $var ? to_json( scalar $var ) : $var;
 }
 
 sub task_answer {

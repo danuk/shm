@@ -20,7 +20,8 @@ if ( $in{params} && $in{params}{cmd} ) {
         event_id => 0,
     });
 
-    $in{params}{cmd} = $t->make_cmd_string( $in{params}{cmd} );
+    my $parser = get_service('parser');
+    $in{params}{cmd} = $parser->parse( $in{params}{cmd} );
 }
 
 my (undef, $res ) = $ssh->exec(

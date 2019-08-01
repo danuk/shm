@@ -4,7 +4,7 @@ use v5.14;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
-use Core::Utils qw(now);
+use Core::Utils qw/ now passgen /;
 
 use vars qw($AUTOLOAD);
 
@@ -334,7 +334,7 @@ sub status {
             );
         }
     }
-    return $self->{status};
+    return $self->get_status;
 }
 
 sub service {
@@ -353,6 +353,20 @@ sub stop {
     if ( $self->get_status ne STATUS_BLOCK ) {
         $self->set( status => STATUS_PROGRESS );
     }
+}
+
+sub gen_store_pass {
+    my $self = shift;
+    my $len = shift || 10;
+
+    unless ( $self->settings->{password} ) {
+        $self->settings(
+            { password => passgen( $len ) },
+        );
+        $self->settings_save;
+    }
+
+    return $self->settings->{password};
 }
 
 sub list_for_api {

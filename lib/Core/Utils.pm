@@ -26,6 +26,7 @@ our @EXPORT_OK = qw(
     force_numbers
     file_by_string
     read_file
+    passgen
 );
 
 use Core::System::ServiceManager qw( get_service );
@@ -222,6 +223,13 @@ sub switch_user {
 
     get_service('logger')->debug('Switch user to: ', $user_id );
     get_service('config')->local('user_id', $user_id );
+}
+
+sub passgen {
+    my $len = shift || 10;
+    my @chars =('e','r','t','p','a','d','f','h','k','z','x','c','b','n','m', 'E','R','T','P','A','D','F','H','K','Z','X','C','B','N','M', 1 .. 9);
+    my $pass = join("", @chars[ map { rand @chars } (1 .. $len) ]);
+    return $pass;
 }
 
 1;

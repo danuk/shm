@@ -28,8 +28,10 @@ sub send {
         map( $args{$_} ? ($_ => $args{$_}) : (), keys %args ),
     );
 
-    my $cmd = $task->make_cmd_string( $args{cmd} || $task->event->{params}->{cmd} );
-    my $stdin_data = $task->make_cmd_string( $task->event->{params}->{stdin} || $server{params}->{payload} );
+    my $parser = get_service('parser');
+
+    my $cmd = $parser->parse( $args{cmd} || $task->event->{params}->{cmd} );
+    my $stdin_data = $parser->parse( $task->event->{params}->{stdin} || $server{params}->{payload} );
 
     return $self->exec(
         host => $server{host},
