@@ -314,6 +314,7 @@ subtest 'Delete user service' => sub {
     proccess_spool();
 
     $us->delete();
+    proccess_spool();
 
     my @user_services = get_service('UserService')->id( $us->id )->tree->get;
     is( scalar @user_services, 0, 'Check that the service is deleted');
