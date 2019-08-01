@@ -69,7 +69,7 @@ sub process_one {
             my $spool = get_service('spool', _id => $task->{id} )->res( $task );
             $spool->finish_task(
                 status => TASK_STUCK,
-                error => "Can't found servers for group",
+                response => { error => "Can't found servers for group" },
             );
             return TASK_STUCK, {};
         }

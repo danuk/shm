@@ -60,7 +60,7 @@ sub make_task {
                 return $self->task_answer( TASK_STUCK, error => 'Method not exist' );
             }
         } else {
-            return $self->task_answer( TASK_STUCK, error => 'Transport not exist' );
+            return $self->task_answer( TASK_STUCK, error => 'Transport not exists' );
         }
     }
 

@@ -262,7 +262,6 @@ sub spool_exists_command {
 
 sub child_status_updated {
     my $self = shift;
-    my $event = shift;
     my %child = (
         id => undef,
         status => undef,

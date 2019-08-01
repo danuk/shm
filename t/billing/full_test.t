@@ -59,7 +59,7 @@ subtest 'Check create service' => sub {
             server_gid => 1,
             params => {
                 category => 'mysql',
-                cmd => 'mysql create -a b_{{us.id}} -b {{us.settings.db.0.name}} -u {{us.settings.db.0.login}} -p {{us.settings.db.0.password}}'
+                cmd => 'mysql create -a b_{{id}} -b {{us.settings.db.0.name}} -u {{us.settings.db.0.login}} -p {{us.settings.db.0.password}}'
             },
             name => 'create',
             title => 'Create mysql',
