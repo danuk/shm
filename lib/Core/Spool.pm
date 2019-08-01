@@ -159,15 +159,23 @@ sub manual_retry {
     my $self = shift;
     my %args = (
         event => undef,
+        params => undef,
         @_,
     );
 
     $self->set(
         event => $args{event},
+        params => $args{params},
         status => TASK_NEW,
         executed => undef,
         delayed => 0,
     ) if $args{event};
+
+    if ( my $usi = $self->params->{user_service_id} ) {
+        if ( my $us = get_service('us', _id => $usi ) ) {
+            $us->set( status => STATUS_PROGRESS );
+        }
+    }
 
     return $self->get;
 }
