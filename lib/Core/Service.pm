@@ -118,6 +118,7 @@ sub list_for_api {
     my %args = (
         admin => 0,
         parent => undef,
+        service_id => undef,
         @_,
     );
 
@@ -128,6 +129,9 @@ sub list_for_api {
             return ();
         }
         $args{where} = { service_id => { -in => [ map $_->{subservice_id}, @ss_ids ] } };
+    }
+    elsif ( $args{service_id} ) {
+        $args{where} = { service_id => $args{service_id} };
     }
 
     my @arr = $self->SUPER::list_for_api( %args );
