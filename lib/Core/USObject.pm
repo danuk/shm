@@ -275,6 +275,11 @@ sub child_status_updated {
         # Inherit children status
         $self->status( (keys %children_statuses)[0], event => $child{event} );
     }
+    elsif ( scalar (keys %children_statuses) == 0 and $child{event} eq EVENT_REMOVE ) {
+        # Remove parent if child already removed
+        $self->status( STATUS_REMOVED, event => EVENT_REMOVE );
+    }
+
     return SUCCESS;
 }
 
