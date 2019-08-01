@@ -97,6 +97,12 @@ sub process_one {
         $spool->retry_task(
             status => TASK_FAIL,
             %{ $info },
+        )
+    }
+    elsif ( $status eq TASK_STUCK ) {
+        $spool->finish_task(
+            status => TASK_STUCK,
+            %{ $info },
         );
     } else {
         $spool->set( status => $status );
@@ -114,21 +120,21 @@ sub finish_task {
         @_,
     );
 
+    $self->set(
+        executed => now,
+        %args,
+    );
+
     if ( $args{status} ne TASK_SUCCESS ) {
         if ( $self->params->{user_service_id} ) {
             if ( my $us = get_service('us', _id => $self->params->{user_service_id} ) ) {
                 $us->set( status => STATUS_ERROR );
             }
         }
+    } else {
+        $self->write_history;
+        $self->delete;
     }
-
-    $self->set(
-        executed => now,
-        %args,
-    );
-
-    $self->write_history;
-    $self->delete;
 }
 
 # TODO: check max retries
