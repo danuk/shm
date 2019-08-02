@@ -28,6 +28,7 @@ sub eval_var {
     );
 
     my $usi = get_service('us', _id => $args{usi} ) if $args{usi};
+    $self->{us} = $usi;
 
     my %params = (
         user =>         'get_service("user")',
@@ -39,6 +40,7 @@ sub eval_var {
         domain =>       'get_service("domain")->get_domain( user_service_id => $usi->id )->real_domain',
         domain_idn =>   'get_service("domain")->get_domain( user_service_id => $usi->id )->domain',
         passgen =>      'passgen',
+        child =>        '$self->child',
     );
 
     my ( $main_param, @md ) = split(/\./, $param );
@@ -58,6 +60,7 @@ sub eval_var {
     for my $method ( @md ) {
         if ( $method =~s/\(([\w,']+)\)// ) {
             @method_args = split(',', $1 );
+            map ~s/'//g, @method_args;
         } else { @method_args = () };
         if ( blessed $var && $var->can( $method ) ) {
             $var = $var->$method( @method_args );
@@ -77,6 +80,13 @@ sub eval_var {
     $var = '' unless defined $var;
 
     return ref $var ? to_json( scalar $var ) : $var;
+}
+
+sub child {
+    my $self = shift;
+    my $category = shift || return '';
+
+    return $self->{us}->child_by_category( $category );
 }
 
 1;

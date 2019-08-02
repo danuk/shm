@@ -143,7 +143,26 @@ sub top_parent {
 
 sub children {
     my $self = shift;
-    return $self->list( where => { parent => $self->id } );
+    my %args = (
+        parent => $self->id,
+        @_,
+    );
+    return $self->list( where => { %args } );
+}
+
+sub child_by_category {
+    my $self = shift;
+    my $category = shift;
+
+    my $ret = get_service('service')->list( where => { category => $category } );
+    return undef unless $ret;
+
+    my ( $child ) = $self->children(
+        service_id => { -in => [ keys %{ $ret } ] },
+    );
+    return undef unless $child;
+
+    return get_service('us', _id => $child->{user_service_id} );
 }
 
 sub withdraws {

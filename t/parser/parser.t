@@ -34,6 +34,10 @@ is $p->eval_var( "us.parent.user_service_id", usi => 100 ), 99;
 is $p->eval_var( "us.parent.settings", usi => 100 ), '{"quota":"10000"}';
 is $p->eval_var( "us.parent.settings.quota", usi => 100 ), 10000;
 
+is $p->eval_var( "us.child_by_category('web').id", usi => 99 ), 101;
+is $p->eval_var( "child('web').id", usi => 99 ), 101;
+
+
 subtest 'Test gen_store_pass()' => sub {
     my $pass = $p->eval_var( "passgen(3)" );
     is length( $pass ), 3;
