@@ -58,10 +58,10 @@ $obj = $us->tree->get;
 is( $obj->{16}->{children}->{17}->{created}, '2014-10-02 13:47:30', 'Check full tree' );
 
 $obj = $us->tree->with('settings','server')->get;
-is( $obj->{16}->{children}->{17}->{settings}->{server_id}, '4', 'Check full tree with settings' );
+is( $obj->{16}->{children}->{17}->{settings}->{server_id}, '1', 'Check full tree with settings' );
 
 $obj = $us->parents->tree->with('settings')->get;
-is( $obj->{16}->{children}->{17}->{settings}->{server_id}, '4', 'Check full tree with settings (tree by parents)' );
+is( $obj->{16}->{children}->{17}->{settings}->{server_id}, '1', 'Check full tree with settings (tree by parents)' );
 is( $obj->{2949}->{children}->{2951}->{created}, '2016-07-29 12:39:08', 'Check full tree for parents' );
 is( $obj->{2949}->{children}->{2951}->{settings}->{master}, '185.31.160.56', 'Check full tree for parents and settings' );
 
