@@ -132,13 +132,12 @@ sub print_header {
         status => 200,
         type => 'application/json',
         charset => 'utf8',
-        cookie => undef,
         'Access-Control-Allow-Origin' => $ENV{HTTP_ORIGIN},
         'Access-Control-Allow-Credentials' => 'true',
         @_,
     );
 
-    print $cgi->header( map +( "-$_" => $params{$_} ), grep $params{$_}, keys %params );
+    print $cgi->header( map +( "-$_" => $params{$_} ), keys %params );
     $is_header = 1;
 }
 
