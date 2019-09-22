@@ -14,6 +14,28 @@ sub structure {
     }
 }
 
+sub new_pipe {
+    my $self = shift;
+
+    return $self->add();
+}
+
+sub append {
+    my $self = shift;
+    my $log = shift;
+
+    $self->do("UPDATE ".$self->table." SET log = CONCAT(log, ?) WHERE id=?",
+        $log,
+        $self->id,
+    );
+}
+
+sub set_eof {
+    my $self = shift;
+
+    $self->set( eof => 1 );
+}
+
 sub chunk {
     my $self = shift;
     my %args = (
