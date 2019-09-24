@@ -59,7 +59,6 @@ sub exec {
         @_,
     );
 
-    my @shell_cmd = shellwords( $args{cmd} );
 
     my $pid;
     unless (defined ($pid = fork)) {
@@ -109,7 +108,11 @@ sub exec {
         }
 
         $console->append("SUCCESS\n");
-        $console->append("Execute: $args{cmd}\n\n");
+
+        my @commands = (
+            qw/ bash -e -v -c /,
+            ref $args{cmd} eq 'ARRAY' ? join("\n", @{ $args{cmd} } ) : $args{cmd},
+        );
 
         my $out;
         my (undef, $rout, undef, $pid) = $ssh->open_ex(
@@ -119,7 +122,7 @@ sub exec {
                 stderr_to_stdout => 1,
                 tty => 1,
             },
-            @shell_cmd
+            @commands,
         ) or die "pipe_out method failed: " . $ssh->error;
 
         while (<$rout>) {
@@ -134,9 +137,13 @@ sub exec {
         waitpid $pid, 0;
         my $ret_code = $?>>8;
 
-        $console->append("\n\n" . ($ret_code == 0 ? 'SUCCESS' : "ERROR $ret_code") );
+        if ( $ret_code ) {
+            $console->append("ERROR $ret_code\n\n");
+            last;
+        }
 
         $console->set_eof();
+        $console->append("\n\nDONE\n\n");
 
         exit 0;
     }
@@ -166,7 +173,7 @@ sub exec {
             port => $args{port},
             key_id => $args{key_id},
         },
-        command => [ @shell_cmd ],
+        command => $args{cmd},
         ret_code => $ret_code,
     };
 }
