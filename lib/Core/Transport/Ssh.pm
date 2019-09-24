@@ -9,6 +9,9 @@ use Core::Const;
 use Net::OpenSSH;
 use JSON;
 use Text::ParseWords 'shellwords';
+use POSIX qw(:signal_h WNOHANG);
+use POSIX ":sys_wait_h";
+use POSIX 'setsid';
 
 sub send {
     my $self = shift;
@@ -64,17 +67,24 @@ sub exec {
     }
 
     unless ( $pid ) {
+
+        POSIX::setsid();
+        open(STDOUT,">/dev/null");
+        open(STDERR,">/dev/null");
+        alarm(0);
+
         # I'm child
         # Create own db connection
         my $config = get_service('config');
         my $dbh = Core::Sql::Data::db_connect( %{ $config->global->{database} } );
         $config->local('dbh', $dbh );
 
-        open(STDOUT,">/dev/null");
-        open(STDERR,">/dev/null");
-        POSIX::setsid();
-
         logger->debug('SSH: trying connect to ' . $args{host} );
+
+        my $console = get_service('console', _id => $args{pipeline_id} );
+
+        $console->append("Trying connect to: ". $args{host} ."... ");
+
         my $ssh = Net::OpenSSH->new(
             $args{host},
             port => $args{port},
@@ -89,39 +99,52 @@ sub exec {
 
         if ( $ssh->error ) {
             logger->warning( $ssh->error );
+            $console->append("FAIL\n".$ssh->error."\n");
+            exit 1;
+
             return FAIL, {
                 error => $ssh->error,
                 ret_code => 1,
             };
         }
 
+        $console->append("SUCCESS\n");
+        $console->append("Execute: $args{cmd}\n\n");
+
         my $out;
-        my ($rout, $pid) = $ssh->pipe_out(
-            {},
+        my (undef, $rout, undef, $pid) = $ssh->open_ex(
+            {
+                stdin_pipe => 1,
+                stdout_pipe => 1,
+                stderr_to_stdout => 1,
+                tty => 1,
+            },
             @shell_cmd
         ) or die "pipe_out method failed: " . $ssh->error;
 
-        my $console;
         while (<$rout>) {
             $out .= $_;
 
             if ( $args{pipeline_id} ) {
-                $console ||= get_service('console', _id => $args{pipeline_id} );
                 $console->append( $_ );
-                print $_;
             }
         }
+        close $rout;
+
+        waitpid $pid, 0;
+        my $ret_code = $?>>8;
+
+        $console->append("\n\n" . ($ret_code == 0 ? 'SUCCESS' : "ERROR $ret_code") );
 
         $console->set_eof();
 
-        close $rout;
         exit 0;
     }
 
     if ( $args{wait} ) {
         waitpid $pid, 0;
     } else {
-        return SUCCESS, { pid => $pid };
+        return undef, { pid => $pid };
     }
 
     my $ret_code = $?>>8;
@@ -137,14 +160,6 @@ sub exec {
         logger->warning("SSH CMD: $args{cmd}" );
     }
 
-    my $data;
-
-#    if ( $ret_code == 0 ) {
-#        eval { $data = JSON->new->relaxed->decode( $out ); 1 };
-#        $data//= $out;
-#        chomp $data;
-#    }
-
     return $ret_code == 0 ? SUCCESS : FAIL, {
         server => {
             host => $args{host},
@@ -153,7 +168,6 @@ sub exec {
         },
         command => [ @shell_cmd ],
         ret_code => $ret_code,
-        stdout => $data,
     };
 }
 
