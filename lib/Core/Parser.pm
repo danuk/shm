@@ -15,7 +15,13 @@ sub parse {
         @_,
     );
 
-    $string =~s/\{\{\s*([A-Z0-9._]+)\s*\}\}/$self->eval_var($1, %args)/gei;
+    if ( ref $string eq 'ARRAY' ) {
+        for ( 0 .. scalar @{ $string } ) {
+            $string->[ $_ ] =~s/\{\{\s*([A-Z0-9._]+(\([\w\d]*\))?)\s*\}\}/$self->eval_var($1, %args)/gei;
+        }
+    } else {
+        $string =~s/\{\{\s*([A-Z0-9._]+(\([\w\d]*\))?)\s*\}\}/$self->eval_var($1, %args)/gei;
+    }
     return $string;
 }
 
@@ -46,7 +52,7 @@ sub eval_var {
     my ( $main_param, @md ) = split(/\./, $param );
 
     my $main_args;
-    if ( $main_param =~s/\(([\w,']+)\)// ) {
+    if ( $main_param =~s/\(([\d\w,']*)\)// ) {
         $main_args = '('.$1.')';
     }
 
@@ -58,7 +64,7 @@ sub eval_var {
     my @path;
     my @method_args;
     for my $method ( @md ) {
-        if ( $method =~s/\(([\w,']+)\)// ) {
+        if ( $method =~s/\(([\d\w,']+)\)// ) {
             @method_args = split(',', $1 );
             map ~s/'//g, @method_args;
         } else { @method_args = () };
