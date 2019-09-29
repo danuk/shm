@@ -33,15 +33,18 @@ sub send {
 
     my $parser = get_service('parser');
 
-    my $cmd = $parser->parse( $args{cmd} || $task->event->{params}->{cmd} );
+    my $cmd = $parser->parse(
+        $args{cmd} || $task->event->{params}->{cmd},
+        $task->params->{user_service_id} ? ( usi => $task->params->{user_service_id} ) : (),
+    );
     my $stdin_data = $parser->parse( $task->event->{params}->{stdin} || $server{params}->{payload} );
 
     return $self->exec(
+        %{ $server{params} || () },
         host => $server{host},
         key_id => $task->server->key_id,
         cmd => $cmd,
         stdin_data => $stdin_data,
-        %{ $server{params} || () },
     );
 }
 
@@ -56,9 +59,9 @@ sub exec {
         stdin_data => undef,
         wait => 1,
         pipeline_id => undef,
+        shell => $ENV{SHM_TEST} ? 'echo' : 'bash -e -v -c',
         @_,
     );
-
 
     my $pid;
     unless (defined ($pid = fork)) {
@@ -66,17 +69,20 @@ sub exec {
     }
 
     unless ( $pid ) {
+        # I'm a child
 
         POSIX::setsid();
         open(STDOUT,">/dev/null");
         open(STDERR,">/dev/null");
         alarm(0);
 
-        # I'm child
         # Create own db connection
-        my $config = get_service('config');
-        my $dbh = Core::Sql::Data::db_connect( %{ $config->global->{database} } );
-        $config->local('dbh', $dbh );
+        my $child_dbh = $self->dbh->clone();
+        get_service('config')->local('dbh', $child_dbh );
+
+        unless ( $args{pipeline_id} ) {
+            $args{pipeline_id} = get_service('console')->new_pipe;
+        }
 
         logger->debug('SSH: trying connect to ' . $args{host} );
 
@@ -110,14 +116,15 @@ sub exec {
         $console->append("SUCCESS\n");
 
         my @commands = (
-            qw/ bash -e -v -c /,
+            split('\s+', @args{shell} ),
             ref $args{cmd} eq 'ARRAY' ? join("\n", @{ $args{cmd} } ) : $args{cmd},
         );
 
         my $out;
-        my (undef, $rout, undef, $pid) = $ssh->open_ex(
+        my ($in, $rout, undef, $ssh_pid) = $ssh->open_ex(
             {
-                stdin_pipe => 1,
+                stdin_pipe => ( $args{stdin_data} ? 1 : 0 ),
+                stdin_pipe => 0,
                 stdout_pipe => 1,
                 stderr_to_stdout => 1,
                 tty => 1,
@@ -125,31 +132,35 @@ sub exec {
             @commands,
         ) or die "pipe_out method failed: " . $ssh->error;
 
+        if ( $args{stdin_data} ) {
+            print $in $args{stdin_data};
+            close $in;
+        }
+
         while (<$rout>) {
             $out .= $_;
-
-            if ( $args{pipeline_id} ) {
-                $console->append( $_ );
-            }
+            $console->append( $_ );
         }
         close $rout;
 
-        waitpid $pid, 0;
-        my $ret_code = $?>>8;
+        my $ssh_kid = waitpid $ssh_pid, 0;
+        my $ssh_ret_code = $?>>8;
 
-        if ( $ret_code ) {
-            $console->append("ERROR $ret_code\n\n");
-            last;
+        if ( $ssh_ret_code ) {
+            $console->append("ERROR $ssh_ret_code\n\n");
+        }
+        else {
+            $console->append("\n\nDONE\n\n");
         }
 
         $console->set_eof();
-        $console->append("\n\nDONE\n\n");
+        $child_dbh->disconnect;
 
-        exit 0;
+        exit $ssh_ret_code;
     }
 
     if ( $args{wait} ) {
-        waitpid $pid, 0;
+        my $kid = waitpid $pid, 0;
     } else {
         return undef, { pid => $pid };
     }
@@ -157,14 +168,12 @@ sub exec {
     my $ret_code = $?>>8;
 
     if ( $ret_code == 0 ) {
-        logger->debug("SSH RET_CODE: $ret_code");
-        logger->debug("SSH STDIN: $args{stdin_data}");
         logger->debug("SSH CMD: $args{cmd}" );
+        logger->debug("SSH RET_CODE: $ret_code");
     }
     else {
-        logger->warning("SSH RET_CODE: $ret_code");
-        logger->warning("SSH STDIN: $args{stdin_data}");
         logger->warning("SSH CMD: $args{cmd}" );
+        logger->warning("SSH RET_CODE: $ret_code");
     }
 
     return $ret_code == 0 ? SUCCESS : FAIL, {
@@ -175,6 +184,7 @@ sub exec {
         },
         command => $args{cmd},
         ret_code => $ret_code,
+        pipeline_id => $args{pipeline_id},
     };
 }
 

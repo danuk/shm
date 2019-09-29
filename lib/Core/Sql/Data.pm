@@ -46,6 +46,7 @@ sub db_connect {
     $dbh->{RaiseError} = 0;
     $dbh->{AutoCommit} = $ENV{SHM_TEST} ? 0 : 1;
     $dbh->{mysql_auto_reconnect} = 1;
+    $dbh->{InactiveDestroy} = 1;
 
     $dbh->do("SET CHARACTER SET UTF8");
     $dbh->do("SET NAMES utf8 COLLATE utf8_general_ci");
