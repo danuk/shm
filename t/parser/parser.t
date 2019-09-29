@@ -39,11 +39,6 @@ is $p->eval_var( "child('web').id", usi => 99 ), 101;
 
 
 subtest 'Test gen_store_pass()' => sub {
-    my $pass = $p->eval_var( "passgen(3)" );
-    is length( $pass ), 3;
-};
-
-subtest 'Test gen_store_pass()' => sub {
     my $pass = $p->eval_var( "us.parent.gen_store_pass(5)", usi => 100 );
     is length( $pass ), 5;
 
@@ -59,6 +54,19 @@ subtest 'Test parse()' => sub {
 
     my $ret = $p->parse( $string, usi => 101 );
     is $ret, '--id=101 --quota=10000';
+
 };
+
+subtest 'Test function parse' => sub {
+    my $ret = $p->parse( "{{ passgen }}");
+    is length( $ret), 10;
+
+    $ret = $p->parse( "{{ passgen() }}");
+    is length( $ret), 10;
+
+    $ret = $p->parse( "{{ passgen(3) }}");
+    is length( $ret), 3;
+};
+
 
 done_testing();

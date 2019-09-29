@@ -24,15 +24,24 @@ if ( $in{params} && $in{params}{cmd} ) {
     $in{params}{cmd} = $parser->parse( $in{params}{cmd} );
 }
 
+my $pipeline_id = get_service('console')->new_pipe;
+
 my (undef, $res ) = $ssh->exec(
     host => $in{host},
     cmd => $in{cmd} || 'uname -a',
     key_id => 1,
+    wait => $in{wait} || 0,
+    pipeline_id => $pipeline_id,
     %{ $in{params} || {} },
 );
 
 print_header();
-print_json( $res );
+print_json({
+    ssh => $res,
+    pipeline => {
+        id => $pipeline_id,
+    },
+});
 
 exit 0;
 
