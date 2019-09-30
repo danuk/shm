@@ -21,7 +21,7 @@ if ( $in{params} && $in{params}{cmd} ) {
     });
 
     my $parser = get_service('parser');
-    $in{params}{cmd} = $parser->parse( $in{params}{cmd} );
+    $in{params}{cmd} = $parser->parse( $in{params}{cmd}, usi => $in{params}{usi} );
 }
 
 my $pipeline_id = get_service('console')->new_pipe;
