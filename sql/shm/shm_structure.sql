@@ -309,6 +309,8 @@ CREATE TABLE `templates` (
 DROP TABLE IF EXISTS `console`;
 CREATE TABLE `console` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `start` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `stop` datetime DEFAULT NULL,
   `log` text NOT NULL,
   `eof` boolean DEFAULT 0,
   PRIMARY KEY (`id`)

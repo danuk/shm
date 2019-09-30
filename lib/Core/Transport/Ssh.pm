@@ -63,31 +63,43 @@ sub exec {
         @_,
     );
 
-    my $pid;
-    unless (defined ($pid = fork)) {
-        die "cannot fork: $!";
+    my $fork_mode = 0;
+    my ($pid, $ret_code, $child_dbh);
+
+    unless ( $args{wait} ) {
+        unless ( $args{pipeline_id} ) {
+            logger->error("Error: Can't use `no_wait` flag without `pipeline_id`");
+            exit 1;
+        }
+
+        unless (defined ($pid = fork)) {
+            die "cannot fork: $!";
+        }
+        $fork_mode = 1;
     }
 
+    unless ( $args{pipeline_id} ) {
+        # Auto create new pipe only for not fork mode
+        # We cannot create auto pipelines in fork mode due to the transactional model of the database.
+        $args{pipeline_id} = get_service('console')->new_pipe;
+    }
+
+    my $console = get_service('console', _id => $args{pipeline_id} );
+
     unless ( $pid ) {
-        # I'm a child
+        if ( $fork_mode ) {
+            # I'm a child
+            POSIX::setsid();
+            open(STDOUT,">/dev/null");
+            open(STDERR,">/dev/null");
+            alarm(0);
 
-        POSIX::setsid();
-        open(STDOUT,">/dev/null");
-        open(STDERR,">/dev/null");
-        alarm(0);
-
-        # Create own db connection
-        my $child_dbh = $self->dbh->clone();
-        get_service('config')->local('dbh', $child_dbh );
-
-        unless ( $args{pipeline_id} ) {
-            $args{pipeline_id} = get_service('console')->new_pipe;
+            # Create own db connection
+            $child_dbh = $self->dbh->clone();
+            get_service('config')->local('dbh', $child_dbh );
         }
 
         logger->debug('SSH: trying connect to ' . $args{host} );
-
-        my $console = get_service('console', _id => $args{pipeline_id} );
-
         $console->append("Trying connect to: ". $args{host} ."... ");
 
         my $ssh = Net::OpenSSH->new(
@@ -105,12 +117,6 @@ sub exec {
         if ( $ssh->error ) {
             logger->warning( $ssh->error );
             $console->append("FAIL\n".$ssh->error."\n");
-            exit 1;
-
-            return FAIL, {
-                error => $ssh->error,
-                ret_code => 1,
-            };
         }
 
         $console->append("SUCCESS\n");
@@ -144,39 +150,33 @@ sub exec {
         close $rout;
 
         my $ssh_kid = waitpid $ssh_pid, 0;
-        my $ssh_ret_code = $?>>8;
+        $ret_code = $?>>8;
 
-        if ( $ssh_ret_code ) {
-            $console->append("ERROR $ssh_ret_code\n\n");
+        if ( $ret_code ) {
+            $console->append("ERROR $ret_code\n\n");
         }
         else {
             $console->append("\n\nDONE\n\n");
         }
 
         $console->set_eof();
-        $child_dbh->disconnect;
 
-        exit $ssh_ret_code;
+        if ( $fork_mode ) {
+            $child_dbh->disconnect;
+            exit $ret_code;
+        }
     }
-
-    if ( $args{wait} ) {
-        my $kid = waitpid $pid, 0;
-    } else {
-        return undef, { pid => $pid };
-    }
-
-    my $ret_code = $?>>8;
 
     if ( $ret_code == 0 ) {
         logger->debug("SSH CMD: $args{cmd}" );
         logger->debug("SSH RET_CODE: $ret_code");
     }
-    else {
+    elsif ( defined $ret_code ) {
         logger->warning("SSH CMD: $args{cmd}" );
         logger->warning("SSH RET_CODE: $ret_code");
     }
 
-    return $ret_code == 0 ? SUCCESS : FAIL, {
+    return ( !defined($ret_code) ||  $ret_code == 0 ) ? SUCCESS : FAIL, {
         server => {
             host => $args{host},
             port => $args{port},

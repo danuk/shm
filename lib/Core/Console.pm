@@ -3,12 +3,15 @@ package Core::Console;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Core::Utils qw/now/;
 
 sub table { return 'console' };
 
 sub structure {
     return {
         id => '@',
+        start => 'now',
+        stop => undef,
         log => '',
         eof => 0,
     }
@@ -33,7 +36,7 @@ sub append {
 sub set_eof {
     my $self = shift;
 
-    $self->set( eof => 1 );
+    $self->set( eof => 1, stop => now );
 }
 
 sub chunk {

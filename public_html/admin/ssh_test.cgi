@@ -36,12 +36,7 @@ my (undef, $res ) = $ssh->exec(
 );
 
 print_header();
-print_json({
-    ssh => $res,
-    pipeline => {
-        id => $pipeline_id,
-    },
-});
+print_json( $res );
 
 exit 0;
 
