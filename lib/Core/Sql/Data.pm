@@ -43,6 +43,14 @@ sub db_connect {
     my $dbh = DBI->connect( "DBI:mysql:database=$args{db_name};host=$args{db_host}", $args{db_user}, $args{db_pass} );
     confess("Can't connect to database") unless $dbh;
 
+    configure( $dbh );
+
+    return $dbh;
+}
+
+sub configure {
+    my $dbh = shift;
+
     $dbh->{RaiseError} = 0;
     $dbh->{AutoCommit} = $ENV{SHM_TEST} ? 0 : 1;
     $dbh->{mysql_auto_reconnect} = 1;
@@ -50,8 +58,22 @@ sub db_connect {
 
     $dbh->do("SET CHARACTER SET UTF8");
     $dbh->do("SET NAMES utf8 COLLATE utf8_general_ci");
+}
 
-    return $dbh;
+sub dbh {
+    my $self = shift;
+    return get_service('config')->local->{dbh} || die "Can't connect to db";
+}
+
+sub dbh_new {
+    my $self = shift;
+
+    my $child_dbh = $self->dbh->clone();
+    configure( $child_dbh );
+
+    get_service('config')->local('dbh', $child_dbh );
+
+    return $child_dbh;
 }
 
 sub insert_id {

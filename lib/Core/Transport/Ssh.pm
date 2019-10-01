@@ -95,8 +95,7 @@ sub exec {
             alarm(0);
 
             # Create own db connection
-            $child_dbh = $self->dbh->clone();
-            get_service('config')->local('dbh', $child_dbh );
+            $child_dbh = $self->dbh_new();
         }
 
         logger->debug('SSH: trying connect to ' . $args{host} );

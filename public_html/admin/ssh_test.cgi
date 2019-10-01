@@ -38,5 +38,14 @@ my (undef, $res ) = $ssh->exec(
 print_header();
 print_json( $res );
 
+
+if ( $in{debug} && $in{wait} ) {
+    my %ret = get_service('console', _id => $pipeline_id)->reload;
+    say "\n\n";
+    say "="x100;
+    say "$ret{log}";
+    say "="x100;
+}
+
 exit 0;
 
