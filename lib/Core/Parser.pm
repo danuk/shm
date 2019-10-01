@@ -85,7 +85,9 @@ sub eval_var {
 
     $var = '' unless defined $var;
 
-    return ref $var ? to_json( scalar $var ) : $var;
+    return ref $var ?
+        JSON->new->latin1->encode( $var ) :
+        $var;
 }
 
 sub child {
