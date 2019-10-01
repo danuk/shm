@@ -118,7 +118,7 @@ sub exec {
             $console->append("FAIL\n".$ssh->error."\n");
         }
 
-        $console->append("SUCCESS\n");
+        $console->append("SUCCESS\n\n");
 
         my @commands = (
             split('\s+', @args{shell} ),
