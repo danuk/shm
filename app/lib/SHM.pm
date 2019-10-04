@@ -79,6 +79,12 @@ sub new {
     # Connect to db
     my $config = get_service('config');
     my $dbh = Core::Sql::Data::db_connect( %{ $config->global->{database} } );
+    unless ( $dbh ) {
+        print_header( status => 503 );
+        print_json( { status => 503, msg=> "Can't connect to DB" } );
+        exit 0;
+    }
+
     $config->local('dbh', $dbh );
 
     switch_user( $user_id );

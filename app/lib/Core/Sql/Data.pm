@@ -41,7 +41,10 @@ sub db_connect {
     logger->debug("MySQL connect: " . join(':', @args{ qw/db_host db_name db_user/ } ) );
 
     my $dbh = DBI->connect( "DBI:mysql:database=$args{db_name};host=$args{db_host}", $args{db_user}, $args{db_pass} );
-    confess("Can't connect to database") unless $dbh;
+    unless ( $dbh ) {
+        logger->warning("Can't connect to database");
+        return undef;
+    }
 
     configure( $dbh );
 
