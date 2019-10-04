@@ -18,6 +18,14 @@ sub new {
     $config||= $args{config};
 
     unless ( $config ) {
+        open( my $fd, "/etc/environment" ) or die $!;
+        while (<$fd>) {
+            chomp;
+            my ( $tag, $value ) = split(/=/);
+            $ENV{ $tag } = $value;
+        }
+        close $fd;
+
         require 'shm.conf';
     }
     my $self = bless(\%args, $class);

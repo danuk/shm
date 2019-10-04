@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 use v5.14;
+use CGI::Carp qw(fatalsToBrowser);
 
 use SHM qw(:all);
 my $user = SHM->new();
