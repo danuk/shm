@@ -16,9 +16,6 @@ my %in = parse_args();
 
 use Core::System::ServiceManager qw( get_service );
 
-use SHM qw(:all);
-my $user = SHM->new( skip_check_auth => 1 );
-
 my $session = validate_session();
 if ($session) {
     print_json( { status => 0, msg => 'Already authorized', session_id => $session->session_id(), user_id => $session->get('user_id')   } );
@@ -29,6 +26,9 @@ unless ( $in{login} && $in{password} ) {
 	print_json( { status => 400, msg => 'login or password not present' } );
 	exit 0;
 }
+
+use SHM qw(:all);
+my $user = SHM->new( skip_check_auth => 1 );
 
 unless ( $user->auth( login => trim($in{login}), password => trim($in{password}) )) {
     print_json( { status => 401, msg => 'Incorrect login or password' } );
