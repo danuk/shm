@@ -66,11 +66,6 @@ sub new {
 
     $args->{user_id} ||= $ENV{USER_ID};
 
-    # Connect to db
-    my $config = get_service('config');
-    my $dbh = Core::Sql::Data::db_connect( %{ $config->global->{database} } );
-    $config->local('dbh', $dbh );
-
     my $user_id;
 
     if ( $args->{user_id} ) {
@@ -80,6 +75,11 @@ sub new {
         print_not_authorized() unless $session;
         $user_id = $session->get('user_id');
     }
+
+    # Connect to db
+    my $config = get_service('config');
+    my $dbh = Core::Sql::Data::db_connect( %{ $config->global->{database} } );
+    $config->local('dbh', $dbh );
 
     switch_user( $user_id );
     my $user = get_service('user');
