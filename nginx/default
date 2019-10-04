@@ -1,0 +1,30 @@
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+
+    root /app/public_html/;
+
+    charset utf8;
+    gzip off;
+
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ \.(pl|cgi)$ {
+        try_files $uri =404;
+
+        fastcgi_pass unix:/var/run/fcgiwrap.socket;
+
+        include /etc/nginx/fastcgi_params;
+
+        fastcgi_ignore_client_abort off;
+
+        fastcgi_param PERL5LIB "/app/lib:/app/conf";
+
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
