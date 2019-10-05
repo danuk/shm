@@ -16,6 +16,7 @@ RUN set -x \
     && apt-get remove --purge --auto-remove -y gcc make \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /app/deploy \
+    && rm -rf /root/.cpanm \
     && sed -i 's/www-data/nginx/g' /etc/init.d/fcgiwrap \
     && mkdir /var/shm && chown nginx: /var/shm
 
