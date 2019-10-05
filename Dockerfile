@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     default-libmysqlclient-dev \
     perl \
     libdbi-perl \
+    openssh-client \
     gcc \
     make
 
@@ -13,6 +14,7 @@ COPY deploy /app/deploy
 RUN set -x \
     && cd /app/deploy \
     && /app/deploy/install_deps.sh \
+    && usermod nginx -d /var/shm \
     && apt-get remove --purge --auto-remove -y gcc make \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /app/deploy \

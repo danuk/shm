@@ -28,12 +28,15 @@ if ( $in{user_id} ) {
     $admin = 0;
 }
 
+$in{object} ||= $ENV{SCRIPT_NAME};
+
 unless ( $in{object} ) {
     print_header( status => 400 );
     print_json( { error => "Unknown object" } );
     exit 0;
 }
 
+$in{object} =~s/.*\///;
 $in{object} =~s/\.\w+$//;
 # Convert to lamelcase
 $in{object} = join('', map( ucfirst $_, split /_/, $in{object} ));
