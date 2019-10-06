@@ -4,6 +4,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     fcgiwrap \
     default-libmysqlclient-dev \
+    default-mysql-client \
     perl \
     libdbi-perl \
     openssh-client \
