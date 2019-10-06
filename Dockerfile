@@ -29,6 +29,7 @@ ENV SHM_DATA_DIR /var/shm
 ENV DB_USER shm
 ENV DB_PASS password
 ENV DB_HOST 127.0.0.1
+ENV DB_PORT 3306
 ENV DB_NAME shm
 
 COPY entry.sh /entry.sh
