@@ -4,7 +4,6 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     fcgiwrap \
     default-libmysqlclient-dev \
-    default-mysql-client \
     perl \
     libdbi-perl \
     openssh-client \
@@ -25,8 +24,9 @@ RUN set -x \
 
 COPY nginx/default.conf /etc/nginx/conf.d/
 
-ENV PERL5LIB /app/lib:/app/conf
+ENV SHM_ROOT_DIR /app
 ENV SHM_DATA_DIR /var/shm
+ENV PERL5LIB /app/lib:/app/conf
 ENV DB_USER shm
 ENV DB_PASS password
 ENV DB_HOST 127.0.0.1
