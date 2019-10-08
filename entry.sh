@@ -11,7 +11,7 @@ DB_NAME=${DB_NAME}
 EOF
 
 # Create SHM database structure and fill data
-sudo -u nginx /app/bin/init.pl
+sudo --preserve-env=PERL5LIB -u nginx /app/bin/init.pl
 
 /etc/init.d/fcgiwrap start
 nginx -g "daemon off;"
