@@ -27,7 +27,6 @@ COPY nginx/default.conf /etc/nginx/conf.d/
 ENV SHM_ROOT_DIR /app
 ENV SHM_DATA_DIR /var/shm
 ENV PERL5LIB /app/lib:/app/conf
-ENV USER=nginx
 ENV DB_USER shm
 ENV DB_PASS password
 ENV DB_HOST 127.0.0.1

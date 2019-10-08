@@ -4,6 +4,7 @@ use v5.14;
 use SHM;
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw( read_file );
+use Data::Dumper;
 
 my $self = SHM->new( skip_check_auth => 1 );
 
