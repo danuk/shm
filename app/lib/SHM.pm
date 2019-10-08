@@ -82,7 +82,7 @@ sub new {
     unless ( $dbh ) {
         print_header( status => 503 );
         print_json( { status => 503, msg=> "Can't connect to DB" } );
-        exit 0;
+        exit 1;
     }
 
     $config->local('dbh', $dbh );
