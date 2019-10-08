@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 
 cat <<EOF > /etc/environment
 SHM_ROOT_DIR=${SHM_ROOT_DIR}
