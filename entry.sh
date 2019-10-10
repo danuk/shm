@@ -13,6 +13,9 @@ EOF
 # Create SHM database structure and fill data
 sudo --preserve-env=PERL5LIB -u nginx /app/bin/init.pl
 
+# Start spool daemon
+sudo --preserve-env=PERL5LIB -u nginx /app/bin/spool.pl &
+
 /etc/init.d/fcgiwrap start
 nginx -g "daemon off;"
 $@
