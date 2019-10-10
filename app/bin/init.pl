@@ -4,16 +4,21 @@ use v5.14;
 use SHM;
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw( read_file );
-use Data::Dumper;
 
-my $self = SHM->new( skip_check_auth => 1 );
+use Core::Sql::Data;
 
-my $tables_count = $self->do("SHOW TABLES");
+my $sql = Core::Sql::Data->new;
+
+my $config = get_service('config');
+my $dbh = db_connect( %{ $config->global->{database} } ) or die "Can't connect to DN";
+$config->local('dbh', $dbh );
+
+my $tables_count = $sql->do("SHOW TABLES");
 
 unless ( $tables_count ) {
     print "Init database... ";
-    import_sql_file( $self->dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_structure.sql" );
-    import_sql_file( $self->dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_data.sql" );
+    import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_structure.sql" );
+    import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_data.sql" );
     say "done";
 }
 

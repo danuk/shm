@@ -1,7 +1,6 @@
 package Core::Sql::Data;
 
 use v5.14;
-use Carp qw(confess);
 
 use DBI qw(:sql_types);
 use Scalar::Util qw(looks_like_number);
@@ -28,6 +27,18 @@ our @EXPORT = qw(
 use Core::Utils qw( now decode_json force_numbers );
 use Core::System::ServiceManager qw( get_service logger );
 use SQL::Abstract;
+
+sub new {
+    my $class = shift;
+    my $args = {
+        _id => undef,
+        @_,
+    };
+
+    my $self = bless( $args, $class );
+
+    return $self;
+}
 
 sub db_connect {
     my %args = (
