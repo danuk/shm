@@ -7,6 +7,9 @@ use Data::Dumper;
 
 SHM->new( skip_check_auth => 1 );
 
-while ( get_service('spool')->process_one() ) {};
+for (;;) {
+    while ( get_service('spool')->process_one() ) {};
+    sleep 2;
+}
 
 exit 0;
