@@ -70,7 +70,7 @@ sub dbh {
 
 sub DESTROY {
     my $dbh = get_service('config')->local->{dbh};
-    $dbh->disconnect;
+    $dbh->disconnect unless $ENV{SHM_TEST};
 }
 
 sub dbh_new {
