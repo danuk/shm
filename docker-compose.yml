@@ -1,0 +1,39 @@
+version: '2.1'
+services:
+  core:
+    image: "danuk/shm:latest"
+    restart: always
+    environment:
+      DB_NAME: shm
+      DB_USER: shm
+      DB_PASS: quu4QuoSat
+      DB_HOST: mysql
+      DB_PORT: 3306
+    ports:
+      - "8081:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+  admin:
+    image: "danuk/shm-admin:latest"
+    restart: always
+    environment:
+      SHM_URL: http://127.0.0.1:8081
+    ports:
+      - "8080:80"
+  mysql:
+    image: "mysql:5.7"
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: OSexooquoo1fah9fahsh
+      MYSQL_DATABASE: shm
+      MYSQL_USER: shm
+      MYSQL_PASSWORD: quu4QuoSat
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD"
+      interval: 5s
+      timeout: 3s
+      retries: 10

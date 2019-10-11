@@ -35,7 +35,7 @@ ENV DB_PORT 3306
 ENV DB_NAME shm
 
 COPY entry.sh /entry.sh
-ENTRYPOINT ["/entry.sh"]
+CMD ["/entry.sh"]
 
 COPY app /app
 
