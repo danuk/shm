@@ -31,7 +31,9 @@ sudo docker-compose up -d
 ### SHM будет доступен по адресу:
 
 http://127.0.0.1:8080
+
 Лоогин: admin
+
 Пароль: admin
 
 
