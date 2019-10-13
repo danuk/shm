@@ -1,19 +1,37 @@
 # shm
 SHM: Universal Billing with external actions
 
-Ядро биллинга
+Открытая, бесплатная биллинговая система.
+
+## Документация
 
 https://myshm.ru
 
+## Инсталляция
+
+### Установите docker:
 
 https://docs.docker.com/install/
 
-apt-get install docker-compose
+### Установите docker-compose:
 
-Run under root:
-docker-compose up -d
+```bash
+apt-get install docker-compose
+```
+
+### Запустите SHM:
+
+Скопирируйте файл: `docker-compose.yaml`
+и выполните команду:
+
+```bash
+sudo docker-compose up -d
+```
+
+### SHM будет доступен по адресу:
 
 http://127.0.0.1:8080
-admin:admin
+Лоогин: admin
+Пароль: admin
 
 
