@@ -20,10 +20,10 @@ RUN set -x \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /app/deploy \
     && rm -rf /root/.cpanm \
-    && sed -i 's/www-data/nginx/g' /etc/init.d/fcgiwrap \
     && mkdir /var/shm && chown nginx: /var/shm
 
 COPY nginx/default.conf /etc/nginx/conf.d/
+COPY nginx/fcgiwrap /etc/default/
 
 ENV SHM_ROOT_DIR /app
 ENV SHM_DATA_DIR /var/shm
