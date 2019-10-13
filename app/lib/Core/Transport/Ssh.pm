@@ -116,40 +116,41 @@ sub exec {
         if ( $ssh->error ) {
             logger->warning( $ssh->error );
             $console->append("FAIL\n".$ssh->error."\n");
+            $ret_code = -1;
+        } else {
+            $console->append("SUCCESS\n\n");
+
+            my @commands = (
+                split('\s+', @args{shell} ),
+                ref $args{cmd} eq 'ARRAY' ? join("\n", @{ $args{cmd} } ) : $args{cmd},
+            );
+
+            my $out;
+            my ($in, $rout, undef, $ssh_pid) = $ssh->open_ex(
+                {
+                    stdin_pipe => ( $args{stdin_data} ? 1 : 0 ),
+                    stdin_pipe => 0,
+                    stdout_pipe => 1,
+                    stderr_to_stdout => 1,
+                    tty => 1,
+                },
+                @commands,
+            ) or die "pipe_out method failed: " . $ssh->error;
+
+            if ( $args{stdin_data} ) {
+                print $in $args{stdin_data};
+                close $in;
+            }
+
+            while (<$rout>) {
+                $out .= $_;
+                $console->append( $_ );
+            }
+            close $rout;
+
+            my $ssh_kid = waitpid $ssh_pid, 0;
+            $ret_code = $?>>8;
         }
-
-        $console->append("SUCCESS\n\n");
-
-        my @commands = (
-            split('\s+', @args{shell} ),
-            ref $args{cmd} eq 'ARRAY' ? join("\n", @{ $args{cmd} } ) : $args{cmd},
-        );
-
-        my $out;
-        my ($in, $rout, undef, $ssh_pid) = $ssh->open_ex(
-            {
-                stdin_pipe => ( $args{stdin_data} ? 1 : 0 ),
-                stdin_pipe => 0,
-                stdout_pipe => 1,
-                stderr_to_stdout => 1,
-                tty => 1,
-            },
-            @commands,
-        ) or die "pipe_out method failed: " . $ssh->error;
-
-        if ( $args{stdin_data} ) {
-            print $in $args{stdin_data};
-            close $in;
-        }
-
-        while (<$rout>) {
-            $out .= $_;
-            $console->append( $_ );
-        }
-        close $rout;
-
-        my $ssh_kid = waitpid $ssh_pid, 0;
-        $ret_code = $?>>8;
 
         if ( $ret_code ) {
             $console->append("ERROR $ret_code\n\n");
