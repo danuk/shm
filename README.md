@@ -16,7 +16,7 @@ https://docs.docker.com/install/
 ### Установите docker-compose:
 
 ```bash
-apt-get install docker-compose
+sudo apt-get install docker-compose
 ```
 
 ### Запустите SHM:
