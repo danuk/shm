@@ -21,7 +21,7 @@ apt-get install docker-compose
 
 ### Запустите SHM:
 
-Скопирируйте файл: `docker-compose.yaml`
+Скопирируйте файл: `docker-compose.yml`
 и выполните команду:
 
 ```bash
