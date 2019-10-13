@@ -32,7 +32,7 @@ sudo docker-compose up -d
 
 http://127.0.0.1:8080
 
-Лоогин: admin
+Логин: admin
 
 Пароль: admin
 
