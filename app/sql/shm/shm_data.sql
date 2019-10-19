@@ -6,4 +6,6 @@ INSERT INTO `users` VALUES
 INSERT INTO `servers_groups` VALUES
 (1,'Основная','random',NULL);
 
+INSERT INTO `templates` VALUES (1,'example','Тестовый шаблон','Здравствуйте {{ user.full_name }}\n\nВы зарегистрировали новую услугу: {{ us.service.name }}\n\nДата истечения услуги: {{ us.expired }}\n\nСтоимость услуги: {{ us.service.cost }} руб.\n\nХостинг сайтов:\nХост: {{ child(\'web\').server.settings.host_name }}\nЛогин: {{ child(\'web\').settings.login }}\nПароль: {{ child(\'web\').settings.password }}\n\nЖелаем успехов.',NULL);
+
 COMMIT;
