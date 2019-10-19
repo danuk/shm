@@ -178,6 +178,11 @@ sub print_json {
     say $json->canonical->encode( force_numbers( $ref ) );
 }
 
+sub DESTROY {
+    my $dbh = get_service('config')->local->{dbh};
+    $dbh->disconnect if $dbh;
+}
+
 1;
 
 

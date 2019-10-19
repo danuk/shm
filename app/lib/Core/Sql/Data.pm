@@ -79,11 +79,6 @@ sub dbh {
     return get_service('config')->local->{dbh} || die "Can't connect to db";
 }
 
-sub DESTROY {
-    my $dbh = get_service('config')->local->{dbh};
-    $dbh->disconnect unless $ENV{SHM_TEST};
-}
-
 sub dbh_new {
     my $self = shift;
 
