@@ -5,7 +5,6 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Utils qw( to_json decode_json passgen force_numbers );
 use Scalar::Util qw(blessed);
-use Text::ParseWords 'shellwords';
 
 sub parse {
     my $self = shift;
