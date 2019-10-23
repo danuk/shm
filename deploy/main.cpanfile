@@ -1,3 +1,4 @@
+requires 'CGI';
 requires 'DBD::mysql';
 requires 'Session';
 requires 'MIME::Lite';
