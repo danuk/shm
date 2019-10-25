@@ -55,7 +55,7 @@ is( $ret->{ $us->id }->{withdraws}->{discount}, 10, 'Check discont for 4 months'
 is( $ret->{ $us->id }->{withdraws}->{total}, 360, 'Check total for 4 months with discount' );
 
 # Check create domain service
-my $us = create_service( service_id => 11, cost => 1000 );
+my $us = create_service( service_id => 11, cost => 1000, months => 12 );
 
 my $ret = $srv->id( $us->id )->with('withdraws')->get;
 is( $ret->{ $us->id }->{expired}, '2017-12-31 23:59:59', 'Check expired service for domain' );

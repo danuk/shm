@@ -59,6 +59,10 @@ sub calc_total_by_date_range {
     my %delta;
     @delta{ qw/day hour min sec/ } = Delta_DHMS( @start{ qw/year month day hour min sec/ }, @stop{ qw/year month day hour min sec/ } );
 
+    if ( $wd{period_cost} != 1 ) {
+        $wd{cost} = $wd{cost} / ( $wd{period_cost} || 1 );
+    }
+
     my $cost_day = $wd{cost} / DAYS_IN_MONTH;
     my $cost_hour = $cost_day / 24;
     my $cost_min = $cost_hour / 60;

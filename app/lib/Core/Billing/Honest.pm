@@ -99,6 +99,10 @@ sub calc_total_by_date_range {
     my $m_diff = ( $stop{month} + $stop{year} * 12 ) - ( $start{month} + $start{year} * 12 );
     my $total = 0;
 
+    if ( $wd{period_cost} != 1 ) {
+        $wd{cost} = $wd{cost} / ( $wd{period_cost} || 1 );
+    }
+
     # calc first month
     if ( $wd{end_date} lt end_of_month( $wd{withdraw_date} ) ) {
         # Услуга начинается и заканчивается в одном месяце

@@ -164,28 +164,16 @@ sub calc_withdraw {
         @_,
     );
 
-    for ( qw/ cost months discount qnt / ) {
-        unless ( defined $wd{ $_ } ) {
-            logger->error( "Not exists `$_` in wd object" );
-        }
-    }
-
-    # Вычисляем реальное кол-во месяцов для правильного подсчета стоимости
-    my $period_cost = get_service( 'service', _id => $wd{service_id} )->get->{period_cost};
-
-    if ( $wd{months} < $period_cost ) {
-        $wd{months} = $period_cost;
-    }
-
-    my $real_payment_months = sprintf("%.2f", $wd{months} / ($period_cost || 1) );
+    my %service = get_service( 'service', _id => $wd{service_id} )->get;
+    %wd = ( %service, %wd );
 
     $wd{withdraw_date}||= now;
-    $wd{end_date} = calc_end_date_by_months( $wd{withdraw_date}, $real_payment_months );
+    $wd{end_date} = calc_end_date_by_months( $wd{withdraw_date}, $wd{months} );
 
-    if ( $wd{months} !~/^\d+$/ ) {
-        $wd{total} = calc_total_by_date_range( %wd )->{total};
+    if ( $wd{months} == $wd{period_cost} ) {
+        $wd{total} = $wd{cost};
     } else {
-        $wd{total} = $wd{cost} * $real_payment_months;
+        $wd{total} = calc_total_by_date_range( %wd )->{total};
     }
 
     $wd{discount} = get_service_discount( %wd );
