@@ -1,7 +1,6 @@
 package Core::Billing::Simpler;
 
 use v5.14;
-use Carp qw(confess);
 
 use base qw(Exporter);
 
@@ -45,10 +44,6 @@ sub calc_total_by_date_range {
         @_,
     );
     my $debug = 0;
-
-    for ( keys %wd ) {
-        confess("`$_` required") unless defined $wd{ $_ };
-    }
 
     my %start = parse_date( $wd{withdraw_date} );
     my %stop = parse_date( $wd{end_date} );
