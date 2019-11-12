@@ -56,6 +56,13 @@ sub local {
     return $self->get('local')->{ $section };
 }
 
+sub set {
+    my $self = shift;
+    my $params = shift;
+
+    $self->{config}->{local} = $params;
+}
+
 1;
 
 

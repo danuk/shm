@@ -45,6 +45,7 @@ my %in;
 
 sub new {
     my $class = shift;
+    my %config = ( @_ );
 
     if ( $ENV{REQUEST_METHOD} eq 'OPTIONS' ) {
         print_header(
@@ -76,8 +77,10 @@ sub new {
         $user_id = $session->get('user_id');
     }
 
-    # Connect to db
     my $config = get_service('config');
+    $config->set( \%config );
+
+    # Connect to db
     my $dbh = Core::Sql::Data::db_connect( %{ $config->global->{database} } );
     unless ( $dbh ) {
         print_header( status => 503 );
