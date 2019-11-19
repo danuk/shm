@@ -3,7 +3,10 @@ use v5.14;
 use Test::More;
 use Test::Deep;
 use Data::Dumper;
-use Core::Billing::Simpler;
+use Core::Billing::Simpler qw(
+    calc_end_date_by_months
+    calc_total_by_date_range
+);
 
 $ENV{SHM_TEST} = 1;
 

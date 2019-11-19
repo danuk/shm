@@ -23,6 +23,7 @@ use base qw( Core::System::Service );
 use Core::System::ServiceManager qw( get_service logger );
 
 use Core::Billing::Honest;
+use Core::Billing::Simpler;
 
 sub awaiting_payment {
     my $self = shift;
@@ -386,6 +387,26 @@ sub money_back {
     $self->user->set_balance( balance => $delta );
 
     return $delta;
+}
+
+sub billing {
+    return "Honest";
+}
+
+sub calc_end_date_by_months {
+    if ( billing() eq 'Honest' ) {
+        return Core::Billing::Honest::calc_end_date_by_months( @_ );
+    } else {
+        return Core::Billing::Simpler::calc_end_date_by_months( @_ );
+    }
+}
+
+sub calc_total_by_date_range {
+    if ( billing() eq 'Honest' ) {
+        return Core::Billing::Honest::calc_total_by_date_range( @_ );
+    } else {
+        return Core::Billing::Simpler::calc_total_by_date_range( @_ );
+    }
 }
 
 1;

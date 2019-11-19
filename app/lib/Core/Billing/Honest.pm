@@ -10,7 +10,7 @@ use Carp qw(confess);
 
 use base qw(Exporter);
 
-our @EXPORT = qw(
+our @EXPORT_OK = qw(
     calc_month_cost
     calc_end_date_by_months
     calc_total_by_date_range
