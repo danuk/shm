@@ -1,7 +1,7 @@
-package Core::System::Config;
+package Core::Config;
 use v5.14;
 
-use base qw( Core::System::Service );
+use parent 'Core::Base';
 
 our $config;
 our $session_config;
