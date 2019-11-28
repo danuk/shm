@@ -40,7 +40,7 @@ if ( $in{admin} && $user->get_gid != 1 ) {
     exit 0;
 }
 
-my $session = Session->new( undef, %{ get_service('config')->get('session') } );
+my $session = Session->new( undef, %{ get_service('config')->file->{session} } );
 my $session_id = $session->session_id();
 
 $session->set( user_id => $user->id() );
@@ -60,7 +60,7 @@ sub create_cookie {
                 -name => $name,
                 -value => $value,
                 -expires =>  '+1M',
-                -secure => get_service('config')->get('session')->{'ssl'},
+                -secure => get_service('config')->file->{session}->{'ssl'},
         );
         return $cookie;
 }

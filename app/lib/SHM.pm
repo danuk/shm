@@ -45,7 +45,6 @@ my %in;
 
 sub new {
     my $class = shift;
-    my %config = ( @_ );
 
     if ( $ENV{REQUEST_METHOD} eq 'OPTIONS' ) {
         print_header(
@@ -78,10 +77,9 @@ sub new {
     }
 
     my $config = get_service('config');
-    $config->set( \%config );
 
     # Connect to db
-    my $dbh = Core::Sql::Data::db_connect( %{ $config->global->{database} } );
+    my $dbh = Core::Sql::Data::db_connect( %{ $config->file->{config}{database} } );
     unless ( $dbh ) {
         print_header( status => 503 );
         print_json( { status => 503, msg=> "Can't connect to DB" } );
@@ -115,7 +113,7 @@ sub validate_session {
 
     my $session_id = $cookies{session_id}->value;
 
-    my $session = new Session $session_id, %{ get_service('config')->get('session') };
+    my $session = new Session $session_id, %{ get_service('config')->file->{session} };
     return undef if not defined($session);
 
     my $ip = $session->get('ip');
