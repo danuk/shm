@@ -5,8 +5,17 @@ use parent 'Core::Base';
 
 our $config;
 our $session_config;
-
 require 'shm.conf';
+
+sub table { return 'config' };
+
+sub structure {
+    return {
+        id => '@',
+        name => '!',
+        data => '!',
+    }
+}
 
 sub file {
     my $self = shift;
