@@ -2,7 +2,6 @@ package Core::Profile;
 
 use v5.14;
 use parent 'Core::Base';
-use Core::Base;
 
 sub table { return 'profiles' };
 
@@ -11,6 +10,9 @@ sub structure {
         id => '@',
         user_id => '!',
         data => { type => 'json', value => undef },
+        created => 'now',
     }
 }
+
+1;
 

@@ -298,4 +298,7 @@ INSERT INTO `pay_systems` VALUES (1,'Платеж',NULL);
 
 INSERT INTO `templates` VALUES (1,'web_tariff_create','Создание тарифа хостинга','Здравствуйте {{ user.full_name }}\n\nВы зарегистрировали новую услугу: {{ us.service.name }}\n\nДата истечения услуги: {{ us.expired }}\n\nСтоимость услуги: {{ us.service.cost }} руб.\n\nХостинг сайтов:\nХост: {{ child(\'web\').server.settings.host_name }}\nЛогин: {{ child(\'web\').settings.login }}\nПароль: {{ child(\'web\').settings.password }}\n\nЖелаем успехов.',NULL);
 
+INSERT INTO `profiles` VALUES
+(1,'40092','{"name": "Даниил", "email": "email@domain.ru", "index":"1234567", "phone":"+7(123) 123-45-67"}',DEFAULT);
+
 COMMIT;
