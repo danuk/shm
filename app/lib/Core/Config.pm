@@ -12,8 +12,8 @@ sub table { return 'config' };
 sub structure {
     return {
         id => '@',
-        name => '!',
-        data => '!',
+        name => '?',
+        data => '?',
     }
 }
 
