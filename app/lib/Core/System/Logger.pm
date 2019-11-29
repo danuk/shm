@@ -208,8 +208,8 @@ sub write_log_file {
     my $config = Core::System::ServiceManager::is_registered( 'config' );
     return unless $config;
 
-    if ( $config->global->{log} ) {
-        my $log = $config->global->{log}->{path} . '/' . $config->global->{log}->{file};
+    if ( $config->file->{config}{log} ) {
+        my $log = $config->file->{config}{log}->{path} . '/' . $config->file->{config}{log}->{file};
         my $fd;
         open ( $fd, ">> $log" ) or die $!;
         print $fd $msg;

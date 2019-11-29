@@ -45,7 +45,7 @@ our %AUTO_SERVICES = (
         class => 'Core::System::Logger',
     },
     config => {
-        class => 'Core::System::Config',
+        class => 'Core::Config',
     },
     us => {
         class => 'Core::USObject',

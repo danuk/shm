@@ -10,7 +10,7 @@ use Core::Sql::Data;
 my $sql = Core::Sql::Data->new;
 
 my $config = get_service('config');
-my $dbh = db_connect( %{ $config->global->{database} } ) or die "Can't connect to DN";
+my $dbh = db_connect( %{ $config->file->{config}{database} } ) or die "Can't connect to DN";
 $config->local('dbh', $dbh );
 
 my $tables_count = $sql->do("SHOW TABLES");
