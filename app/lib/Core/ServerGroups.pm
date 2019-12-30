@@ -11,6 +11,7 @@ sub structure {
         group_id => '@',
         name => undef,
         type => 'random',   # способ выборки серверов из группы
+        transport => 'ssh',
         params => undef,
     }
 }

@@ -53,4 +53,15 @@ sub key_file {
     return undef;
 }
 
+sub add {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    $args{transport} ||= $args{server}->{transport};
+
+    return $self->SUPER::add( %args );
+}
+
 1;

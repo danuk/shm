@@ -138,7 +138,7 @@ INSERT INTO `pays_history` VALUES
 
 INSERT INTO `servers` VALUES
 (1,1,'test server (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,1,'{\"cmd\": \"test create\", \"key_id\": 1}'),
-(25,5,NULL,'mail',NULL,NULL,100,0,0,1,NULL);
+(25,5,'mail-1','mail','127.0.0.1:25',NULL,100,0,0,1,NULL);
 
 INSERT INTO `servers_groups` VALUES
 (1,'Сервера Web хостинга','ssh','random',NULL),
