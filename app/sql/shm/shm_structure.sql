@@ -130,6 +130,7 @@ DROP TABLE IF EXISTS `servers_groups`;
 CREATE TABLE `servers_groups` (
   `group_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` char(255) DEFAULT NULL,
+  `transport` char(32) NOT NULL DEFAULT 'ssh',
   `type` char(16) NOT NULL DEFAULT 'random',
   `params` json DEFAULT NULL,
   PRIMARY KEY (`group_id`)

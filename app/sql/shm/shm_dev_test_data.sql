@@ -141,11 +141,11 @@ INSERT INTO `servers` VALUES
 (25,5,NULL,'mail',NULL,NULL,100,0,0,1,NULL);
 
 INSERT INTO `servers_groups` VALUES
-(1,'Сервера Web хостинга','random',NULL),
-(2,'Сервера MySQL хостинга','random',NULL),
-(3,'Сервера Mail хостинга','random',NULL),
-(4,'Сервера DNS','random',NULL),
-(5,'Сервис email уведомлений','random',NULL);
+(1,'Сервера Web хостинга','ssh','random',NULL),
+(2,'Сервера MySQL хостинга','ssh','random',NULL),
+(3,'Сервера Mail хостинга','ssh','random',NULL),
+(4,'Сервера DNS','ssh','random',NULL),
+(5,'Сервис email уведомлений','mail','random',NULL);
 
 INSERT INTO `services` VALUES
 (1,'Тариф \"Почтовый\" (${QUOTA} мб)',75,0,'web_tariff_lock',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
