@@ -394,4 +394,16 @@ sub list_for_api {
     return scalar $self->get;
 }
 
+sub server {
+    my $self = shift;
+
+    my $server_id = $self->settings->{server_id};
+    return undef unless $server_id;
+
+    my $server = get_service('server', _id => $server_id );
+    return undef unless $server;
+
+    return $server;
+}
+
 1;
