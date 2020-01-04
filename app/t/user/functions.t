@@ -54,4 +54,9 @@ subtest 'Try payment' => sub {
     $spool->_delete();
 };
 
+my %profile = $user->profile;
+
+is $profile{email}, 'email@domain.ru', 'Check user profile';
+is scalar $user->emails, 1, 'Check user email';
+
 done_testing();

@@ -250,5 +250,26 @@ sub list_for_api {
     return @arr;
 }
 
+sub profile {
+    my $self = shift;
+
+    my $profile = get_service("profile");
+    my ( $item ) = $profile->list(
+        user_id => get_service('user')->id,
+        limit => 1,
+    );
+
+    return %{ $item->{data} || {} };
+}
+
+sub emails {
+    my $self = shift;
+
+    my %profile = $self->profile;
+    my @emails = $profile{email};
+
+    return @emails;
+}
+
 1;
 

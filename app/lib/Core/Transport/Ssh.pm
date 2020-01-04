@@ -15,25 +15,13 @@ use POSIX 'setsid';
 sub send {
     my $self = shift;
     my $task = shift;
-    my %args = (
-        server_id => undef, # for autoload server
-        event => {},
-        port => 22,
-        timeout => 10,
-        payload => undef,
-        cmd => undef,
-        @_,
-    );
 
-    my %server = (
-        $task->server->get,
-        map( $args{$_} ? ($_ => $args{$_}) : (), keys %args ),
-    );
+    my %server = $task->server->get;
 
     my $parser = get_service('parser');
 
     my $cmd = $parser->parse(
-        $args{cmd} || $task->event->{params}->{cmd},
+        $task->event->{params}->{cmd},
         $task->params->{user_service_id} ? ( usi => $task->params->{user_service_id} ) : (),
     );
     my $stdin_data = $parser->parse( $task->event->{params}->{stdin} || $server{params}->{payload} );
