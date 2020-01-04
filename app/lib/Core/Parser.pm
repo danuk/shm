@@ -16,10 +16,10 @@ sub parse {
 
     if ( ref $string eq 'ARRAY' ) {
         for ( 0 .. scalar @{ $string } ) {
-            $string->[ $_ ] =~s/\{\{\s*([A-Z0-9._]+(\([\w\d]*\))?)\s*\}\}/$self->eval_var($1, %args)/gei;
+            $string->[ $_ ] =~s/\{\{\s*(.+?)\s*\}\}/$self->eval_var($1, %args)/gei;
         }
     } else {
-        $string =~s/\{\{\s*([A-Z0-9._]+(\([\w\d]*\))?)\s*\}\}/$self->eval_var($1, %args)/gei;
+        $string =~s/\{\{\s*(.+?)\s*\}\}/$self->eval_var($1, %args)/gei;
     }
     return $string;
 }
