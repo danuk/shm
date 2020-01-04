@@ -16,5 +16,22 @@ sub structure {
     }
 }
 
+sub parsed {
+    my $self = shift;
+    my %args = (
+        usi => undef,
+        @_,
+    );
+
+    my $data = $self->get->{data} || return '';
+
+    my $parser = get_service("parser");
+
+    return $parser->parse(
+        $data,
+        %args,
+    );
+
+}
 
 1;
