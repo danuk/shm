@@ -13,7 +13,7 @@ sub structure {
         title => '?',
         name => '?',       # create,block,unblock...
         server_gid => '?',  # Group_id of servers
-        params => { type => 'json', value => undef },
+        settings => { type => 'json', value => undef },
     }
 }
 
@@ -30,7 +30,7 @@ sub get_events {
         where => {
             $args{kind} ? ( kind => $args{kind} ) : (),
             $args{name} ? ( name => $args{name} ) : (),
-            $args{category} ? ( 'params->category' => $args{category} ) : (),
+            $args{category} ? ( 'settings->category' => $args{category} ) : (),
         },
     );
     return wantarray ? @res : \@res;

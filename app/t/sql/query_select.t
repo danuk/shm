@@ -158,8 +158,8 @@ is query_select(
     table => 'test',
     user_id => 123,
     where => {
-        'params->cmd' => 1,
+        'settings->cmd' => 1,
     },
-), q/SELECT * FROM test WHERE ( ( user_id = ? AND params->'$.cmd' = ? ) )/;
+), q/SELECT * FROM test WHERE ( ( user_id = ? AND settings->'$.cmd' = ? ) )/;
 
 done_testing();

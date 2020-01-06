@@ -41,7 +41,7 @@ subtest 'Try payment' => sub {
           user_id => 40092,
           status => 'NEW',
           event => {
-              params => {
+              settings => {
                   kind => 'UserService',
                   method => 'activate_services'
               },

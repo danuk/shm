@@ -8,7 +8,7 @@ my $user = SHM->new();
 my %in = parse_args();
 
 sub usage {
-	print_json( {status => 400, msg => "Use 'action' and 'usi' params"} );
+	print_json( {status => 400, msg => "Use 'action' and 'usi' settings"} );
     exit 1;
 }
 

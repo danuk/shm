@@ -204,15 +204,15 @@ sub convert_sql_structure_data {
 sub clean_query_args {
     my $self = shift;
     my $args = shift;
-    my $params = shift || {};
+    my $settings = shift || {};
 
-    $params->{is_update}||=0;
+    $settings->{is_update}||=0;
 
     if ( $self->can( 'structure' ) ) {
         my %structure = %{ $self->structure };
 
         # Удаляем мусор из структуры для UPDATE
-        unless ( $params->{is_list} ) {
+        unless ( $settings->{is_list} ) {
             for my $k ( keys %{ $args } ) {
                 next if $k eq 'where';
                 unless ( exists $structure{ $k } ) {
@@ -225,7 +225,7 @@ sub clean_query_args {
         while ( my( $f, $v ) = each %structure ) {
             $v = $v->{value} if ref $v eq 'HASH';
             if ( $v eq '@' ) {
-                if ( $params->{is_update} ) {
+                if ( $settings->{is_update} ) {
                     unless ( $args->{where}{ $f } ) {
                         # Добавляем во WHERE ключевое поле
                         if ( exists $self->{ $f } ) {
@@ -244,7 +244,7 @@ sub clean_query_args {
                 next; # ключ обработан, идём дальше
             }
 
-            if ( $params->{is_list} ) {
+            if ( $settings->{is_list} ) {
                 if ( $v eq '!' ) { # получаем автоматически
                     if ( exists $self->{ $f } ) {
                         $args->{ $f } = $self->{ $f };
@@ -256,7 +256,7 @@ sub clean_query_args {
                 next;
             }
 
-            next if $params->{is_update};
+            next if $settings->{is_update};
             # Below rules only for insert
 
             if ( $v eq '!' ) { # получаем автоматически

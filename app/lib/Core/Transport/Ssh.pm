@@ -21,13 +21,13 @@ sub send {
     my $parser = get_service('parser');
 
     my $cmd = $parser->parse(
-        $task->event->{params}->{cmd},
-        $task->params->{user_service_id} ? ( usi => $task->params->{user_service_id} ) : (),
+        $task->event->{settings}->{cmd},
+        $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
     );
-    my $stdin_data = $parser->parse( $task->event->{params}->{stdin} || $server{params}->{payload} );
+    my $stdin_data = $parser->parse( $task->event->{settings}->{stdin} || $server{settings}->{payload} );
 
     return $self->exec(
-        %{ $server{params} || () },
+        %{ $server{settings} || () },
         host => $server{host},
         key_id => $task->server->key_id,
         cmd => $cmd,

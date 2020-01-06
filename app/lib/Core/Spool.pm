@@ -21,7 +21,7 @@ sub structure {
         created => 'now',   # дата создания задачи
         executed => undef,  # дата и время последнего выполнения
         delayed => 0,       # задерка в секундах
-        params => { type => 'json', value => undef },
+        settings => { type => 'json', value => undef },
     }
 }
 
@@ -74,7 +74,7 @@ sub process_one {
             return TASK_STUCK, {};
         }
 
-        $task->{params}->{server_id} = $servers[0]->{server_id};
+        $task->{settings}->{server_id} = $servers[0]->{server_id};
 
         if ( scalar @servers > 1 ) {
             # TODO: create new tasks for all servers
@@ -126,8 +126,8 @@ sub finish_task {
     );
 
     if ( $args{status} ne TASK_SUCCESS ) {
-        if ( $self->params->{user_service_id} ) {
-            if ( my $us = get_service('us', _id => $self->params->{user_service_id} ) ) {
+        if ( $self->settings->{user_service_id} ) {
+            if ( my $us = get_service('us', _id => $self->settings->{user_service_id} ) ) {
                 $us->set( status => STATUS_ERROR );
             }
         }
@@ -159,19 +159,19 @@ sub manual_retry {
     my $self = shift;
     my %args = (
         event => undef,
-        params => undef,
+        settings => undef,
         @_,
     );
 
     $self->set(
         event => $args{event},
-        params => $args{params},
+        settings => $args{settings},
         status => TASK_NEW,
         executed => undef,
         delayed => 0,
     ) if $args{event};
 
-    if ( my $usi = $self->params->{user_service_id} ) {
+    if ( my $usi = $self->settings->{user_service_id} ) {
         if ( my $us = get_service('us', _id => $usi ) ) {
             $us->set( status => STATUS_PROGRESS );
         }

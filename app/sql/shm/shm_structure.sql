@@ -31,7 +31,7 @@ CREATE TABLE `apps` (
   `user_service_id` int(11) NOT NULL,
   `name` char(16) NOT NULL,
   `domain_id` int(11) DEFAULT NULL,
-  `params` json DEFAULT NULL,
+  `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -106,7 +106,7 @@ DROP TABLE IF EXISTS `pay_systems`;
 CREATE TABLE `pay_systems` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` char(255) DEFAULT NULL,
-  `params` json DEFAULT NULL,
+  `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -122,7 +122,7 @@ CREATE TABLE `servers` (
   `success_count` int(11) NOT NULL DEFAULT '0',
   `fail_count` int(11) NOT NULL DEFAULT '0',
   `enabled` int(1) NOT NULL DEFAULT '1',
-  `params` json DEFAULT NULL,
+  `settings` json DEFAULT NULL,
   PRIMARY KEY (`server_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -132,7 +132,7 @@ CREATE TABLE `servers_groups` (
   `name` char(255) DEFAULT NULL,
   `transport` char(32) NOT NULL DEFAULT 'ssh',
   `type` char(16) NOT NULL DEFAULT 'random',
-  `params` json DEFAULT NULL,
+  `settings` json DEFAULT NULL,
   PRIMARY KEY (`group_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -162,7 +162,7 @@ CREATE TABLE `events` (
   `title` char(128) NOT NULL,
   `name` char(16) NOT NULL,
   `server_gid` int(11) DEFAULT NULL,
-  `params` json DEFAULT NULL,
+  `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -177,7 +177,7 @@ CREATE TABLE `spool` (
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
-  `params` json DEFAULT NULL,
+  `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -193,7 +193,7 @@ CREATE TABLE `spool_history` (
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
-  `params` json DEFAULT NULL,
+  `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 

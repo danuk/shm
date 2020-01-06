@@ -35,7 +35,7 @@ sub eval_var {
     my $usi = get_service('us', _id => $args{usi} ) if $args{usi};
     $self->{us} = $usi;
 
-    my %params = (
+    my %settings = (
         user =>         'get_service("user")',
         id =>           '$usi->id',
         us =>           '$usi',
@@ -55,7 +55,7 @@ sub eval_var {
         $main_args = '('.$1.')';
     }
 
-    my $obj = $params{ lc( $main_param ) };
+    my $obj = $settings{ lc( $main_param ) };
     return $main_param unless $obj;
 
     my $var = eval( $obj.$main_args );

@@ -14,8 +14,8 @@ our %in = parse_args();
 my $ssh = get_service( 'Transport::Ssh' );
 
 my $parser = get_service('parser');
-my $cmd = $in{params}{cmd} || $in{cmd} || 'uname -a';
-$cmd = $parser->parse( $cmd, usi => $in{params}{usi} || $in{usi} );
+my $cmd = $in{settings}{cmd} || $in{cmd} || 'uname -a';
+$cmd = $parser->parse( $cmd, usi => $in{settings}{usi} || $in{usi} );
 
 my $pipeline_id = get_service('console')->new_pipe;
 
@@ -25,7 +25,7 @@ my (undef, $res ) = $ssh->exec(
     key_id => 1,
     wait => $in{wait} || 0,
     pipeline_id => $pipeline_id,
-    %{ $in{params} || {} },
+    %{ $in{settings} || {} },
 );
 
 print_header();

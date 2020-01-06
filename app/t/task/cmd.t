@@ -17,12 +17,12 @@ my $t = get_service('Task')->res({
     event => {
         kind => 'user_service',
         name => 'update',
-        params => {
+        settings => {
             category => 'dns',
             cmd => 'dns update',
         },
     },
-    params => {
+    settings => {
         user_service_id => 16,
         server_id => 1,
     },

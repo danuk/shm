@@ -12,7 +12,7 @@ sub structure {
         name => undef,
         type => 'random',   # способ выборки серверов из группы
         transport => 'ssh',
-        params => undef,
+        settings => undef,
     }
 }
 

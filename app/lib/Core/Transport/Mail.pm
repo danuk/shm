@@ -15,18 +15,18 @@ sub send {
     my $task = shift;
 
     my %server = $task->server->get;
-    my $params = $task->event->{params};
+    my $settings = $task->event->{settings};
 
     my $config = get_service("config");
 
-    my $from = $params->{mail_from} || $config->{mail_from};
+    my $from = $settings->{mail_from} || $config->{mail_from};
     unless ( $from ) {
         return FAIL, {
             error => "From undefined",
         }
     }
 
-    unless ( $params->{subject} ) {
+    unless ( $settings->{subject} ) {
         return FAIL, {
             error => "Subject undefined",
         }
@@ -39,7 +39,7 @@ sub send {
         }
     }
 
-    my $template_id = $params->{template_id};
+    my $template_id = $settings->{template_id};
     unless ( $template_id ) {
         return FAIL, {
             error => "template_id undefined",
@@ -54,7 +54,7 @@ sub send {
     }
 
     my $message = $template->parsed(
-        $task->params->{user_service_id} ? ( usi => $task->params->{user_service_id} ) : (),
+        $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
     );
 
     return $self->send_mail(
@@ -64,7 +64,7 @@ sub send {
         subject => '',
         message => $message,
         template_id => $template_id,
-        %{ $params || {} },
+        %{ $settings || {} },
     );
 }
 

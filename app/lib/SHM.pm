@@ -135,7 +135,7 @@ sub print_not_authorized {
 sub print_header {
     return if $is_header;
 
-    my %params = (
+    my %settings = (
         status => 200,
         type => 'application/json',
         charset => 'utf8',
@@ -144,7 +144,7 @@ sub print_header {
         @_,
     );
 
-    print $cgi->header( map +( "-$_" => $params{$_} ), keys %params );
+    print $cgi->header( map +( "-$_" => $settings{$_} ), keys %settings );
     $is_header = 1;
 }
 

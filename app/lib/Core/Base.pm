@@ -160,13 +160,13 @@ sub make_event {
     return get_service('Events')->make( %args );
 }
 
-sub list_by_params {
+sub list_by_settings {
     my $self = shift;
     my %args = (
         @_,
     );
 
-    $args{ "params->$_" } = delete $args{ $_ } for keys %args;
+    $args{ "settings->$_" } = delete $args{ $_ } for keys %args;
 
     return $self->list(
         where => \%args,

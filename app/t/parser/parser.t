@@ -36,7 +36,7 @@ is $p->eval_var( "us.parent.settings.quota", usi => 100 ), 10000;
 
 is $p->eval_var( "us.child_by_category('web').id", usi => 99 ), 101;
 is $p->eval_var( "child('web').id", usi => 99 ), 101;
-is $p->eval_var( "child('web').server.params.host_name", usi => 99 ), 'host1.domain.ru';
+is $p->eval_var( "child('web').server.settings.host_name", usi => 99 ), 'host1.domain.ru';
 
 subtest 'Test gen_store_pass()' => sub {
     my $pass = $p->eval_var( "us.parent.gen_store_pass(5)", usi => 100 );

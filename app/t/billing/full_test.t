@@ -57,7 +57,7 @@ subtest 'Check create service' => sub {
         event => {
             id => ignore(),
             server_gid => 1,
-            params => {
+            settings => {
                 category => 'mysql',
                 cmd => 'mysql create -a b_{{id}} -b {{us.settings.db.0.name}} -u {{us.settings.db.0.login}} -p {{us.settings.db.0.password}}'
             },
@@ -65,7 +65,7 @@ subtest 'Check create service' => sub {
             title => 'Create mysql',
             kind => 'user_service'
         },
-        params => {
+        settings => {
             user_service_id => $ch_by_service->{29}->{user_service_id},
             server_gid => 1
         },

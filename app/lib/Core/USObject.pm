@@ -230,7 +230,7 @@ sub make_commands_by_event {
         for ( @commands ) {
             $self->spool->add(
                 event => $_,
-                params => {
+                settings => {
                     exists $self->settings->{server_id} ?
                         ( server_id => $self->settings->{server_id} ) :
                         ( server_gid => $_->{server_gid} ),
@@ -264,7 +264,7 @@ sub event {
 sub spool_commands {
     my $self = shift;
 
-    my @arr = $self->spool->list_by_params( user_service_id => $self->id );
+    my @arr = $self->spool->list_by_settings( user_service_id => $self->id );
     return \@arr;
 }
 
@@ -275,7 +275,7 @@ sub spool_exists_command {
         @_,
     );
 
-    my ( $command ) = $self->spool->list_by_params( %args );
+    my ( $command ) = $self->spool->list_by_settings( %args );
     return $command ? 1 : 0;
 }
 

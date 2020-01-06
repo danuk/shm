@@ -10,9 +10,9 @@ sub task {
     return $self->res;
 }
 
-sub params {
+sub settings {
     my $self = shift;
-    return $self->res->{params} || {};
+    return $self->res->{settings} || {};
 }
 
 sub event {
@@ -20,10 +20,10 @@ sub event {
     return $self->res->{event};
 }
 
-sub event_params {
+sub event_settings {
     my $self = shift;
 
-    return $self->event ? $self->event->{params} : {};
+    return $self->event ? $self->event->{settings} : {};
 }
 
 sub payload {
@@ -44,10 +44,10 @@ sub make_task {
 
     my $transport = $self->transport;
     unless ( $transport ) {
-        if ( my $method = $self->event_params->{method} ) {
+        if ( my $method = $self->event_settings->{method} ) {
             my $kind = $self;
-            if ( $self->event_params->{kind} ) {
-                $kind = get_service( $self->event_params->{kind} );
+            if ( $self->event_settings->{kind} ) {
+                $kind = get_service( $self->event_settings->{kind} );
             }
 
             if ( $kind->can( $method ) ) {
@@ -77,10 +77,10 @@ sub make_task {
             }
         }
 
-        if ( $self->params->{user_service_id} ) {
-            my $us = get_service('us', _id => $self->params->{user_service_id} );
+        if ( $self->settings->{user_service_id} ) {
+            my $us = get_service('us', _id => $self->settings->{user_service_id} );
             $us->set(
-                settings => { server_id => $self->params->{server_id} },
+                settings => { server_id => $self->settings->{server_id} },
             );
             $us->set_status_by_event( $self->event->{name} );
         }
@@ -91,7 +91,7 @@ sub make_task {
 
 sub cmd {
     my $self = shift;
-    my $cmd = $self->event_params->{cmd} || $self->server->get->{params}->{cmd};
+    my $cmd = $self->event_settings->{cmd} || $self->server->get->{settings}->{cmd};
     return undef unless $cmd;
 }
 
@@ -110,9 +110,9 @@ sub task_answer {
 sub server {
     my $self = shift;
 
-    return undef unless $self->params->{server_id};
+    return undef unless $self->settings->{server_id};
 
-    if ( my $server = get_service('Server', _id => $self->params->{server_id} ) ) {
+    if ( my $server = get_service('Server', _id => $self->settings->{server_id} ) ) {
         return $server;
     }
     return undef;
@@ -121,8 +121,8 @@ sub server {
 sub transport_name {
     my $self = shift;
 
-    if ( $self->event_params->{transport} ) {
-        return $self->event_params->{transport};
+    if ( $self->event_settings->{transport} ) {
+        return $self->event_settings->{transport};
     } elsif ( my $server = $self->server ) {
         return $server->get->{transport} || undef;
     }
@@ -133,7 +133,7 @@ sub transport_name {
 sub transport {
     my $self = shift;
 
-    return undef unless $self->params->{server_id};
+    return undef unless $self->settings->{server_id};
     return undef unless $self->transport_name;
     return get_service( 'Transport::' . ucfirst( $self->transport_name ) );
 }
@@ -141,8 +141,8 @@ sub transport {
 sub get_service_for_transport {
     my $self = shift;
 
-    my $service = get_service( 'Services::' . ucfirst( $self->event_params->{category} ), _id => $self->params->{user_service_id} );
-    $service //= get_service( 'USObject', _id => $self->params->{user_service_id} ) if $self->params->{user_service_id};
+    my $service = get_service( 'Services::' . ucfirst( $self->event_settings->{category} ), _id => $self->settings->{user_service_id} );
+    $service //= get_service( 'USObject', _id => $self->settings->{user_service_id} ) if $self->settings->{user_service_id};
 
     return $service || $self;
 }
@@ -151,7 +151,7 @@ sub data_for_transport {
     my $self = shift;
 
     my $service = $self->get_service_for_transport;
-    return $service->data_for_transport( %{ $self->params } );
+    return $service->data_for_transport( %{ $self->settings } );
 }
 
 1;

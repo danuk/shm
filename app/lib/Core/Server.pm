@@ -18,7 +18,7 @@ sub structure {
         success_count => undef,
         fail_count => undef,
         enabled => 1,
-        params => { type => 'json', value => undef },
+        settings => { type => 'json', value => undef },
     }
 }
 
@@ -38,7 +38,7 @@ sub servers_by_group_id {
 sub key_id {
     my $self = shift;
 
-    my $key_id = $self->res->{params}->{key_id};
+    my $key_id = $self->res->{settings}->{key_id};
     return undef unless $key_id;
 }
 

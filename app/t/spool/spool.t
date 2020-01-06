@@ -17,12 +17,12 @@ my $task1 = get_service('spool')->add(
     event => {
         kind => 'user_service',
         name => 'update',
-        params => {
+        settings => {
             category => 'dns',
             cmd => 'dns update',
         },
     },
-    params => {
+    settings => {
         user_service_id => 16,
         server_id => 1,
     },
@@ -32,12 +32,12 @@ my $task2 = get_service('spool')->add(
     event => {
         kind => 'user_service',
         name => 'update',
-        params => {
+        settings => {
             category => 'dns',
             cmd => 'dns update',
         },
     },
-    params => {
+    settings => {
         user_service_id => 16,
         server_id => 162,
     },
@@ -47,12 +47,12 @@ my $task3 = get_service('task')->res({
     event => {
         kind => 'user_service',
         name => 'update',
-        params => {
+        settings => {
             category => 'dns',
             cmd => 'dns update',
         },
     },
-    params => {
+    settings => {
         user_service_id => 16,
         server_id => 1,
     },
