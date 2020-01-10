@@ -22,7 +22,7 @@ CREATE TABLE `acts_data` (
   `start_date` datetime DEFAULT NULL,
   `stop_date` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `apps`;
 CREATE TABLE `apps` (
@@ -69,7 +69,7 @@ CREATE TABLE `domains` (
   `user_service_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`domain_id`),
   UNIQUE KEY `domain` (`domain`)
-) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `domains_services`;
 CREATE TABLE `domains_services` (
@@ -79,7 +79,7 @@ CREATE TABLE `domains_services` (
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `domain_service_id` (`domain_id`,`user_service_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `invoices`;
 CREATE TABLE `invoices` (
@@ -89,7 +89,7 @@ CREATE TABLE `invoices` (
   `total` decimal(10,2) DEFAULT '0.00',
   `text` char(128) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `pays_history`;
 CREATE TABLE `pays_history` (
@@ -100,7 +100,7 @@ CREATE TABLE `pays_history` (
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `comment` char(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `pay_systems`;
 CREATE TABLE `pay_systems` (
@@ -108,7 +108,7 @@ CREATE TABLE `pay_systems` (
   `name` char(255) DEFAULT NULL,
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `servers`;
 CREATE TABLE `servers` (
@@ -124,7 +124,7 @@ CREATE TABLE `servers` (
   `enabled` int(1) NOT NULL DEFAULT '1',
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`server_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `servers_groups`;
 CREATE TABLE `servers_groups` (
@@ -134,7 +134,7 @@ CREATE TABLE `servers_groups` (
   `type` char(16) NOT NULL DEFAULT 'random',
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`group_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `services`;
 CREATE TABLE `services` (

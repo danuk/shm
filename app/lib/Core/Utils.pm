@@ -19,6 +19,7 @@ our @EXPORT_OK = qw(
     http_content_range
     now
     parse_args
+    parse_headers
     string_to_utime
     utime_to_string
     decode_json
@@ -121,6 +122,13 @@ sub get_uri_args {
         %in = $q->Vars;
     }
     return %in;
+}
+
+sub parse_headers {
+    my $cgi = CGI->new;
+    my %headers = map { $_ => $cgi->http($_) } $cgi->http();
+
+    return %headers;
 }
 
 sub parse_args {

@@ -5,6 +5,7 @@ package SHM;
 # mail@danuk.ru
 use v5.14;
 use Carp qw(confess);
+use CGI::Carp qw(fatalsToBrowser);
 
 use CGI;
 use CGI::Cookie;
@@ -14,7 +15,7 @@ use JSON;
 use Core::System::ServiceManager qw( get_service );
 use Core::Sql::Data;
 use Scalar::Util qw(blessed);
-use Core::Utils qw(force_numbers switch_user);
+use Core::Utils qw(force_numbers switch_user parse_headers);
 
 use base qw(Exporter);
 
@@ -67,32 +68,36 @@ sub new {
     $args->{user_id} ||= $ENV{USER_ID};
 
     my $user_id;
+    my %headers = parse_headers;
+
+    if ( $headers{HTTP_TEST} ) {
+        $ENV{SHM_TEST} = 1;
+    }
 
     if ( $args->{user_id} ) {
         $user_id = $args->{user_id};
+        switch_user( $user_id );
+    } elsif ( $headers{HTTP_LOGIN} && $headers{HTTP_PASSWORD} ) {
+        db_connect();
+        my $user = get_service('user');
+        $user = $user->auth(
+            login => $headers{HTTP_LOGIN},
+            password => $headers{HTTP_PASSWORD},
+        );
+        unless ( $user ) {
+            print_json( { status => 401, msg => 'Incorrect login or password' } );
+            exit 0;
+        }
     } elsif ( !$args->{skip_check_auth} ) {
         my $session = validate_session();
         print_not_authorized() unless $session;
         $user_id = $session->get('user_id');
+        switch_user( $user_id );
     }
 
-    my $config = get_service('config');
+    db_connect;
 
-    # Connect to db
-    my $dbh = Core::Sql::Data::db_connect( %{ $config->file->{config}{database} } );
-    unless ( $dbh ) {
-        print_header( status => 503 );
-        print_json( { status => 503, msg=> "Can't connect to DB" } );
-        exit 1;
-    }
-
-    $config->local('dbh', $dbh );
-
-    switch_user( $user_id );
     my $user = get_service('user');
-    unless ( $user ) {
-        print_not_authorized();
-    }
 
     if ($0=~/\/(admin)\// && $user->get_gid != 1 ) {
             print_header( status => 403 );
@@ -103,6 +108,20 @@ sub new {
     return $user;
 }
 
+sub db_connect {
+    my $config = get_service('config');
+
+    # Connect to db
+    my $dbh = Core::Sql::Data::db_connect( %{ $config->file->{config}{database} } );
+
+    unless ( $dbh ) {
+        print_header( status => 503 );
+        print_json( { status => 503, msg => "Can't connect to DB" } );
+        exit 0;
+    }
+
+    $config->local('dbh', $dbh );
+}
 
 sub validate_session {
     my $update_time = shift || 1;
