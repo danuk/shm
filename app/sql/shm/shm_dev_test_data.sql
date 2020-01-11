@@ -304,7 +304,7 @@ INSERT INTO `profiles` VALUES
 ;
 
 INSERT INTO `config` VALUES
-(1,'company_name','My Company LTD')
-;
+(1,'company_name','My Company LTD'),
+(2,'shm_url','http://admin.local');
 
 COMMIT;
