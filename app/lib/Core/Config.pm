@@ -39,5 +39,15 @@ sub local {
     return $self->{config}->{local}->{ $section };
 }
 
+sub data_by_name {
+    my $self = shift;
+
+    my @list = $self->list;
+
+    my %ret = map{ $_->{name} => $_->{data} } @list;
+
+    return \%ret;
+}
+
 1;
 

@@ -17,7 +17,7 @@ sub send {
     my %server = $task->server->get;
     my $settings = $task->event->{settings};
 
-    my $config = get_service("config");
+    my $config = get_service("config")->data_by_name;
 
     my $from = $settings->{mail_from} || $config->{mail_from};
     unless ( $from ) {
@@ -26,15 +26,11 @@ sub send {
         }
     }
 
-    unless ( $settings->{subject} ) {
-        return FAIL, {
-            error => "Subject undefined",
-        }
-    }
+    $settings->{subject} //= "Mail from: $config->{company_name}";
 
     my ( $to ) = get_service('user')->emails;
     unless ( $to ) {
-        return FAIL, {
+        return SUCCESS, {
             error => "User email undefined",
         }
     }

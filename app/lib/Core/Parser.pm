@@ -46,6 +46,7 @@ sub eval_var {
         domain_idn =>   'get_service("domain")->get_domain( user_service_id => $usi->id )->domain',
         passgen =>      'passgen',
         child =>        '$self->child',
+        config =>       'get_service("config")->data_by_name',
     );
 
     my ( $main_param, @md ) = split(/\./, $param );
