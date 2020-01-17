@@ -17,7 +17,7 @@ else
     # Create SHM database structure and fill data
     sudo --preserve-env=PERL5LIB -u nginx /app/bin/init.pl
 
-    /etc/init.d/nginx start
     /etc/init.d/fcgiwrap start
+    nginx -g 'daemon off;'
 fi
 
