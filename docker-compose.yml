@@ -14,6 +14,19 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+  spool:
+    image: "danuk/shm:latest"
+    restart: always
+    environment:
+      SHM_ROLE: "spool"
+      DB_NAME: shm
+      DB_USER: shm
+      DB_PASS: quu4QuoSat
+      DB_HOST: mysql
+      DB_PORT: 3306
+    depends_on:
+      mysql:
+        condition: service_healthy
   admin:
     image: "danuk/shm-admin:latest"
     restart: always

@@ -10,12 +10,14 @@ DB_PORT=${DB_PORT}
 DB_NAME=${DB_NAME}
 EOF
 
-# Create SHM database structure and fill data
-sudo --preserve-env=PERL5LIB -u nginx /app/bin/init.pl
+if [ "${SHM_ROLE}" = "spool" ]; then
+    # Start SHM spool daemon
+    sudo --preserve-env=PERL5LIB -u nginx /app/bin/spool.pl
+else
+    # Create SHM database structure and fill data
+    sudo --preserve-env=PERL5LIB -u nginx /app/bin/init.pl
 
-/etc/init.d/nginx start
-/etc/init.d/fcgiwrap start
-
-# Start SHM spool daemon
-sudo --preserve-env=PERL5LIB -u nginx /app/bin/spool.pl
+    /etc/init.d/nginx start
+    /etc/init.d/fcgiwrap start
+fi
 
