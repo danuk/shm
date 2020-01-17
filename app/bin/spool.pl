@@ -3,14 +3,25 @@
 use v5.14;
 use SHM;
 use Core::System::ServiceManager qw( get_service );
-use Data::Dumper;
+use Core::Utils qw/to_json/;
 
 SHM->new( skip_check_auth => 1 );
 
 my $spool = get_service('spool');
+my ($status, $task, $info );
+
+say "SHM spool started at: " . localtime;
 
 for (;;) {
-    while ( $spool->process_one() ) {};
+    do {
+        ($status, $task, $info ) = $spool->process_one();
+
+        if ( defined $task ) {
+            $task->{status} //= $status;
+            say to_json( $task, {pretty => 1} );
+        }
+    } while defined $task;
+
     $spool->{spool} = undef;
     sleep 2;
 }

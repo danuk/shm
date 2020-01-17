@@ -54,10 +54,11 @@ sub process_one {
     my $self = shift;
 
     $self->{spool}//= [ $self->list_for_all_users() ];
-    my $task = shift @{ $self->{spool}//=[] } or return undef;
+    my $task = shift @{ $self->{spool}//=[] } or
+        return undef, undef, undef;
 
     if ( $task->{status} eq TASK_STUCK ) {
-        return TASK_STUCK, error => 'Task stuck. Skip.';
+        return TASK_STUCK, $task, { error => 'Task stuck. Skip.' };
     }
 
     switch_user( $task->{user_id } );
@@ -71,7 +72,7 @@ sub process_one {
                 status => TASK_STUCK,
                 response => { error => "Can't found servers for group" },
             );
-            return TASK_STUCK, {};
+            return TASK_STUCK, $task, {};
         }
 
         $task->{settings}->{server_id} = $servers[0]->{server_id};
@@ -108,9 +109,7 @@ sub process_one {
         $spool->set( status => $status );
     }
 
-    #TODO: destroy spool object
-
-    return $status, $info;
+    return $status, $task, $info;
 }
 
 sub finish_task {
