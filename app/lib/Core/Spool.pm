@@ -148,7 +148,7 @@ sub retry_task {
         %args,
         status => $args{status},
         executed => now,
-        delayed => ( $self->res->{delayed}||=1 * 5 ),
+        delayed => ( ($self->res->{delayed}||=1) * 5 ),
     );
 
     $self->write_history;
