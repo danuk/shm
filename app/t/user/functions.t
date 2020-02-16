@@ -3,7 +3,6 @@ use v5.14;
 use Test::More;
 use Test::Deep;
 use Data::Dumper;
-use Core::Billing;
 
 $ENV{SHM_TEST} = 1;
 

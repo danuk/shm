@@ -81,7 +81,7 @@ subtest 'Check create service' => sub {
 Test::MockTime::set_fixed_time('2017-01-15T05:06:13Z');
 
 subtest 'Half month later. Try prolongate service' => sub {
-    my $ret = process_service_recursive( $us );
+    my $ret = $us->touch();
 
     is( $us->get_expired, '2017-01-31 23:59:59', 'Check expired date after not prolongate' );
     is( $user->get_balance, 1000, 'Check user balance after withdraw');
@@ -97,7 +97,7 @@ subtest 'Half month later. Try prolongate service' => sub {
 Test::MockTime::set_fixed_time('2017-02-01T13:14:01Z');
 
 subtest 'One month later. Prolongate service' => sub {
-    my $ret = process_service_recursive( $us );
+    my $ret = $us->touch();
 
     is( $us->get_expired, '2017-02-28 23:59:57', 'Check expired date after prolongate' );
     is( $user->get_balance, 0, 'Check user balance after withdraw');
@@ -151,7 +151,7 @@ subtest 'One month later. Prolongate service' => sub {
 Test::MockTime::set_fixed_time('2017-03-01T00:00:00Z');
 
 subtest 'Try prolongate service without have money' => sub {
-    my $ret = process_service_recursive( $us );
+    my $ret = $us->touch();
 
     is( $us->get_expired, '2017-02-28 23:59:57', 'Check expired date after prolongate' );
     is( $user->get_balance, 0, 'Check user balance');
@@ -196,7 +196,7 @@ subtest 'Try prolongate service without have money' => sub {
 };
 
 subtest 'Try prolongate blocked service without have money' => sub {
-    my $ret = process_service_recursive( $us );
+    my $ret = $us->touch();
 
     cmp_deeply( chldrn_by_service( $us ), {
         5 => superhashof( { status => STATUS_BLOCK } ),
@@ -216,7 +216,7 @@ Test::MockTime::set_fixed_time('2017-03-02T12:00:00Z');
 subtest 'Try prolongate blocked service' => sub {
     $user->set( balance => 1000.03, credit => 0, discount => 0 );
     my $withdraw_id = $us->get_withdraw_id;
-    process_service_recursive( $us );
+    $us->touch();
 
     is( int($withdraw_id==$us->get_withdraw_id), 1, 'Check use current withdraw (no create new)' );
 
@@ -301,7 +301,7 @@ subtest 'Check create service without money' => sub {
     is ( scalar @spool_list, 0, 'Check count spool commands' );
 
     $user->set( balance => 1000, credit => 0, discount => 0 );
-    process_service_recursive( $us );
+    $us->touch();
     proccess_spool();
 
     is( $us->get_status, STATUS_ACTIVE, 'Check status of non payment service after payment' );

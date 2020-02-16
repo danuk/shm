@@ -5,7 +5,6 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
 use Core::USObject;
-use Core::Billing qw(process_service_recursive);
 use Core::Utils qw( decode_json force_numbers now );
 
 sub table { return Core::USObject->table }
@@ -354,9 +353,7 @@ sub activate_services {
     );
 
     for ( @list ) {
-        Core::Billing::process_service_recursive(
-            get_service('USObject', _id => $_->{user_service_id})
-        );
+        get_service('USObject', _id => $_->{user_service_id})->touch;
     }
 }
 
