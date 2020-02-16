@@ -53,7 +53,7 @@ sub create_service {
     my $us = get_service('UserService')->add( %args );
 
     my $wd_id = get_service('wd')->add(
-        calc_withdraw( $service->get, %args ),
+        calc_withdraw( $us->billing, $service->get, %args ),
         user_service_id => $us->id,
     );
     $us->set( withdraw_id => $wd_id );
@@ -146,6 +146,7 @@ sub add_withdraw_next {
     my $wd = $self->withdraws->get;
 
     my %wd = calc_withdraw(
+        $self->billing,
         %{ $wd },
         months => int $wd->{months},
         bonus => 0,
@@ -157,6 +158,7 @@ sub add_withdraw_next {
 # Вычисляет итоговую стоимость услуги
 # на вход принимает все аргументы списания
 sub calc_withdraw {
+    my $billing = shift;
     my %wd = (
         cost => undef,
         months => 1,
@@ -169,12 +171,12 @@ sub calc_withdraw {
     %wd = ( %service, %wd );
 
     $wd{withdraw_date}||= now;
-    $wd{end_date} = calc_end_date_by_months( $wd{withdraw_date}, $wd{months} );
+    $wd{end_date} = calc_end_date_by_months( $billing, $wd{withdraw_date}, $wd{months} );
 
     if ( $wd{months} == $wd{period_cost} ) {
         $wd{total} = $wd{cost};
     } else {
-        $wd{total} = calc_total_by_date_range( %wd )->{total};
+        $wd{total} = calc_total_by_date_range( $billing, %wd )->{total};
     }
 
     $wd{discount} = get_service_discount( %wd );
@@ -230,7 +232,7 @@ sub set_service_expire {
         $now = $self->get_expired;
     }
 
-    my $expire_date = calc_end_date_by_months( $now, $wd->{months} );
+    my $expire_date = calc_end_date_by_months( $self->billing, $now, $wd->{months} );
 
     #if ( $config->{child_expired_by_parent} {
     #if ( my $parent_expire_date = parent_has_expired( $self ) ) {
@@ -370,6 +372,7 @@ sub money_back {
     return undef if $wd{create_date} gt $date;
 
     my $ret = calc_total_by_date_range(
+        $self->billing,
         %wd,
         end_date => $date,
     );
@@ -389,12 +392,10 @@ sub money_back {
     return $delta;
 }
 
-sub billing {
-    return "Honest";
-}
-
 sub calc_end_date_by_months {
-    if ( billing() eq 'Honest' ) {
+    my $billing = shift;
+
+    if ( $billing eq 'Honest' ) {
         return Core::Billing::Honest::calc_end_date_by_months( @_ );
     } else {
         return Core::Billing::Simpler::calc_end_date_by_months( @_ );
@@ -402,7 +403,9 @@ sub calc_end_date_by_months {
 }
 
 sub calc_total_by_date_range {
-    if ( billing() eq 'Honest' ) {
+    my $billing = shift;
+
+    if ( $billing eq 'Honest' ) {
         return Core::Billing::Honest::calc_total_by_date_range( @_ );
     } else {
         return Core::Billing::Simpler::calc_total_by_date_range( @_ );

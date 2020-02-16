@@ -15,6 +15,7 @@ my %wd;
 
 subtest 'Check withdraw domain for one month' => sub {
     %wd = Core::Billing::calc_withdraw(
+        'Honest',
         withdraw_date => '2019-01-01 00:00:00',
         service_id => 11,
         period_cost => 12,
@@ -36,6 +37,7 @@ subtest 'Check withdraw domain for one month' => sub {
 
 subtest 'Check withdraw domain for one year' => sub {
     %wd = Core::Billing::calc_withdraw(
+        'Honest',
         withdraw_date => '2019-01-01 00:00:00',
         service_id => 11,
         cost => 600,
@@ -56,6 +58,7 @@ subtest 'Check withdraw domain for one year' => sub {
 
 subtest 'Check withdraw service for month' => sub {
     %wd = Core::Billing::calc_withdraw(
+        'Honest',
         withdraw_date => '2019-01-01 00:00:00',
         service_id => 1,
         period_cost => 1,
@@ -77,6 +80,7 @@ subtest 'Check withdraw service for month' => sub {
 
 subtest 'Check withdraw service for one day' => sub {
     %wd = Core::Billing::calc_withdraw(
+        'Honest',
         withdraw_date => '2019-01-01 00:00:00',
         service_id => 1,
         cost => 310,
@@ -97,6 +101,7 @@ subtest 'Check withdraw service for one day' => sub {
 
 subtest 'Check withdraw service for two days' => sub {
     %wd = Core::Billing::calc_withdraw(
+        'Honest',
         withdraw_date => '2019-01-01 00:00:00',
         service_id => 1,
         cost => 310,
@@ -117,6 +122,7 @@ subtest 'Check withdraw service for two days' => sub {
 
 subtest 'Check withdraw service for 13 days' => sub {
     %wd = Core::Billing::calc_withdraw(
+        'Honest',
         withdraw_date => '2019-01-01 00:00:00',
         service_id => 1,
         cost => 310,

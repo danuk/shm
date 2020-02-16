@@ -5,6 +5,7 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
 use Core::Utils qw/ now passgen /;
+use Core::Billing;
 
 use vars qw($AUTOLOAD);
 
@@ -200,12 +201,16 @@ sub add_domain {
     return get_service('domain', _id => $args{domain_id} )->add_to_service( user_service_id => $self->id );
 }
 
+sub billing {
+    return "Honest";
+}
+
 # Просмотр/обработка услуг
 sub touch {
     my $self = shift;
     my $e = shift || EVENT_PROLONGATE;
 
-    return $self->Core::Billing::process_service_recursive( $e );
+    return $self->process_service_recursive( $e );
 }
 
 sub get_category {
