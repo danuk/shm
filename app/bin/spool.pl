@@ -5,6 +5,8 @@ use SHM;
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw/to_json/;
 
+$| = 1;
+
 SHM->new( skip_check_auth => 1 );
 
 my $spool = get_service('spool');
