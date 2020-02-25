@@ -224,7 +224,7 @@ sub clean_query_args {
         # Проверяем поля структуры
         while ( my( $f, $v ) = each %structure ) {
             $v = $v->{value} if ref $v eq 'HASH';
-            if ( $v eq '@' ) {
+            if ( $f eq $self->get_table_key() ) {
                 if ( $settings->{is_update} ) {
                     unless ( $args->{where}{ $f } ) {
                         # Добавляем во WHERE ключевое поле
@@ -282,10 +282,17 @@ sub set {
     my $self = shift;
     my %args = ( @_ );
 
+    clean_query_args( $self, \%args, { is_update => 1 } );
+
+    return $self->_set( %args );
+}
+
+sub _set {
+    my $self = shift;
+    my %args = ( @_ );
+
     $args{table} ||= $self->table;
     my $table = delete $args{table};
-
-    clean_query_args( $self, \%args, { is_update => 1 } );
 
     my $sql = SQL::Abstract->new;
     my ( $where, @bind ) = $sql->where( delete $args{where} );
@@ -330,6 +337,16 @@ sub add {
     my $table = delete $args{table};
 
     clean_query_args( $self, \%args );
+
+    return $self->_add( %args );
+}
+
+sub _add {
+    my $self = shift;
+    my %args = ( @_ );
+
+    $args{table}||= $self->table;
+    my $table = delete $args{table};
 
     my $fields = join(',', map( "`$_`", keys %args ) );
     my $values = join(',', map('?',1..scalar( keys %args ) ));
