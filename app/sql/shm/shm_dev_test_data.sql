@@ -304,8 +304,9 @@ INSERT INTO `profiles` VALUES
 ;
 
 INSERT INTO `config` VALUES
-(1,'company_name','My Company LTD'),
-(2,'shm_url','http://admin.local'),
-(3,'mail_from','mail@domain.ru');
+('_version','0.0.3'),
+('company_name','My Company LTD'),
+('shm_url','http://admin.local'),
+('mail_from','mail@domain.ru');
 
 COMMIT;

@@ -9,8 +9,9 @@ INSERT INTO `servers_groups` VALUES
 INSERT INTO `templates` VALUES (1,'web_tariff_create','Создание тарифа хостинга','Здравствуйте {{ user.full_name }}\n\nВы зарегистрировали новую услугу: {{ us.service.name }}\n\nДата истечения услуги: {{ us.expired }}\n\nСтоимость услуги: {{ us.service.cost }} руб.\n\nХостинг сайтов:\nХост: {{ child(\'web\').server.settings.host_name }}\nЛогин: {{ child(\'web\').settings.login }}\nПароль: {{ child(\'web\').settings.password }}\n\nЖелаем успехов.',NULL);
 
 INSERT INTO `config` VALUES
-(1,'company_name','My Company LTD'),
-(2,'shm_url','http://admin.local'),
-(3,'mail_from','mail@domain.ru');
+('_version','0.0.3'),
+('company_name','My Company LTD'),
+('shm_url','http://admin.local'),
+('mail_from','mail@domain.ru');
 
 COMMIT;

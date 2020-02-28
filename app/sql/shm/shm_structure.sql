@@ -328,10 +328,9 @@ CREATE TABLE `profiles` (
 
 DROP TABLE IF EXISTS `config`;
 CREATE TABLE `config` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` char(32) NOT NULL,
-  `data` text NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+  `key` char(32) NOT NULL,
+  `value` text NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 COMMIT;

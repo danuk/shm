@@ -90,6 +90,8 @@ sub dbh_new {
     return $child_dbh;
 }
 
+sub table_allow_insert_key { return 0 };
+
 sub insert_id {
     my $self = shift;
     return $self->dbh->{'mysql_insertid'};
@@ -239,7 +241,7 @@ sub clean_query_args {
                     delete $args->{ $f } if exists $args->{ $f };
                 } elsif ( exists $args->{ $f } ) {
                     # Не используем ключи в insert-ах
-                    delete $args->{ $f };
+                    delete $args->{ $f } unless $self->table_allow_insert_key;
                 }
                 next; # ключ обработан, идём дальше
             }
@@ -273,6 +275,11 @@ sub clean_query_args {
             } elsif ( defined $v ) { # set default value
                 $args->{ $f } ||= $v;
             }
+        }
+
+        # Quote where keys
+        for ( keys %{ $args->{where} || {} } ) {
+            $args->{where}{ "`$_`" } = delete $args->{where}{ $_ } if /^[a-z]+$/;
         }
     }
 }
@@ -352,6 +359,10 @@ sub _add {
     my $values = join(',', map('?',1..scalar( keys %args ) ));
 
     my $sth = $self->do("INSERT INTO $table ($fields) VALUES($values)", values %args );
+
+    if ( $args{ $self->get_table_key } ) {
+        return $args{ $self->get_table_key };
+    }
     return $self->insert_id;
 }
 
