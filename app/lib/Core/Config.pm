@@ -69,11 +69,26 @@ sub data_by_name {
     return \%ret;
 }
 
-sub clean_protected_keys {
+sub delete {
+    my $self = shift;
     my %args = @_;
 
-    delete $args{ $_ } for grep( /^_/, keys %args );
-    return %args;
+    my $report = get_service('report');
+
+    if ( $self->id =~/^_/ ) {
+        $report->add_error('KeyProhibited');
+        return undef;
+    }
+
+    return $self->SUPER::delete( %args );
+}
+
+sub list_for_api {
+    my $self = shift;
+
+    return $self->SUPER::list_for_api( where => {
+            key => \'NOT REGEXP "^_"',
+    });
 }
 
 1;
