@@ -10,6 +10,7 @@ INSERT INTO `templates` VALUES (1,'web_tariff_create','Создание тари
 
 INSERT INTO `config` VALUES
 ('_version','0.0.3'),
+('_billing','Simpler'),
 ('company_name','My Company LTD'),
 ('shm_url','http://admin.local'),
 ('mail_from','mail@domain.ru');

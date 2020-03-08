@@ -202,7 +202,10 @@ sub add_domain {
 }
 
 sub billing {
-    return "Honest";
+    if ( my $config = get_service('config', _id => '_billing') ) {
+        return $config->get->{value};
+    }
+    return "Simpler";
 }
 
 # Просмотр/обработка услуг
