@@ -2,7 +2,7 @@
 
 use v5.14;
 use SHM;
-use Core::System::ServiceManager qw( get_service );
+use Core::System::ServiceManager qw( get_service unregister_all );
 use Core::Utils qw/to_json/;
 
 $| = 1;
@@ -25,6 +25,7 @@ for (;;) {
     } while defined $task;
 
     $spool->{spool} = undef;
+    unregister_all();
     sleep 2;
 }
 

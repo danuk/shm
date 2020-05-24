@@ -15,7 +15,7 @@ use v5.14;
 =cut
 
 use base qw( Exporter );
-our @EXPORT_OK = qw( $SERVICE_MANAGER get_service logger $data );
+our @EXPORT_OK = qw( $SERVICE_MANAGER get_service unregister_all logger $data );
 
 our $SERVICE_MANAGER ||= new Core::System::ServiceManager();
 our $data = {};
@@ -180,6 +180,23 @@ sub register_service {
     write_log("Register new service with name: [$name]");
 
     return $name;
+}
+
+
+sub unregister_all {
+    my $self = $SERVICE_MANAGER;
+
+    my %protected_services = (
+        config => 1,
+        spool => 1,
+        logger => 1,
+    );
+
+    for my $service ( keys %{ $self->{services} } ) {
+        next if exists $protected_services{ $service };
+        delete $self->{services}->{ $service };
+        delete $self->{service_register}{ $service };
+    }
 }
 
 =pod
