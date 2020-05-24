@@ -173,7 +173,7 @@ CREATE TABLE `spool` (
   `response` json DEFAULT NULL,
   `event` json NOT NULL,
   `prio` int(11) NOT NULL DEFAULT '0',
-  `status` char(8) DEFAULT NULL,
+  `status` char(8) DEFAULT 'NEW',
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',

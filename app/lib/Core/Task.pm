@@ -44,10 +44,10 @@ sub make_task {
 
     my $transport = $self->transport;
     unless ( $transport ) {
-        if ( my $method = $self->event_settings->{method} ) {
+        if ( my $method = $self->event->{method} ) {
             my $kind = $self;
-            if ( $self->event_settings->{kind} ) {
-                $kind = get_service( $self->event_settings->{kind} );
+            if ( $self->event->{kind} ) {
+                $kind = get_service( $self->event->{kind} );
             }
 
             if ( $kind->can( $method ) ) {

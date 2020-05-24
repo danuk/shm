@@ -139,7 +139,7 @@ sub kind {
 
     my $kind = ref $self;
     $kind =~s/.*:://g;
-    return lc $kind;
+    return $kind;
 }
 
 sub make_event {

@@ -227,7 +227,7 @@ sub make_commands_by_event {
     my $e = shift;
 
     my @commands = get_service('Events')->get_events(
-        kind => 'user_service',
+        kind => 'UserService',
         name => $e,
         category => $self->get_category,
     );
@@ -296,6 +296,11 @@ sub child_status_updated {
         @_,
     );
 
+    # Set progress status for parent if his child is progress
+    if ( $child{status} eq STATUS_PROGRESS ) {
+        return $self->status( $child{status}, event => $child{event} );
+    }
+
     my %children_statuses = map { $_->{status} => 1 } $self->children;
 
     if ( scalar (keys %children_statuses) == 1 ) {
@@ -307,7 +312,7 @@ sub child_status_updated {
         $self->status( STATUS_REMOVED, event => EVENT_REMOVE );
     }
 
-    return SUCCESS;
+    return $self->get_status;
 }
 
 sub status_by_event {

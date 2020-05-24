@@ -5,7 +5,7 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
 use Core::USObject;
-use Core::Utils qw( decode_json force_numbers now );
+use Core::Utils qw( decode_json force_numbers now switch_user );
 
 sub table { return Core::USObject->table }
 
@@ -415,6 +415,26 @@ sub list_for_api {
     my @arr = $self->all( %args )->with('settings','services','withdraws')->get;
 
     return sort { $a->{user_service_id} <=> $b->{user_service_id} } @arr;
+}
+
+sub prolongate {
+    my $self = shift;
+
+    my @arr = $self->list_expired_services( admin => 1 );
+
+    for ( @arr ) {
+        say sprintf("%d %d %s %s",
+            $_->{user_id},
+            $_->{user_service_id},
+            $_->{created},
+            $_->{expired},
+        );
+
+        switch_user( $_->{user_id} );
+        get_service('us', _id => $_->{user_service_id} )->touch;
+    }
+
+    return 1;
 }
 
 1;
