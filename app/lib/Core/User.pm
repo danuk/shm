@@ -83,10 +83,8 @@ sub events {
         'payment' => {
             event => {
                 title => 'user payment',
-                settings => {
-                    kind => 'UserService',
-                    method => 'activate_services',
-                },
+                kind => 'UserService',
+                method => 'activate_services',
             },
         },
     };

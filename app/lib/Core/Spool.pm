@@ -39,6 +39,7 @@ sub list_for_all_users {
 
     return $self->_list(
         where => {
+            status => { '!=', TASK_STUCK },
             executed => [
                 undef,
                 { '<', \[ '? - INTERVAL `delayed` SECOND', now ] },
@@ -121,6 +122,7 @@ sub finish_task {
 
     $self->set(
         executed => now,
+        $self->event->{period} ? (delayed => $self->event->{period} ) : (),
         %args,
     );
 
@@ -132,7 +134,7 @@ sub finish_task {
         }
     } else {
         $self->write_history;
-        $self->delete;
+        $self->delete unless $self->event->{period};
     }
 }
 

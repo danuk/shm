@@ -165,18 +165,18 @@ INSERT INTO `services` VALUES
 (112,'Почта (${QUOTA} мб)',0,1,'mail',NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL);
 
 INSERT INTO `events` VALUES
-(default,'user_service','Chanor web account','passwd',NULL,'{"category":"web","cmd":"www passwd w_{{us.parent}}"}'),
-(default,'user_service','Notification of change password for web account','passwd',NULL,'{"category":"web","template":"web_pass_change","transport":"mail"}'),
-(default,'user_service','Add domain to web account','create',1,'{"category":"domain_add","cmd":"www create w_{{us.parent}} {{us.settings.domain}},www.{{us.settings.domain}} {{parent.settings.max_quota}}"}'),
-(default,'user_service','Remove domain from web account','delete',1,'{"category":"domain_add","cmd":"www delete w_{{us.parent}} {{us.settings.domain}},www.{{us.settings.domain}}"}'),
-(default,'user_service','Create mysql','create',1,'{"category":"mysql","cmd":"mysql create -a b_{{id}} -b {{us.settings.db.0.name}} -u {{us.settings.db.0.login}} -p {{us.settings.db.0.password}}"}'),
-(default,'user_service','Erase mysql','remove',NULL,'{"category":"mysql","cmd":"mysql erase b_{{id}}"}'),
-(default,'user_service','Block mysql','block',NULL,'{"category":"mysql","cmd":"mysql block b_{{id}}"}'),
-(default,'user_service','Activate mysql','activate',NULL,'{"category":"mysql","cmd":"mysql unblock b_{{id}}"}'),
-(default,'user_service','Create dns','create',1,'{"category":"dns","cmd":"dns update","stdin":"{{payload}}"}'),
-(default,'user_service','Erase dns','remove',NULL,'{"category":"dns","cmd":"dns erase {{us.domain}}"}'),
-(default,'user_service','Update dns','update',NULL,'{"category":"dns","cmd":"dns update","stdin":"{{payload}}"}'),
-(default,'user_service','Test Docker command','create',1,'{"cmd":"ansible-playbook --extra-vars \'{{US}}\'","transport":"docker"}');
+(default,'UserService','Chanor web account','passwd',NULL,'{"category":"web","cmd":"www passwd w_{{us.parent}}"}'),
+(default,'UserService','Notification of change password for web account','passwd',NULL,'{"category":"web","template":"web_pass_change","transport":"mail"}'),
+(default,'UserService','Add domain to web account','create',1,'{"category":"domain_add","cmd":"www create w_{{us.parent}} {{us.settings.domain}},www.{{us.settings.domain}} {{parent.settings.max_quota}}"}'),
+(default,'UserService','Remove domain from web account','delete',1,'{"category":"domain_add","cmd":"www delete w_{{us.parent}} {{us.settings.domain}},www.{{us.settings.domain}}"}'),
+(default,'UserService','Create mysql','create',1,'{"category":"mysql","cmd":"mysql create -a b_{{id}} -b {{us.settings.db.0.name}} -u {{us.settings.db.0.login}} -p {{us.settings.db.0.password}}"}'),
+(default,'UserService','Erase mysql','remove',NULL,'{"category":"mysql","cmd":"mysql erase b_{{id}}"}'),
+(default,'UserService','Block mysql','block',NULL,'{"category":"mysql","cmd":"mysql block b_{{id}}"}'),
+(default,'UserService','Activate mysql','activate',NULL,'{"category":"mysql","cmd":"mysql unblock b_{{id}}"}'),
+(default,'UserService','Create dns','create',1,'{"category":"dns","cmd":"dns update","stdin":"{{payload}}"}'),
+(default,'UserService','Erase dns','remove',NULL,'{"category":"dns","cmd":"dns erase {{us.domain}}"}'),
+(default,'UserService','Update dns','update',NULL,'{"category":"dns","cmd":"dns update","stdin":"{{payload}}"}'),
+(default,'UserService','Test Docker command','create',1,'{"cmd":"ansible-playbook --extra-vars \'{{US}}\'","transport":"docker"}');
 
 INSERT INTO `subservices` VALUES
 (default,1,8),
@@ -309,5 +309,8 @@ INSERT INTO `config` VALUES
 ('company_name','My Company LTD'),
 ('shm_url','http://admin.local'),
 ('mail_from','mail@domain.ru');
+
+INSERT INTO `spool` (id,user_id,event) VALUES
+(default,1,'{"title":"prolongate services","kind":"UserService","method":"prolongate","period":"60"}');
 
 COMMIT;
