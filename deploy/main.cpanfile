@@ -1,5 +1,4 @@
 requires 'CGI';
-requires 'DBD::mysql';
 requires 'Session';
 requires 'MIME::Lite';
 requires 'Time::DaysInMonth';
@@ -12,3 +11,4 @@ requires 'Net::IDN::Encode', '>=2.400';
 requires 'Data::Validate::Domain', '>=0.14';
 requires 'Digest::SHA1';
 requires 'Scalar::Util';
+requires 'DBD::mysql';
