@@ -13,7 +13,7 @@ sub table { return 'config' };
 sub structure {
     return {
         key => '@',
-        value => '?',
+        value => { type => 'json', value => '?' },
     }
 }
 

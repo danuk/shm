@@ -19,14 +19,14 @@ sub send {
 
     my $config = get_service("config")->data_by_name;
 
-    my $from = $settings->{mail_from} || $config->{mail_from};
+    my $from = $settings->{mail}->{from} || $config->{mail}->{from};
     unless ( $from ) {
         return FAIL, {
             error => "From undefined",
         }
     }
 
-    $settings->{subject} //= "Mail from: $config->{company_name}";
+    $settings->{subject} //= "Mail from: $config->{company}->{name}";
 
     my ( $to ) = get_service('user')->emails;
     unless ( $to ) {

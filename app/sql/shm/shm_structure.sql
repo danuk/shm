@@ -329,7 +329,7 @@ CREATE TABLE `profiles` (
 DROP TABLE IF EXISTS `config`;
 CREATE TABLE `config` (
   `key` char(32) NOT NULL,
-  `value` text NOT NULL,
+  `value` json DEFAULT NULL,
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

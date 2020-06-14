@@ -203,7 +203,7 @@ sub add_domain {
 
 sub billing {
     if ( my $config = get_service('config', _id => '_billing') ) {
-        return $config->get->{value};
+        return $config->get->{value}->{type};
     }
     return "Simpler";
 }

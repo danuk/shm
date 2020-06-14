@@ -304,11 +304,11 @@ INSERT INTO `profiles` VALUES
 ;
 
 INSERT INTO `config` VALUES
-('_version','0.0.3'),
-('_billing','Honest'),
-('company_name','My Company LTD'),
-('shm_url','http://admin.local'),
-('mail_from','mail@domain.ru');
+("_shm", '{"version":"0.0.3"}'),
+("_billing",'{"type":"Honest"}'),
+("company", '{"name":"My Company LTD"}'),
+("api",     '{"url":"http://shm.local"}'),
+("mail",    '{"from":"mail@domain.ru"}');
 
 INSERT INTO `spool` (id,user_id,event) VALUES
 (default,1,'{"title":"prolongate services","kind":"UserService","method":"prolongate","period":"60"}');

@@ -17,21 +17,21 @@ SHM->new( user_id => 40092 );
 my $config = get_service("config");
 my $data = $config->data_by_name;
 
-is( $data->{company_name}, 'My Company LTD', 'Check company name' );
-is( $config->id('company_name')->get->{value}, 'My Company LTD' );
+is( $data->{company}->{name}, 'My Company LTD', 'Check company name' );
+is( $config->id('company')->get->{value}->{name}, 'My Company LTD' );
 
 my $key = $config->add(
     key => 'new_param',
-    value => 'edc',
+    value => {"edc" => 1},
 );
 
 is( $key, 'new_param');
 
-my $test = get_service("config", _id => 'mail_from');
-is( $test->get->{value}, 'mail@domain.ru' );
+my $test = get_service("config", _id => 'mail');
+is( $test->get->{value}->{from}, 'mail@domain.ru' );
 
-$test->set( value => "QAZ" );
-is( $test->get->{value}, 'QAZ' );
+$test->set( value => { "QAZ" => 1} );
+is( $test->get->{value}->{"QAZ"}, 1 );
 
 
 done_testing();

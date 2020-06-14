@@ -24,7 +24,7 @@ my $user_services = get_service('UserService');
 
 # Switch billing to Simpler
 my $config = get_service("config", _id => '_billing' );
-$config->set( value => 'Simpler' );
+$config->set( value => {'type' => 'Simpler' } );
 
 subtest 'Prepare user for test billing' => sub {
     $user->set( balance => 2000, credit => 0, discount => 0 );

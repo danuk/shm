@@ -34,7 +34,7 @@ is $p->eval_var( "us.parent.user_service_id", usi => 100 ), 99;
 is $p->eval_var( "us.parent.settings", usi => 100 ), '{"quota":"10000"}';
 is $p->eval_var( "us.parent.settings.quota", usi => 100 ), 10000;
 
-is $p->eval_var( "config.company_name" ), 'My Company LTD';
+is $p->eval_var( "config.company.name" ), 'My Company LTD';
 
 is $p->eval_var( "us.child_by_category('web').id", usi => 99 ), 101;
 is $p->eval_var( "child('web').id", usi => 99 ), 101;
