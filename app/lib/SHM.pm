@@ -99,7 +99,7 @@ sub new {
 
     my $user = get_service('user');
 
-    if ($0=~/\/(admin)\// && $user->get_gid != 1 ) {
+    if ($0=~/\/(admin)\// && !$user->is_admin ) {
             print_header( status => 403 );
             print_json( { status => 403, msg => 'Forbidden' } );
             exit 0;

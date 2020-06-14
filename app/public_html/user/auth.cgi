@@ -35,8 +35,8 @@ unless ( $user->auth( login => trim($in{login}), password => trim($in{password})
 	exit 0;
 }
 
-if ( $in{admin} && $user->get_gid != 1 ) {
-    print_json( { status => 403, msg => 'Forbidden' } );
+if ( $in{admin} && !$user->is_admin ) {
+    print_json( { status => 403, msg => 'Forbidden: user is not admin' } );
     exit 0;
 }
 

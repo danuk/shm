@@ -20,7 +20,7 @@ our %in = parse_args();
 delete $in{where};
 
 my $res;
-my $admin = 1;
+my $admin = $user->is_admin;
 
 # Switch to user
 if ( $in{user_id} ) {

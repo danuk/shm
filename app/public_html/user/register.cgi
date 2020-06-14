@@ -8,13 +8,15 @@ my $user = SHM->new( skip_check_auth => 1 );
 
 my %in = parse_args();
 
-my $user_id = $user->reg(
+my $object = $user->reg(
     login => $in{login},
     password => $in{password},
 );
 
-if ( $user_id ) {
-    print_json( { status => 200, msg => 'Successfully', user_id => $user_id } );
+if ( $object ) {
+    my %user = $object->get;
+    delete $user{password};
+    print_json( { status => 200, %user } );
 } else {
     print_json( { status => 401 } );
 }

@@ -174,7 +174,7 @@ sub reg {
         return undef;
     }
 
-    return $user_id;
+    return get_service( 'user', _id => $user_id )->get;
 }
 
 sub services {
@@ -228,6 +228,12 @@ sub pays {
 sub withdraws {
     my $self = shift;
     return get_service('withdraw', user_id => $self->{user_id} );
+}
+
+sub is_admin {
+    my $self = shift;
+
+    return $self->get_gid == 1;
 }
 
 sub list_for_api {
