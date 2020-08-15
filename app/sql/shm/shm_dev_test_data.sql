@@ -308,6 +308,7 @@ INSERT INTO `config` VALUES
 ("_billing",'{"type":"Honest"}'),
 ("company", '{"name":"My Company LTD"}'),
 ("api",     '{"url":"http://shm.local"}'),
+("pay_systems",'{"manual":{"name:":"Платеж","show_for_client":false},"yandex":{"name:":"Яндекс","receiver":410014830210044,"show_for_client":true}}'),
 ("mail",    '{"from":"mail@domain.ru"}');
 
 INSERT INTO `spool` (id,user_id,event) VALUES
