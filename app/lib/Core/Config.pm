@@ -61,8 +61,14 @@ sub local {
 
 sub data_by_name {
     my $self = shift;
+    my %args = (
+        key => undef,
+        @_,
+    );
 
-    my @list = $self->list;
+    my @list = $self->list( where => {
+        $args{key} ? ( key => $args{key} ) : (),
+    });
 
     my %ret = map{ $_->{key} => $_->{value} } @list;
 
@@ -85,9 +91,13 @@ sub delete {
 
 sub list_for_api {
     my $self = shift;
+    my %args = (
+        key => undef,
+        @_,
+    );
 
     return $self->SUPER::list_for_api( where => {
-            key => \'NOT REGEXP "^_"',
+            $args{key} ? ( key => $args{key} ) : (),
     });
 }
 
