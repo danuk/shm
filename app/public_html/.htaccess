@@ -1,8 +1,0 @@
-AddDefaultCharset UTF-8
-
-ErrorDocument 403 /403.html
-ErrorDocument 404 /404.html
-
-SetEnv PERL5LIB /home/shm/perl5/lib/perl5:/home/shm/shm/app/lib:/home/shm/shm/app/conf
-
-RewriteEngine on
