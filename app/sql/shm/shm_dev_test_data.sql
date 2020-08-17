@@ -297,7 +297,10 @@ INSERT INTO `identities` VALUES (1,'test','-----BEGIN OPENSSH PRIVATE KEY-----\n
 
 INSERT INTO `pay_systems` VALUES (1,'Платеж',NULL);
 
-INSERT INTO `templates` VALUES (1,'web_tariff_create','Создание тарифа хостинга','Здравствуйте {{ user.full_name }}\n\nВы зарегистрировали новую услугу: {{ us.service.name }}\n\nДата истечения услуги: {{ us.expired }}\n\nСтоимость услуги: {{ us.service.cost }} руб.\n\nХостинг сайтов:\nХост: {{ child(\'web\').server.settings.host_name }}\nЛогин: {{ child(\'web\').settings.login }}\nПароль: {{ child(\'web\').settings.password }}\n\nЖелаем успехов.',NULL);
+INSERT INTO `templates` VALUES
+(1,'web_tariff_create','Создание тарифа хостинга','Здравствуйте {{ user.full_name }}\n\nВы зарегистрировали новую услугу: {{ us.service.name }}\n\nДата истечения услуги: {{ us.expired }}\n\nСтоимость услуги: {{ us.service.cost }} руб.\n\nХостинг сайтов:\nХост: {{ child(\'web\').server.settings.host_name }}\nЛогин: {{ child(\'web\').settings.login }}\nПароль: {{ child(\'web\').settings.password }}\n\nЖелаем успехов.',NULL),
+(2,'yamoney_template','Код платежной формы Яндекс.Деньги','<iframe src=\"https://money.yandex.ru/quickpay/shop-widget?writer=seller&targets=%D0%9E%D0%BF%D0%BB%D0%B0%D1%82%D0%B0%20%D0%BF%D0%BE%20%D0%B4%D0%BE%D0%B3%D0%BE%D0%B2%D0%BE%D1%80%D1%83%20{{ user.id }}&targets-hint=&default-sum=100&label={{ user.id }}&button-text=12&payment-type-choice=on&hint=&successURL=&quickpay=shop&account={{ config.pay_systems.yandex.account }}\" width=\"100%\" height=\"198\" frameborder=\"0\" allowtransparency=\"true\" scrolling=\"no\"></iframe>',NULL)
+;
 
 INSERT INTO `profiles` VALUES
 (1,'40092','{"name": "Даниил", "email": "email@domain.ru", "index":"1234567", "phone":"+7(123) 123-45-67"}',DEFAULT)
@@ -308,7 +311,7 @@ INSERT INTO `config` VALUES
 ("_billing",'{"type":"Honest"}'),
 ("company", '{"name":"My Company LTD"}'),
 ("api",     '{"url":"http://shm.local"}'),
-("pay_systems",'{"manual":{"name:":"Платеж","show_for_client":false},"yandex":{"name:":"Яндекс","receiver":410014830210044,"show_for_client":true}}'),
+("pay_systems","{\"manual\": {\"name\": \"Платеж\", \"show_for_client\": false}, \"yandex\": {\"name\": \"Яндекс\", \"account\": 410014830210044, \"secret\": \"\", \"template_id\": 2, \"show_for_client\": true}}"),
 ("mail",    '{"from":"mail@domain.ru"}');
 
 INSERT INTO `spool` (id,user_id,event) VALUES
