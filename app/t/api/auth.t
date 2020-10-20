@@ -47,7 +47,7 @@ subtest 'Check common auth (auth.cgi)' => sub {
         -H "Content-Type: application/x-www-form-urlencoded" \\
         -d "login=admin&password=admin&admin=1" \\
         -X POST \\
-        http://shm.local/user/auth.cgi
+        http://shm.local/shm/user/auth.cgi
     );
 
     my $json_ret = decode_json( $ret );
