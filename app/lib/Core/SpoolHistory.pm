@@ -9,9 +9,15 @@ sub table { return 'spool_history' };
 sub structure {
     my $self = shift;
     return {
-        spool_id => '?',
+        spool_id => {
+            type => 'number',
+            required => 1,
+        },
         %{ $self->SUPER::structure },
-        created => '?', # use date of `spool`. Do not use `now`
+        created => {    # use date of `spool`. Do not use `now`
+            type => 'date',
+            required => 1,
+        },
     }
 }
 

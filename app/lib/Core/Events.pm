@@ -8,12 +8,29 @@ sub table { return 'events' };
 
 sub structure {
     return {
-        id => '@',
-        kind => '?',
-        title => '?',
-        name => '?',       # create,block,unblock...
-        server_gid => '?',  # Group_id of servers
-        settings => { type => 'json', value => undef },
+        id => {
+            type => 'key',
+        },
+        kind => {
+            type => 'text',
+            required => 1,
+        },
+        title => {
+            type => 'text',
+            required => 1,
+        },
+        name => {           # create,block,unblock...
+            type => 'text',
+            required => 1,
+        },
+        server_gid => {     # Group_id of servers
+            type => 'number',
+            required => 1,
+        },
+        settings => {
+            type => 'json',
+            value => undef,
+        },
     }
 }
 

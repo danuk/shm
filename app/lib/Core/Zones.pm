@@ -8,19 +8,51 @@ sub table { return 'zones' };
 
 sub structure {
     return {
-        zone_id => '@',
-        name => '?',
-        order => 0,
-        server => undef,
-        query => undef,
-        service_id => undef,
-        min_lenght => undef,
-        disabled => 0,
-        nic_service => undef,
-        nic_template => undef,
-        contract => 0,
-        idn => 0,
-        punycode_only => 0,
+        zone_id => {
+            type => 'key',
+        },
+        name => {
+            type => 'text',
+            required => 1,
+        },
+        order => {
+            type => 'number',
+            default => 1,
+        },
+        server => {
+            type => 'text',
+        },
+        query => {
+            type => 'text',
+        },
+        service_id => {
+            type => 'number',
+        },
+        min_lenght => {
+            type => 'number',
+        },
+        disabled => {
+            type => 'number',
+            default => 0,
+        },
+        nic_service => {
+            type => 'number',
+        },
+        nic_template => {
+            type => 'number',
+        },
+        contract => {
+            type => 'number',
+            default => 0,
+        },
+        idn => {
+            type => 'number',
+            default => 0,
+        },
+        punycode_only => {
+            type => 'number',
+            default => 0,
+        },
     }
 }
 

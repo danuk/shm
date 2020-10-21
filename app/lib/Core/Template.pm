@@ -8,10 +8,20 @@ sub table { return 'templates' };
 
 sub structure {
     return {
-        id => '@',
-        name => '?',
-        title => '?',
-        data => undef,
+        id => {
+            type => 'key',
+        },
+        name => {
+            type => 'text',
+            required => 1,
+        },
+        title => {
+            type => 'text',
+            required => 1,
+        },
+        data => {
+            type => 'text',
+        },
         settings => { type => 'json', value => undef },
     }
 }

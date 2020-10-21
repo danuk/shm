@@ -8,11 +8,23 @@ sub table { return 'servers_groups' };
 
 sub structure {
     return {
-        group_id => '@',
-        name => undef,
-        type => 'random',   # способ выборки серверов из группы
-        transport => 'ssh',
-        settings => undef,
+        group_id => {
+            type => 'key',
+        },
+        name => {
+            type => 'text',
+        },
+        type => {          # способ выборки серверов из группы
+            type => 'text',
+            default => 'random',
+        },
+        transport => {
+            type => 'text',
+            default => 'ssh',
+        },
+        settings => {
+            type => 'text',
+        },
     }
 }
 

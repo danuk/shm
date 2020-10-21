@@ -8,16 +8,38 @@ sub table { return 'acts_data' };
 
 sub structure {
     return {
-        id => '@',
-        act_id => undef,
-        user_id => '!',
-        service_id => undef,
-        user_service_id => undef,
-        withdraw_id => undef,
-        amount => '?',
-        name => undef,
-        start_date => undef,
-        stop_date => undef,
+        id => {
+            type => 'key',
+        },
+        act_id => {
+            type => 'number',
+        },
+        user_id => {
+            type => 'number',
+            auto_fill => 1,
+        },
+        service_id => {
+            type => 'number',
+        },
+        user_service_id => {
+            type => 'number',
+        },
+        withdraw_id => {
+            type => 'number',
+        },
+        amount => {
+            type => 'number',
+            required => 1,
+        },
+        name => {
+            type => 'text',
+        },
+        start_date => {
+            type => 'date',
+        },
+        stop_date => {
+            type => 'date',
+        },
     }
 }
 

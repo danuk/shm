@@ -13,11 +13,24 @@ sub table { return 'identities' };
 
 sub structure {
     return {
-        id => '@',
-        name => '?',
-        private_key => '?',
-        public_key => undef,
-        fingerprint => '?',
+        id => {
+            type => 'key',
+        },
+        name => {
+            type => 'text',
+            required => 1,
+        },
+        private_key => {
+            type => 'text',
+            required => 1,
+        },
+        public_key => {
+            type => 'text',
+        },
+        fingerprint => {
+            type => 'text',
+            required => 1,
+        },
     }
 }
 

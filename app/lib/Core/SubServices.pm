@@ -8,9 +8,17 @@ sub table { return 'subservices' };
 
 sub structure {
     return {
-        ss_id => '@',
-        service_id => '?',
-        subservice_id => '?',
+        ss_id => {
+            type => 'key',
+        },
+        service_id => {
+            type => 'number',
+            required => 1,
+        },
+        subservice_id => {
+            type => 'number',
+            required => 1,
+        },
     }
 }
 

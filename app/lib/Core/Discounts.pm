@@ -8,10 +8,21 @@ sub table { return 'discounts' };
 
 sub structure {
     return {
-        discount_id => '@',
-        title => '?',
-        months => '?',
-        percent => '?',
+        discount_id => {
+            type => 'key',
+        },
+        title => {
+            type => 'text',
+            required => 1,
+        },
+        months => {
+            type => 'number',
+            required => 1,
+        },
+        percent => {
+            type => 'number',
+            required => 1,
+        },
     }
 }
 

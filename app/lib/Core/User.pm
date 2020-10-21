@@ -40,29 +40,91 @@ sub table { return 'users' };
 
 sub structure {
     return {
-        user_id => '@',
-        owner => undef,
-        login => '?',
-        password => '?',
-        type => 0,
-        created => 'now',
-        last_login => undef,
-        discount => 0,
-        balance => 0,
-        partner => 0,
-        credit => 0,
-        comment => undef,
-        dogovor => undef,
-        block => 0,
-        partner_disc => 0,
-        gid => 0,
-        perm_credit => 0,
-        full_name => undef,
-        can_overdraft => 0,
-        bonus => 0,
-        phone => undef,
-        verified => 0,
-        create_act => 1,
+        user_id => {
+            type => 'key',
+        },
+        owner => {
+            type => 'number',
+        },
+        login => {
+            type => 'text',
+            required => 1,
+        },
+        password => {
+            type => 'text',
+            required => 1,
+        },
+        type => {
+            type => 'number',
+            default => 0,
+        },
+        created => {
+            type => 'now',
+        },
+        last_login => {
+            type => 'date',
+        },
+        discount => {
+            type => 'number',
+            default => 0,
+        },
+        balance => {
+            type => 'number',
+            default => 0,
+        },
+        partner => {
+            type => 'number',
+            default => 0,
+        },
+        credit => {
+            type => 'number',
+            default => 0,
+        },
+        comment => {
+            type => 'text',
+        },
+        dogovor => {
+            type => 'text',
+        },
+        block => {
+            type => 'number',
+            default => 0,
+        },
+        partner_disc => {
+            type => 'number',
+            default => 0,
+        },
+        gid => {
+            type => 'number',
+            default => 0,
+        },
+        perm_credit => {
+            type => 'number',
+            default => 0,
+        },
+        full_name => {
+            type => 'text',
+        },
+        can_overdraft => {
+            type => 'number',
+            default => 0,
+        },
+        bonus => {
+            type => 'number',
+            default => 0
+        },
+        phone => {
+            type => 'text',
+            allow_update_by_user => 1,
+        },
+        verified => {
+            type => 'number',
+            default => 0,
+        },
+        create_act => {
+            type => 'number',
+            default => 1,
+        },
     };
 }
 

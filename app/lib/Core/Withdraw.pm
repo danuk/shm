@@ -8,19 +8,53 @@ sub table { return 'withdraw_history' };
 
 sub structure {
     return {
-        withdraw_id => '@',
-        user_id => '!',
-        create_date => 'now',
-        withdraw_date => undef,
-        end_date => undef,
-        cost => '?',
-        discount => 0,
-        bonus => 0,
-        months => 1,
-        total => undef,
-        service_id => '?',
-        qnt => 1,
-        user_service_id => '?',
+        withdraw_id => {
+            type => 'key',
+        },
+        user_id => {
+            type => 'number',
+            auto_fill => 1,
+        },
+        create_date => {
+            type => 'now',
+        },
+        withdraw_date => {
+            type => 'date',
+        },
+        end_date => {
+            type => 'date',
+        },
+        cost => {
+            type => 'number',
+            required => 1,
+        },
+        discount => {
+            type => 'number',
+            default => 0,
+        },
+        bonus => {
+            type => 'number',
+            default => 0,
+        },
+        months => {
+            type => 'number',
+            default => 1,
+        },
+        total => {
+            type => 'number',
+        },
+        service_id => {
+            type => 'number',
+            required => 1,
+        },
+        qnt => {
+            type => 'number',
+            default => 1,
+        },
+        user_service_id => {
+            type => 'number',
+            required => 1,
+        },
     }
 }
 

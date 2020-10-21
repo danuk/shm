@@ -12,15 +12,33 @@ sub table { return 'spool' };
 
 sub structure {
     return {
-        id => '@',
-        user_id => '!',
+        id => {
+            type => 'key',
+        },
+        user_id => {
+            type => 'number',
+            auto_fill => 1,
+        },
         event => { type => 'json', value => undef },
-        prio => 0,          # приоритет команды
-        status => TASK_NEW, # status выполнения команды: 0-новая, 1-выполнена, 2-ошибка
+        prio => {           # приоритет команды
+            type => 'number',
+            default => 0,
+        },
+        status => {         # status выполнения команды: 0-новая, 1-выполнена, 2-ошибка
+            type => 'number',
+            default => TASK_NEW,
+        },
         response => { type => 'json', value => undef },
-        created => 'now',   # дата создания задачи
-        executed => undef,  # дата и время последнего выполнения
-        delayed => 0,       # задерка в секундах
+        created => {        # дата создания задачи
+            type => 'now',
+        },
+        executed => {       # дата и время последнего выполнения
+            type => 'date',
+        },
+        delayed => {        # задерка в секундах
+            type => 'date',
+            default => 0,
+        },
         settings => { type => 'json', value => undef },
     }
 }

@@ -27,16 +27,40 @@ sub table { return 'user_services' };
 
 sub structure {
     return {
-        user_service_id => '@',
-        user_id => '!',
-        service_id => '?',
-        auto_bill => 1,
-        withdraw_id => undef,
-        created => 'now',
-        expired => undef,
-        status => STATUS_INIT,
-        next => undef,
-        parent => undef,
+        user_service_id => {
+            type => 'key',
+        },
+        user_id => {
+            type => 'number',
+            auto_fill => 1,
+        },
+        service_id => {
+            type => 'number',
+            required => 1,
+        },
+        auto_bill => {
+            type => 'number',
+            default => 1,
+        },
+        withdraw_id => {
+            type => 'number',
+        },
+        created => {
+            type => 'now',
+        },
+        expired => {
+            type => 'date',
+        },
+        status => {
+            type => 'number',
+            default => STATUS_INIT,
+        },
+        next => {
+            type => 'number',
+        },
+        parent => {
+            type => 'number',
+        },
         settings => { type => 'json', value => undef },
     };
 }

@@ -9,11 +9,23 @@ sub table { return 'console' };
 
 sub structure {
     return {
-        id => '@',
-        start => 'now',
-        stop => undef,
-        log => '',
-        eof => 0,
+        id => {
+            type => 'key',
+        },
+        start => {
+            type => 'now',
+        },
+        stop => {
+            type => 'date',
+        },
+        log => {
+            type => 'text',
+            default => '',
+        },
+        eof => {
+            type => 'number',
+            default => 0,
+        },
     }
 }
 

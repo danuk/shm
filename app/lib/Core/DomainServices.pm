@@ -8,10 +8,20 @@ sub table { return 'domains_services' };
 
 sub structure {
     return {
-        id => '@',
-        domain_id => '?',
-        user_service_id => '?',
-        created => 'now',
+        id => {
+            type => 'key',
+        },
+        domain_id => {
+            type => 'number',
+            required => 1,
+        },
+        user_service_id => {
+            type => 'number',
+            required => 1,
+        },
+        created => {
+            type => 'now',
+        },
     }
 }
 

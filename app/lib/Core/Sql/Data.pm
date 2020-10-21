@@ -185,13 +185,10 @@ sub convert_sql_structure_data {
         my $structure = $self->structure;
         while ( my( $f, $v ) = each( %{ $data } ) ) {
             if (    exists $structure->{ $f } &&
-                    ref $structure->{ $f } eq 'HASH' &&
-                    exists $structure->{ $f }->{type} ) {
-                    if ( $structure->{ $f }->{type} eq 'json' && $data->{ $f } ) {
+                    $structure->{ $f }->{type} eq 'json' ) {
                         my $json = decode_json( $data->{ $f } );
                         next unless $json;
                         $data->{ $f } = $json;
-                    }
             } else {
                 # Hack: convert string to numeric
                 force_numbers( $data->{ $f } );
@@ -225,7 +222,7 @@ sub clean_query_args {
         }
         # Проверяем поля структуры
         while ( my( $f, $v ) = each %structure ) {
-            $v = $v->{value} if ref $v eq 'HASH';
+            $v = $v->{value} if $v->{type} eq 'json';
             if ( $f eq $self->get_table_key() ) {
                 if ( $settings->{is_update} ) {
                     unless ( $args->{where}{ $f } ) {
@@ -247,7 +244,7 @@ sub clean_query_args {
             }
 
             if ( $settings->{is_list} ) {
-                if ( $v eq '!' ) { # получаем автоматически
+                if ( $v->{auto_fill} ) { # получаем автоматически
                     if ( exists $self->{ $f } ) {
                         $args->{ $f } = $self->{ $f };
                     } elsif ( $self->can( $f ) ) {
@@ -261,19 +258,19 @@ sub clean_query_args {
             next if $settings->{is_update};
             # Below rules only for insert
 
-            if ( $v eq '!' ) { # получаем автоматически
+            if ( $v->{auto_fill} ) { # получаем автоматически
                 if ( exists $self->{ $f } ) {
                     $args->{ $f } = $self->{ $f };
                 } elsif ( $self->can( $f ) ) {
                     $args->{ $f } = $self->$f;
                 }
                 logger->error( "Can't get `$f` from self" ) unless $args->{ $f };
-            } elsif ( $v eq '?' ) {
+            } elsif ( $v->{required} ) {
                 logger->error( "`$f` required" ) if not exists $args->{$f};
-            } elsif ( $v eq 'now' ) {
+            } elsif ( $v->{type} eq 'now' ) {
                 $args->{ $f } = now;
-            } elsif ( defined $v ) { # set default value
-                $args->{ $f } ||= $v;
+            } elsif ( exists $v->{default} ) { # set default value
+                $args->{ $f } ||= $v->{default};
             }
         }
 
@@ -434,7 +431,7 @@ sub get_table_key {
     my $structure = $self->structure;
 
     for ( keys %{ $structure } ) {
-        return $_ if $structure->{ $_ } eq '@';
+        return $_ if $structure->{ $_ }->{type} eq 'key';
     }
     return 'id';
 }

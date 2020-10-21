@@ -8,12 +8,27 @@ sub table { return 'pays_history' };
 
 sub structure {
     return {
-        id => '@',
-        user_id => '!',
-        pay_system_id => '?',
-        money => '?',
-        date => 'now',
-        comment => undef,
+        id => {
+            type => 'key',
+        },
+        user_id => {
+            type => 'number',
+            auto_fill => 1,
+        },
+        pay_system_id => {
+            type => 'number',
+            required => 1,
+        },
+        money => {
+            type => 'number',
+            required => 1,
+        },
+        date => {
+            type => 'now',
+        },
+        comment => {
+            type => 'text',
+        },
     }
 }
 

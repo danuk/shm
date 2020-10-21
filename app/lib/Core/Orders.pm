@@ -8,11 +8,24 @@ sub table { return 'invoices' };
 
 sub structure {
     return {
-        id => '@',
-        date => '?',
-        user_id => '!',
-        total => '?',
-        text => undef,
+        id => {
+            type => 'key',
+        },
+        date => {
+            type => 'date',
+            required => 1,
+        },
+        user_id => {
+            type => 'number',
+            auto_fill => 1,
+        },
+        total => {
+            type => 'number',
+            required => 1,
+        },
+        text => {
+            type => 'text',
+        },
     }
 }
 

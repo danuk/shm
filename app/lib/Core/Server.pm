@@ -8,16 +8,36 @@ sub table { return 'servers' };
 
 sub structure {
     return {
-        server_id => '@',
-        server_gid => undef,
-        name => undef,
-        transport => '?',       # ssh,http,etc...
-        host => undef,
-        ip => undef,            # ip адрес для построения DNS
-        weight => undef,
-        success_count => undef,
-        fail_count => undef,
-        enabled => 1,
+        server_id => {
+            type => 'key',
+        },
+        server_gid => {
+            type => 'number',
+        },
+        name => {
+            type => 'number',
+        },
+        transport => {         # ssh,http,etc...
+            type => 'text',
+        },
+        host => {
+            type => 'text',
+        },
+        ip => {                # ip адрес для построения DNS
+            type => 'text',
+        },
+        weight => {
+            type => 'number',
+        },
+        success_count => {
+            type => 'number',
+        },
+        fail_count => {
+            type => 'number',
+        },
+        enabled => {
+            type => 'number',
+        },
         settings => { type => 'json', value => undef },
     }
 }

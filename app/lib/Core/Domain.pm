@@ -22,14 +22,32 @@ sub table { return 'domains' };
 
 sub structure {
     return {
-        domain_id => '@',
-        user_id => '!',
-        domain => '?',
-        created => 'now',
-        zone_id => undef,
-        subdomain_for => undef,
-        punycode => undef,
-        user_service_id => undef,
+        domain_id => {
+            type => 'key',
+        },
+        user_id => {
+            type => 'number',
+            auto_fill => 1,
+        },
+        domain => {
+            type => 'text',
+            required => 1,
+        },
+        created => {
+            type => 'now',
+        },
+        zone_id => {
+            type => 'number',
+        },
+        subdomain_for => {
+            type => 'number',
+        },
+        punycode => {
+            type => 'text',
+        },
+        user_service_id => {
+            type => 'number',
+        },
     }
 }
 

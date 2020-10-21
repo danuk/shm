@@ -8,19 +8,52 @@ sub table { return 'services' };
 
 sub structure {
     return {
-        service_id => '@',
-        name => '?',
-        cost => '?',
-        period_cost => 1,
-        category => '?',
-        next => undef,
-        opt => undef,
-        max_count => undef,
-        question => undef,
-        pay_always => 1,
-        no_discount => 0,
-        descr => undef,
-        pay_in_credit => 0,
+        service_id => {
+            type => 'key',
+        },
+        name => {
+            type => 'text',
+            required => 1,
+        },
+        cost => {
+            type => 'number',
+            required => 1,
+        },
+        period_cost => {
+            type => 'number',
+            default => 1,
+        },
+        category => {
+            type => 'number',
+            required => 1,
+        },
+        next => {
+            type => 'number',
+        },
+        opt => {
+            type => 'number',
+        },
+        max_count => {
+            type => 'number',
+        },
+        question => {
+            type => 'number',
+        },
+        pay_always => {
+            type => 'number',
+            default => 1,
+        },
+        no_discount => {
+            type => 'number',
+            default => 0,
+        },
+        descr => {
+            type => 'text',
+        },
+        pay_in_credit => {
+            type => 'number',
+            default => 0,
+        },
         config => { type => 'json', value => undef },
     };
 }

@@ -8,10 +8,21 @@ sub table { return 'acts' };
 
 sub structure {
     return {
-        act_id => '@',
-        user_id => '!',
-        date => '?',
-        show_act => 1,
+        act_id => {
+            type => 'key',
+        },
+        user_id => {
+            type => 'number',
+            auto_fill => 1,
+        },
+        date => {
+            type => 'date',
+            required => 1,
+        },
+        show_act => {
+            type => 'number',
+            default => 1,
+        },
     }
 }
 

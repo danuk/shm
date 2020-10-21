@@ -8,12 +8,28 @@ sub table { return 'apps' };
 
 sub structure {
     return {
-        id => '@',
-        user_id => '!',
-        user_service_id => '?',
-        name => '?',
-        domain_id => undef,
-        settings => { type => 'json', value => undef },
+        id => {
+            type => 'key',
+        },
+        user_id => {
+            type => 'number',
+            auto_fill => 1,
+        },
+        user_service_id => {
+            type => 'number',
+            required => 1,
+        },
+        name => {
+            type => 'text',
+            required => 1,
+        },
+        domain_id => {
+            type => 'number',
+        },
+        settings => {
+            type => 'json',
+            value => undef,
+        },
     }
 }
 

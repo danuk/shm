@@ -7,10 +7,17 @@ sub table { return 'profiles' };
 
 sub structure {
     return {
-        id => '@',
-        user_id => '!',
+        id => {
+            type => 'key',
+        },
+        user_id => {
+            type => 'number',
+            auto_fill => 1,
+        },
         data => { type => 'json', value => undef },
-        created => 'now',
+        created => {
+            type => 'now',
+        },
     }
 }
 

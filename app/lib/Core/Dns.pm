@@ -9,13 +9,31 @@ sub table { return 'dns_services' };
 
 sub structure {
     return {
-        dns_id => '@',
-        domain_id => '?',
-        domain => '?',
-        type => '?',
-        prio => undef,
-        addr => '?',
-        ttl => undef,
+        dns_id => {
+            type => 'key',
+        },
+        domain_id => {
+            type => 'number',
+        },
+        domain => {
+            type => 'text',
+            required => 1,
+        },
+        type => {
+            type => 'text',
+            required => 1,
+        },
+        prio => {
+            type => 'number',
+            required => 1,
+        },
+        addr => {
+            type => 'text',
+            required => 1,
+        },
+        ttl => {
+            type => 'number',
+        },
     }
 }
 
