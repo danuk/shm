@@ -293,7 +293,7 @@ sub event {
     return SUCCESS;
 }
 
-sub spool_commands {
+sub api_spool_commands {
     my $self = shift;
 
     my @arr = $self->spool->list_by_settings( user_service_id => $self->id );

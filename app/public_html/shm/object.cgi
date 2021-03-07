@@ -23,9 +23,8 @@ my $res;
 my $admin = $user->is_admin;
 
 # Switch to user
-if ( $in{user_id} ) {
+if ( $admin && $in{user_id} ) {
     switch_user( $in{user_id} );
-    $admin = 0;
 }
 
 $in{object} ||= $ENV{SCRIPT_NAME};
@@ -56,8 +55,20 @@ unless ( $service->can('table') ) {
     exit 0;
 }
 
-if ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
-    if ( my $ret = $service->add( %in ) ) {
+if ( $in{method} ) {
+    my $method = "api_$in{method}";
+    if ( $service->can( $method ) ) {
+        $res = $service->$method( %in, admin => $admin );
+        if ( !ref $res ) {
+            $res = [ $res ];
+        }
+    }
+    else {
+        %headers = ( status => 404 );
+        $res = { error => "Method not found" };
+    }
+} elsif ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
+    if ( my $ret = $service->api( 'add', %in, admin => $admin ) ) {
         my %data = ref $ret ? $ret->get : $service->id( $ret )->get;
         $res = \%data;
     }
@@ -68,23 +79,9 @@ if ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
 }
 elsif ( $ENV{REQUEST_METHOD} eq 'POST' ) {
     if ( $service = $service->id( get_service_id() ) ) {
-        if ( my $method = $in{method} ) {
-            if ( $service->can( $method ) ) {
-                $res = $service->$method( %in, admin => $admin );
-                if ( !ref $res ) {
-                    $res = [ $res ];
-                }
-            }
-            else {
-                %headers = ( status => 404 );
-                $res = { error => "Method not found" };
-            }
-        }
-        else {
-            $service->set( %in );
-            my %ret = $service->get;
-            $res = \%ret;
-        }
+        $service->api( 'set', %in, admin => $admin );
+        my %ret = $service->get;
+        $res = \%ret;
     } else {
         %headers = ( status => 404 );
         $res = { error => "Object not found" };
@@ -92,7 +89,7 @@ elsif ( $ENV{REQUEST_METHOD} eq 'POST' ) {
 }
 elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
     if ( my $obj = $service->id( get_service_id() ) ) {
-        $obj->delete( %in );
+        $obj->api( 'delete', %in, admin => $admin );
         %headers = ( status => 204 );
     } else {
         %headers = ( status => 404 );
@@ -100,21 +97,8 @@ elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
     }
 }
 else {
-    if ( my $method = $in{method} ) {
-        if ( $service->can( $method ) ) {
-            $res = $service->$method( %in, admin => $admin );
-            if ( !ref $res ) {
-                $res = [ $res ];
-            }
-        }
-        else {
-            %headers = ( status => 404 );
-            $res = { error => "Method not found" };
-        }
-    } else {
-        my @ret = $service->list_for_api( %in, admin => $admin );
-        $res = \@ret;
-    }
+    my @ret = $service->list_for_api( %in, admin => $admin );
+    $res = \@ret;
 
     my $numRows = $service->found_rows;
     %headers = http_content_range( http_limit, count => $numRows );

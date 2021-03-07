@@ -131,6 +131,33 @@ sub _add_or_set {
 
 }
 
+sub api {
+    my $self = shift;
+    my $method = shift;
+    my %args = @_;
+
+    %args = $self->api_safe_args( %args ) unless $args{admin};
+
+    return $self->$method( %args );
+}
+
+sub api_safe_args {
+    my $self = shift;
+    my %args = @_;
+
+    return %args unless $self->can('structure');
+
+    my %struct = %{ $self->structure };
+
+    for my $key ( keys %args ) {
+        unless ( exists $struct{ $key} && $struct{ $key }->{'allow_update_by_user'} ) {
+            delete $args{ $key };
+        }
+    }
+
+    return %args;
+}
+
 sub add { return shift->_add_or_set( 'add', @_ ) }
 sub set { shift->_add_or_set( 'set', @_ ) }
 

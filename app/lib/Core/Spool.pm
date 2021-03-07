@@ -174,7 +174,7 @@ sub retry_task {
     $self->write_history;
 }
 
-sub manual_retry {
+sub api_manual_retry {
     my $self = shift;
     my %args = (
         event => undef,
