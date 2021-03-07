@@ -68,11 +68,4 @@ sub add {
     return undef;
 }
 
-sub list_for_api {
-    my $self = shift;
-    my @arr = $self->SUPER::list_for_api( @_ );
-
-    return @arr;
-}
-
 1;

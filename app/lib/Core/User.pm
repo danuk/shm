@@ -45,6 +45,7 @@ sub structure {
         },
         owner => {
             type => 'number',
+            hide_for_user => 1,
         },
         login => {
             type => 'text',
@@ -53,6 +54,7 @@ sub structure {
         password => {
             type => 'text',
             required => 1,
+            hide_for_user => 1,
         },
         type => {
             type => 'number',
@@ -82,6 +84,7 @@ sub structure {
         },
         comment => {
             type => 'text',
+            hide_for_user => 1,
         },
         dogovor => {
             type => 'text',
@@ -101,9 +104,11 @@ sub structure {
         perm_credit => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
         },
         full_name => {
             type => 'text',
+            allow_update_by_user => 1,
         },
         can_overdraft => {
             type => 'number',
@@ -309,11 +314,7 @@ sub list_for_api {
         $args{where} = { user_id => $self->id };
     }
 
-    my @arr = $self->SUPER::list_for_api( %args );
-
-    delete $_->{password} for @arr;
-
-    return @arr;
+    return $self->SUPER::list_for_api( %args );
 }
 
 sub profile {

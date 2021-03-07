@@ -404,7 +404,7 @@ sub list_for_api {
 
     my $method = $args{admin} ? '_list' : 'list';
 
-    return $self->$method(
+    my @ret = $self->$method(
         range => { field => $args{field}, start => $args{start}, stop => $args{stop} },
         limit => $args{limit}->{limit},
         offset => $args{limit}->{offset},
@@ -412,6 +412,20 @@ sub list_for_api {
         where => $args{where},
         order => $args{order},
     );
+
+    # Remove protected fields
+    unless ( $args{admin} ) {
+        my $structure = $self->structure;
+
+        for my $item ( @ret ) {
+            for ( keys %{ $item } ) {
+                delete $item->{ $_ } if exists $structure->{ $_ }->{ hide_for_user } &&
+                    $structure->{ $_ }->{ hide_for_user };
+            }
+        }
+    }
+
+    return @ret;
 }
 
 sub get {
