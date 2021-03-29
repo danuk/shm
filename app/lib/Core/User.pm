@@ -310,7 +310,9 @@ sub list_for_api {
         @_,
     );
 
-    unless ( $args{admin} ) {
+    if ( $args{admin} ) {
+        $args{where} = { user_id => $args{user_id} } if $args{user_id};
+    } else {
         $args{where} = { user_id => $self->id };
     }
 
