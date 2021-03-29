@@ -10,7 +10,7 @@ services:
       DB_HOST: mysql
       DB_PORT: 3306
     ports:
-      - "8081:80"
+      - "8080:80"
     depends_on:
       mysql:
         condition: service_healthy
@@ -31,9 +31,9 @@ services:
     image: "danuk/shm-admin:latest"
     restart: always
     environment:
-      SHM_URL: http://127.0.0.1:8081
+      SHM_URL: http://127.0.0.1:8080
     ports:
-      - "8080:80"
+      - "8081:80"
   mysql:
     image: "mysql:5.7"
     command: --default-authentication-plugin=mysql_native_password
