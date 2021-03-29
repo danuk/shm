@@ -11,6 +11,7 @@ use CGI;
 use CGI::Cookie;
 use Session;
 use JSON;
+use MIME::Base64;
 
 use Core::System::ServiceManager qw( get_service );
 use Core::Sql::Data;
@@ -77,17 +78,14 @@ sub new {
     if ( $args->{user_id} ) {
         $user_id = $args->{user_id};
         switch_user( $user_id );
+    } elsif ( $ENV{HTTP_AUTHORIZATION} ) {
+        my $auth = $ENV{HTTP_AUTHORIZATION};
+        $auth =~s/^Basic\s+//;
+        $auth = decode_base64( $auth );
+        my ( $user, $password ) = split(/\:/, $auth);
+        ext_user_auth( $user, $password );
     } elsif ( $headers{HTTP_LOGIN} && $headers{HTTP_PASSWORD} ) {
-        db_connect();
-        my $user = get_service('user');
-        $user = $user->auth(
-            login => $headers{HTTP_LOGIN},
-            password => $headers{HTTP_PASSWORD},
-        );
-        unless ( $user ) {
-            print_json( { status => 401, msg => 'Incorrect login or password' } );
-            exit 0;
-        }
+        ext_user_auth($headers{HTTP_LOGIN}, $headers{HTTP_PASSWORD});
     } elsif ( !$args->{skip_check_auth} ) {
         my $session = validate_session();
         print_not_authorized() unless $session;
@@ -106,6 +104,21 @@ sub new {
     }
 
     return $user;
+}
+
+sub ext_user_auth {
+    my ($login, $password) = @_;
+
+    db_connect();
+    my $user = get_service('user');
+    $user = $user->auth(
+        login => $login,
+        password => $password,
+    );
+    unless ( $user ) {
+        print_json( { status => 401, msg => 'Incorrect login or password' } );
+        exit 0;
+    }
 }
 
 sub db_connect {
