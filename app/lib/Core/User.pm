@@ -241,7 +241,7 @@ sub reg {
         return undef;
     }
 
-    return get_service( 'user', _id => $user_id )->get;
+    return get_service( 'user', _id => $user_id );
 }
 
 sub services {
