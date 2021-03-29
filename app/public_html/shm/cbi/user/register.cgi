@@ -17,7 +17,7 @@ if ( $object ) {
     my %user = $object->get;
     print_json( { status => 200, msg => 'Successfully', user_id => $user{user_id} } );
 } else {
-    print_json( { status => 401 } );
+    print_json( { status => 400 } );
 }
 
 exit 0;

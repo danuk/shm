@@ -18,7 +18,7 @@ if ( $object ) {
     delete $user{password};
     print_json( { status => 200, %user } );
 } else {
-    print_json( { status => 401 } );
+    print_json( { status => 400 } );
 }
 
 exit 0;
