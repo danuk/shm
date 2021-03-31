@@ -196,6 +196,34 @@ sub auth {
     return $self;
 }
 
+sub api_passwd {
+    my $self = shift;
+    my %args = (
+        password => undef,
+        @_,
+    );
+
+    my $report = get_service('report');
+    unless ( $args{password} ) {
+        $report->add_error('PasswordEmpty');
+        return undef;
+    }
+
+    my $user = $self;
+
+    if ( $args{admin} && $args{user_id} ) {
+        $user = get_service('user', _id => $args{user_id} );
+    }
+
+    my $password = $user->crypt_password(
+        salt => $user->get_login,
+        password => $args{password},
+    );
+
+    $user->set( password => $password );
+    return $user->get;
+}
+
 sub validate_attributes {
     my $self = shift;
     my $method = shift;
