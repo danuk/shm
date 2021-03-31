@@ -77,27 +77,26 @@ sub new {
 
     if ( $args->{user_id} ) {
         $user_id = $args->{user_id};
-        switch_user( $user_id );
     } elsif ( $ENV{HTTP_AUTHORIZATION} ) {
         my $auth = $ENV{HTTP_AUTHORIZATION};
         $auth =~s/^Basic\s+//;
         $auth = decode_base64( $auth );
         my ( $user, $password ) = split(/\:/, $auth);
-        ext_user_auth( $user, $password );
+        $user_id = ext_user_auth( $user, $password );
     } elsif ( $headers{HTTP_LOGIN} && $headers{HTTP_PASSWORD} ) {
-        ext_user_auth($headers{HTTP_LOGIN}, $headers{HTTP_PASSWORD});
+        $user_id = ext_user_auth($headers{HTTP_LOGIN}, $headers{HTTP_PASSWORD});
     } elsif ( !$args->{skip_check_auth} ) {
         my $session = validate_session();
         print_not_authorized() unless $session;
         $user_id = $session->get('user_id');
-        switch_user( $user_id );
     }
 
     db_connect;
 
+    switch_user( $user_id );
     my $user = get_service('user');
 
-    if ($0=~/\/(admin)\// && !$user->is_admin ) {
+    if ($0=~/\/admin\// && !$user->is_admin ) {
             print_header( status => 403 );
             print_json( { status => 403, msg => 'Forbidden' } );
             exit 0;
@@ -119,6 +118,7 @@ sub ext_user_auth {
         print_json( { status => 401, msg => 'Incorrect login or password' } );
         exit 0;
     }
+    return $user->get_id;
 }
 
 sub db_connect {
