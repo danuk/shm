@@ -19,4 +19,7 @@ INSERT INTO `config` VALUES
 ("pay_systems","{\"manual\": {\"name\": \"Платеж\", \"show_for_client\": false}, \"yandex\": {\"name\": \"Яндекс\", \"account\": 000000000000000, \"secret\": \"\", \"template_id\": 2, \"show_for_client\": true}}"),
 ("mail",    '{"from":"mail@domain.ru"}');
 
+INSERT INTO `spool` (id,user_id,event) VALUES
+(default,1,'{"title":"prolongate services","kind":"UserService","method":"prolongate","period":"60"}');
+
 COMMIT;
