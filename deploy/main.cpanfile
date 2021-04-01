@@ -12,3 +12,4 @@ requires 'Data::Validate::Domain', '>=0.14';
 requires 'Digest::SHA1';
 requires 'Scalar::Util';
 requires 'DBD::mysql';
+requires 'Router::Simple';
