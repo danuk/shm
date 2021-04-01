@@ -30,7 +30,7 @@ sub structure {
         next => {
             type => 'number',
         },
-        opt => {
+        allow_to_order => {
             type => 'number',
         },
         max_count => {
@@ -169,6 +169,14 @@ sub list_for_api {
 
     my @arr = $self->SUPER::list_for_api( %args );
     return @arr;
+}
+
+sub api_price_list {
+    my $self = shift;
+
+    return $self->list(
+        where => { allow_to_order => 1 },
+    );
 }
 
 1;

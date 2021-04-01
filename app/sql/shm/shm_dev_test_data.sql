@@ -148,16 +148,16 @@ INSERT INTO `servers_groups` VALUES
 (5,'Сервис email уведомлений','mail','random',NULL);
 
 INSERT INTO `services` VALUES
-(1,'Тариф \"Почтовый\" (${QUOTA} мб)',75,0,'web_tariff_lock',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
-(2,'Тариф MIN (${QUOTA} мб)',100,0,'web_tariff',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
-(4,'Тариф MAX (${QUOTA} мб)',200,0,'web_tariff',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
+(1,'Тариф \"Почтовый\" (${QUOTA} мб)',75,0,'web_tariff_lock',NULL,1,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
+(2,'Тариф MIN (${QUOTA} мб)',100,0,'web_tariff',NULL,1,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
+(4,'Тариф MAX (${QUOTA} мб)',200,0,'web_tariff',NULL,1,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
 (5,'Web хостинг (${QUOTA} мб)',100,1,'web',NULL,NULL,NULL,1,NULL,NULL,'Web хостинг - услуга, позволяющая размещать ваш WEB сайт на сервере хостинга. Вы можете размещать несколько сайтов на одной площадке.',NULL,NULL),
 (8,'Почта (${QUOTA} мб)',100,1,'mail',NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL),
-(11,'Регистрация домена в зоне .RU: ${DOMAIN}',590,12,'domain',12,NULL,NULL,NULL,1,1,'Регистрация домена осуществляется регистратором доменных имен.',NULL,NULL),
+(11,'Регистрация домена в зоне .RU: ${DOMAIN}',590,12,'domain',12,1,NULL,NULL,1,1,'Регистрация домена осуществляется регистратором доменных имен.',NULL,NULL),
 (12,'Продление домена в зоне .RU: ${DOMAIN}',890,12,'domain_prolong',NULL,NULL,NULL,NULL,1,1,NULL,NULL,NULL),
 (29,'База данных MySQL (${quota} мб)',0,1,'mysql',NULL,NULL,NULL,NULL,NULL,NULL,'услуга позволяет использовать базу данных для своих сайтов.',NULL,NULL),
-(30,'Первичный DNS: ${NS}',0,1,'dns',NULL,1,NULL,NULL,NULL,NULL,NULL,NULL,'{"ns":"ns1.biit.ru"}'),
-(31,'Вторичный DNS: ${NS}',0,1,'dns',NULL,1,NULL,NULL,NULL,NULL,NULL,NULL,'{"ns":"ns2.biit.ru"}'),
+(30,'Первичный DNS: ${NS}',0,1,'dns',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'{"ns":"ns1.biit.ru"}'),
+(31,'Вторичный DNS: ${NS}',0,1,'dns',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'{"ns":"ns2.biit.ru"}'),
 (50,'Домен: ${DOMAIN}',0,0,'domain_add',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL,NULL),
 (63,'Трансфер домена: ${DOMAIN}',0,12,'transfer',NULL,NULL,1,NULL,1,1,'Домен зарегистрирован в системе как &quot;Трансфер&quot;. Такие домены владелец продляет самостоятельно.',NULL,NULL),
 (110,'Тариф X-MAX (${QUOTA} мб)',300,1,'web_tariff',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),

@@ -144,7 +144,7 @@ CREATE TABLE `services` (
   `period_cost` decimal(10,2) NOT NULL DEFAULT '0.00',
   `category` char(16) DEFAULT NULL,
   `next` int(11) DEFAULT '0',
-  `opt` tinyint(4) DEFAULT NULL,
+  `allow_to_order` tinyint(4) DEFAULT NULL,
   `max_count` tinyint(4) DEFAULT NULL,
   `question` tinyint(4) DEFAULT NULL,
   `pay_always` tinyint(4) DEFAULT '0',
