@@ -221,7 +221,7 @@ sub api_passwd {
     );
 
     $user->set( password => $password );
-    return $user->get;
+    return scalar $user->get;
 }
 
 sub validate_attributes {

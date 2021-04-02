@@ -21,6 +21,12 @@ my $routes = {
         controller => 'User',
     },
 },
+'/user/passwd' => {
+    POST => {
+        controller => 'User',
+        method => 'api_passwd',
+    },
+},
 '/user/services' => {
     GET => {
         controller => 'UserService',
