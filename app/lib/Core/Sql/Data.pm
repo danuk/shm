@@ -115,6 +115,8 @@ sub do {
 
     my $res = $self->dbh->do( $query, undef, @args ) or do {
         logger->warning( $self->dbh->errstr );
+        my $report = get_service('report');
+        $report->add_error( $self->dbh->errstr );
     };
     return $res eq '0E0' ? 0 : $res;
 }
