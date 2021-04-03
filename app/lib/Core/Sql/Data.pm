@@ -271,7 +271,11 @@ sub clean_query_args {
             } elsif ( $v->{required} ) {
                 logger->error( "`$f` required" ) if not exists $args->{$f};
             } elsif ( $v->{type} eq 'now' ) {
-                $args->{ $f } = now;
+                if ( get_service('user')->is_admin ) {
+                    $args->{ $f } //= now;
+                } else {
+                    $args->{ $f } = now;
+                }
             } elsif ( exists $v->{default} ) { # set default value
                 $args->{ $f } ||= $v->{default};
             }
