@@ -7,7 +7,7 @@ use Core::System::ServiceManager qw( get_service logger );
 use Core::Sql::Data;
 use Carp qw(confess);
 use Data::Dumper;
-use JSON;
+use JSON qw( to_json );
 use Core::Utils qw( force_numbers );
 $Data::Dumper::Deepcopy = 1;
 

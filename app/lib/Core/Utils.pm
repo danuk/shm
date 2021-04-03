@@ -32,7 +32,7 @@ our @EXPORT_OK = qw(
 
 use Core::System::ServiceManager qw( get_service );
 use Time::DaysInMonth;
-use JSON;
+use JSON qw//;
 use Scalar::Util qw(looks_like_number);
 use File::Temp;
 

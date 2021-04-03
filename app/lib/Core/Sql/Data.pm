@@ -5,7 +5,6 @@ use v5.14;
 use DBI qw(:sql_types);
 use Scalar::Util qw(looks_like_number);
 use Data::Dumper;
-use JSON;
 use utf8;
 
 use base qw(Exporter);

@@ -7,7 +7,6 @@ use utf8;
 use Core::Base;
 use Core::Const;
 use Net::OpenSSH;
-use JSON;
 use POSIX qw(:signal_h WNOHANG);
 use POSIX ":sys_wait_h";
 use POSIX 'setsid';

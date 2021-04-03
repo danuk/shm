@@ -10,7 +10,7 @@ use CGI::Carp qw(fatalsToBrowser);
 use CGI;
 use CGI::Cookie;
 use Session;
-use JSON;
+use JSON qw//;
 use MIME::Base64;
 
 use Core::System::ServiceManager qw( get_service );
