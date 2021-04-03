@@ -238,8 +238,10 @@ sub clean_query_args {
                     # Запрещаем обновлять ключевое поле
                     delete $args->{ $f } if exists $args->{ $f };
                 } elsif ( exists $args->{ $f } ) {
-                    # Не используем ключи в insert-ах
-                    delete $args->{ $f } unless $self->table_allow_insert_key;
+                    # Не используем ключи в insert-ах (админам можно)
+                    unless ( get_service('user')->is_admin ) {
+                        delete $args->{ $f } unless $self->table_allow_insert_key;
+                    }
                 }
                 next; # ключ обработан, идём дальше
             }
