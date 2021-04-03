@@ -135,7 +135,7 @@ sub parse_args {
     my $cgi = CGI->new;
     %in = $cgi->Vars;
 
-    if ( $ENV{CONTENT_TYPE} eq 'application/json' ) {
+    if ( $ENV{CONTENT_TYPE} =~/application\/json/i ) {
         my $method = $ENV{REQUEST_METHOD};
         my $json = decode_json( $in{ "${method}DATA" } );
         if ( $json ) {
