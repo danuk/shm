@@ -19,6 +19,7 @@ RUN set -x \
     && apt-get remove --purge --auto-remove -y gcc make \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /app/deploy \
+    && rm -rf /root/.cpan \
     && rm -rf /root/.cpanm \
     && mkdir /var/shm && chown nginx: /var/shm
 
