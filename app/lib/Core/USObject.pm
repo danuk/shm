@@ -82,17 +82,23 @@ sub settings_save {
     $self->set( settings => $self->settings );
 }
 
-sub set {
-    my $self = shift;
-    my %args = @_;
-
-    my $affected_rows = $self->SUPER::set( %args );
-    return $affected_rows;
-}
-
 sub add {
     my $self = shift;
-    return get_service('UserService', user_id => $self->res->{user_id} )->add( @_ );
+    my %args = (
+        service_id => undef,
+        @_,
+    );
+
+    my $service = get_service( 'service', _id => $args{service_id} );
+
+    unless ( $service->get ) {
+        logger->warning("Can't create for not existed service: $args{service_id}");
+        get_service('report')->add_error( "Can't create for not existed service" );
+        return undef;
+    }
+
+    my $usi = $self->SUPER::add( %args );
+    return get_service('us', _id => $usi );
 }
 
 sub can_delete {

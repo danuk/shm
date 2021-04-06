@@ -1,49 +1,11 @@
 package Core::UserService;
 
 use v5.14;
-use parent 'Core::Base';
+use parent 'Core::USObject';
 use Core::Base;
 use Core::Const;
 use Core::USObject;
 use Core::Utils qw( decode_json force_numbers now switch_user );
-
-sub table { return Core::USObject->table }
-
-sub structure { return Core::USObject->structure }
-
-sub add {
-    my $self = shift;
-    my %args = (
-        service_id => undef,
-        settings => undef,
-        @_,
-    );
-
-    unless ( $args{service_id} ) {
-        logger->error('`service_id` required');
-    }
-
-    my $service = get_service( 'service', _id => $args{service_id} );
-    unless ( $service ) {
-        logger->warning("Can't create not existed service: $args{service_id}");
-        return undef;
-    }
-
-    delete $args{ $_ } for qw/user_service_id created expired/;
-
-    $args{settings}//= $service->get->{config};
-
-    my $usi = $self->SUPER::add(
-        %args,
-    );
-    delete $self->{res};
-
-    unless ( $usi ) {
-        logger->error( "Can't add new user_service" );
-    }
-
-    return get_service('us', _id => $usi );
-}
 
 sub withdraws {
     my $self = shift;
