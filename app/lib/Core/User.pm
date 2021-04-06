@@ -259,7 +259,7 @@ sub validate_attributes {
     unless ( $args{login} ) {
         $report->add_error('LoginEmpty');
     }
-    unless ( $args{login}=~/^[\w\d@.-]{6,}$/ ) {
+    unless ( $args{login}=~/^[\w\d@._-]+$/ ) {
         $report->add_error('LoginShortOrIncorrect');
     }
 
