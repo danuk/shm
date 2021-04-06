@@ -117,6 +117,7 @@ sub do {
         logger->warning( $self->dbh->errstr );
         my $report = get_service('report');
         $report->add_error( $self->dbh->errstr );
+        return undef;
     };
     return $res eq '0E0' ? 0 : $res;
 }
@@ -363,6 +364,7 @@ sub _add {
     my $values = join(',', map('?',1..scalar( keys %args ) ));
 
     my $sth = $self->do("INSERT INTO $table ($fields) VALUES($values)", values %args );
+    return undef unless $sth;
 
     if ( $args{ $self->get_table_key } ) {
         return $args{ $self->get_table_key };
