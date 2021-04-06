@@ -94,6 +94,7 @@ sub get {
     unless ( %{ $res || {} } ) {
         $res = $self->SUPER::get( %args );
     }
+    return undef unless $res;
 
     $self->{res} = $res;
 

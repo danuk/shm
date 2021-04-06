@@ -441,7 +441,8 @@ sub get {
     my $self = shift;
 
     unless ( $self->id ) {
-        logger->error("Can't get() unless object_id: ". $self->get_table_key );
+        logger->warning("Can't get() unless object_id: ". $self->get_table_key );
+        return undef;
     }
 
     my ( $ret ) = $self->list( where => { sprintf("%s.%s", $self->table, $self->get_table_key ) => $self->id }, @_ );
