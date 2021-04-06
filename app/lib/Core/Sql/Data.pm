@@ -239,7 +239,7 @@ sub clean_query_args {
                     delete $args->{ $f } if exists $args->{ $f };
                 } elsif ( exists $args->{ $f } ) {
                     # Не используем ключи в insert-ах (админам можно)
-                    unless ( get_service('user')->is_admin ) {
+                    unless ( get_service('user')->authenticated->is_admin ) {
                         delete $args->{ $f } unless $self->table_allow_insert_key;
                     }
                 }
@@ -271,7 +271,7 @@ sub clean_query_args {
             } elsif ( $v->{required} ) {
                 logger->error( "`$f` required" ) if not exists $args->{$f};
             } elsif ( $v->{type} eq 'now' ) {
-                if ( get_service('user')->is_admin ) {
+                if ( get_service('user')->authenticated->is_admin ) {
                     $args->{ $f } //= now;
                 } else {
                     $args->{ $f } = now;

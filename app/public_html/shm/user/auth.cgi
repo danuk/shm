@@ -30,7 +30,7 @@ unless ( $in{login} && $in{password} ) {
 use SHM qw(:all);
 my $user = SHM->new( skip_check_auth => 1 );
 
-unless ( $user->auth( login => trim($in{login}), password => trim($in{password}) )) {
+unless ( $user = $user->auth( login => trim($in{login}), password => trim($in{password}) )) {
     print_json( { status => 401, msg => 'Incorrect login or password' } );
 	exit 0;
 }

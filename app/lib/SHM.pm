@@ -75,6 +75,11 @@ sub new {
         $ENV{SHM_TEST} = 1;
     }
 
+    if ( $args->{skip_check_auth} ) {
+        db_connect;
+        return get_service('user')
+    }
+
     if ( $args->{user_id} ) {
         $user_id = $args->{user_id};
     } elsif ( $ENV{HTTP_AUTHORIZATION} ) {
@@ -91,15 +96,23 @@ sub new {
         $user_id = $session->get('user_id');
     }
 
+    unless ( $args->{skip_check_auth} || $user_id ) {
+        print_header( status => 400 );
+        print_json( { status => 400, msg => 'User not found' } );
+        exit 0;
+    }
+
     db_connect;
 
+    # Store current user_id to local config
     switch_user( $user_id );
+
     my $user = get_service('user');
 
-    if ($0=~/\/admin\// && !$user->is_admin ) {
-            print_header( status => 403 );
-            print_json( { status => 403, msg => 'Forbidden' } );
-            exit 0;
+    if ($ENV{SCRIPT_NAME}=~/\/admin\// && !$user->is_admin ) {
+        print_header( status => 403 );
+        print_json( { status => 403, msg => 'Forbidden' } );
+        exit 0;
     }
 
     return $user;
@@ -118,7 +131,7 @@ sub ext_user_auth {
         print_json( { status => 401, msg => 'Incorrect login or password' } );
         exit 0;
     }
-    return $user->get_id;
+    return $user->id;
 }
 
 sub db_connect {

@@ -11,7 +11,7 @@ $ENV{SHM_TEST} = 1;
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw(now);
 use SHM;
-my $us = SHM->new( user_id => 40092 );
+my $user = SHM->new( user_id => 40092 );
 
 $ENV{TZ} = 'Europe/London'; #UTC+0
 tzset;
@@ -24,7 +24,7 @@ my $service = get_service('service')->add(
     category => 'test',
 );
 
-my $start_balance = get_service('user')->get->{balance};
+my $start_balance = $user->get->{balance};
 is ( $start_balance, -21.56, 'Check start balance');
 
 my $us = create_service( service_id => $service->id );
@@ -48,7 +48,7 @@ cmp_deeply( scalar $wd->get,
       }
 , 'Check withdraw');
 
-my $balance_after_create = get_service('user')->get->{balance};
+my $balance_after_create = $user->get->{balance};
 is ( $balance_after_create, -921.56, 'Check balance after create');
 
 Test::MockTime::set_fixed_time('2019-04-03T00:00:00Z');
@@ -74,7 +74,7 @@ cmp_deeply( scalar $wd->get,
       }
 , 'Check withdraw after money back');
 
-my $balance_after_money_back =  get_service('user')->get->{balance};
+my $balance_after_money_back =  $user->get->{balance};
 is ( $balance_after_money_back, -81.56, 'Check balance after money back');
 
 done_testing();

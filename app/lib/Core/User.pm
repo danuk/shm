@@ -8,7 +8,6 @@ use Core::Utils;
 use Core::Const;
 
 use Digest::SHA1 qw(sha1_hex);
-
 use vars qw($AUTOLOAD);
 
 sub AUTOLOAD {
@@ -135,14 +134,42 @@ sub structure {
 
 sub init {
     my $self = shift;
+    my %args = (
+        @_,
+    );
 
-    $self->{user_id}//= get_service('config')->local->{'user_id'};
+    unless ( $self->{user_id} ) {
+        $self->{user_id} = $self->user_id;
+    }
+
     return $self;
 }
 
 sub _id {
     my $self = shift;
-    return 'user_'. $self->user_id;
+    my %args = (
+        _id => undef,
+        @_,
+    );
+
+    my $user_id;
+    if ( $args{_id} ) {
+        $user_id = $args{_id};
+    } elsif ( my $id = $self->user_id ) {
+        $user_id = $id;
+    }
+
+    return $user_id ? sprintf('user_%d', $user_id) : 'user';
+}
+
+sub authenticated {
+    my $self = shift;
+    my $config = get_service('config');
+    if ( my $user_id = $config->local('authenticated_user_id') ) {
+        return get_service('user', _id => $user_id );
+    } else {
+        return $self;
+    }
 }
 
 sub events {
@@ -190,10 +217,7 @@ sub auth {
         return undef;
     }
 
-    switch_user( $user->{user_id} );
-    $self->{user_id} = $user->{user_id};
-
-    return $self;
+    return get_service('user', _id => $user->{user_id} );
 }
 
 sub api_passwd {
@@ -274,7 +298,7 @@ sub reg {
 
 sub services {
     my $self = shift;
-    return get_service('UserService', user_id => $self->user_id );
+    return get_service('UserService', user_id => $self->id );
 }
 
 sub set {
@@ -294,7 +318,7 @@ sub set_balance {
     );
 
     my $data = join(',', map( "$_=$_+?", keys %args ) );
-    my $ret = $self->do("UPDATE users SET $data WHERE user_id=?", values %args, $self->{user_id} );
+    my $ret = $self->do("UPDATE users SET $data WHERE user_id=?", values %args, $self->id );
 
     $self->reload() if $ret;
 
@@ -317,18 +341,17 @@ sub payment {
 
 sub pays {
     my $self = shift;
-    return get_service('pay', user_id => $self->{user_id} );
+    return get_service('pay', user_id => $self->id );
 }
 
 sub withdraws {
     my $self = shift;
-    return get_service('withdraw', user_id => $self->{user_id} );
+    return get_service('withdraw', user_id => $self->id );
 }
 
 sub is_admin {
     my $self = shift;
-
-    return $self->get_gid == 1;
+    return $self->get_gid;
 }
 
 sub list_for_api {
@@ -352,7 +375,7 @@ sub profile {
 
     my $profile = get_service("profile");
     my ( $item ) = $profile->list(
-        user_id => get_service('user')->id,
+        user_id => $self->id,
         limit => 1,
     );
 

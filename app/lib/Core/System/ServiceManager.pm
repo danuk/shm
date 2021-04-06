@@ -15,7 +15,7 @@ use v5.14;
 =cut
 
 use base qw( Exporter );
-our @EXPORT_OK = qw( $SERVICE_MANAGER get_service unregister_all logger $data );
+our @EXPORT_OK = qw( $SERVICE_MANAGER get_service delete_service unregister_all logger $data );
 
 our $SERVICE_MANAGER ||= new Core::System::ServiceManager();
 our $data = {};
@@ -98,6 +98,12 @@ sub get_service {
     return $SERVICE_MANAGER->{services}->{ $name } ||= $service;
 }
 
+sub delete_service {
+    my $name = shift;
+
+    delete $SERVICE_MANAGER->{services}->{ $name };
+}
+
 sub write_log {
     my $msg = shift;
     my $level = shift || 'debug';
@@ -155,7 +161,7 @@ sub register_service {
 
     # Получаем актуальный name, сгенерированный загруженным модулем
     if ( $service->can( '_id' ) ) {
-        $name = $service->_id;
+        $name = $service->_id( %args );
     } elsif ( exists $args{_id} ) {
         $name .= '_' . $args{_id};
     } elsif ( %args ) {

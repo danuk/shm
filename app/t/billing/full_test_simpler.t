@@ -12,13 +12,12 @@ use POSIX qw(tzset);
 
 $ENV{SHM_TEST} = 1;
 
-SHM->new( user_id => 40092 );
+my $user = SHM->new( user_id => 40092 );
 
 $ENV{TZ} = 'Europe/London'; #UTC+0
 tzset;
 
 my $spool = get_service('spool');
-my $user = get_service('user');
 my $us;
 my $user_services = get_service('UserService');
 

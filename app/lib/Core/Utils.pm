@@ -30,7 +30,7 @@ our @EXPORT_OK = qw(
     passgen
 );
 
-use Core::System::ServiceManager qw( get_service );
+use Core::System::ServiceManager qw( get_service delete_service );
 use Time::DaysInMonth;
 use JSON qw//;
 use Scalar::Util qw(looks_like_number);
@@ -230,7 +230,12 @@ sub switch_user {
     my $user_id = shift;
 
     get_service('logger')->debug('Switch user to: ', $user_id );
-    get_service('config')->local('user_id', $user_id );
+
+    my $config = get_service('config');
+    $config->local('authenticated_user_id', $user_id ) unless $config->local('authenticated_user_id');
+    $config->local('user_id', $user_id );
+
+    delete_service('user');
 }
 
 sub passgen {
