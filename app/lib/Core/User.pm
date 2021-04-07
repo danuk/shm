@@ -334,6 +334,11 @@ sub payment {
 
     return undef unless $args{money};
 
+    unless ( get_service('pay')->add( %args ) ) {
+        get_service('report')->add_error("Can't make payment");
+        return undef;
+    }
+
     $self->set_balance( balance => $args{money} );
 
     return $self->make_event( 'payment' );

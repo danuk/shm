@@ -17,7 +17,7 @@ sub structure {
         },
         pay_system_id => {
             type => 'number',
-            required => 1,
+            default => 1,
         },
         money => {
             type => 'number',
@@ -55,17 +55,6 @@ sub pays {
 
     $self->{res} = $res;
     return $self;
-}
-
-sub add {
-    my $self = shift;
-    my %args = @_;
-
-    if ( my $res = $self->SUPER::add( %args ) ) {
-        get_service('user', _id => $args{user_id} )->payment( money => $args{money} );
-        return $res;
-    }
-    return undef;
 }
 
 1;
