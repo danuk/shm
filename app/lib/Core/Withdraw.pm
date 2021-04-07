@@ -106,7 +106,7 @@ sub add {
 
     # Заполняем стуктуру из данных услуги, если параметр не передан явно
     my $srv = $service->get;
-    for ( keys %{ $srv->get } ) {
+    for ( keys %{ $srv } ) {
         $args{ $_ }||= $srv->{ $_ };
     }
 
