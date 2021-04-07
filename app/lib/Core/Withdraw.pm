@@ -98,12 +98,6 @@ sub add {
         @_,
     );
 
-    unless ( $args{user_service_id} ) {
-        logger->error('`user_service_id` required');
-    }
-
-    delete @args{ qw/end_date withdraw_date/ };
-
     # Заполняем стуктуру из данных услуги, если параметр не передан явно
     my $srv = get_service('service', _id => $args{service_id } )->get;
     for ( keys %{ $srv } ) {

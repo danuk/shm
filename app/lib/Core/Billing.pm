@@ -52,7 +52,7 @@ sub create_service {
 
     my $us = get_service('UserService')->add( %args );
 
-    my $wd_id = get_service('wd')->add(
+    my $wd_id = add_withdraw(
         calc_withdraw( $us->billing, $service->get, %args ),
         user_service_id => $us->id,
     );
@@ -139,6 +139,13 @@ sub process_service {
     return prolongate( $self );
 }
 
+sub add_withdraw {
+    my %wd = @_;
+
+    delete @wd{ qw/ end_date withdraw_date / };
+    return get_service('withdraw')->add( %wd );
+}
+
 # Создание следущего платежа на основе текущего
 sub add_withdraw_next {
     my $self = shift;
@@ -152,7 +159,7 @@ sub add_withdraw_next {
         bonus => 0,
     );
 
-    return $self->withdraws->add( %wd );
+    return add_withdraw( %wd );
 }
 
 # Вычисляет итоговую стоимость услуги
