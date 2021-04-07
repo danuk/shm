@@ -90,8 +90,7 @@ sub add {
     );
 
     my $service = get_service( 'service', _id => $args{service_id} );
-
-    unless ( $service->get ) {
+    unless ( $service ) {
         logger->warning("Can't create for not existed service: $args{service_id}");
         get_service('report')->add_error( "Can't create for not existed service" );
         return undef;
