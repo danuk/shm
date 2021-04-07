@@ -98,9 +98,15 @@ sub add {
         @_,
     );
 
+    my $service = get_service('service', _id => $args{service_id } );
+    unless ( $service ) {
+        get_service('report')->add_error( "Can't create for not existed service" );
+        return undef;
+    }
+
     # Заполняем стуктуру из данных услуги, если параметр не передан явно
-    my $srv = get_service('service', _id => $args{service_id } )->get;
-    for ( keys %{ $srv } ) {
+    my $srv = $service->get;
+    for ( keys %{ $srv->get } ) {
         $args{ $_ }||= $srv->{ $_ };
     }
 
