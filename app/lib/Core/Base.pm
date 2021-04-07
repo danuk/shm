@@ -28,7 +28,7 @@ sub new {
     my $self = bless( $args, $class );
 
     # Устанавливаем идентификатор автоматически
-    if ( $args->{_id} && $class->can('structure') ) {
+    if ( defined $args->{_id} && $class->can('structure') ) {
         $args->{ $class->get_table_key } = delete $args->{_id};
 
         # Выходим если не смогли загрузить данные по идентификатору

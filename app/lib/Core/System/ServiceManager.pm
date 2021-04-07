@@ -73,6 +73,11 @@ sub get_service {
 
     return undef unless $name;
 
+    # Set _id to 0 for undefined services
+    if ( defined $args{_id} && $args{_id} eq '' ) {
+        $args{_id} = 0;
+    }
+
     my $service_name = $name;
     if ( $args{_id} ) {
         $service_name .= '_' . $args{_id};
