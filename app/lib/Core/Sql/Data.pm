@@ -420,6 +420,7 @@ sub list_for_api {
         calc => 1,
         where => $args{where},
         order => $args{order},
+        join => $args{join},
     );
 
     # Remove protected fields
