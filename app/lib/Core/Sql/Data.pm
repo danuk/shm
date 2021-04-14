@@ -18,6 +18,8 @@ our @EXPORT = qw(
     affected_rows
     found_rows
     query_select
+    query_for_order
+    query_for_filtering
     quote
     res_by_arr
     insert_id
@@ -200,6 +202,52 @@ sub convert_sql_structure_data {
     else {
         logger->error('Unknown type of data');
     }
+}
+
+sub query_for_order {
+    my $self = shift;
+    my %args = (
+        sort_field => undef,
+        sort_direction => undef,
+        @_,
+    );
+
+    return undef unless $self->can('structure');
+    my %structure = %{ $self->structure };
+
+    my $field = $structure{ $args{sort_field} };
+    return undef unless $field;
+
+    my $direction = 'asc';
+    if ( $args{sort_direction} && $args{sort_direction} eq 'desc' ) {
+        $direction = 'desc';
+    }
+
+    return [ $args{sort_field} => $direction ];
+}
+
+sub query_for_filtering {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    return undef unless $self->can('structure');
+    my %structure = %{ $self->structure };
+
+    my %where;
+
+    for my $key ( keys %args ) {
+        if ( my $field = $structure{ $key } ) {
+            if ( $field->{type} eq 'key' || $field->{type} eq 'number' ) {
+                $where{ $key } = $args{ $key };
+            } else {
+                $where{ $key }{'-like'} = '%'.$args{ $key }.'%';
+            }
+        }
+    }
+
+    return \%where;
 }
 
 sub clean_query_args {
@@ -407,19 +455,31 @@ sub list_for_api {
         field => 'date',
         start => undef,
         stop => undef,
-        limit => {},
+        limit => 25,
         @_,
     );
 
     my $method = $args{admin} ? '_list' : 'list';
 
+    my $where = {
+        %{ $self->query_for_filtering( %{ $args{filter} || {} } ) || {} },
+        %{ $args{where} || {} },
+    };
+
+    my $order = $self->query_for_order( %args );
+
+    my $range;
+    if ( $args{field} && $args{start} && $args{stop} ) {
+        $range = { field => $args{field}, start => $args{start}, stop => $args{stop} };
+    }
+
     my @ret = $self->$method(
-        range => { field => $args{field}, start => $args{start}, stop => $args{stop} },
-        limit => $args{limit}->{limit},
-        offset => $args{limit}->{offset},
+        $range ? ( $range ) : (),
+        limit => $args{limit},
+        offset => $args{offset},
         calc => 1,
-        where => $args{where},
-        order => $args{order},
+        $where ? ( where => $where ) : (),
+        $order ? ( order => $order ) : (),
         join => $args{join},
     );
 

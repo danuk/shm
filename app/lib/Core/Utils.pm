@@ -186,7 +186,7 @@ sub decode_json {
     my $data = shift || return undef;
 
     my $json;
-    eval{ $json = JSON->new->utf8->decode( $data ) } or do {
+    eval{ $json = JSON->new->decode( $data ) } or do {
         get_service('logger')->warning("Incorrect JSON data: " . $data);
     };
 

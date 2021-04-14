@@ -62,25 +62,47 @@ sub all {
         admin => 0,
         usi => undef,
         parent => undef,
+        where => undef,
+        order => undef,
         @_,
     );
 
     my %where = (
+        $args{where} ? ( %{ $args{where} } ) : (),
         $args{usi} ? ( user_service_id => $args{usi} ) : (),
         $args{parent} ? ( parent => $args{parent} ) : (),
+
     );
+
+    my $order = $self->query_for_order( %args );
 
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
+                                        calc => 1,
                                         join => { table => 'services', using => ['service_id'] },
                                         $args{admin} ? () : ( user_id => $self->user_id),
                                         %where ? ( where => { %where } ) : (),
+                                        limit => $args{limit},
+                                        offset => $args{offset},
+                                        $order ? ( order => $order ) : (),
     );
 
     my $res = $self->query_by_name( $query, 'user_service_id', @vars );
+    $self->found_rows( $self->SUPER::found_rows() );
     $self->{res} = $res;
 
     return $self;
+}
+
+sub found_rows {
+    my $self = shift;
+    my $count = shift;
+
+    if ( defined $count ) {
+        $self->{found_rows} = $count;
+    }
+
+    return $self->{found_rows};
 }
 
 sub category {
@@ -371,8 +393,12 @@ sub list_for_api {
         admin => 0,
         usi => undef,
         parent => { '=', undef }, # parent IS NULL
+        limit => 25,
+        filter => undef,
         @_,
     );
+
+    $args{where} = $self->query_for_filtering( %{ $args{filter} || {} } );
 
     my @arr = $self->all( %args )->with('settings','services','withdraws')->get;
 

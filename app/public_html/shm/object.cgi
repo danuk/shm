@@ -13,6 +13,7 @@ use Core::Utils qw(
     http_content_range
     now
     switch_user
+    decode_json
 );
 
 my %headers;
@@ -97,8 +98,15 @@ elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
     }
 }
 else {
+    $in{filter} = decode_json( $in{filter} ) if $in{filter};
+
     my @ret = $service->list_for_api( %in, admin => $admin );
-    $res = \@ret;
+    $res = {
+        items => $service->found_rows(),
+        limit => $in{limit} || 25,
+        offset => $in{offset} || 0,
+        data => \@ret,
+    };
 
     my $numRows = $service->found_rows;
     %headers = http_content_range( http_limit, count => $numRows );

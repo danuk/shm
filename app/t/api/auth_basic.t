@@ -12,7 +12,8 @@ subtest 'Check Basic auth for Admin' => sub {
     );
 
     my $json_ret = decode_json( $ret );
-    is( scalar @{$json_ret} , 4);
+
+    is( exists $json_ret->{data}, 1);
 };
 
 subtest 'Check Basic auth for User' => sub {
@@ -23,8 +24,8 @@ subtest 'Check Basic auth for User' => sub {
     );
 
     my $json_ret = decode_json( $ret );
-    is( scalar @{$json_ret} , 1);
-    is( $json_ret->[0]->{user_id}, 40092);
+    is( exists $json_ret->{data} , 1);
+    is( $json_ret->{data}->[0]->{user_id}, 40092);
 };
 
 done_testing();

@@ -122,8 +122,10 @@ sub list {
 sub list_for_api {
     my $self = shift;
     my @arr = $self->SUPER::list_for_api( field => 'withdraw_date', @_ );
+    $self->found_rows( $self->SUPER::found_rows() );
 
-    my $us = get_service('UserService')->ids(
+    my $user_service = get_service('UserService');
+    my $us = $user_service->ids(
         user_service_id => [ map $_->{user_service_id}, @arr ]
     )->with('settings','services')->get;
 
@@ -140,6 +142,17 @@ sub list_for_api {
         $_->{discount_date} = $_->{withdraw_date};
     }
     return @arr;
+}
+
+sub found_rows {
+    my $self = shift;
+    my $count = shift;
+
+    if ( defined $count ) {
+        $self->{found_rows} = $count;
+    }
+
+    return $self->{found_rows};
 }
 
 1;

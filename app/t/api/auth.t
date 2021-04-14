@@ -36,7 +36,7 @@ subtest 'Check auth with correct credentials' => sub {
 
     my $json_ret = decode_json( $ret );
 
-    is( scalar @{ $json_ret }, 2 );
+    is( exists $json_ret->{data}, 1 );
 };
 
 my $session_id;
@@ -65,7 +65,7 @@ subtest 'Check auth with cookies' => sub {
     );
 
     my $json_ret = decode_json( $ret );
-    is( scalar @{ $json_ret }, 4 );
+    is( exists $json_ret->{data}, 1 );
 };
 
 subtest 'Check auth with incorrect cookies' => sub {
