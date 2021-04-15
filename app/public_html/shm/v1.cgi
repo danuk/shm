@@ -9,11 +9,13 @@ use Router::Simple;
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw(
     parse_args
+    decode_json
 );
 
 use Data::Dumper;
 
 our %in = parse_args();
+$in{filter} = decode_json( $in{filter} ) if $in{filter};
 
 my $routes = {
 '/user' => {
@@ -76,13 +78,13 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         exit 0;
     }
 
-    my $m = $p->{method} || 'list_for_api';
-    unless ( $service->can( $m ) ) {
+    my $method = $p->{method} || 'list_for_api';
+    unless ( $service->can( $method ) ) {
         print_header( status => 500 );
         print_json( { error => 'Method not exists'} );
     }
 
-    my @ret = $service->$m( %in, %{ $p } );
+    my @ret = $service->$method( %in, %{ $p } );
 
     my $report = get_service('report');
     unless ( $report->is_success ) {
@@ -91,8 +93,18 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         exit 0;
     }
 
+    my $res = \@ret;;
+    if ( $ENV{REQUEST_METHOD} eq 'GET' ) {
+        $res = {
+            items => $service->found_rows(),
+            limit => $in{limit} || 25,
+            offset => $in{offset} || 0,
+            data => \@ret,
+        };
+    }
+
     print_header( status => 200 );
-    print_json( \@ret );
+    print_json( $res );
 
 } else {
     print_header( status => 404 );
