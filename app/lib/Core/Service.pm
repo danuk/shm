@@ -27,6 +27,10 @@ sub structure {
             type => 'number',
             required => 1,
         },
+        children => {
+            type => 'json',
+            value => undef,
+        },
         next => {
             type => 'number',
         },
@@ -60,40 +64,8 @@ sub structure {
 
 sub add {
     my $self = shift;
-    my %args = (
-        @_,
-    );
-
-    my @children = @{ delete $args{children} || [] };
-
-    my $si = $self->SUPER::add( %args );
-
-    unless ( $si ) {
-        logger->warning( "Can't add new service" );
-        get_service('report')->add_error("Service already exists");
-        return undef;
-    }
-
-    $self->subservices(
-        services => [ map( $_->{service_id}, @children ) ],
-    );
-
-    return get_service('service', service_id => $si );
-}
-
-sub set {
-    my $self = shift;
-    my %args = (
-        @_,
-    );
-
-    my @children = @{ delete $args{children} || [] };
-
-    $self->subservices(
-        services => [ map( $_->{service_id}, @children ) ],
-    );
-
-    return $self->SUPER::set( %args );
+    my $id = $self->SUPER::add( @_ );
+    return get_service('service', _id => $id );
 }
 
 sub convert_name {
@@ -107,26 +79,30 @@ sub convert_name {
 
 sub subservices {
     my $self = shift;
+    return $self->res->{children} || [];
+}
+
+sub api_subservices_list {
+    my $self = shift;
     my %args = (
-        services => undef,
+        service_id => undef,
         @_,
     );
 
-    if ( $args{services} ) {
-        my $ss = get_service('SubServices');
+    my $service = get_service('service', _id => $args{service_id} );
+    return [] unless $service;
 
-        $ss->delete_all_for_service( $self->id );
+    my $list = $self->_list( where => {
+        service_id => { -in => $service->subservices },
+    });
 
-        for ( @{ $args{services} } ) {
-            $ss->add(
-                service_id => $self->id,
-                subservice_id => $_,
-            );
-        }
-        return 1;
+    # Making order of priority
+    my @ret;
+    for ( @{ $service->subservices || [] } ) {
+        push @ret, $list->{ $_ };
     }
 
-    return get_service('SubServices', service_id => $self->id )->list;
+    return \@ret;
 }
 
 sub delete {
@@ -158,12 +134,9 @@ sub list_for_api {
     );
 
     if ( $args{admin} && $args{parent} ) {
-        my $ss = get_service('SubServices');
-        my @ss_ids = $ss->_list( where => { service_id => $args{parent} } );
-        unless ( @ss_ids ) {
-            return ();
+        if ( my $service = get_service('service', _id => $args{parent} ) ) {
+            $args{where} = { service_id => { -in => $service->subservices } };
         }
-        $args{where} = { service_id => { -in => [ map $_->{subservice_id}, @ss_ids ] } };
     }
     elsif ( $args{service_id} ) {
         $args{where} = { service_id => $args{service_id} };

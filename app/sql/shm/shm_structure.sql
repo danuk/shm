@@ -143,6 +143,7 @@ CREATE TABLE `services` (
   `cost` decimal(10,2) DEFAULT NULL,
   `period_cost` decimal(10,2) NOT NULL DEFAULT '0.00',
   `category` char(16) DEFAULT NULL,
+  `children` json DEFAULT NULL,
   `next` int(11) DEFAULT '0',
   `allow_to_order` tinyint(4) DEFAULT NULL,
   `max_count` tinyint(4) DEFAULT NULL,
@@ -195,14 +196,6 @@ CREATE TABLE `spool_history` (
   `delayed` int(11) NOT NULL DEFAULT '0',
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
-
-DROP TABLE IF EXISTS `subservices`;
-CREATE TABLE `subservices` (
-  `ss_id` int(11) NOT NULL AUTO_INCREMENT,
-  `service_id` int(11) NOT NULL,
-  `subservice_id` int(11) NOT NULL,
-  PRIMARY KEY (`ss_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `user_services`;

@@ -116,7 +116,7 @@ sub _add_or_set {
     my %super_args = %args;
     for my $key ( keys %args ) {
         my $new_value = $args{ $key };
-        if ( ref $new_value eq 'HASH' ) {
+        if ( ref $new_value eq 'HASH' || ref $new_value eq 'ARRAY' ) {
             $super_args{ $key } = to_json( force_numbers $args{ $key } );
         }
     }

@@ -59,8 +59,8 @@ sub create_service {
     $us->set( withdraw_id => $wd_id );
 
     my $ss = get_service('service', _id => $args{service_id} )->subservices;
-    for ( keys %{ $ss } ) {
-        get_service('UserService')->add( service_id => $ss->{ $_ }->{subservice_id}, parent => $us->id );
+    for ( @{ $ss } ) {
+        get_service('UserService')->add( service_id => $_, parent => $us->id );
     }
 
     return process_service_recursive( $us, EVENT_CREATE );

@@ -148,21 +148,21 @@ INSERT INTO `servers_groups` VALUES
 (5,'Сервис email уведомлений','mail','random',NULL);
 
 INSERT INTO `services` VALUES
-(1,'Тариф \"Почтовый\" (${QUOTA} мб)',75,0,'web_tariff_lock',NULL,1,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
-(2,'Тариф MIN (${QUOTA} мб)',100,0,'web_tariff',NULL,1,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
-(4,'Тариф MAX (${QUOTA} мб)',200,0,'web_tariff',NULL,1,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
-(5,'Web хостинг (${QUOTA} мб)',100,1,'web',NULL,NULL,NULL,1,NULL,NULL,'Web хостинг - услуга, позволяющая размещать ваш WEB сайт на сервере хостинга. Вы можете размещать несколько сайтов на одной площадке.',NULL,NULL),
-(8,'Почта (${QUOTA} мб)',100,1,'mail',NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL),
-(11,'Регистрация домена в зоне .RU: ${DOMAIN}',590,12,'domain',12,1,NULL,NULL,1,1,'Регистрация домена осуществляется регистратором доменных имен.',NULL,NULL),
-(12,'Продление домена в зоне .RU: ${DOMAIN}',890,12,'domain_prolong',NULL,NULL,NULL,NULL,1,1,NULL,NULL,NULL),
-(29,'База данных MySQL (${quota} мб)',0,1,'mysql',NULL,NULL,NULL,NULL,NULL,NULL,'услуга позволяет использовать базу данных для своих сайтов.',NULL,NULL),
-(30,'Первичный DNS: ${NS}',0,1,'dns',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'{"ns":"ns1.biit.ru"}'),
-(31,'Вторичный DNS: ${NS}',0,1,'dns',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'{"ns":"ns2.biit.ru"}'),
-(50,'Домен: ${DOMAIN}',0,0,'domain_add',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL,NULL),
-(63,'Трансфер домена: ${DOMAIN}',0,12,'transfer',NULL,NULL,1,NULL,1,1,'Домен зарегистрирован в системе как &quot;Трансфер&quot;. Такие домены владелец продляет самостоятельно.',NULL,NULL),
-(110,'Тариф X-MAX (${QUOTA} мб)',300,1,'web_tariff',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
-(111,'Web хостинг (${QUOTA} мб)',0,1,'web',NULL,NULL,NULL,1,NULL,NULL,'Web хостинг - услуга, позволяющая размещать ваш WEB сайт на сервере хостинга. Вы можете размещать несколько сайтов на одной площадке.',NULL,NULL),
-(112,'Почта (${QUOTA} мб)',0,1,'mail',NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL);
+(1,'Тариф \"Почтовый\" (${QUOTA} мб)',75,0,'web_tariff_lock','[8]',NULL,1,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
+(2,'Тариф MIN (${QUOTA} мб)',100,0,'web_tariff','[8,5,29]',NULL,1,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
+(4,'Тариф MAX (${QUOTA} мб)',200,0,'web_tariff','[5,8,29]',NULL,1,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
+(5,'Web хостинг (${QUOTA} мб)',100,1,'web',NULL,NULL,NULL,NULL,1,NULL,NULL,'Web хостинг - услуга, позволяющая размещать ваш WEB сайт на сервере хостинга. Вы можете размещать несколько сайтов на одной площадке.',NULL,NULL),
+(8,'Почта (${QUOTA} мб)',100,1,'mail',NULL,NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL),
+(11,'Регистрация домена в зоне .RU: ${DOMAIN}',590,12,'domain','[30,31]',12,1,NULL,NULL,1,1,'Регистрация домена осуществляется регистратором доменных имен.',NULL,NULL),
+(12,'Продление домена в зоне .RU: ${DOMAIN}',890,12,'domain_prolong',NULL,NULL,NULL,NULL,NULL,1,1,NULL,NULL,NULL),
+(29,'База данных MySQL (${quota} мб)',0,1,'mysql',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'услуга позволяет использовать базу данных для своих сайтов.',NULL,NULL),
+(30,'Первичный DNS: ${NS}',0,1,'dns',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'{"ns":"ns1.biit.ru"}'),
+(31,'Вторичный DNS: ${NS}',0,1,'dns',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'{"ns":"ns2.biit.ru"}'),
+(50,'Домен: ${DOMAIN}',0,0,'domain_add',NULL,NULL,NULL,NULL,1,NULL,NULL,NULL,NULL,NULL),
+(63,'Трансфер домена: ${DOMAIN}',0,12,'transfer','[30,31]',NULL,NULL,1,NULL,1,1,'Домен зарегистрирован в системе как &quot;Трансфер&quot;. Такие домены владелец продляет самостоятельно.',NULL,NULL),
+(110,'Тариф X-MAX (${QUOTA} мб)',300,1,'web_tariff','[112,111,29]',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL),
+(111,'Web хостинг (${QUOTA} мб)',0,1,'web',NULL,NULL,NULL,NULL,1,NULL,NULL,'Web хостинг - услуга, позволяющая размещать ваш WEB сайт на сервере хостинга. Вы можете размещать несколько сайтов на одной площадке.',NULL,NULL),
+(112,'Почта (${QUOTA} мб)',0,1,'mail',NULL,NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL);
 
 INSERT INTO `events` VALUES
 (default,'UserService','Chanor web account','passwd',NULL,'{"category":"web","cmd":"www passwd w_{{us.parent}}"}'),
@@ -177,22 +177,6 @@ INSERT INTO `events` VALUES
 (default,'UserService','Erase dns','remove',NULL,'{"category":"dns","cmd":"dns erase {{us.domain}}"}'),
 (default,'UserService','Update dns','update',NULL,'{"category":"dns","cmd":"dns update","stdin":"{{payload}}"}'),
 (default,'UserService','Test Docker command','create',1,'{"cmd":"ansible-playbook --extra-vars \'{{US}}\'","transport":"docker"}');
-
-INSERT INTO `subservices` VALUES
-(default,1,8),
-(default,2,8),
-(default,2,5),
-(default,2,29),
-(default,4,5),
-(default,4,8),
-(default,4,29),
-(default,11,30),
-(default,11,31),
-(default,110,112),
-(default,110,111),
-(default,110,29),
-(default,63,30),
-(default,63,31);
 
 INSERT INTO `user_services` VALUES (16,40092,63,1,3583,'2014-10-02 13:47:30','2017-09-22 14:51:26','ACTIVE',0,NULL,'{\"ns1\": \"ns1.viphost.ru\", \"ns2\": \"ns2.viphost.ru\", \"domain\": \"danuk.ru\", \"nic_id\": \"184677/NIC-D\\n\", \"punycode\": \"\", \"domain_id\": \"6\"}'),
 (17,40092,30,1,NULL,'2014-10-02 13:47:30',NULL,'ACTIVE',0,16,'{\"ns\": \"ns1.viphost.ru\", \"domain_id\": \"6\", \"server_id\": 1}'),
