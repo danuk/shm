@@ -69,7 +69,9 @@ sub add {
     my $si = $self->SUPER::add( %args );
 
     unless ( $si ) {
-        logger->error( "Can't add new service" );
+        logger->warning( "Can't add new service" );
+        get_service('report')->add_error("Service already exists");
+        return undef;
     }
 
     $self->subservices(

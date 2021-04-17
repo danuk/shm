@@ -8,10 +8,7 @@ my $user = SHM->new( skip_check_auth => 1 );
 
 my %in = parse_args();
 
-my $object = $user->reg(
-    login => $in{login},
-    password => $in{password},
-);
+my $object = $user->reg( %in );
 
 if ( $object ) {
     my %user = $object->get;

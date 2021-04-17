@@ -137,6 +137,7 @@ sub parse_args {
 
     if ( $ENV{CONTENT_TYPE} =~/application\/json/i ) {
         my $method = $ENV{REQUEST_METHOD};
+        _utf8_on( $in{ "${method}DATA" } );
         my $json = decode_json( $in{ "${method}DATA" } );
         if ( $json ) {
             %in = %{ $json };
