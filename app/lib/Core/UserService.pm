@@ -374,14 +374,6 @@ sub get_all_keys_ref {
             if ( $_=~/^([a-z_]+_id)$/ && $obj->{ $chld }->{ $_ } ) {
                 push @{ $data{ $1 }->{ $obj->{ $chld }->{ $_ } } ||= [] }, $obj->{ $chld } if $obj->{ $chld }->{ $_ };
             }
-            if ( $_ eq 'children' ) {
-                my $chld = get_all_keys_ref( $obj->{ $chld }->{children} );
-                for my $c ( keys %{ $chld } ) {
-                    for my $v ( keys %{ $chld->{ $c } } ) {
-                        push @{ $data{ $c }->{ $v } }, @{ $chld->{ $c }->{ $v } };
-                    }
-                }
-            }
         }
     }
     return \%data;
