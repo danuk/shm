@@ -16,7 +16,7 @@ use Core::System::ServiceManager qw( get_service );
 my $obj = get_service('us', _id => 99);
 
 my @arr = $obj->withdraws->list;
-is ( $arr[0]->{cost}, 0, 'Get cost of list withdraws array' );
+is ( $arr[0]->{cost}, 590, 'Get cost of list withdraws array' );
 
 my $wd = $obj->withdraws->get;
 is ( $wd->{cost}, 0, 'Get cost of current withdraw (hash mode)' );

@@ -1,11 +1,13 @@
 BEGIN;
+SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `acts`;
 CREATE TABLE `acts` (
   `act_id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) DEFAULT NULL,
+  `user_id` int(11) NOT NULL,
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `show_act` tinyint(4) DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`act_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -13,7 +15,7 @@ DROP TABLE IF EXISTS `acts_data`;
 CREATE TABLE `acts_data` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `act_id` int(10) unsigned DEFAULT NULL,
-  `user_id` int(10) unsigned DEFAULT NULL,
+  `user_id` int(11) NOT NULL,
   `service_id` int(11) DEFAULT NULL,
   `user_service_id` int(11) DEFAULT NULL,
   `withdraw_id` int(10) unsigned DEFAULT NULL,
@@ -21,6 +23,7 @@ CREATE TABLE `acts_data` (
   `name` char(64) DEFAULT NULL,
   `start_date` datetime DEFAULT NULL,
   `stop_date` datetime DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -32,6 +35,7 @@ CREATE TABLE `apps` (
   `name` char(16) NOT NULL,
   `domain_id` int(11) DEFAULT NULL,
   `settings` json DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -54,6 +58,7 @@ CREATE TABLE `dns_services` (
   `prio` tinyint(4) DEFAULT NULL,
   `addr` text,
   `ttl` tinyint(4) DEFAULT NULL,
+  FOREIGN KEY (domain_id) REFERENCES domains (domain_id),
   PRIMARY KEY (`dns_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -67,6 +72,7 @@ CREATE TABLE `domains` (
   `subdomain_for` int(11) DEFAULT NULL,
   `punycode` char(64) DEFAULT NULL,
   `user_service_id` int(11) DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`domain_id`),
   UNIQUE KEY `domain` (`domain`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
@@ -88,6 +94,7 @@ CREATE TABLE `invoices` (
   `user_id` int(11) DEFAULT NULL,
   `total` decimal(10,2) DEFAULT '0.00',
   `text` char(128) DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -99,6 +106,8 @@ CREATE TABLE `pays_history` (
   `money` decimal(10,2) NOT NULL DEFAULT '0.00',
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `comment` char(255) DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
+  FOREIGN KEY (pay_system_id) REFERENCES pay_systems (id),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -179,6 +188,7 @@ CREATE TABLE `spool` (
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
   `settings` json DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -195,6 +205,7 @@ CREATE TABLE `spool_history` (
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
   `settings` json DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -212,6 +223,10 @@ CREATE TABLE `user_services` (
   `parent` int(11) DEFAULT NULL,
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`user_service_id`),
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
+  FOREIGN KEY (service_id) REFERENCES services (service_id),
+  FOREIGN KEY (parent) REFERENCES user_services (user_service_id) ON DELETE SET NULL,
+  FOREIGN KEY (withdraw_id) REFERENCES withdraw_history (withdraw_id),
   UNIQUE KEY `user_services_idx` (`user_service_id`,`user_id`,`service_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -259,6 +274,9 @@ CREATE TABLE `withdraw_history` (
   `service_id` int(11) NOT NULL,
   `qnt` double NOT NULL DEFAULT '1',
   `user_service_id` int(11) DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
+  FOREIGN KEY (service_id) REFERENCES services (service_id),
+  FOREIGN KEY (user_service_id) REFERENCES user_services (user_service_id) ON DELETE SET NULL,
   PRIMARY KEY (`withdraw_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
@@ -316,6 +334,7 @@ CREATE TABLE `profiles` (
   `user_id` int(11) DEFAULT NULL,
   `data` json DEFAULT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
