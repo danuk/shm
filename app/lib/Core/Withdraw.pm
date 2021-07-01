@@ -116,6 +116,11 @@ sub add {
 sub list {
     my $self = shift;
     my %args = @_;
+
+    if ( $self->{usi} ) {
+        $args{where}->{user_service_id} = $self->{usi};
+    }
+
     return $self->SUPER::list( order => [ $self->get_table_key => 'asc' ], %args );
 }
 

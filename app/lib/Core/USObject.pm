@@ -198,7 +198,7 @@ sub child_by_category {
 sub withdraws {
     my $self = shift;
     return undef unless $self->get_withdraw_id;
-    return get_service('wd', _id => $self->get_withdraw_id );
+    return get_service('wd', _id => $self->get_withdraw_id, usi => $self->id );
 }
 
 sub data_for_transport {

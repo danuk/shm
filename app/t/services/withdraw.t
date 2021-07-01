@@ -16,7 +16,7 @@ use Core::System::ServiceManager qw( get_service );
 my $obj = get_service('us', _id => 99);
 
 my @arr = $obj->withdraws->list;
-is ( $arr[0]->{cost}, 590, 'Get cost of list withdraws array' );
+is ( scalar( @arr ), 1, 'Check count of withdraws' );
 
 my $wd = $obj->withdraws->get;
 is ( $wd->{cost}, 0, 'Get cost of current withdraw (hash mode)' );
@@ -32,5 +32,14 @@ is ( exists $new_wd->{withdraw_id}, 1, 'Check get one next withdraw' );
 
 my $nexts = $obj->withdraws->next;
 is ( ref $nexts eq 'ARRAY', 1, 'Check get all nexts withdraw' );
+
+@arr = $obj->withdraws->list;
+is ( scalar( @arr ), 2, 'Check count of withdraws' );
+
+$obj = get_service('us', _id => 2949);
+@arr = $obj->withdraws->list;
+is ( scalar( @arr ), 1, 'Check count of withdraws' );
+is ( $arr[0]->{cost}, 590, 'Get cost of list withdraws array' );
+is ( $obj->withdraws->get->{cost}, 590, 'Check cost of 2949 service' );
 
 done_testing();
