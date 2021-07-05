@@ -161,7 +161,9 @@ sub with {
                 for my $item ( @{ $ref->{ $k } } ) {
                     # Fill ${item_from_settings} values in structure
                     if ( $method eq 'settings' ) {
-                        map( $item->{ $_ }=~s/\$\{(\w+)\}/ exists $ret{ $k }->{lc($1)} ? $ret{ $k }->{lc($1)} : ''/ge, keys %{ $item } );
+                        for my $sec ( $item, $item->{services} ) {
+                            map( $sec->{ $_ }=~s/\$\{(\w+)\}/ exists $ret{ $k }->{lc($1)} ? $ret{ $k }->{lc($1)} : ''/ge, keys %{ $sec } );
+                        }
                     }
                     # Add new section ($method) for item
                     $item->{ $method } = $ret{ $k };
@@ -198,6 +200,15 @@ sub parents {
         join => { table => 'services', using => ['service_id'] },
         where => { parent => $parent },
     );
+
+    $self->{res} = $res;
+    return $self;
+}
+
+sub list_prepare {
+    my $self = shift;
+
+    my $res = $self->list( @_ );
 
     $self->{res} = $res;
     return $self;

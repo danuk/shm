@@ -19,9 +19,9 @@ my @arr = $obj->withdraws->list;
 is ( scalar( @arr ), 1, 'Check count of withdraws' );
 
 my $wd = $obj->withdraws->get;
-is ( $wd->{cost}, 0, 'Get cost of current withdraw (hash mode)' );
+is ( $wd->{cost}, 123.45, 'Get cost of current withdraw (hash mode)' );
 
-is ( $obj->withdraws->get->{cost}, 0, 'Get cost of current withdraw (ref mode)' );
+is ( $obj->withdraws->get->{cost}, 123.45, 'Get cost of current withdraw (ref mode)' );
 
 my $new_wd_id = $obj->withdraws->add( %{ $wd } );
 my $new_wd = get_service('wd', _id => $new_wd_id );

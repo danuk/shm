@@ -57,4 +57,67 @@ sub pays {
     return $self;
 }
 
+sub forecast {
+    my $self = shift;
+    my %args = (
+        days => 10,
+        @_,
+    );
+
+    my $user_services = get_service('UserService')->list_prepare(
+        where => {
+            auto_bill => \[ '= 1'],
+            withdraw_id => { '!=', undef },
+            expired => [
+                { '<', \[ 'NOW() + INTERVAL ? DAY', $args{days} ] },
+                undef,
+            ],
+        },
+        order => [
+            user_service_id => 'asc',
+            expired => 'asc',
+        ],
+    )->with('services','withdraws','settings')->get;
+
+    my @forecast_services;
+
+    for my $usi ( keys %{ $user_services } ) {
+        my $obj = $user_services->{ $usi };
+        next if $obj->{next} == -1 && $obj->{expired};
+
+        my $us =  get_service('us', _id => $usi );
+        # Check next pays
+        if ( my %wd_next = $us->withdraws->next ) {
+            # Skip if already paid for
+            next if $wd_next{withdraw_date};
+            $obj->{withdraws} = \%wd_next;
+        }
+
+        delete $obj->{withdraws}->{bonus};
+
+        my %wd_forecast = Core::Billing::calc_withdraw(
+            $us->billing,
+            %{ $obj->{withdraws} },
+        );
+
+        push @forecast_services, {
+            name => $obj->{services}->{name},
+            usi => $obj->{user_service_id},
+            expired => $obj->{expired} || '',
+            total => $wd_forecast{total},
+        } if $wd_forecast{total};
+
+    }
+
+    my $total = 0;
+    for ( @forecast_services ) {
+        $total += $_->{total};
+    }
+
+    return {
+        total => $total,
+        items => \@forecast_services
+    };
+}
+
 1;
