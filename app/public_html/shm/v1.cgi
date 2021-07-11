@@ -55,6 +55,12 @@ my $routes = {
         method => 'api_price_list',
     },
 },
+'/services/:service_id' => {
+    GET => {
+        controller => 'Service',
+        method => 'list_for_api',
+    },
+},
 
 };
 
