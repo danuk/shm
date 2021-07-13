@@ -13,7 +13,7 @@ SHM->new( user_id => 40092 );
 
 my $t = get_service('template', _id => 1);
 
-my $ret = $t->parsed( usi => 99 );
+my $ret = $t->parse( usi => 99 );
 
 is $ret, 'Здравствуйте Фирсов Даниил Андреевич
 

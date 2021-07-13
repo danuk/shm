@@ -26,7 +26,7 @@ sub structure {
     }
 }
 
-sub parsed {
+sub parse {
     my $self = shift;
     my %args = (
         usi => undef,
@@ -41,7 +41,6 @@ sub parsed {
         $data,
         %args,
     );
-
 }
 
 1;

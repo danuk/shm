@@ -16,7 +16,7 @@ for my $item ( keys %{ $list } ) {
     if ( $p->{ show_for_client } ) {
         if ( exists $p->{template_id} ) {
             if ( my $template = get_service('template', _id => $p->{template_id} ) ) {
-                $p->{template} = $template->parsed();
+                $p->{template} = $template->parse();
             }
         }
         push @ret, $p;

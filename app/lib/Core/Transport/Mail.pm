@@ -49,7 +49,7 @@ sub send {
         }
     }
 
-    my $message = $template->parsed(
+    my $message = $template->parse(
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
     );
 
