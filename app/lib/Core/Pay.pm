@@ -104,20 +104,31 @@ sub forecast {
             name => $obj->{services}->{name},
             usi => $obj->{user_service_id},
             expired => $obj->{expired} || '',
+            cost => $wd_forecast{cost},
+            months => $wd_forecast{months},
+            qnt => $wd_forecast{qnt},
+            discount => $wd_forecast{discount},
             total => $wd_forecast{total},
         } if $wd_forecast{total};
 
     }
 
-    my $total = 0;
+    my %ret = (
+        total => 0,
+        items => \@forecast_services,
+    );
+
     for ( @forecast_services ) {
-        $total += $_->{total};
+        $ret{total} += $_->{total};
     }
 
-    return {
-        total => $total,
-        items => \@forecast_services
-    };
+    my $balance = get_service('user')->get_balance;
+    if ( $balance < 0 ) {
+        $ret{dept} = abs( $balance );
+        $ret{total} += abs( $balance );
+    }
+
+    return \%ret;
 }
 
 1;

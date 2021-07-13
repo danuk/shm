@@ -18,19 +18,28 @@ subtest 'Check forecast' => sub {
     cmp_deeply( $ret, {
         items => bag(
             {
-                 total => 590,
-                 expired => '2017-07-29 12:39:46',
-                 usi => 2949,
-                 name => 'Регистрация домена в зоне .RU: umci.ru',
+                name => 'Регистрация домена в зоне .RU: umci.ru',
+                usi => 2949,
+                expired => '2017-07-29 12:39:46',
+                cost => 590,
+                total => 590,
+                discount => 0,
+                qnt => 1,
+                months => 12,
             },
             {
                 name => 'Тариф X-MAX (10000 мб)',
                 usi => 99,
                 expired => '2017-01-31 23:59:50',
+                cost => 123.45,
                 total => 123.45,
+                discount => 0,
+                qnt => 1,
+                months => 1,
             }
         ),
-        total => 713.45,
+        dept => 21.56,
+        total => 735.01,
     });
 };
 
@@ -48,19 +57,28 @@ subtest 'Check forecast with next wd' => sub {
     cmp_deeply( $ret, {
         items => bag(
             {
-                 total => 590,
-                 expired => '2017-07-29 12:39:46',
-                 usi => 2949,
-                 name => 'Регистрация домена в зоне .RU: umci.ru',
+                name => 'Регистрация домена в зоне .RU: umci.ru',
+                usi => 2949,
+                expired => '2017-07-29 12:39:46',
+                cost => 590,
+                total => 590,
+                discount => 0,
+                qnt => 1,
+                months => 12,
             },
             {
                 name => 'Тариф X-MAX (10000 мб)',
                 usi => 99,
                 expired => '2017-01-31 23:59:50',
+                cost => 100.00,
                 total => 100.00,
+                discount => 0,
+                qnt => 1,
+                months => 1,
             }
         ),
-        total => 690.00,
+        dept => 21.56,
+        total => 711.56,
     });
 };
 
@@ -75,13 +93,18 @@ subtest 'Check forecast with next already payed wd' => sub {
     cmp_deeply( $ret, {
         items => bag(
             {
-                 total => 590,
-                 expired => '2017-07-29 12:39:46',
-                 usi => 2949,
-                 name => 'Регистрация домена в зоне .RU: umci.ru',
+                name => 'Регистрация домена в зоне .RU: umci.ru',
+                usi => 2949,
+                expired => '2017-07-29 12:39:46',
+                cost => 590,
+                total => 590,
+                discount => 0,
+                qnt => 1,
+                months => 12,
             },
         ),
-        total => 590.00,
+        dept => 21.56,
+        total => 611.56,
     });
 };
 
