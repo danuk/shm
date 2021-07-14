@@ -81,7 +81,7 @@ sub forecast {
 
     my @forecast_services;
 
-    for my $usi ( keys %{ $user_services } ) {
+    for my $usi ( sort { $a <=> $b } keys %{ $user_services } ) {
         my $obj = $user_services->{ $usi };
         next if $obj->{next} == -1 && $obj->{expired};
 

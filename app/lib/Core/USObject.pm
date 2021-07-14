@@ -12,8 +12,8 @@ use vars qw($AUTOLOAD);
 sub AUTOLOAD {
     my $self = shift;
 
-    if ( $AUTOLOAD =~ /^.*::get_(\w+)$/ ) {
-        my $method = $1;
+    if ( $AUTOLOAD =~ /^.*::(get_)?(\w+)$/ ) {
+        my $method = $2;
         return $self->res->{ $method };
     } elsif ( $AUTOLOAD=~/::DESTROY$/ ) {
         # Skip
@@ -446,6 +446,17 @@ sub server {
     return undef unless $server;
 
     return $server;
+}
+
+sub name {
+    my $self = shift;
+
+    my $service = get_service('service', _id => $self->service_id);
+
+    return $service->convert_name(
+        $service->name,
+        $self->settings,
+    );
 }
 
 1;

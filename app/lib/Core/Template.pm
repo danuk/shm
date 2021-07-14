@@ -3,6 +3,7 @@ package Core::Template;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Template;
 
 sub table { return 'templates' };
 
@@ -30,17 +31,30 @@ sub parse {
     my $self = shift;
     my %args = (
         usi => undef,
+        data => undef,
         @_,
     );
 
-    my $data = $self->get->{data} || return '';
+    my $data = $args{data} || $self->get->{data} || return '';
 
-    my $parser = get_service("parser");
+    my $vars = {
+        user => get_service('user'),
+        $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : (),
+        config => get_service('config')->data_by_name,
+    };
 
-    return $parser->parse(
-        $data,
-        %args,
-    );
+    my $template = Template->new({
+        INTERPOLATE  => 1,
+        PRE_CHOMP => 1,
+    });
+
+    my $result = "";
+    unless ($template->process( \$data, $vars, \$result )) {
+        logger->warning("Template rander error: ", $template->error() );
+        return '';
+    }
+
+    return $result;
 }
 
 1;

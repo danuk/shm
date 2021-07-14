@@ -73,7 +73,7 @@ sub convert_name {
     my $name = shift;
     my $settings = shift;
 
-    $name=~s/\$\{(\w+)\}/$settings->{ $1 }/gei;
+    $name=~s/\$\{(\w+)\}/$settings->{ lc $1 }/gei;
     return $name;
 }
 

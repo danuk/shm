@@ -49,6 +49,12 @@ my $routes = {
         controller => 'Pay',
     },
 },
+'/user/pays/forecast' => {
+    GET => {
+        controller => 'Pay',
+        method => 'forecast',
+    },
+},
 '/services' => {
     GET => {
         controller => 'Service',

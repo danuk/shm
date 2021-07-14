@@ -13,5 +13,6 @@ yes | cpan -T -i \
  'Digest::SHA1' \
  'Scalar::Util' \
  'DBD::mysql' \
+ 'Template' \
  'Router::Simple'
 

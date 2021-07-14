@@ -18,6 +18,32 @@ our @EXPORT = qw(
     logger
 );
 
+use vars qw($AUTOLOAD);
+sub AUTOLOAD {
+    my $self = shift;
+
+    if ( $AUTOLOAD =~ /^.*::(\w+)$/ ) {
+        my $method = $1;
+
+        unless ( my %res = $self->res ) {
+            # load data if not loaded before
+            $self->get;
+        }
+
+        if ( exists $self->res->{ $method } ) {
+            return $self->res->{ $method };
+        }
+        else {
+            logger->warning("Field `$method` not exists in structure.");
+            return undef;
+        }
+    } elsif ( $AUTOLOAD=~/::DESTROY$/ ) {
+        # Skip
+    } else {
+        confess ("Method not exists: " . $AUTOLOAD );
+    }
+}
+
 sub new {
     my $proto = shift;
     my $args = {
