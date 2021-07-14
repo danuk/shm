@@ -17,13 +17,15 @@ sub send {
 
     my %server = $task->server->get;
 
-    my $parser = get_service('parser');
+    my $parser = get_service('template');
 
     my $cmd = $parser->parse(
-        $task->event->{settings}->{cmd},
+        data => $task->event->{settings}->{cmd},
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
     );
-    my $stdin_data = $parser->parse( $task->event->{settings}->{stdin} || $server{settings}->{payload} );
+    my $stdin_data = $parser->parse(
+        data => ( $task->event->{settings}->{stdin} || $server{settings}->{payload} ),
+    );
 
     return $self->exec(
         %{ $server{settings} || () },

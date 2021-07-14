@@ -35,7 +35,7 @@ sub parse {
         @_,
     );
 
-    my $data = $args{data} || $self->get->{data} || return '';
+    my $data = $args{data} || $self->data || return '';
 
     my $vars = {
         user => get_service('user'),
