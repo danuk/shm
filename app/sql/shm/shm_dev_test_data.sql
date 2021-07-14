@@ -169,7 +169,7 @@ INSERT INTO `events` VALUES
 (default,'UserService','Chanor web account','passwd',NULL,'{"category":"web","cmd":"www passwd w_[% us.parent %]"}'),
 (default,'UserService','Notification of change password for web account','passwd',NULL,'{"category":"web","template":"web_pass_change","transport":"mail"}'),
 (default,'UserService','Add domain to web account','create',1,'{"category":"domain_add","cmd":"www create w_[% us.parent %] [% us.settings.domain %],www.[% us.settings.domain %] [% us.parent.settings.max_quota %]"}'),
-(default,'UserService','Remove domain from web account','delete',1,'{"category":"domain_add","cmd":"www delete w_[% us.parent %] [% us.settings.domain %],www.[% us.settings.domain %]"}'),
+(default,'UserService','Remove domain from web account','remove',1,'{"category":"domain_add","cmd":"www delete w_[% us.parent %] [% us.settings.domain %],www.[% us.settings.domain %]"}'),
 (default,'UserService','Create mysql','create',1,'{"category":"mysql","cmd":"mysql create -a b_[% us.id %] -b [% us.settings.db.0.name %] -u [% us.settings.db.0.login %] -p [% us.settings.db.0.password %]"}'),
 (default,'UserService','Erase mysql','remove',NULL,'{"category":"mysql","cmd":"mysql erase b_[% us.id %]"}'),
 (default,'UserService','Block mysql','block',NULL,'{"category":"mysql","cmd":"mysql block b_[% us.id %]"}'),
