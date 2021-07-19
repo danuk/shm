@@ -166,18 +166,18 @@ INSERT INTO `services` VALUES
 (112,'Почта (${QUOTA} мб)',0,1,'mail',NULL,NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL);
 
 INSERT INTO `events` VALUES
-(default,'UserService','Chanor web account','passwd',NULL,'{"category":"web","cmd":"www passwd w_[% us.parent %]"}'),
+(default,'UserService','Chanor web account','passwd',NULL,'{"category":"web","cmd":"www passwd w_{{ us.parent }}"}'),
 (default,'UserService','Notification of change password for web account','passwd',NULL,'{"category":"web","template":"web_pass_change","transport":"mail"}'),
-(default,'UserService','Add domain to web account','create',1,'{"category":"domain_add","cmd":"www create w_[% us.parent %] [% us.settings.domain %],www.[% us.settings.domain %] [% us.parent.settings.max_quota %]"}'),
-(default,'UserService','Remove domain from web account','remove',1,'{"category":"domain_add","cmd":"www delete w_[% us.parent %] [% us.settings.domain %],www.[% us.settings.domain %]"}'),
-(default,'UserService','Create mysql','create',1,'{"category":"mysql","cmd":"mysql create -a b_[% us.id %] -b [% us.settings.db.0.name %] -u [% us.settings.db.0.login %] -p [% us.settings.db.0.password %]"}'),
-(default,'UserService','Erase mysql','remove',NULL,'{"category":"mysql","cmd":"mysql erase b_[% us.id %]"}'),
-(default,'UserService','Block mysql','block',NULL,'{"category":"mysql","cmd":"mysql block b_[% us.id %]"}'),
-(default,'UserService','Activate mysql','activate',NULL,'{"category":"mysql","cmd":"mysql unblock b_[% us.id %]"}'),
-(default,'UserService','Create dns','create',1,'{"category":"dns","cmd":"dns update","stdin":"[% payload %]"}'),
-(default,'UserService','Erase dns','remove',NULL,'{"category":"dns","cmd":"dns erase [% us.domain %]"}'),
-(default,'UserService','Update dns','update',NULL,'{"category":"dns","cmd":"dns update","stdin":"[% payload %]"}'),
-(default,'UserService','Test Docker command','create',1,'{"cmd":"ansible-playbook --extra-vars \'[% us %]\'","transport":"docker"}');
+(default,'UserService','Add domain to web account','create',1,'{"category":"domain_add","cmd":"www create w_{{ us.parent }} {{ us.settings.domain }},www.{{ us.settings.domain }} {{ us.parent.settings.max_quota }}"}'),
+(default,'UserService','Remove domain from web account','remove',1,'{"category":"domain_add","cmd":"www delete w_{{ us.parent }} {{ us.settings.domain }},www.{{ us.settings.domain }}"}'),
+(default,'UserService','Create mysql','create',1,'{"category":"mysql","cmd":"mysql create -a b_{{ us.id }} -b {{ us.settings.db.0.name }} -u {{ us.settings.db.0.login }} -p {{ us.settings.db.0.password }}"}'),
+(default,'UserService','Erase mysql','remove',NULL,'{"category":"mysql","cmd":"mysql erase b_{{ us.id }}"}'),
+(default,'UserService','Block mysql','block',NULL,'{"category":"mysql","cmd":"mysql block b_{{ us.id }}"}'),
+(default,'UserService','Activate mysql','activate',NULL,'{"category":"mysql","cmd":"mysql unblock b_{{ us.id }}"}'),
+(default,'UserService','Create dns','create',1,'{"category":"dns","cmd":"dns update","stdin":"{{ payload }}"}'),
+(default,'UserService','Erase dns','remove',NULL,'{"category":"dns","cmd":"dns erase {{ us.domain }}"}'),
+(default,'UserService','Update dns','update',NULL,'{"category":"dns","cmd":"dns update","stdin":"{{ payload }}"}'),
+(default,'UserService','Test Docker command','create',1,'{"cmd":"ansible-playbook --extra-vars \'{{ us }}\'","transport":"docker"}');
 
 INSERT INTO `user_services` VALUES (16,40092,63,1,3583,'2014-10-02 13:47:30','2017-09-22 14:51:26','ACTIVE',0,NULL,'{\"ns1\": \"ns1.viphost.ru\", \"ns2\": \"ns2.viphost.ru\", \"domain\": \"danuk.ru\", \"nic_id\": \"184677/NIC-D\\n\", \"punycode\": \"\", \"domain_id\": \"6\"}'),
 (17,40092,30,1,NULL,'2014-10-02 13:47:30',NULL,'ACTIVE',0,16,'{\"ns\": \"ns1.viphost.ru\", \"domain_id\": \"6\", \"server_id\": 1}'),
@@ -285,9 +285,9 @@ INSERT INTO `identities` VALUES (1,'test','-----BEGIN OPENSSH PRIVATE KEY-----\n
 INSERT INTO `pay_systems` VALUES (1,'Платеж',NULL);
 
 INSERT INTO `templates` VALUES
-(1,'web_tariff_create','Создание тарифа хостинга','Здравствуйте [% user.full_name %]\n\nВы зарегистрировали новую услугу: [% us.name %]\n\nДата истечения услуги: [% us.expired %]\n\nСтоимость услуги: [% us.service.cost %] руб.\n\n[% IF us.child_by_category(\'web\') %]\nХостинг сайтов:\nХост: [% us.child_by_category(\'web\').server.settings.host_name %]\nЛогин: [% us.child_by_category(\'web\').settings.login %]\nПароль: [% us.child_by_category(\'web\').settings.password %]\n[% END %]\n\nЖелаем успехов.',NULL),
-(3,'forecast','Прогноз оплаты','Уважаемый [% user.full_name %]\n\nУведомляем Вас о сроках действия услуг:\n\n[% FOR item IN user.pays.forecast.items %]\n- Услуга: [% item.name %]\n  Стоимость: [% item.total %]\n  Истекает: [% item.expired %]\n[% END %]\n\n[% IF user.pays.forecast.dept %]\nПогашение задолженности: [% user.pays.forecast.dept %]\n[% END %]\n\nИтого к оплате: [% user.pays.forecast.total %] руб.\n\nУслуги, которые не будут оплачены до срока их истечения, будут приостановлены.\n\nПодробную информацию по Вашим услугам Вы можете посмотреть в вашем личном кабинете: [% config.api.url %]\n\n=======================================================================\nЭто письмо сформировано автоматически. Если оно попало к Вам по ошибке,\nпожалуйста, сообщите об этом нам: [% config.mail.from %]',NULL),
-(2,'yamoney_template','Код платежной формы Яндекс.Деньги','<iframe src=\"https://money.yandex.ru/quickpay/shop-widget?writer=seller&targets=%D0%9E%D0%BF%D0%BB%D0%B0%D1%82%D0%B0%20%D0%BF%D0%BE%20%D0%B4%D0%BE%D0%B3%D0%BE%D0%B2%D0%BE%D1%80%D1%83%20[%  user.id  %]&targets-hint=&default-sum=100&label=[%  user.id  %]&button-text=12&payment-type-choice=on&hint=&successURL=&quickpay=shop&account=[%  config.pay_systems.yandex.account  %]\" width=\"100%\" height=\"198\" frameborder=\"0\" allowtransparency=\"true\" scrolling=\"no\"></iframe>',NULL)
+(1,'web_tariff_create','Создание тарифа хостинга','Здравствуйте {{ user.full_name }}\n\nВы зарегистрировали новую услугу: {{ us.name }}\n\nДата истечения услуги: {{ us.expired }}\n\nСтоимость услуги: {{ us.service.cost }} руб.\n\n{{ IF us.child_by_category(\'web\') }}\nХостинг сайтов:\nХост: {{ us.child_by_category(\'web\').server.settings.host_name }}\nЛогин: {{ us.child_by_category(\'web\').settings.login }}\nПароль: {{ us.child_by_category(\'web\').settings.password }}\n{{ END }}\n\nЖелаем успехов.',NULL),
+(3,'forecast','Прогноз оплаты','Уважаемый {{ user.full_name }}\n\nУведомляем Вас о сроках действия услуг:\n\n{{ FOR item IN user.pays.forecast.items }}\n- Услуга: {{ item.name }}\n  Стоимость: {{ item.total }}\n  Истекает: {{ item.expired }}\n{{ END }}\n\n{{ IF user.pays.forecast.dept }}\nПогашение задолженности: {{ user.pays.forecast.dept }}\n{{ END }}\n\nИтого к оплате: {{ user.pays.forecast.total }} руб.\n\nУслуги, которые не будут оплачены до срока их истечения, будут приостановлены.\n\nПодробную информацию по Вашим услугам Вы можете посмотреть в вашем личном кабинете: {{ config.api.url }}\n\n=======================================================================\nЭто письмо сформировано автоматически. Если оно попало к Вам по ошибке,\nпожалуйста, сообщите об этом нам: {{ config.mail.from }}',NULL),
+(2,'yamoney_template','Код платежной формы Яндекс.Деньги','<iframe src=\"https://money.yandex.ru/quickpay/shop-widget?writer=seller&targets=%D0%9E%D0%BF%D0%BB%D0%B0%D1%82%D0%B0%20%D0%BF%D0%BE%20%D0%B4%D0%BE%D0%B3%D0%BE%D0%B2%D0%BE%D1%80%D1%83%20{{  user.id  }}&targets-hint=&default-sum=100&label={{  user.id  }}&button-text=12&payment-type-choice=on&hint=&successURL=&quickpay=shop&account={{  config.pay_systems.yandex.account  }}\" width=\"100%\" height=\"198\" frameborder=\"0\" allowtransparency=\"true\" scrolling=\"no\"></iframe>',NULL)
 ;
 
 INSERT INTO `profiles` VALUES

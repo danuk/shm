@@ -44,6 +44,9 @@ sub parse {
     };
 
     my $template = Template->new({
+        START_TAG => quotemeta('{{'),
+        END_TAG   => quotemeta('}}'),
+        ANYCASE => 1,
         INTERPOLATE  => 1,
         PRE_CHOMP => 1,
     });
