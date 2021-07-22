@@ -143,7 +143,7 @@ sub _add_or_set {
     for my $key ( keys %args ) {
         my $new_value = $args{ $key };
         if ( ref $new_value eq 'HASH' || ref $new_value eq 'ARRAY' ) {
-            $super_args{ $key } = to_json( force_numbers $args{ $key } );
+            $super_args{ $key } = encode_json( force_numbers $args{ $key } );
         }
     }
 
@@ -156,6 +156,17 @@ sub _add_or_set {
     }
     return $ret;
 
+}
+
+sub encode_json {
+    my $data = shift || return undef;
+
+    my $json;
+    eval{ $json = JSON->new->latin1->encode( $data ) } or do {
+        get_service('logger')->warning("Incorrect JSON data: " . $data);
+    };
+
+    return $json;
 }
 
 sub api {

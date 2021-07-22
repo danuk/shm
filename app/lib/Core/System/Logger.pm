@@ -212,6 +212,7 @@ sub write_log_file {
         my $log = $config->file->{config}{log}->{path} . '/' . $config->file->{config}{log}->{file};
         my $fd;
         open ( $fd, ">> $log" ) or die $!;
+        binmode( $fd, ':utf8');
         print $fd $msg;
         close $fd;
     }

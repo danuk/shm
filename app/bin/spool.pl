@@ -3,7 +3,7 @@
 use v5.14;
 use SHM;
 use Core::System::ServiceManager qw( get_service unregister_all );
-use Core::Utils qw/to_json/;
+use JSON;
 
 $| = 1;
 
