@@ -13,7 +13,7 @@ sub structure {
         },
         kind => {
             type => 'text',
-            required => 1,
+            default => 'UserService',
         },
         title => {
             type => 'text',
