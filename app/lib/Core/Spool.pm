@@ -151,8 +151,14 @@ sub finish_task {
             }
         }
     } else {
-        $self->write_history;
-        $self->delete unless $self->event->{period};
+        if ( $self->event->{period} ) {
+            # Do not delete periodic services and write history only if fail
+            $self->write_history if $args{status} ne TASK_SUCCESS;
+        }
+        else {
+            $self->write_history;
+            $self->delete;
+        }
     }
 }
 
