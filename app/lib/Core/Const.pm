@@ -60,7 +60,6 @@ use constant {
     EVENT_REMOVE => 'remove',
     EVENT_PROLONGATE => 'prolongate',
     EVENT_ACTIVATE => 'activate',
-    EVENT_CHILD_PREFIX => 'child',
 };
 
 use constant {
