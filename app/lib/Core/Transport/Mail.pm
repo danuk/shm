@@ -15,52 +15,50 @@ sub send {
     my $task = shift;
 
     my %server = $task->server->get;
-    my $settings = $task->event->{settings};
+    my %settings = %{ $task->event->{settings} || {} };
 
     my $config = get_service("config")->data_by_name;
 
-    my $from = $settings->{mail}->{from} || $config->{mail}->{from};
-    unless ( $from ) {
-        return FAIL, {
+    $settings{from} //= $config->{mail}->{from};
+    unless ( $settings{from} ) {
+        return SUCCESS, {
             error => "From undefined",
         }
     }
 
-    $settings->{subject} //= "Mail from: $config->{company}->{name}";
+    $settings{subject} //= $config->{mail}->{subject} || "Mail from: $config->{company}->{name}";
 
-    my ( $to ) = get_service('user')->emails;
-    unless ( $to ) {
+    $settings{to} //= get_service('user')->emails || delete $settings{bcc};
+    unless ( $settings{to} ) {
         return SUCCESS, {
             error => "User email undefined",
         }
     }
 
-    my $template_id = $settings->{template_id};
-    unless ( $template_id ) {
-        return FAIL, {
-            error => "template_id undefined",
+    my $message;
+    if ( my $template_id = $settings{template_id} ) {
+
+        my $template = get_service('template', _id => $template_id );
+        unless ( $template ) {
+            return SUCCESS, {
+                error => "template not found",
+            }
+        }
+
+        $message = $template->parse(
+            $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
+        );
+    } else {
+        unless ( $message = $settings{message} ) {
+            return SUCCESS, {
+                error => "message undefined",
+            }
         }
     }
-
-    my $template = get_service('template', _id => $template_id );
-    unless ( $template ) {
-        return FAIL, {
-            error => "template not found",
-        }
-    }
-
-    my $message = $template->parse(
-        $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
-    );
 
     return $self->send_mail(
         host => $server{host},
-        from => $from,
-        to => $to,
-        subject => '',
-        message => $message,
-        template_id => $template_id,
-        %{ $settings || {} },
+        %settings,
     );
 }
 
@@ -80,8 +78,8 @@ sub send_mail {
     my $msg = MIME::Lite->new(
         From    => $args{from},
         To      => $args{to},
-        Cc      => "",
-        BCc     => "",
+        Cc      => $args{cc},
+        BCc     => $args{bcc},
         Subject => "=?UTF-8?B?$subject?=",
         Type    => 'text/plain;charset=UTF-8',
         Data    =>  $args{message},
@@ -93,10 +91,9 @@ sub send_mail {
         'smtp',
         $args{host},
         Debug => $args{debug} ? 1 : 0,
-        #AuthUser => $user,
-        #AuthPass => $pass,
-        #SSL => 1,
-        #Port => 465,
+        $args{user} ? ( AuthUser => $args{user} ) : (),
+        $args{password} ? ( AuthPass => $args{password} ) : (),
+        $args{ssl} ? ( SSL => $args{ssl} ) : (),
     );
 
     return SUCCESS, {
@@ -104,10 +101,7 @@ sub send_mail {
             host => $args{host},
         },
         mail => {
-            from => $args{from},
-            to => $args{to},
-            subject => $args{subject},
-            template_id => $args{template_id},
+            %args,
         },
     };
 }

@@ -51,6 +51,6 @@ subtest 'Try payment' => sub {
 my %profile = $user->profile;
 
 is $profile{email}, 'email@domain.ru', 'Check user profile';
-is scalar $user->emails, 1, 'Check user email';
+is $user->emails, 'email@domain.ru', 'Check user email';
 
 done_testing();

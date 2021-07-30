@@ -391,9 +391,8 @@ sub emails {
     my $self = shift;
 
     my %profile = $self->profile;
-    my @emails = $profile{email};
 
-    return @emails;
+    return $profile{email};
 }
 
 1;
