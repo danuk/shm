@@ -13,9 +13,12 @@ use Core::Utils qw(
 our %in = parse_args();
 my $ssh = get_service( 'Transport::Ssh' );
 
-my $parser = get_service('parser');
+my $parser = get_service('template');
 my $cmd = $in{settings}{cmd} || $in{cmd} || 'uname -a';
-$cmd = $parser->parse( $cmd, usi => $in{settings}{usi} || $in{usi} );
+$cmd = $parser->parse(
+    data => $cmd,
+    usi => $in{settings}{usi} || $in{usi},
+);
 
 my $pipeline_id = get_service('console')->new_pipe;
 
