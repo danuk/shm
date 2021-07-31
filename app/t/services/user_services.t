@@ -77,4 +77,6 @@ is ( exists $obj->{101}->{servers}->{host}, 1, 'Check service with servers');
 $obj = $us->ids( user_service_id => [ 99,101 ] )->with('settings')->get;
 is ( exists $obj->{101}->{settings}->{quota}, 1, 'Check load services by user_service_id array' );
 
+is( get_service('us', _id => 101 )->domain->name, 'admin.danuk.ru' );
+
 done_testing();

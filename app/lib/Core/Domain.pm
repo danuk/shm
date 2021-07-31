@@ -159,6 +159,8 @@ sub domain {
     return $self->get->{domain};
 }
 
+*name = \&domain;
+
 sub get_registrator {
     my $self = shift;
 

@@ -220,6 +220,15 @@ sub domains {
     return get_service('domain')->get_domain( user_service_id => $self->id );
 }
 
+sub domain {
+    my $self = shift;
+
+    my $domain_id = $self->settings->{domain_id};
+    return undef unless $domain_id;;
+
+    return get_service('domain', _id => $domain_id );
+}
+
 sub add_domain {
     my $self = shift;
     my %args = (
