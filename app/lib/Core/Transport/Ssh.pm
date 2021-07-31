@@ -42,12 +42,13 @@ sub exec {
         host => undef,
         port => 22,
         key_id => undef,
-        timeout => 3,
+        timeout => 10,
         cmd => undef,
         stdin_data => undef,
         wait => 1,
         pipeline_id => undef,
         shell => $ENV{SHM_TEST} ? 'echo' : 'bash -e -v -c',
+        proxy_jump => undef,
         @_,
     );
 
@@ -86,20 +87,27 @@ sub exec {
             $child_dbh = $self->dbh_new();
         }
 
-        logger->debug('SSH: trying connect to ' . $args{host} );
-        $console->append("Trying connect to: ". $args{host} ."... ");
+        my $host_msg = "Trying connect to: $args{host}";
+        $host_msg .= " through $args{proxy_jump}";
+
+        logger->debug('SSH: ' . $host_msg );
+        $console->append( $host_msg . "... ");
+
+        my $key_file = get_service( 'Identities', _id => $args{key_id} )->private_key_file;
 
         my $ssh = Net::OpenSSH->new(
             $args{host},
             port => $args{port},
-            key_path => get_service( 'Identities', _id => $args{key_id} )->private_key_file,
+            key_path => $key_file,
             passphrase => undef,
             batch_mode => 1,
             timeout => $args{timeout},
             kill_ssh_on_timeout => 1,
             strict_mode => 0,
             master_opts => [-o => "StrictHostKeyChecking=no" ],
+            $args{proxy_jump} ? ( proxy_command => "ssh $args{proxy_jump} -W %h:%p -i $key_file" ) : (),
         );
+        unlink $key_file;
 
         if ( $ssh->error ) {
             logger->warning( $ssh->error );
@@ -117,7 +125,6 @@ sub exec {
             my ($in, $rout, undef, $ssh_pid) = $ssh->open_ex(
                 {
                     stdin_pipe => ( $args{stdin_data} ? 1 : 0 ),
-                    stdin_pipe => 0,
                     stdout_pipe => 1,
                     stderr_to_stdout => 1,
                     tty => 1,
