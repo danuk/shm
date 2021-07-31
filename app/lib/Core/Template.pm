@@ -27,6 +27,28 @@ sub structure {
     }
 }
 
+sub template_by_name {
+    my $self = shift;
+    my %args = (
+        name => undef,
+        @_,
+    );
+
+    my ( $ret ) = $self->_list(
+        where => {
+            name => $args{name},
+        },
+    );
+
+    unless ( $ret ) {
+        logger->warning("Template not found");
+        get_service('report')->add_error('Template not found');
+        return undef;
+    }
+
+    return $self->id( $ret->{id} )->parse( %args );
+}
+
 sub parse {
     my $self = shift;
     my %args = (

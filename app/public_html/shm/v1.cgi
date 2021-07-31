@@ -67,6 +67,12 @@ my $routes = {
         method => 'list_for_api',
     },
 },
+'/template/:name' => {
+    GET => {
+        controller => 'Template',
+        method => 'template_by_name',
+    },
+},
 
 };
 
@@ -101,7 +107,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my $report = get_service('report');
     unless ( $report->is_success ) {
         print_header( status => 404 );
-        print_json( error => $report->errors );
+        print_json( { error => $report->errors } );
         exit 0;
     }
 
