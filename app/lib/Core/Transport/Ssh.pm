@@ -88,7 +88,7 @@ sub exec {
         }
 
         my $host_msg = "Trying connect to: $args{host}";
-        $host_msg .= " through $args{proxy_jump}";
+        $host_msg .= " through $args{proxy_jump}" if $args{proxy_jump};
 
         logger->debug('SSH: ' . $host_msg );
         $console->append( $host_msg . "... ");
