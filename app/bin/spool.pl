@@ -5,6 +5,8 @@ use SHM;
 use Core::System::ServiceManager qw( get_service unregister_all );
 use JSON;
 
+my $json = JSON->new->canonical( 1 );
+
 $| = 1;
 
 SHM->new( skip_check_auth => 1 );
@@ -20,7 +22,7 @@ for (;;) {
 
         if ( defined $task ) {
             $task->{status} //= $status;
-            say to_json( $task, {pretty => 0} );
+            say $json->encode( $task );
         }
     } while defined $task;
 
