@@ -20,7 +20,7 @@ for (;;) {
 
         if ( defined $task ) {
             $task->{status} //= $status;
-            say to_json( $task, {pretty => 1} );
+            say to_json( $task, {pretty => 0} );
         }
     } while defined $task;
 
