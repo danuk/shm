@@ -205,6 +205,24 @@ sub api_manual_retry {
     return $self->get;
 }
 
+sub api_pause {
+    my $self = shift;
+
+    $self->set(
+        status => TASK_PAUSED,
+    );
+    return $self->get;
+}
+
+sub api_resume {
+    my $self = shift;
+
+    $self->set(
+        status => TASK_NEW,
+    );
+    return $self->get;
+}
+
 sub write_history {
     my $self = shift;
 
