@@ -120,7 +120,6 @@ sub delete {
         return undef;
     }
 
-    get_service('SubServices')->delete_all_for_service( $self->id );
     return $self->SUPER::delete( %args );
 }
 
