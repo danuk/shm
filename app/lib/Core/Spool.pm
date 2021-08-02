@@ -57,7 +57,7 @@ sub list_for_all_users {
 
     return $self->_list(
         where => {
-            status => { '!=', TASK_STUCK },
+            status => { -not_in => [ TASK_STUCK, TASK_PAUSED ] },
             executed => [
                 undef,
                 { '<', \[ '? - INTERVAL `delayed` SECOND', now ] },

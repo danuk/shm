@@ -28,6 +28,7 @@ our @EXPORT = qw(
     TASK_SUCCESS
     TASK_FAIL
     TASK_STUCK
+    TASK_PAUSED
 );
 
 use constant {
@@ -67,6 +68,7 @@ use constant {
     TASK_SUCCESS => 'SUCCESS',
     TASK_FAIL => 'FAIL',
     TASK_STUCK => 'STUCK',
+    TASK_PAUSED => 'PAUSED',
 };
 
 1;
