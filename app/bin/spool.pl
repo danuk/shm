@@ -4,6 +4,7 @@ use v5.14;
 use SHM;
 use Core::System::ServiceManager qw( get_service unregister_all );
 use JSON;
+no warnings;
 
 my $json = JSON->new->canonical( 1 );
 
