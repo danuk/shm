@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     default-libmysqlclient-dev \
     perl \
     libdbi-perl \
+    libauthen-sasl-perl \
     openssh-client \
     sudo \
     gcc \
