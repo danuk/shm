@@ -80,7 +80,7 @@ sub make_task {
         if ( $self->settings->{user_service_id} ) {
             my $us = get_service('us', _id => $self->settings->{user_service_id} );
             $us->set(
-                settings => { server_id => $self->settings->{server_id} },
+                settings => { server_id => $self->server_id },
             );
             $us->set_status_by_event( $self->event->{name} );
         }
@@ -107,12 +107,22 @@ sub task_answer {
     }
 }
 
+sub server_id {
+    my $self = shift;
+
+    my $server_id;
+    $server_id = $self->settings->{server_id} if $self->settings && $self->settings->{server_id};
+    $server_id //= $self->event_settings->{server_id} if $self->event_settings;
+
+    return $server_id;
+}
+
 sub server {
     my $self = shift;
 
-    return undef unless $self->settings->{server_id};
+    return undef unless $self->server_id;
 
-    if ( my $server = get_service('Server', _id => $self->settings->{server_id} ) ) {
+    if ( my $server = get_service('Server', _id => $self->server_id ) ) {
         return $server;
     }
     return undef;
@@ -133,7 +143,7 @@ sub transport_name {
 sub transport {
     my $self = shift;
 
-    return undef unless $self->settings->{server_id};
+    return undef unless $self->server_id;
     return undef unless $self->transport_name;
     return get_service( 'Transport::' . ucfirst( $self->transport_name ) );
 }
