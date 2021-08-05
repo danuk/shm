@@ -15,7 +15,10 @@ sub send {
     my $task = shift;
 
     my %server = $task->server->get;
-    my %settings = %{ $task->event->{settings} || {} };
+    my %settings = (
+        %{ $server{settings} || {} },
+        %{ $task->event->{settings} || {} },
+    );
 
     my $config = get_service("config")->data_by_name;
 
@@ -57,6 +60,7 @@ sub send {
     }
 
     return $self->send_mail(
+        message => $message,
         host => $server{host},
         %settings,
     );
