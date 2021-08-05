@@ -16,7 +16,7 @@ INSERT INTO `config` VALUES
 ("_billing",'{"type":"Simpler"}'),
 ("company", '{"name":"My Company LTD"}'),
 ("api",     '{"url":"http://shm.local"}'),
-("pay_systems","{\"manual\": {\"name\": \"Платеж\", \"show_for_client\": false}, \"yandex\": {\"name\": \"Яндекс\", \"account\": 000000000000000, \"secret\": \"\", \"template_id\": 2, \"show_for_client\": true}}"),
+("pay_systems",'{"manual":{"name":"Платеж","show_for_client":false},"yandex":{"name":"Яндекс","account":"000000000000000","secret":"","template_id":2,"show_for_client":true}}'),
 ("mail",    '{"from":"mail@domain.ru"}');
 
 INSERT INTO `spool` (id,status,user_id,event) VALUES
