@@ -302,7 +302,9 @@ INSERT INTO `config` VALUES
 ("pay_systems","{\"manual\": {\"name\": \"Платеж\", \"show_for_client\": false}, \"yandex\": {\"name\": \"Яндекс\", \"account\": 410014830210044, \"secret\": \"\", \"template_id\": 2, \"show_for_client\": true}}"),
 ("mail",    '{"from":"mail@domain.ru"}');
 
-INSERT INTO `spool` (id,user_id,event) VALUES
-(default,1,'{"title":"prolongate services","kind":"UserService","method":"prolongate","period":"60"}');
+INSERT INTO `spool` (id,status,user_id,event) VALUES
+(default,'PAUSED',1,'{"title":"prolongate services","kind":"Jobs","method":"job_prolongate","period":"60"}'),
+(default,'PAUSED',1,'{"title":"send forecasts","kind":"Jobs","method":"job_make_forecasts","period":"86400","settings":{"server_id":25,"template_id": 3}}')
+;
 
 COMMIT;
