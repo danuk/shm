@@ -42,24 +42,30 @@ sub make_task {
         return $self->task_answer( TASK_STUCK, error => 'Event not exists' );
     }
 
+    if ( my $method = $self->event->{method} ) {
+        my $kind = $self;
+        if ( $self->event->{kind} ) {
+            unless ( $kind = get_service( $self->event->{kind} ) ) {
+                return $self->task_answer( TASK_STUCK, error => 'Kind not found' );
+            }
+        }
+
+        if ( $kind->can( $method ) ) {
+            my ( $status, $response_data ) = $kind->$method( $self );
+            unless ( $status ) {
+                return $self->task_answer( TASK_STUCK, error => "Method error", %{ $response_data//={} } );
+            } else {
+                return $self->task_answer( TASK_SUCCESS, %{ $response_data//={} } );
+            }
+        }
+        else {
+            return $self->task_answer( TASK_STUCK, error => 'Method not exist' );
+        }
+    }
+
     my $transport = $self->transport;
     unless ( $transport ) {
-        if ( my $method = $self->event->{method} ) {
-            my $kind = $self;
-            if ( $self->event->{kind} ) {
-                $kind = get_service( $self->event->{kind} );
-            }
-
-            if ( $kind->can( $method ) ) {
-                $kind->$method();
-                return $self->task_answer( TASK_SUCCESS );
-            }
-            else {
-                return $self->task_answer( TASK_STUCK, error => 'Method not exist' );
-            }
-        } else {
-            return $self->task_answer( TASK_STUCK, error => 'Transport not exists' );
-        }
+        return $self->task_answer( TASK_STUCK, error => 'Transport not exists' );
     }
 
     my ( $status, $response_data ) = $transport->send( $self );
