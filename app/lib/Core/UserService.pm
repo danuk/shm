@@ -408,25 +408,5 @@ sub list_for_api {
     return sort { $a->{user_service_id} <=> $b->{user_service_id} } @arr;
 }
 
-sub prolongate {
-    my $self = shift;
-
-    my @arr = $self->list_expired_services( admin => 1 );
-
-    for ( @arr ) {
-        say sprintf("%d %d %s %s",
-            $_->{user_id},
-            $_->{user_service_id},
-            $_->{created},
-            $_->{expired},
-        );
-
-        switch_user( $_->{user_id} );
-        get_service('us', _id => $_->{user_service_id} )->touch;
-    }
-
-    return 1;
-}
-
 1;
 
