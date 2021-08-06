@@ -276,7 +276,6 @@ CREATE TABLE `withdraw_history` (
   `user_service_id` int(11) DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   FOREIGN KEY (service_id) REFERENCES services (service_id),
-  FOREIGN KEY (user_service_id) REFERENCES user_services (user_service_id) ON DELETE SET NULL,
   PRIMARY KEY (`withdraw_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
