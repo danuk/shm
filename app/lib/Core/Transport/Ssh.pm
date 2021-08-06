@@ -105,7 +105,9 @@ sub exec {
             kill_ssh_on_timeout => 1,
             strict_mode => 0,
             master_opts => [-o => "StrictHostKeyChecking=no" ],
-            $args{proxy_jump} ? ( proxy_command => "ssh $args{proxy_jump} -W %h:%p -i $key_file" ) : (),
+            $args{proxy_jump} ? (
+                proxy_command => "ssh -o StrictHostKeyChecking=no -i $key_file -W %h:%p $args{proxy_jump}"
+            ) : (),
         );
         unlink $key_file;
 
