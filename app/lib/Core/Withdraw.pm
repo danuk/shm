@@ -129,9 +129,15 @@ sub list_for_api {
     my @arr = $self->SUPER::list_for_api( field => 'withdraw_date', @_ );
     $self->found_rows( $self->SUPER::found_rows() );
 
+    # deduplicate user_service_id
+    my %usi;
+    for ( @arr ) {
+        $usi{ $_->{user_service_id} } = 1 if $_->{user_service_id};
+    }
+
     my $user_service = get_service('UserService');
     my $us = $user_service->ids(
-        user_service_id => [ map $_->{user_service_id}, @arr ]
+        user_service_id => [ keys %usi ]
     )->with('settings','services')->get;
 
     for ( @arr ) {
