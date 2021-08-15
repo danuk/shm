@@ -79,8 +79,10 @@ sub exec {
         if ( $fork_mode ) {
             # I'm a child
             POSIX::setsid();
-            open(STDOUT,">/dev/null");
-            open(STDERR,">/dev/null");
+            unless ( $ENV{DEBUG} ) {
+                open(STDOUT,">/dev/null");
+                open(STDERR,">/dev/null");
+            }
             alarm(0);
 
             # Create own db connection
@@ -94,6 +96,8 @@ sub exec {
         $console->append( $host_msg . "... ");
 
         my $key_file = get_service( 'Identities', _id => $args{key_id} )->private_key_file;
+
+        $Net::OpenSSH::debug = ~0 if $ENV{DEBUG};
 
         my $ssh = Net::OpenSSH->new(
             $args{host},
