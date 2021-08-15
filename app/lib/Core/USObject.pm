@@ -180,6 +180,13 @@ sub children {
     return $self->list( where => { %args } );
 }
 
+sub has_children {
+    my $self = shift;
+
+    my @children = $self->children();
+    return scalar @children;
+}
+
 sub child_by_category {
     my $self = shift;
     my $category = shift;
@@ -314,6 +321,13 @@ sub api_spool_commands {
     return \@arr;
 }
 
+sub has_spool_command {
+    my $self = shift;
+
+    my @arr = $self->spool->list_by_settings( user_service_id => $self->id );
+    return scalar @arr;
+}
+
 sub spool_exists_command {
     my $self = shift;
     my %args = (
@@ -347,7 +361,7 @@ sub child_status_updated {
     }
     elsif ( scalar (keys %children_statuses) == 0 and $child{event} eq EVENT_REMOVE ) {
         # Remove parent if child already removed
-        $self->status( STATUS_REMOVED, event => EVENT_REMOVE );
+        $self->status( STATUS_REMOVED, event => EVENT_REMOVE ) unless $self->has_spool_command();
     }
 
     return $self->get_status;
