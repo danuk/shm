@@ -122,10 +122,9 @@ sub exec {
         } else {
             $console->append("SUCCESS\n\n");
 
-            my @commands = (
-                split('\s+', @args{shell} ),
-                ref $args{cmd} eq 'ARRAY' ? join("\n", @{ $args{cmd} } ) : $args{cmd},
-            );
+            my @commands;
+            push @commands, split('\s+', @args{shell} ) if $args{shell};
+            push @commands, ref $args{cmd} eq 'ARRAY' ? join("\n", @{ $args{cmd} } ) : $args{cmd};
 
             my $out;
             my ($in, $rout, undef, $ssh_pid) = $ssh->open_ex(
