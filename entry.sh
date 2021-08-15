@@ -12,7 +12,7 @@ EOF
 
 if [ "${SHM_ROLE}" = "spool" ]; then
     # Start SHM spool daemon
-    sudo --preserve-env=PERL5LIB -u nginx /app/bin/spool.pl
+    /app/bin/spool.pl
 else
     # Create SHM database structure and fill data
     sudo --preserve-env=PERL5LIB -u nginx /app/bin/init.pl
