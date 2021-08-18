@@ -3,6 +3,7 @@ package Core::Pay;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Core::Const;
 
 sub table { return 'pays_history' };
 
@@ -67,6 +68,7 @@ sub forecast {
     my $user_services = get_service('UserService')->list_prepare(
         where => {
             auto_bill => \[ '= 1'],
+            status => STATUS_ACTIVE,
             withdraw_id => { '!=', undef },
             expired => [
                 { '<', \[ 'NOW() + INTERVAL ? DAY', $args{days} ] },
