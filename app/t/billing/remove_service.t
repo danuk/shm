@@ -7,13 +7,14 @@ use Test::More;
 use Data::Dumper;
 use SHM;
 use Core::System::ServiceManager qw( get_service );
+use Core::Const;
 
 $ENV{SHM_TEST} = 1;
 
 SHM->new( user_id => 40092 );
 
 get_service('events')->add(
-    name => 'test',
+    name => EVENT_REMOVE,
     title => 'test event',
     server_gid => 1,
     settings => {
@@ -49,8 +50,9 @@ my $sub_us = get_service('us')->add(
 
 is( $us->has_children, 1 );
 is( $us->has_spool_command, 0 );
+is( $us->is_commands_by_event( EVENT_REMOVE ), 1 );
 
-$us->make_commands_by_event('test');
+$us->make_commands_by_event( EVENT_REMOVE );
 is( $us->has_spool_command, 1 );
 
 $sub_us->delete();

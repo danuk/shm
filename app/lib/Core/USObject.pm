@@ -267,15 +267,30 @@ sub get_category {
     return $self->service->get->{category};
 }
 
-sub make_commands_by_event {
+sub commands_by_event {
     my $self = shift;
     my $e = shift;
 
-    my @commands = get_service('Events')->get_events(
+    return get_service('Events')->get_events(
         kind => 'UserService',
         name => $e,
         category => $self->get_category,
     );
+}
+
+sub is_commands_by_event {
+    my $self = shift;
+    my $e = shift;
+
+    my @commands = $self->commands_by_event( $e );
+    return scalar @commands;
+}
+
+sub make_commands_by_event {
+    my $self = shift;
+    my $e = shift;
+
+    my @commands = $self->commands_by_event( $e );
 
     if ( scalar @commands ) {
         $self->status( STATUS_PROGRESS, event => $e );
@@ -361,7 +376,7 @@ sub child_status_updated {
     }
     elsif ( scalar (keys %children_statuses) == 0 and $child{event} eq EVENT_REMOVE ) {
         # Remove parent if child already removed
-        $self->status( STATUS_REMOVED, event => EVENT_REMOVE ) unless $self->has_spool_command();
+        $self->status( STATUS_REMOVED, event => EVENT_REMOVE ) unless $self->is_commands_by_event( EVENT_REMOVE );
     }
 
     return $self->get_status;
