@@ -43,12 +43,14 @@ sub append {
         $log,
         $self->id,
     );
+    $self->commit;
 }
 
 sub set_eof {
     my $self = shift;
 
     $self->set( eof => 1, stop => now );
+    $self->commit;
 }
 
 sub chunk {

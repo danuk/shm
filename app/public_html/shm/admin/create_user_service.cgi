@@ -26,5 +26,7 @@ if ( my $us = create_service( %in ) ) {
 print_header();
 print_json( \%res );
 
+$user->commit;
+
 exit 0;
 

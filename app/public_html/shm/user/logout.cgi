@@ -11,4 +11,6 @@ if ( my $session = validate_session() ) {
 
 print_json( { status => 0, msg => 'Logout sucessfully' } );
 
+$user->commit;
+
 exit 0;

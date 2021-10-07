@@ -10,7 +10,7 @@ my $json = JSON->new->canonical( 1 );
 
 $| = 1;
 
-SHM->new( skip_check_auth => 1 );
+my $user = SHM->new( skip_check_auth => 1 );
 
 my $spool = get_service('spool');
 my ($status, $task, $info );
@@ -20,6 +20,7 @@ say "SHM spool started at: " . localtime;
 for (;;) {
     do {
         ($status, $task, $info ) = $spool->process_one();
+        $user->commit();
 
         if ( defined $task ) {
             $task->{status} //= $status;

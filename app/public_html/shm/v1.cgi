@@ -129,5 +129,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     print_json( { error => 'Method not found'} );
 }
 
+$user->commit();
+
 exit 0;
 

@@ -18,4 +18,6 @@ if ( $object ) {
     print_json( { status => 400 } );
 }
 
+$user->commit;
+
 exit 0;

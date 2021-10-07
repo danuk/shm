@@ -43,5 +43,7 @@ if ( $in{debug} && $in{wait} ) {
     say "="x100;
 }
 
+$user->commit;
+
 exit 0;
 

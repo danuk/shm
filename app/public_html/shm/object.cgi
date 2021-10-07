@@ -122,6 +122,8 @@ unless ( $report->is_success ) {
 print_header( %headers );
 print_json( $res );
 
+$user->commit();
+
 exit 0;
 
 sub get_service_id {

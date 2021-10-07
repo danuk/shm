@@ -67,7 +67,7 @@ sub configure {
     my $dbh = shift;
 
     $dbh->{RaiseError} = 0;
-    $dbh->{AutoCommit} = $ENV{SHM_TEST} ? 0 : 1;
+    $dbh->{AutoCommit} = 0;
     $dbh->{mysql_auto_reconnect} = 1;
     $dbh->{InactiveDestroy} = 1;
 
@@ -122,6 +122,11 @@ sub do {
         return undef;
     };
     return $res eq '0E0' ? 0 : $res;
+}
+
+sub commit {
+    my $self = shift;
+    return $self->dbh->commit unless $ENV{SHM_TEST};
 }
 
 sub log {

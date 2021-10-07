@@ -50,6 +50,8 @@ $session->set( time => time() );
 print_header( cookie => create_cookie('session_id',$session_id) );
 print_json( { status => 200, msg => 'Successfully', session_id => $session_id, user_id => $user->id() } );
 
+$user->commit;
+
 exit 0;
 
 sub create_cookie {

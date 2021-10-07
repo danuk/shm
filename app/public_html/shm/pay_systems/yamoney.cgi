@@ -45,5 +45,7 @@ get_service('pay')->add(
 
 print_json( { status => 200, msg => "Payment successful" } );
 
+$user->commit;
+
 exit 0;
 

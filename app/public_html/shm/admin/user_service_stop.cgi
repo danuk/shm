@@ -25,5 +25,7 @@ if ( $us ) {
 print_header();
 print_json( scalar $us->get );
 
+$user->commit;
+
 exit 0;
 

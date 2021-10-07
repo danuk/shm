@@ -33,5 +33,7 @@ get_service('Events')->make( %args );
 print_header();
 print_json( );
 
+$user->commit;
+
 exit 0;
 
