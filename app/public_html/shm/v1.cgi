@@ -74,6 +74,20 @@ my $routes = {
     },
 },
 
+'/admin/user/:user_id' => {
+    GET => {
+        controller => 'User',
+        method => 'list_for_api',
+        admin => 1,
+    },
+},
+'/admin/user/:user_id/payment' => {
+    PUT => {
+        controller => 'User',
+        method => 'payment',
+    },
+},
+
 };
 
 my $router = Router::Simple->new();
@@ -86,6 +100,12 @@ for my $uri ( keys %{ $routes } ) {
 my $uri = $ENV{SCRIPT_NAME};
 $uri =~s/^\/shm\/v\d+//;
 $uri =~s/\/$//;
+
+if ( $uri =~/^\/admin\// && !$user->is_admin ) {
+    print_header( status => 403 );
+    print_json( { error => "Permission denied"} );
+    exit 0;
+}
 
 if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
@@ -106,7 +126,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     my $report = get_service('report');
     unless ( $report->is_success ) {
-        print_header( status => 404 );
+        print_header( status => 400 );
         print_json( { error => $report->errors } );
         exit 0;
     }

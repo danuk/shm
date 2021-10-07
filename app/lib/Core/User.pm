@@ -332,16 +332,23 @@ sub payment {
         @_,
     );
 
-    return undef unless $args{money};
+    unless ( $args{money} ) {
+        get_service('report')->add_error("`money` required");
+        return undef;
+    }
 
-    unless ( get_service('pay')->add( %args ) ) {
+    switch_user( $args{user_id} );
+
+    my $pay_id;
+    unless ( $pay_id = get_service('pay')->add( %args ) ) {
         get_service('report')->add_error("Can't make payment");
         return undef;
     }
 
-    $self->set_balance( balance => $args{money} );
+    get_service('user', _id => $args{user_id})->set_balance( balance => $args{money} );
 
-    return $self->make_event( 'payment' );
+    $self->make_event( 'payment' );
+    return scalar get_service('pay', _id => $pay_id )->get;
 }
 
 sub pays {
