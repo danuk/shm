@@ -12,6 +12,7 @@ use Core::Utils qw(
     decode_json
 );
 
+use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
 
 our %in = parse_args();
