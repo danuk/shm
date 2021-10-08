@@ -131,18 +131,20 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         exit 0;
     }
 
-    my $res = \@ret;;
+    my %pagination;
     if ( $ENV{REQUEST_METHOD} eq 'GET' ) {
-        $res = {
+        %pagination = (
             items => $service->found_rows(),
             limit => $in{limit} || 25,
             offset => $in{offset} || 0,
-            data => \@ret,
-        };
+        );
     }
 
     print_header( status => 200 );
-    print_json( $res );
+    print_json({
+        %pagination,
+        data => \@ret,
+    });
 
 } else {
     print_header( status => 404 );
