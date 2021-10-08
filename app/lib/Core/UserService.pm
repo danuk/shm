@@ -220,11 +220,12 @@ sub tree {
     my @parents = keys %{ $self->{res} ||= {} };
 
     my @vars;
-    my $query = $self->query_select(    vars => \@vars,
-                                        user_id => $self->user_id,
-                                        where => @parents ? { -or => [ { user_service_id => { in => \@parents } },
-                                                    { parent => { '!=' => undef } },
-                                                ]} : '',
+    my $query = $self->query_select(
+        vars => \@vars,
+        user_id => $self->user_id,
+        where => @parents ? { -or => [ { user_service_id => { in => \@parents } },
+                { parent => { '!=' => undef } },
+            ]} : '',
     );
 
     my $res = $self->query_by_name( $query, 'user_service_id', @vars );
