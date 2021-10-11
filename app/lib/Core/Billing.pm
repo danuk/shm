@@ -143,7 +143,7 @@ sub process_service {
 sub add_withdraw {
     my %wd = @_;
 
-    delete @wd{ qw/ end_date withdraw_date / };
+    delete @wd{ qw/ withdraw_id end_date withdraw_date / };
     return get_service('withdraw')->add( %wd );
 }
 
@@ -187,7 +187,7 @@ sub calc_withdraw {
         $wd{total} = calc_total_by_date_range( $billing, %wd )->{total};
     }
 
-    $wd{discount} = get_service_discount( %wd );
+    $wd{discount}||= get_service_discount( %wd );
 
     $wd{total} = ( $wd{total} - $wd{total} * $wd{discount} / 100 ) * $wd{qnt};
 

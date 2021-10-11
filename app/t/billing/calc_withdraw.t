@@ -140,5 +140,28 @@ subtest 'Check withdraw service for 13 days' => sub {
         discount        => 0,
     }));
 };
+
+subtest 'Check withdraw service with discount' => sub {
+    %wd = Core::Billing::calc_withdraw(
+        'Honest',
+        withdraw_date => '2019-01-01 00:00:00',
+        service_id => 1,
+        cost => 600,
+        months => 1,
+        discount => 20,
+    );
+
+    cmp_deeply ( \%wd, superhashof({
+        withdraw_date   => '2019-01-01 00:00:00',
+        end_date        => '2019-01-31 23:59:59',
+        service_id      => 1,
+        months          => 1,
+        cost            => 600,
+        total           => 480,
+        qnt             => 1,
+        discount        => 20,
+    }));
+};
+
 done_testing();
 
