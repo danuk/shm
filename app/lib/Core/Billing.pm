@@ -143,7 +143,7 @@ sub process_service {
 sub add_withdraw {
     my %wd = @_;
 
-    delete @wd{ qw/ withdraw_id end_date withdraw_date / };
+    delete @wd{ qw/ withdraw_id create_date end_date withdraw_date / };
     return get_service('withdraw')->add( %wd );
 }
 
