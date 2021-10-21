@@ -64,8 +64,10 @@ sub structure {
 
 sub add {
     my $self = shift;
-    my $id = $self->SUPER::add( @_ );
-    return get_service('service', _id => $id );
+    if ( my $id = $self->SUPER::add( @_ ) ) {
+        return get_service('service', _id => $id );
+    }
+    return undef;
 }
 
 sub convert_name {

@@ -155,7 +155,6 @@ sub _add_or_set {
         }
     }
     return $ret;
-
 }
 
 sub encode_json {
@@ -167,6 +166,74 @@ sub encode_json {
     };
 
     return $json;
+}
+
+sub api_set {
+    my $self = shift;
+    my %args = @_;
+
+    if ( my $table_key = $self->get_table_key ) {
+        unless ( exists $args{ $table_key } ) {
+            my $report = get_service('report');
+            $report->add_error( sprintf("Field required: %s", $table_key ) );
+            return ();
+        }
+    }
+
+    if ( my $service = $self->id( $args{ $self->get_table_key } ) ) {
+        $service->api('set', %args );
+        return scalar $service->get;
+    }
+
+    my $report = get_service('report');
+    $report->add_error('service not found');
+    return ();
+}
+
+sub api_add {
+    my $self = shift;
+    my %args = @_;
+
+    if ( $self->structure ) {
+        my $report = get_service('report');
+        for my $f ( keys %{ $self->structure } ) {
+            if ( $self->structure->{ $f }->{required} ) {
+                unless ( exists $args{ $f } ) {
+                    $report->add_error( sprintf("Field required: %s", $f) );
+                    return ();
+                }
+            }
+        }
+    }
+
+    if ( my $service = $self->api('add', %args ) ) {
+        return scalar $service->get;
+    } else {
+        my $report = get_service('report');
+        $report->add_error('service already exists');
+        return ();
+    }
+}
+
+sub api_delete {
+    my $self = shift;
+    my %args = @_;
+
+    if ( my $table_key = $self->get_table_key ) {
+        unless ( exists $args{ $table_key } ) {
+            my $report = get_service('report');
+            $report->add_error( sprintf("Field required: %s", $table_key ) );
+            return ();
+        }
+    }
+
+    if ( my $service = $self->id( $args{ $self->get_table_key } ) ) {
+        $service->delete();
+    } else {
+        my $report = get_service('report');
+        $report->add_error('service not found');
+    }
+    return ();
 }
 
 sub api {

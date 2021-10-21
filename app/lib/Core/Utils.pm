@@ -28,6 +28,7 @@ our @EXPORT_OK = qw(
     file_by_string
     read_file
     passgen
+    shm_test_api
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -142,6 +143,7 @@ sub parse_args {
         if ( $json ) {
             %in = %{ $json };
         }
+        delete $in{ "${method}DATA" };
         return %in, get_uri_args();
     }
 
@@ -244,6 +246,37 @@ sub passgen {
     my @chars =('e','r','t','p','a','d','f','h','k','z','x','c','b','n','m', 'E','R','T','P','A','D','F','H','K','Z','X','C','B','N','M', 1 .. 9);
     my $pass = join("", @chars[ map { rand @chars } (1 .. $len) ]);
     return $pass;
+}
+
+sub shm_test_api {
+    my %args = (
+        url => undef,
+        method => 'get',
+        login => undef,
+        password => undef,
+        data => undef,
+        @_,
+    );
+
+    use LWP::UserAgent ();
+    my $ua = LWP::UserAgent->new(timeout => 3);
+
+    $ua->default_header('Content-Type' => 'application/json');
+    $ua->default_header('login' => $args{login}) if $args{login};
+    $ua->default_header('password' => $args{password}) if $args{password};
+
+    my $method = lc $args{method};
+    my $response = $ua->$method(
+        sprintf( "http://shm.local/shm/%s", $args{url} ),
+        $args{data} ? $args{data} : (),
+    );
+
+    return (
+        success => $response->is_success,
+        content => $response->decoded_content,
+        json => decode_json( $response->decoded_content ),
+        status_line => $response->status_line,
+    );
 }
 
 1;

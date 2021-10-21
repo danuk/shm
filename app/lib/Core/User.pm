@@ -220,7 +220,7 @@ sub auth {
     return get_service('user', _id => $user->{user_id} );
 }
 
-sub api_passwd {
+sub passwd {
     my $self = shift;
     my %args = (
         password => undef,
@@ -293,7 +293,7 @@ sub reg {
         return undef;
     }
 
-    return get_service( 'user', _id => $user_id );
+    return scalar get_service( 'user', _id => $user_id )->get;
 }
 
 sub services {
