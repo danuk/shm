@@ -206,8 +206,9 @@ sub api_add {
         }
     }
 
-    if ( my $service = $self->api('add', %args ) ) {
-        return scalar $service->get;
+    if ( my $ret = $self->api('add', %args ) ) {
+        my $data = ref $ret ? $ret->get : $self->id( $ret )->get;
+        return $data;
     } else {
         my $report = get_service('report');
         $report->add_error('service already exists');
