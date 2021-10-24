@@ -11,9 +11,9 @@ my %user = (
     password => 'danuk',
 );
 
-subtest 'GET /v1/user/services' => sub {
+subtest 'GET /v1/user/service' => sub {
     my %ret = shm_test_api(
-        url => 'v1/user/services',
+        url => 'v1/user/service',
         method => 'GET',
         %user,
     );
@@ -21,9 +21,9 @@ subtest 'GET /v1/user/services' => sub {
     is scalar @{ $ret{json}->{data} }, 4, 'Check count items in data';
 };
 
-subtest 'GET /v1/user/services/:usi' => sub {
+subtest 'GET /v1/user/service/:usi' => sub {
     my %ret = shm_test_api(
-        url => 'v1/user/services/99',
+        url => 'v1/user/service/99',
         method => 'GET',
         %user,
     );

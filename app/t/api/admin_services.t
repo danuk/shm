@@ -10,9 +10,9 @@ my %user = (
     password => 'admin',
 );
 
-subtest 'GET /v1/admin/services' => sub {
+subtest 'GET /v1/admin/service' => sub {
     my %ret = shm_test_api(
-        url => 'v1/admin/services',
+        url => 'v1/admin/service',
         method => 'GET',
         %user,
     );
@@ -20,9 +20,9 @@ subtest 'GET /v1/admin/services' => sub {
     is scalar @{ $ret{json}->{data} }, 15, 'Check count items in data';
 };
 
-subtest 'GET /v1/admin/services/110' => sub {
+subtest 'GET /v1/admin/service/110' => sub {
     my %ret = shm_test_api(
-        url => 'v1/admin/services?service_id=110',
+        url => 'v1/admin/service?service_id=110',
         method => 'GET',
         %user,
     );
@@ -32,9 +32,9 @@ subtest 'GET /v1/admin/services/110' => sub {
     is $ret{json}->{data}->[0]->{cost}, 300, 'Check service cost';
 };
 
-subtest 'POST /v1/admin/services/110' => sub {
+subtest 'POST /v1/admin/service/110' => sub {
     my %ret = shm_test_api(
-        url => 'v1/admin/services',
+        url => 'v1/admin/service',
         method => 'POST',
         data => {
             service_id => 110,
@@ -45,14 +45,14 @@ subtest 'POST /v1/admin/services/110' => sub {
     is $ret{json}->{data}->[0]->{cost}, 400, 'Check service cost (POST)';
 
     %ret = shm_test_api(
-        url => 'v1/admin/services?service_id=110',
+        url => 'v1/admin/service?service_id=110',
         method => 'GET',
         %user,
     );
     is $ret{json}->{data}->[0]->{cost}, 400, 'Check service cost (GET)';
 
     %ret = shm_test_api(
-        url => 'v1/admin/services',
+        url => 'v1/admin/service',
         method => 'POST',
         data => {
             service_id => 110,
@@ -63,9 +63,9 @@ subtest 'POST /v1/admin/services/110' => sub {
     is $ret{json}->{data}->[0]->{cost}, 300, 'Rollback service cost';
 };
 
-subtest 'PUT /v1/admin/services' => sub {
+subtest 'PUT /v1/admin/service' => sub {
     my %ret = shm_test_api(
-        url => 'v1/admin/services',
+        url => 'v1/admin/service',
         method => 'PUT',
         data => {
             service_id => 1000,
@@ -79,14 +79,14 @@ subtest 'PUT /v1/admin/services' => sub {
     is $ret{json}->{data}->[0]->{service_id}, 1000, 'Check new service id';
 
     %ret = shm_test_api(
-        url => 'v1/admin/services?service_id=1000',
+        url => 'v1/admin/service?service_id=1000',
         method => 'GET',
         %user,
     );
     is $ret{json}->{data}->[0]->{cost}, 123, 'Check new service cost (GET)';
 
     my %ret = shm_test_api(
-        url => 'v1/admin/services',
+        url => 'v1/admin/service',
         method => 'PUT',
         data => {
             service_id => 1000,
@@ -99,16 +99,16 @@ subtest 'PUT /v1/admin/services' => sub {
     is $ret{json}->{error}, 'service already exists';
 };
 
-subtest 'DELETE /v1/admin/services' => sub {
+subtest 'DELETE /v1/admin/service' => sub {
     my %ret = shm_test_api(
-        url => 'v1/admin/services?service_id=1000',
+        url => 'v1/admin/service?service_id=1000',
         method => 'DELETE',
         %user,
     );
     is scalar @{ $ret{json}->{data} }, 0;
 
     %ret = shm_test_api(
-        url => 'v1/admin/services?service_id=1000',
+        url => 'v1/admin/service?service_id=1000',
         method => 'DELETE',
         %user,
     );

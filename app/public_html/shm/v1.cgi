@@ -36,34 +36,34 @@ my $routes = {
         method => 'passwd',
     },
 },
-'/user/services' => {
+'/user/service' => {
     GET => {
         controller => 'UserService',
     },
 },
-'/user/services/:usi' => {
+'/user/service/:usi' => {
     GET => {
         controller => 'UserService',
         required => ['usi'],
     },
 },
-'/user/withdraws' => {
+'/user/withdraw' => {
     GET => {
         controller => 'Withdraw',
     },
 },
-'/user/pays' => {
+'/user/pay' => {
     GET => {
         controller => 'Pay',
     },
 },
-'/user/pays/forecast' => {
+'/user/pay/forecast' => {
     GET => {
         controller => 'Pay',
         method => 'forecast',
     },
 },
-'/services/order' => {
+'/service/order' => {
     GET => {
         controller => 'Service',
         method => 'api_price_list',
@@ -73,7 +73,7 @@ my $routes = {
 
     },
 },
-'/services/:service_id' => {
+'/service/:service_id' => {
     GET => {
         controller => 'Service',
         method => 'list_for_api',
@@ -88,7 +88,7 @@ my $routes = {
     },
 },
 
-'/admin/services' => {
+'/admin/service' => {
     GET => {
         controller => 'Service',
     },
@@ -102,7 +102,7 @@ my $routes = {
         controller => 'Service',
     },
 },
-'/admin/services/event' => {
+'/admin/service/event' => {
     GET => {
         controller => 'Event',
     },
@@ -179,7 +179,7 @@ my $routes = {
         controller => 'Pay',
     },
 },
-'/admin/user/services' => {
+'/admin/user/service' => {
     GET => {
         controller => 'UserService',
     },
@@ -213,7 +213,7 @@ my $routes = {
         controller => 'Server',
     },
 },
-'/admin/server/groups' => {
+'/admin/server/group' => {
     GET => {
         controller => 'ServerGroups',
     },
@@ -227,7 +227,7 @@ my $routes = {
         controller => 'ServerGroups',
     },
 },
-'/admin/server/identities' => {
+'/admin/server/identity' => {
     GET => {
         controller => 'Identities',
     },
