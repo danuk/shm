@@ -104,7 +104,7 @@ sub api_subservices_list {
         push @ret, $list->{ $_ };
     }
 
-    return \@ret;
+    return @ret;
 }
 
 sub delete {

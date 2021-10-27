@@ -180,7 +180,24 @@ sub retry_task {
     $self->write_history;
 }
 
-sub api_manual_retry {
+sub api_manual_action {
+    my $self = shift;
+    my %args = (
+        id => undef,
+        action => undef,
+        @_,
+    );
+
+    my $method = sprintf( "api_%s", delete $args{action} );
+    unless ( $self->can( $method ) ) {
+        my $report = get_service('report');
+        $report->add_error('unknown action');
+        return ();
+    }
+    return $self->id( $args{ id } )->$method( %args );
+}
+
+sub api_retry {
     my $self = shift;
     my %args = (
         event => undef,
@@ -202,7 +219,7 @@ sub api_manual_retry {
         }
     }
 
-    return $self->get;
+    return scalar $self->get;
 }
 
 sub api_pause {
@@ -211,7 +228,7 @@ sub api_pause {
     $self->set(
         status => TASK_PAUSED,
     );
-    return $self->get;
+    return scalar $self->get;
 }
 
 sub api_resume {
@@ -220,7 +237,7 @@ sub api_resume {
     $self->set(
         status => TASK_NEW,
     );
-    return $self->get;
+    return scalar $self->get;
 }
 
 sub write_history {

@@ -333,7 +333,7 @@ sub api_spool_commands {
     my $self = shift;
 
     my @arr = $self->spool->list_by_settings( user_service_id => $self->id );
-    return \@arr;
+    return @arr;
 }
 
 sub has_spool_command {
