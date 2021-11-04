@@ -96,7 +96,7 @@ subtest 'PUT /v1/admin/service' => sub {
         },
         %user,
     );
-    is $ret{json}->{error}, 'service already exists';
+    is $ret{json}->{error}, "Can't add new object";
 };
 
 subtest 'DELETE /v1/admin/service' => sub {
@@ -112,7 +112,7 @@ subtest 'DELETE /v1/admin/service' => sub {
         method => 'DELETE',
         %user,
     );
-    is scalar $ret{json}->{error}, "service not found";
+    is scalar $ret{json}->{error}, "Service not found";
 };
 
 done_testing();

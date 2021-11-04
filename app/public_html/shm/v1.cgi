@@ -102,6 +102,14 @@ my $routes = {
         controller => 'Service',
     },
 },
+'/admin/service/children' => {
+    GET => {
+        controller => 'Service',
+        method => 'api_subservices_list',
+        required => ['service_id'],
+    },
+},
+
 '/admin/service/event' => {
     GET => {
         controller => 'Event',
@@ -160,17 +168,6 @@ my $routes = {
         controller => 'Profile',
     },
 },
-'/admin/user/withdraw' => {
-    GET => {
-        controller => 'Withdraw',
-    },
-    PUT => {
-        controller => 'Withdraw',
-    },
-    POST => {
-        controller => 'Withdraw',
-    },
-},
 '/admin/user/pay' => {
     GET => {
         controller => 'Pay',
@@ -193,10 +190,29 @@ my $routes = {
         controller => 'USObject',
     },
 },
-'/admin/user/services/stop' => {
+'/admin/user/service/withdraw' => {
+    GET => {
+        controller => 'Withdraw',
+    },
+    PUT => {
+        controller => 'Withdraw',
+    },
+    POST => {
+        controller => 'Withdraw',
+    },
+},
+'/admin/user/service/stop' => {
     POST => {
         controller => 'USObject',
         method => 'stop',
+        required => ['user_id','user_service_id'],
+    },
+},
+'/admin/user/service/spool' => {
+    GET => {
+        controller => 'USObject',
+        method => 'api_spool_commands',
+        required => ['id'],
     },
 },
 '/admin/server' => {
@@ -207,7 +223,7 @@ my $routes = {
         controller => 'Server',
     },
     POST => {
-        controller => 'Service',
+        controller => 'Server',
     },
     DELETE => {
         controller => 'Server',
@@ -260,6 +276,13 @@ my $routes = {
         controller => 'SpoolHistory',
     },
 },
+'/admin/spool/:action' => {
+    POST => {
+        controller => 'Spool',
+        method => 'api_manual_action',
+        required => ['id','action'],
+    },
+},
 '/admin/template' => {
     GET => {
         controller => 'Template',
@@ -286,6 +309,21 @@ my $routes = {
     },
     DELETE => {
         controller => 'Config',
+    },
+},
+'/admin/console' => {
+
+
+
+},
+'/admin/test/ssh' => {
+    POST => {
+
+    },
+},
+'/admin/test/mail' => {
+    POST => {
+
     },
 },
 
@@ -320,7 +358,6 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     if ( $user->is_admin && $args{user_id} ) {
         switch_user( $args{user_id} );
-        $args{admin} = 0;
     }
 
     if ( my $r_args = $p->{required} ) {
@@ -345,14 +382,58 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     $method ||= 'list_for_api'  if $ENV{REQUEST_METHOD} eq 'GET';
     $method ||= 'api_set'       if $ENV{REQUEST_METHOD} eq 'POST';
     $method ||= 'api_add'       if $ENV{REQUEST_METHOD} eq 'PUT';
-    $method ||= 'api_delete'    if $ENV{REQUEST_METHOD} eq 'DELETE';
+    $method ||= 'delete'        if $ENV{REQUEST_METHOD} eq 'DELETE';
 
     unless ( $service->can( $method ) ) {
         print_header( status => 500 );
         print_json( { error => 'Method not exists'} );
     }
 
-    my @ret = $service->$method( %args );
+    my @data;
+    my %headers;
+    my %info;
+
+    if ( $ENV{REQUEST_METHOD} eq 'GET' ) {
+        $args{filter} = decode_json( $in{filter} ) if $in{filter};
+        @data = $service->$method( %args );
+        %info = (
+            items => $service->found_rows(),
+            limit => $in{limit} || 25,
+            offset => $in{offset} || 0,
+        );
+    } elsif ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
+        if ( my $ret = $service->$method( %args ) ) {
+            if ( ref $ret eq 'HASH' ) {
+                push @data, $ret;
+            } elsif ( ref $ret eq 'ARRAY' ) {
+                @data = @{ $ret };
+            } else {
+                @data = ref $ret ? scalar $ret->get : scalar $service->id( $ret )->get;
+            }
+        }
+        else {
+            $headers{status} = 400;
+            $info{error} = "Can't add new object";
+        }
+    } elsif ( $ENV{REQUEST_METHOD} eq 'POST' ) {
+        if ( $service = $service->id( get_service_id( $service ) ) ) {
+            push @data, $service->$method( %args );
+        } else {
+            $headers{status} = 404;
+            $info{error} = "Service not found";
+        }
+    } elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
+        if ( my $obj = $service->id( get_service_id( $service ) ) ) {
+            $obj->$method( %args );
+            $headers{status} = 200;
+        } else {
+            $headers{status} = 404;
+            $info{error} = "Service not found";
+        }
+    } else {
+            $headers{status} = 400;
+            $info {error} = "Unknown REQUEST_METHOD";
+    };
 
     my $report = get_service('report');
     unless ( $report->is_success ) {
@@ -361,25 +442,28 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         exit 0;
     }
 
-    my %pagination;
-    if ( $ENV{REQUEST_METHOD} eq 'GET' ) {
-        %pagination = (
-            items => $service->found_rows(),
-            limit => $in{limit} || 25,
-            offset => $in{offset} || 0,
-        );
-    }
-
-    print_header( status => 200 );
+    print_header( %headers );
     print_json({
-        %pagination,
-        data => \@ret,
+        %info,
+        data => \@data,
     });
 
     $user->commit();
 } else {
     print_header( status => 404 );
     print_json( { error => 'Method not found'} );
+}
+
+sub get_service_id {
+    my $service = shift;
+    my $service_id = $in{ $service->get_table_key } || $in{id};
+
+    unless ( $service_id ) {
+        print_header( status => 400 );
+        print_json( { error => sprintf("`%s` not present", $service->get_table_key ) } );
+        exit 0;
+    }
+    return $service_id;
 }
 
 exit 0;

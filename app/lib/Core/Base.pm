@@ -172,21 +172,10 @@ sub api_set {
     my $self = shift;
     my %args = @_;
 
-    if ( my $table_key = $self->get_table_key ) {
-        unless ( exists $args{ $table_key } ) {
-            my $report = get_service('report');
-            $report->add_error( sprintf("Field required: %s", $table_key ) );
-            return ();
-        }
+    if ( $self->api('set', %args ) ) {
+        return scalar $self->get();
     }
 
-    if ( my $service = $self->id( $args{ $self->get_table_key } ) ) {
-        $service->api('set', %args );
-        return scalar $service->get;
-    }
-
-    my $report = get_service('report');
-    $report->add_error('service not found');
     return ();
 }
 
@@ -205,36 +194,7 @@ sub api_add {
             }
         }
     }
-
-    if ( my $ret = $self->api('add', %args ) ) {
-        my $data = ref $ret ? $ret->get : $self->id( $ret )->get;
-        return $data;
-    } else {
-        my $report = get_service('report');
-        $report->add_error('service already exists');
-        return ();
-    }
-}
-
-sub api_delete {
-    my $self = shift;
-    my %args = @_;
-
-    if ( my $table_key = $self->get_table_key ) {
-        unless ( exists $args{ $table_key } ) {
-            my $report = get_service('report');
-            $report->add_error( sprintf("Field required: %s", $table_key ) );
-            return ();
-        }
-    }
-
-    if ( my $service = $self->id( $args{ $self->get_table_key } ) ) {
-        $service->delete();
-    } else {
-        my $report = get_service('report');
-        $report->add_error('service not found');
-    }
-    return ();
+    return $self->api('add', %args );
 }
 
 sub api {
