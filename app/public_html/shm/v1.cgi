@@ -139,6 +139,10 @@ my $routes = {
         controller => 'User',
         required => ['user_id'],
     },
+    DELETE => {
+        controller => 'User',
+        required => ['user_id'],
+    },
 },
 '/admin/user/passwd' => {
     POST => {
