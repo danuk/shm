@@ -4,9 +4,9 @@ services:
     image: "danuk/shm:latest"
     restart: always
     environment:
-      DB_NAME: shm
-      DB_USER: shm
-      DB_PASS: quu4QuoSat
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_PASS}
       DB_HOST: mysql
       DB_PORT: 3306
     ports:
@@ -19,9 +19,9 @@ services:
     restart: always
     environment:
       SHM_ROLE: "spool"
-      DB_NAME: shm
-      DB_USER: shm
-      DB_PASS: quu4QuoSat
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_PASS}
       DB_HOST: mysql
       DB_PORT: 3306
     depends_on:
@@ -46,10 +46,12 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: OSexooquoo1fah9fahsh
-      MYSQL_DATABASE: shm
-      MYSQL_USER: shm
-      MYSQL_PASSWORD: quu4QuoSat
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASS}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASS}
+    volumes:
+      - "mysql-data:/var/lib/mysql"
     ports:
       - "3306:3306"
     healthcheck:
@@ -57,3 +59,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+volumes:
+  mysql-data:
+    driver: local
+
