@@ -155,4 +155,10 @@ sub api_price_list {
     );
 }
 
+sub settings {
+    my $self = shift;
+
+    return $self->config;
+}
+
 1;
