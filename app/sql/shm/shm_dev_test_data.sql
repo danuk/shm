@@ -287,7 +287,7 @@ INSERT INTO `pay_systems` VALUES (1,'Платеж',NULL);
 INSERT INTO `templates` VALUES
 (1,'web_tariff_create','Создание тарифа хостинга','Здравствуйте {{ user.full_name }}\n\nВы зарегистрировали новую услугу: {{ us.name }}\n\nДата истечения услуги: {{ us.expired }}\n\nСтоимость услуги: {{ us.service.cost }} руб.\n\n{{ IF us.child_by_category(\'web\') }}\nХостинг сайтов:\nХост: {{ us.child_by_category(\'web\').server.settings.host_name }}\nЛогин: {{ us.child_by_category(\'web\').settings.login }}\nПароль: {{ us.child_by_category(\'web\').settings.password }}\n{{ END }}\n\nЖелаем успехов.',NULL),
 (3,'forecast','Прогноз оплаты','Уважаемый {{ user.full_name }}\n\nУведомляем Вас о сроках действия услуг:\n\n{{ FOR item IN user.pays.forecast.items }}\n- Услуга: {{ item.name }}\n  Стоимость: {{ item.total }}\n  Истекает: {{ item.expired }}\n{{ END }}\n\n{{ IF user.pays.forecast.dept }}\nПогашение задолженности: {{ user.pays.forecast.dept }}\n{{ END }}\n\nИтого к оплате: {{ user.pays.forecast.total }} руб.\n\nУслуги, которые не будут оплачены до срока их истечения, будут приостановлены.\n\nПодробную информацию по Вашим услугам Вы можете посмотреть в вашем личном кабинете: {{ config.api.url }}\n\n=======================================================================\nЭто письмо сформировано автоматически. Если оно попало к Вам по ошибке,\nпожалуйста, сообщите об этом нам: {{ config.mail.from }}',NULL),
-(2,'yamoney_template','Код платежной формы Яндекс.Деньги','<iframe src=\"https://money.yandex.ru/quickpay/shop-widget?writer=seller&targets=%D0%9E%D0%BF%D0%BB%D0%B0%D1%82%D0%B0%20%D0%BF%D0%BE%20%D0%B4%D0%BE%D0%B3%D0%BE%D0%B2%D0%BE%D1%80%D1%83%20{{  user.id  }}&targets-hint=&default-sum=100&label={{  user.id  }}&button-text=12&payment-type-choice=on&hint=&successURL=&quickpay=shop&account={{  config.pay_systems.yandex.account  }}\" width=\"100%\" height=\"198\" frameborder=\"0\" allowtransparency=\"true\" scrolling=\"no\"></iframe>',NULL)
+(2,'yoomoney_template','Код платежной формы ЮMoney','<iframe src=\"https://money.yoomoney.ru/quickpay/shop-widget?writer=seller&targets=%D0%9E%D0%BF%D0%BB%D0%B0%D1%82%D0%B0%20%D0%BF%D0%BE%20%D0%B4%D0%BE%D0%B3%D0%BE%D0%B2%D0%BE%D1%80%D1%83%20{{ user.id }}&targets-hint=&default-sum=100&label={{ user.id }}&button-text=12&payment-type-choice=on&hint=&successURL=&quickpay=shop&account={{ config.pay_systems.yoomoney.account }}\" width=\"100%\" height=\"198\" frameborder=\"0\" allowtransparency=\"true\" scrolling=\"no\"></iframe>',NULL)
 ;
 
 INSERT INTO `profiles` VALUES
@@ -299,7 +299,7 @@ INSERT INTO `config` VALUES
 ("_billing",'{"type":"Honest"}'),
 ("company", '{"name":"My Company LTD"}'),
 ("api",     '{"url":"http://shm.local"}'),
-("pay_systems","{\"manual\": {\"name\": \"Платеж\", \"show_for_client\": false}, \"yandex\": {\"name\": \"Яндекс\", \"account\": 410014830210044, \"secret\": \"\", \"template_id\": 2, \"show_for_client\": true}}"),
+("pay_systems",'{"manual":{"name":"Платеж","show_for_client":false},"yoomoney":{"name":"ЮMoney","account":"000000000000000","secret":"","template_id":2,"show_for_client":true}}'),
 ("mail",    '{"from":"mail@domain.ru"}');
 
 INSERT INTO `spool` (id,status,user_id,event) VALUES
