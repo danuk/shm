@@ -14,5 +14,6 @@ yes | cpan -T -i \
  'Scalar::Util' \
  'DBD::mysql' \
  'Template' \
+ 'LWP::UserAgent' \
  'Router::Simple'
 
