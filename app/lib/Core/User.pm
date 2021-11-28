@@ -337,7 +337,7 @@ sub payment {
         return undef;
     }
 
-    switch_user( $args{user_id} );
+    switch_user( $args{user_id} ) if $args{user_id};
 
     my $pay_id;
     unless ( $pay_id = get_service('pay')->add( %args ) ) {
