@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# https://money.yandex.ru/transfer/myservices/http-notification
+# https://yoomoney.ru/transfer/myservices/http-notification
 
 use v5.14;
 
@@ -25,7 +25,7 @@ my $digest = sha1_hex( join('&',
 ));
 
 if ( $digest ne $vars{sha1_hash} ) {
-    print_json( { status => 403 } );
+    print_json( { status => 400 } );
     exit 0;
 }
 
@@ -37,10 +37,9 @@ unless ( $user_id ) {
     exit 0;
 }
 
-get_service('pay')->add(
+$user->payment(
     user_id => $user_id,
     money => $amount,
-    pay_system_id => 2,
 );
 
 print_json( { status => 200, msg => "Payment successful" } );
