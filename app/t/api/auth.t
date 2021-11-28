@@ -12,8 +12,8 @@ subtest 'Check auth with incorrect credentials' => sub {
         -H "Content-Type: application/json" \\
         -H "login: foo" \\
         -H "password: bar" \\
-        -X GET \\
-        http://shm.local/admin/pay.cgi
+        -X PUT \\
+        http://shm.local/shm/v1/admin/user/payment
     );
 
     my $json_ret = decode_json( $ret );
@@ -31,12 +31,12 @@ subtest 'Check auth with correct credentials' => sub {
         -H "login: admin" \\
         -H "password: admin" \\
         -X GET \\
-        http://shm.local/admin/pay.cgi
+        http://shm.local/shm/v1/user
     );
 
     my $json_ret = decode_json( $ret );
 
-    is( exists $json_ret->{data}, 1 );
+    is( $json_ret->{items}, 4, 'Check auth status');
 };
 
 my $session_id;
