@@ -73,6 +73,7 @@ sub configure {
 
     $dbh->do("SET CHARACTER SET UTF8");
     $dbh->do("SET NAMES utf8 COLLATE utf8_general_ci");
+    $dbh->do( sprintf( "SET time_zone = '%s'", $ENV{TZ}) );
 }
 
 sub dbh {
@@ -100,7 +101,7 @@ sub insert_id {
 
 sub found_rows {
     my $self = shift;
-    return $self->query('SELECT FOUND_ROWS() as rows')->[0]->{rows};
+    return $self->query('SELECT FOUND_ROWS() as `rows`')->[0]->{rows};
 }
 
 sub affected_rows {

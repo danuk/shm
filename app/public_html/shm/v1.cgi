@@ -448,6 +448,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     print_header( %headers );
     print_json({
+        TZ => $ENV{TZ},
         %info,
         data => \@data,
     });

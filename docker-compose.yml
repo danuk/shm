@@ -4,6 +4,7 @@ services:
     image: "danuk/shm:latest"
     restart: always
     environment:
+      TZ: ${TZ}
       DB_NAME: ${MYSQL_DATABASE}
       DB_USER: ${MYSQL_USER}
       DB_PASS: ${MYSQL_PASS}
@@ -18,6 +19,7 @@ services:
     image: "danuk/shm:latest"
     restart: always
     environment:
+      TZ: ${TZ}
       SHM_ROLE: "spool"
       DB_NAME: ${MYSQL_DATABASE}
       DB_USER: ${MYSQL_USER}
@@ -46,6 +48,7 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     environment:
+      TZ: ${TZ}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASS}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
