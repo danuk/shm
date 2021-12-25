@@ -261,6 +261,12 @@ my $routes = {
         controller => 'Identities',
     },
 },
+'/admin/server/identity/generate' => {
+    GET => {
+        controller => 'Identities',
+        method => 'generate_key_pair',
+    },
+},
 '/admin/spool' => {
     GET => {
         controller => 'Spool',
