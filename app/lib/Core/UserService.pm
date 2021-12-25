@@ -351,6 +351,10 @@ sub activate_services {
     for ( @list ) {
         get_service('USObject', _id => $_->{user_service_id})->touch;
     }
+
+    return SUCCESS, {
+        msg => sprintf("affected services: [%s]", (join ",", map $_->{user_service_id}, @list)),
+    };
 }
 
 sub list_expired_services {
