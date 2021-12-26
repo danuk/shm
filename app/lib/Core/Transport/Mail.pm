@@ -82,8 +82,8 @@ sub send_mail {
     my $msg = MIME::Lite->new(
         From    => $args{from},
         To      => $args{to},
-        Cc      => $args{cc},
-        BCc     => $args{bcc},
+        Cc      => $args{cc} || "",
+        BCc     => $args{bcc} || "",
         Subject => "=?UTF-8?B?$subject?=",
         Type    => 'text/plain;charset=UTF-8',
         Data    =>  $args{message},

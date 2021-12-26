@@ -11,9 +11,9 @@ my %user = (
     password => 'danuk',
 );
 
-subtest 'GET /v1/service/:usi' => sub {
+subtest 'GET /v1/service/' => sub {
     my %ret = shm_test_api(
-        url => 'v1/service/5',
+        url => 'v1/service?service_id=5',
         method => 'GET',
         %user,
     );

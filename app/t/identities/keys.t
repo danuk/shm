@@ -16,7 +16,7 @@ SHM->new( user_id => 40092 );
 
 my $obj = get_service('Identities');
 
-my %key = $obj->generate_key_pair();
+my %key = %{ $obj->generate_key_pair() };
 
 my $fingerprint = $key{fingerprint};
 

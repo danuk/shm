@@ -100,7 +100,7 @@ sub generate_key_pair {
     unlink "$file";
     unlink "$file.pub";
 
-    return { %struct };
+    return \%struct;
 }
 
 sub list_for_api {
