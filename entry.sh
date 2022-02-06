@@ -1,6 +1,7 @@
 #!/bin/sh -e
 
 cat <<EOF > /etc/environment
+TZ=${TZ}
 SHM_ROOT_DIR=${SHM_ROOT_DIR}
 SHM_DATA_DIR=${SHM_DATA_DIR}
 DB_USER=${DB_USER}
