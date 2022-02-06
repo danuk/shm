@@ -18,7 +18,11 @@ my $tables_count = $sql->do("SHOW TABLES");
 unless ( $tables_count ) {
     print "Init database... ";
     import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_structure.sql" );
-    import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_data.sql" );
+    if ( $ENV{DEV} ) {
+        import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_dev_test_data.sql" );
+    } else {
+        import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_data.sql" );
+    }
     say "done";
 }
 
