@@ -47,6 +47,7 @@ unless ( $user_id ) {
 $user->payment(
     user_id => $user_id,
     money => $amount,
+    comment => sprintf("operation_id=%s", $vars{operation_id} ),
 );
 
 print_json( { status => 200, msg => "Payment successful" } );
