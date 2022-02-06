@@ -19,10 +19,6 @@ unless ( $config ) {
 
 my $secret = $config->get->{value}->{yoomoney}->{secret};
 
-if ( $vars{test_notification} ) {
-    print_json( { status => 200,  msg => 'Test OK' } );
-    exit 0;
-}
 
 my $digest = sha1_hex( join('&',
 	@vars{ qw/notification_type operation_id amount currency datetime sender codepro/ },
@@ -32,6 +28,11 @@ my $digest = sha1_hex( join('&',
 
 if ( $digest ne $vars{sha1_hash} ) {
     print_json( { status => 400 } );
+    exit 0;
+}
+
+if ( $vars{test_notification} ) {
+    print_json( { status => 200,  msg => 'Test OK' } );
     exit 0;
 }
 
