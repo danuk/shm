@@ -69,11 +69,12 @@ my $routes = {
         method => 'api_price_list',
     },
     PUT => {
-
-
+        controller => 'Service',
+        method => 'create',
+        required => ['service_id'],
     },
 },
-'/service/:service_id' => {
+'/service' => {
     GET => {
         controller => 'Service',
         method => 'list_for_api',
