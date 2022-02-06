@@ -405,12 +405,12 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my %info;
 
     if ( $ENV{REQUEST_METHOD} eq 'GET' ) {
-        $args{filter} = decode_json( $in{filter} ) if $in{filter};
         @data = $service->$method( %args );
         %info = (
             items => $service->found_rows(),
             limit => $in{limit} || 25,
             offset => $in{offset} || 0,
+            $args{filter} ? (filter => $args{filter}) : (),
         );
     } elsif ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
         if ( my $ret = $service->$method( %args ) ) {
