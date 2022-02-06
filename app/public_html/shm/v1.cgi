@@ -461,6 +461,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     });
 
     $user->commit();
+    $user->dbh->disconnect();
 } else {
     print_header( status => 404 );
     print_json( { error => 'Method not found'} );

@@ -22,6 +22,8 @@ unless ( $tables_count ) {
     say "done";
 }
 
+$dbh->disconnect();
+
 exit 0;
 
 sub import_sql_file {
