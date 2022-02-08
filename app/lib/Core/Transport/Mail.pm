@@ -72,7 +72,7 @@ sub send_mail {
         host => undef,
         from => undef,
         to => undef,
-        subject => undef,
+        subject => 'SHM',
         message => undef,
         @_,
     );
