@@ -77,10 +77,8 @@ sub send_mail {
         @_,
     );
 
-    my $from_name = $args{from_name} ? encode( 'MIME-Header', $args{from_name} ) : 'SHM';
-
     my $msg = MIME::Lite->new(
-        From    => sprintf("%s <%s>", $from_name, $args{from} ),
+        From    => $args{from},
         To      => $args{to},
         Cc      => $args{cc} || "",
         BCc     => $args{bcc} || "",
