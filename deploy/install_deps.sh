@@ -10,6 +10,7 @@ yes | cpan -T -i \
  'Net::OpenSSH' \
  'Net::IDN::Encode' \
  'Data::Validate::Domain' \
+ 'Data::Validate::Email' \
  'Digest::SHA1' \
  'Scalar::Util' \
  'DBD::mysql' \

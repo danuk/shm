@@ -4,7 +4,10 @@ use v5.14;
 
 use parent 'Core::Base';
 use Core::Base;
-use Core::Utils;
+use Core::Utils qw(
+    switch_user
+    is_email
+);
 use Core::Const;
 
 use Digest::SHA1 qw(sha1_hex);
@@ -386,7 +389,7 @@ sub profile {
     my $self = shift;
 
     my $profile = get_service("profile");
-    my ( $item ) = $profile->list(
+    my ( $item ) = $profile->_list(
         user_id => $self->id,
         limit => 1,
     );
@@ -399,7 +402,13 @@ sub emails {
 
     my %profile = $self->profile;
 
-    return $profile{email} || $self->get_login;
+    my $email = $profile{email};
+    unless ( $email ) {
+        if (is_email( $self->get_login)) {
+            $email = $self->get_login;
+        }
+    }
+    return $email;
 }
 
 1;

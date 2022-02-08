@@ -29,6 +29,7 @@ our @EXPORT_OK = qw(
     read_file
     passgen
     shm_test_api
+    is_email
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -36,6 +37,7 @@ use Time::DaysInMonth;
 use JSON qw//;
 use Scalar::Util qw(looks_like_number);
 use File::Temp;
+use Data::Validate::Email qw(is_email);
 
 our %in;
 

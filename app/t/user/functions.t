@@ -53,4 +53,17 @@ my %profile = $user->profile;
 is $profile{email}, 'email@domain.ru', 'Check user profile';
 is $user->emails, 'email@domain.ru', 'Check user email';
 
+subtest 'Check user email by login' => sub {
+    my $email = 'test@domain.ru';
+    my $new_user_id = $user->reg(
+        login => $email,
+        password => 'testpassword',
+    )->{user_id};
+
+    my $new_user = $user->id( $new_user_id );
+
+    is( $new_user->login, $email );
+    is( $new_user->emails, $email );
+};
+
 done_testing();
