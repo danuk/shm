@@ -8,7 +8,7 @@ use Core::Base;
 use Core::Const;
 
 use MIME::Lite;
-use MIME::Base64 qw(encode_base64);
+use Encode qw(encode);
 
 sub send {
     my $self = shift;
@@ -29,7 +29,7 @@ sub send {
         }
     }
 
-    $settings{subject} //= $config->{mail}->{subject} || "Mail from: $config->{company}->{name}";
+    $settings{subject} //= $config->{mail}->{subject};
 
     $settings{to} //= get_service('user')->emails || delete $settings{bcc};
     unless ( $settings{to} ) {
@@ -77,14 +77,14 @@ sub send_mail {
         @_,
     );
 
-    my $subject = MIME::Base64::encode_base64( $args{subject} );
+    my $from_name = $args{from_name} ? encode( 'MIME-Header', $args{from_name} ) : 'SHM';
 
     my $msg = MIME::Lite->new(
-        From    => $args{from},
+        From    => sprintf("%s <%s>", $from_name, $args{from} ),
         To      => $args{to},
         Cc      => $args{cc} || "",
         BCc     => $args{bcc} || "",
-        Subject => "=?UTF-8?B?$subject?=",
+        Subject => encode( 'MIME-Header', $args{subject} ),
         Type    => 'text/plain;charset=UTF-8',
         Data    =>  $args{message},
     );
