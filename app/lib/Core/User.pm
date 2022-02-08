@@ -399,7 +399,7 @@ sub emails {
 
     my %profile = $self->profile;
 
-    return $profile{email};
+    return $profile{email} || $self->get_login;
 }
 
 1;
