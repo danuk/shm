@@ -51,6 +51,11 @@ sub send {
         $message = $template->parse(
             $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
         );
+
+        %settings = (
+            %settings,
+            %{ $template->{settings} || {} },
+        );
     } else {
         unless ( $message = $settings{message} ) {
             return SUCCESS, {
