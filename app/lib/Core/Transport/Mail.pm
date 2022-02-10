@@ -54,7 +54,7 @@ sub send {
 
         %settings = (
             %settings,
-            %{ $template->{settings} || {} },
+            %{ $template->settings || {} },
         );
     } else {
         unless ( $message = $settings{message} ) {
