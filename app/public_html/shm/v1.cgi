@@ -34,6 +34,7 @@ my $routes = {
     POST => {
         controller => 'User',
         method => 'passwd',
+        required => ['password'],
     },
 },
 '/user/service' => {
@@ -364,6 +365,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my %args = (
         %in,
         admin => $user->is_admin,
+        $user->is_admin ? () : ( user_id => $user->id ),
         %{ $p->{args} || {} },
     );
 
@@ -427,14 +429,14 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
             $info{error} = "Can't add new object";
         }
     } elsif ( $ENV{REQUEST_METHOD} eq 'POST' ) {
-        if ( $service = $service->id( get_service_id( $service ) ) ) {
+        if ( $service = $service->id( get_service_id( $service, %args ) ) ) {
             push @data, $service->$method( %args );
         } else {
             $headers{status} = 404;
             $info{error} = "Service not found";
         }
     } elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
-        if ( my $obj = $service->id( get_service_id( $service ) ) ) {
+        if ( my $obj = $service->id( get_service_id( $service, %args ) ) ) {
             $obj->$method( %args );
             $headers{status} = 200;
         } else {
@@ -469,7 +471,8 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
 sub get_service_id {
     my $service = shift;
-    my $service_id = $in{ $service->get_table_key } || $in{id};
+    my %args = @_;
+    my $service_id = $args{ $service->get_table_key } || $args{id};
 
     unless ( $service_id ) {
         print_header( status => 400 );
