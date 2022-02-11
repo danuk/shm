@@ -462,7 +462,11 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         data => \@data,
     });
 
-    $user->commit();
+    if ( $in{dry_run} ) {
+        $user->rollback();
+    } else {
+        $user->commit();
+    }
     $user->dbh->disconnect();
 } else {
     print_header( status => 404 );
