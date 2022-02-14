@@ -11,24 +11,24 @@ my $user = SHM->new( user_id => 40092 );
 cmp_deeply (
     $user->query_for_order(
         sort_field => 'user_id',
-        sort_direction => 'desc',
-    ),
-    [ 'user_id' => 'desc' ]
-);
-
-cmp_deeply (
-    $user->query_for_order(
-        sort_field => 'user_id',
+        sort_direction => 'asc',
     ),
     [ 'user_id' => 'asc' ]
 );
 
 cmp_deeply (
     $user->query_for_order(
-        sort_field => 'alien',
-        sort_direction => 'desc',
+        sort_field => 'created',
     ),
-    undef
+    [ 'created' => 'desc' ]
+);
+
+cmp_deeply (
+    $user->query_for_order(
+        sort_field => 'alien',
+        sort_direction => 'asc',
+    ),
+    [ 'user_id' => 'asc' ]
 );
 
 done_testing();

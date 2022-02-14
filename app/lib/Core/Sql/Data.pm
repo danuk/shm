@@ -213,22 +213,17 @@ sub query_for_order {
     my $self = shift;
     my %args = (
         sort_field => undef,
-        sort_direction => undef,
+        sort_direction => 'desc',
         @_,
     );
 
     return undef unless $self->can('structure');
     my %structure = %{ $self->structure };
 
-    my $field = $structure{ $args{sort_field} };
+    my $field = exists $structure{ $args{sort_field} } ? $args{sort_field} : $self->get_table_key;
     return undef unless $field;
 
-    my $direction = 'asc';
-    if ( $args{sort_direction} && $args{sort_direction} eq 'desc' ) {
-        $direction = 'desc';
-    }
-
-    return [ $args{sort_field} => $direction ];
+    return [ $field => $args{sort_direction} ];
 }
 
 sub query_for_filtering {
