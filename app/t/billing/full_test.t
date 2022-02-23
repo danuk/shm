@@ -72,7 +72,7 @@ subtest 'Check create service' => sub {
         delayed => 0,
     }), 'Check spool command' );
 
-    process_spool();
+    $spool->process_all();
 
     is( $us->get_status, STATUS_ACTIVE, 'Check status of service after the creation childs' );
 };
@@ -184,7 +184,7 @@ subtest 'Try prolongate service without have money' => sub {
             'total' => 1000,
     }, 'Check withdraw');
 
-    process_spool();
+    $spool->process_all();
 
     is( $us->get_status, STATUS_BLOCK, 'Check status of prolong service' );
 
@@ -250,7 +250,7 @@ subtest 'Try prolongate blocked service' => sub {
 
     is( $us->get_status, STATUS_PROGRESS, 'Check status of prolong service after unblock' );
 
-    process_spool();
+    $spool->process_all();
 
     is( $us->get_status, STATUS_ACTIVE, 'Check status of prolong service after unblock and spool' );
 
@@ -306,7 +306,7 @@ subtest 'Check create service without money' => sub {
 
     $user->set( balance => 1000, credit => 0, discount => 0 );
     $us->touch();
-    process_spool();
+    $spool->process_all();
 
     is( $us->get_status, STATUS_ACTIVE, 'Check status of non payment service after payment' );
 };
@@ -315,10 +315,10 @@ Test::MockTime::set_fixed_time('2018-01-15T00:00:00Z');
 subtest 'Delete user service' => sub {
 
     $us->stop();
-    process_spool();
+    $spool->process_all();
 
     $us->delete();
-    process_spool();
+    $spool->process_all();
 
     my @user_services = get_service('UserService')->id( $us->id )->tree->get;
     is( scalar @user_services, 0, 'Check that the service is deleted');
@@ -343,17 +343,6 @@ subtest 'Delete user service' => sub {
 
 done_testing();
 exit 0;
-
-sub process_spool {
-    my $spool = get_service('spool');
-
-    while ( my @list = $spool->list(
-            where => { status => { '!=', TASK_STUCK } }
-    ) ) {
-        while ( $spool->process_one() ) {};
-        $spool->{spool} = undef;
-    }
-}
 
 sub chldrn_by_service {
     my $self = shift;

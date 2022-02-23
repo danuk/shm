@@ -68,6 +68,13 @@ sub list_for_all_users {
     );
 }
 
+sub process_all {
+    my $self = shift;
+
+    while ( $self->process_one() ) {};
+    $self->{spool} = undef;
+}
+
 # обрабатывает один запрос из списка $self->{spool} (список формируется методом: list_for_all_users)
 sub process_one {
     my $self = shift;
