@@ -14,6 +14,15 @@ use Core::Utils qw(
 
 my %in = parse_args();
 
+if ( $in{session_id} ) {
+    print_header(
+        cookie => create_cookie('session_id',$in{session_id}),
+        location => '/',
+        status => 302,
+    );
+    exit 0;
+}
+
 use Core::System::ServiceManager qw( get_service );
 
 my $session = validate_session();
