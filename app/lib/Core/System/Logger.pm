@@ -2,43 +2,13 @@ package Core::System::Logger;
 use v5.14;
 use utf8;
 
-=pod
-
-=module MakeIdea::FW::System::Logger
-
-=head1 Название
-
-Класс для записи сообщений в лог. Имеет несколько уровней логгирования:
-
-=item TRACE
-
-=item DEBUG
-
-=item INFO
-
-=item WARNING
-
-=item ERROR
-
-=item FATAL
-
-И соответственно им имеется набор методов для записи сообщений в лог. Уровни
-приведены в порядке увеличения важности. Соответственно, при выставлении уровня,
-в лог пишутся сообщения этой важности и выше.
-
-=head1 Функции
-
-=cut
-
 use base qw( Core::System::Service );
 
 use Data::Dumper;
-
 use Core::System::ServiceManager qw(get_service $data);
 
 $SIG{__DIE__} = sub { write_log_file( @_ ) };
 
-#-------------------------------------------------------------------------------
 my $LEVEL_TRACE     = 0;
 my $LEVEL_DEBUG     = 1;
 my $LEVEL_INFO      = 2;
@@ -55,20 +25,6 @@ my %LEVELS = (
     ERROR   => $LEVEL_ERROR,
     FATAL   => $LEVEL_FATAL,
 );
-#-------------------------------------------------------------------------------
-
-
-# class MakeIdea::FW::System::Logger -------------------------------------------
-=pod
-
-=head2 new
-
-Конструктор. На вход может принимать уровень логгирования и имя проекта, при их
-отсутствии - берет из конфигурации системы. При отсутствии в конфигурации системы
-информации об уровне логгировния, использует флаг debug. В случае, если он
-включен - уровень TRACE, если выключен - ERROR.
-
-=cut
 
 sub new {
     my $proto = shift;
@@ -80,22 +36,13 @@ sub new {
     );
 
     my $class = ref($proto) || $proto;
-
     my $self = bless(Core::System::Service->new(%args), $class);
 
     my $level = $ENV{DEBUG} ? ( exists $LEVELS{ $ENV{DEBUG} } ? $ENV{DEBUG} : 'DEBUG' ) : 'ERROR';
     $self->set_level_to( $level );
-
     #$self->add_stacktrace_from_level( $args{stacktrace_from} || $config->{log_stacktrace_from} || 'ERROR' );
-
     return $self;
 }
-
-=head2 set_level_to
-
-Принимает название уроввня и изменятет текущий уровень логирования.
-
-=cut
 
 sub set_level_to {
     my $self = shift;
@@ -106,7 +53,6 @@ sub set_level_to {
         $self->{level} = $LEVEL_WARNING;
         $self->warning("Unknown log level '" . ($level // '(undef)') . "'");
     }
-
     return $self;
 }
 
@@ -119,18 +65,8 @@ sub add_stacktrace_from_level {
         $self->{stacktrace_from} = $LEVEL_ERROR;
         $self->warning("Unknown log level '" . ($level // '(undef)') . "'");
     }
-
     return $self;
 }
-
-# messages constructors --------------------------------------------------------
-=pod
-
-=head2 make_message
-
-Генерирует сообщение для лога
-
-=cut
 
 sub make_message {
     my $self = shift;
@@ -172,28 +108,6 @@ sub make_message {
 
     return $res;
 }
-
-
-# printing methods -------------------------------------------------------------
-=pod
-
-=head2 trace
-
-=head2 dump
-
-На вход принимет объект (ссылку) или список объектов. Выводит в лог dump этих объектов
-
-=head2 debug
-
-=head2 info
-
-=head2 warning
-
-=head2 error
-
-=head2 fatal
-
-=cut
 
 sub my_warn {
     my $self = shift;

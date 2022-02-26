@@ -1,28 +1,11 @@
 package Core::System::ServiceManager;
 use v5.14;
 
-=module Core::System::ServiceManager
-
-=head1 Название
-
-Менеджер сервисов. Синглетон. Автоматом создается при импорте модуля.
-
-Предлагает на экспорт функцию get_service, выдающую по идентификатору сервис,
-зарегистрированный в менеджере сервисов.
-
-=head1 Функции
-
-=cut
-
 use base qw( Exporter );
 our @EXPORT_OK = qw( $SERVICE_MANAGER get_service delete_service unregister_all logger $data );
 
 our $SERVICE_MANAGER ||= new Core::System::ServiceManager();
 our $data = {};
-
-=head2 new
-
-=cut
 
 sub new {
     my $proto = shift;
@@ -33,12 +16,6 @@ sub new {
     my $self = { services => {} };
     return  bless($self, $class);
 }
-
-=head2 get_service
-
-Выдает по идентификатору зарегистрированный в себе сервис.
-
-=cut
 
 our %AUTO_SERVICES = (
     logger => {
@@ -90,8 +67,6 @@ sub get_service {
         return $SERVICE_MANAGER->{services}->{ $service_name }
     }
 
-    # Получаем реальный name от самого сервиса и новый экзмелпяр сервиса
-    # или undef если сервис с таким name уже зарегистрирован
     ( $name, my $service ) = $SERVICE_MANAGER->auto_service( $name, %args );
     unless ( $name ) {
         write_log('Get service with name: ['. $service_name . '] - not exists' );
@@ -150,14 +125,6 @@ sub auto_service {
     return $name, $service;
 }
 
-=pod
-
-=head2 register_service
-
-На вход принимает сервис. Регистрирует его в себе по идентификатору сервиса.
-
-=cut
-
 sub register_service {
     my $self = shift;
     my $service = shift;
@@ -209,14 +176,6 @@ sub unregister_all {
         delete $self->{service_register}{ $service };
     }
 }
-
-=pod
-
-=head2 unregister_service
-
-На вход принимает сервис. Разегистрирует его в себе по идентификатору сервиса.
-
-=cut
 
 sub unregister_service {
     my $self = shift;
