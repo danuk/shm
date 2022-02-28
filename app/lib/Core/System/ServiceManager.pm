@@ -107,9 +107,10 @@ sub register_service {
     my $name = shift;
     my %args = @_;
 
-    # Получаем актуальный name, сгенерированный загруженным модулем
     if ( $service->can( '_id' ) ) {
-        $name .= "_" . $service->_id( %args );
+        if ( my $id = $service->_id( %args ) ) {
+            $name .= "_" . $id;
+        }
     }
 
     unless ( $name ) {
@@ -133,7 +134,7 @@ sub register_service {
 }
 
 sub delete_service {
-    my $name = shift;
+    my $name = get_class_name( shift );
 
     delete $SERVICE_MANAGER->{services}->{ $name };
 }
@@ -189,7 +190,7 @@ sub unregister_service {
 sub get_class_name {
     my $name = shift;
 
-    return $name if $name=~/::/;
+    return $name if $name=~/^Core::/;
 
     if ( $AUTO_SERVICES{ $name } ) {
         return $AUTO_SERVICES{ $name }->{class};
