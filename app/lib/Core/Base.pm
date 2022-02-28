@@ -72,7 +72,7 @@ sub id {
     my $id = shift;
 
     if ( defined $id ) {
-        return $self->new( _id => $id );
+        return get_service( ref $self, _id => $id );
     }
 
     my $key_field = $self->get_table_key;

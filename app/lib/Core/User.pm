@@ -162,7 +162,7 @@ sub _id {
         $user_id = $id;
     }
 
-    return $user_id ? sprintf('user_%d', $user_id) : 'user';
+    return $user_id;
 }
 
 sub authenticated {

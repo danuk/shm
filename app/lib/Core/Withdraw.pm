@@ -60,7 +60,7 @@ sub structure {
 
 sub _id {
     my $self = shift;
-    return $self->id ? 'wd_'.$self->id : 'wd';
+    return $self->id;
 }
 
 sub usi {

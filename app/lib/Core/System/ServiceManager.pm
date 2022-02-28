@@ -36,7 +36,7 @@ our %AUTO_SERVICES = (
 );
 
 sub is_registered {
-    my $service_name = shift;
+    my $service_name = get_class_name( shift );
 
     if ( exists $SERVICE_MANAGER->{services}->{ $service_name } ) {
         return $SERVICE_MANAGER->{services}->{ $service_name };
@@ -55,7 +55,7 @@ sub get_service {
         $args{_id} = 0;
     }
 
-    my $service_name = $name;
+    my $service_name = get_class_name( $name );
     if ( $args{_id} ) {
         $service_name .= '_' . $args{_id};
     } elsif ( %args ) {
@@ -67,49 +67,25 @@ sub get_service {
         return $SERVICE_MANAGER->{services}->{ $service_name }
     }
 
-    ( $name, my $service ) = $SERVICE_MANAGER->auto_service( $name, %args );
-    unless ( $name ) {
-        write_log('Get service with name: ['. $service_name . '] - not exists' );
+    ( $service_name, my $service ) = $SERVICE_MANAGER->auto_service( $name, $service_name, %args );
+    unless ( $service_name ) {
+        write_log('Get service with name: ['. $service_name . '] - class not exists' );
         return undef;
     }
 
-    write_log('Get service with name: ['. $name . ']' );
+    write_log('Get service with name: ['. $service_name . ']' );
 
-    return $SERVICE_MANAGER->{services}->{ $name } ||= $service;
-}
-
-sub delete_service {
-    my $name = shift;
-
-    delete $SERVICE_MANAGER->{services}->{ $name };
-}
-
-sub write_log {
-    my $msg = shift;
-    my $level = shift || 'debug';
-
-    my $logger = logger();
-    return unless $logger;
-
-    $logger->$level( $msg );
-}
-
-sub logger {
-    return is_registered('logger');
+    return $SERVICE_MANAGER->{services}->{ $service_name } ||= $service;
 }
 
 sub auto_service {
     my $self = shift;
     my $name = shift;
+    my $service_name = shift;
     my %args = @_;
     my %info;
 
-    if ( $AUTO_SERVICES{ $name } ) {
-        %info = %{ $AUTO_SERVICES{ $name } };
-    }
-    else {
-        $info{class} = 'Core::' . ucfirst( $name );
-    }
+    $info{class} = get_class_name( $name );
 
     for ( @{ $info{required}||= [] } ) {
         die "$_ required but not loaded" unless get_service( $_ );
@@ -121,8 +97,8 @@ sub auto_service {
     unless ( $service ) {
         return undef;
     }
-    $name = $service->register( $name, %args );
-    return $name, $service;
+    $name = $service->register( $service_name, %args );
+    return $service_name, $service;
 }
 
 sub register_service {
@@ -133,11 +109,7 @@ sub register_service {
 
     # Получаем актуальный name, сгенерированный загруженным модулем
     if ( $service->can( '_id' ) ) {
-        $name = $service->_id( %args );
-    } elsif ( exists $args{_id} ) {
-        $name .= '_' . $args{_id};
-    } elsif ( %args ) {
-        $name .= '_' . join('_', map( $args{ $_ }, sort keys %args ) );
+        $name .= "_" . $service->_id( %args );
     }
 
     unless ( $name ) {
@@ -158,6 +130,26 @@ sub register_service {
     write_log("Register new service with name: [$name]");
 
     return $name;
+}
+
+sub delete_service {
+    my $name = shift;
+
+    delete $SERVICE_MANAGER->{services}->{ $name };
+}
+
+sub write_log {
+    my $msg = shift;
+    my $level = shift || 'debug';
+
+    my $logger = logger();
+    return unless $logger;
+
+    $logger->$level( $msg );
+}
+
+sub logger {
+    return is_registered('logger');
 }
 
 
@@ -192,6 +184,19 @@ sub unregister_service {
     delete $self->{service_register}{$id};
 
     return 1;
+}
+
+sub get_class_name {
+    my $name = shift;
+
+    return $name if $name=~/::/;
+
+    if ( $AUTO_SERVICES{ $name } ) {
+        return $AUTO_SERVICES{ $name }->{class};
+    }
+    else {
+        return 'Core::' . ucfirst( $name );
+    }
 }
 
 1;
