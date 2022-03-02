@@ -158,11 +158,11 @@ sub _id {
     my $user_id;
     if ( $args{_id} ) {
         $user_id = $args{_id};
-    } elsif ( my $id = $self->user_id ) {
+    } elsif ( my $id = $self->get_user_id ) {
         $user_id = $id;
     }
 
-    return $user_id;
+    return $user_id || get_service('config')->local->{user_id};
 }
 
 sub authenticated {
@@ -348,7 +348,7 @@ sub payment {
         return undef;
     }
 
-    get_service('user', _id => $args{user_id})->set_balance( balance => $args{money} );
+    get_service('user', $args{user_id} ? ( _id => $args{user_id} ) : ())->set_balance( balance => $args{money} );
 
     $self->make_event( 'payment' );
     return scalar get_service('pay', _id => $pay_id )->get;

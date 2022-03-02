@@ -50,16 +50,27 @@ sub get_service {
 
     return undef unless $name;
 
-    # Set _id to 0 for undefined services
-    if ( defined $args{_id} && $args{_id} eq '' ) {
-        $args{_id} = 0;
+    my $class = get_class_name( $name );
+    my $service = $SERVICE_MANAGER->{services}->{ $class };
+    unless ( $service ) {
+        eval "require $class; 1" or return undef;
+        $service = $class->new();
+        return undef unless $service;
+        $service->register( $class, %args );
     }
 
-    my $service_name = get_class_name( $name );
+    my $service_name = $class;
     if ( $args{_id} ) {
         $service_name .= '_' . $args{_id};
     } elsif ( %args ) {
         $service_name .= '_' . join('_', map( $args{ $_ }, sort keys %args ) );
+    } elsif ( $service->can('_id') ) {
+        if ( my $id = $service->_id( %args ) ) {
+            $service_name .= "_" . $id;
+        }
+    } else {
+        write_log('Get service with name: ['. $service_name . ']' );
+        return $service;
     }
 
     if ( exists $SERVICE_MANAGER->{services}->{ $service_name } ) {
@@ -67,70 +78,31 @@ sub get_service {
         return $SERVICE_MANAGER->{services}->{ $service_name }
     }
 
-    ( $service_name, my $service ) = $SERVICE_MANAGER->auto_service( $name, $service_name, %args );
-    unless ( $service_name ) {
-        write_log('Get service with name: ['. $service_name . '] - class not exists' );
+    $service = $class->new( %{ $data||={} }, %args );
+    unless ( $service ) {
+        write_log('Can not create new class: ['. $service_name . '] ' );
         return undef;
     }
-
-    write_log('Get service with name: ['. $service_name . ']' );
+    $service->register( $service_name, %args );
 
     return $SERVICE_MANAGER->{services}->{ $service_name } ||= $service;
-}
-
-sub auto_service {
-    my $self = shift;
-    my $name = shift;
-    my $service_name = shift;
-    my %args = @_;
-    my %info;
-
-    $info{class} = get_class_name( $name );
-
-    for ( @{ $info{required}||= [] } ) {
-        die "$_ required but not loaded" unless get_service( $_ );
-    }
-
-    eval "require $info{class}; 1" or return undef;
-
-    my $service = $info{class}->new( %{ $data||={} }, %args );
-    unless ( $service ) {
-        return undef;
-    }
-    $name = $service->register( $service_name, %args );
-    return $service_name, $service;
 }
 
 sub register_service {
     my $self = shift;
     my $service = shift;
-    my $name = shift;
+    my $service_name = shift;
     my %args = @_;
 
-    if ( $service->can( '_id' ) ) {
-        if ( my $id = $service->_id( %args ) ) {
-            $name .= "_" . $id;
-        }
-    }
+    return undef unless $service;
 
-    unless ( $name ) {
-        die "Can't get name for service";
-    }
+    write_log("Register new service with name: [$service_name]");
 
-    if ( $self->{services}->{$name} ) {
-        # Сервис уже зарегистирован, выгружаем его копию, т.к. он уже есть
-        undef $service; # TODO: проверить что сервис так выгрузился
-        return $name;
-    }
-
-    $self->{services}->{$name} = $service;
     my ($package, $filename, $line, $subroutine) = caller(1);
+    $self->{service_register}{ $service_name } = "$subroutine at $filename line $line";
 
-    $self->{service_register}{$name} = "$subroutine at $filename line $line";
-
-    write_log("Register new service with name: [$name]");
-
-    return $name;
+    $self->{services}->{ $service_name } = $service;
+    return $service;
 }
 
 sub delete_service {
