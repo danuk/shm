@@ -7,7 +7,7 @@ use base qw( Core::System::Service );
 use Data::Dumper;
 use Core::System::ServiceManager qw(get_service $data);
 
-$SIG{__DIE__} = sub { write_log_file( @_ ) };
+$SIG{__DIE__} = sub { get_service('logger')->warning( @_ ) };
 
 my $LEVEL_TRACE     = 0;
 my $LEVEL_DEBUG     = 1;
