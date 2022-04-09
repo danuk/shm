@@ -122,7 +122,8 @@ sub delete {
         return undef;
     }
 
-    return $self->SUPER::delete( %args );
+    $self->SUPER::delete( %args );
+    return ();
 }
 
 sub list_for_api {

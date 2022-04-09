@@ -117,14 +117,14 @@ sub delete {
     }
 
     if ( $self->get_status eq STATUS_REMOVED ) {
-        return $self->SUPER::delete();
+        return scalar $self->get;
     } elsif ( $self->can_delete() ) {
         $self->event( EVENT_REMOVE );
     } else {
         get_service('report')->add_error( sprintf('User service %d is active', $self->id) );
     }
 
-    return undef;
+    return scalar $self->get;
 }
 
 sub switch_to_next {

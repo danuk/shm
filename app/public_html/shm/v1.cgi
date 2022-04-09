@@ -437,7 +437,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         }
     } elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
         if ( my $obj = $service->id( get_service_id( $service, %args ) ) ) {
-            $obj->$method( %args );
+            push @data, $obj->$method( %args );
             $headers{status} = 200;
         } else {
             $headers{status} = 404;
@@ -445,7 +445,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         }
     } else {
             $headers{status} = 400;
-            $info {error} = "Unknown REQUEST_METHOD";
+            $info{error} = "Unknown REQUEST_METHOD";
     };
 
     my $report = get_service('report');
