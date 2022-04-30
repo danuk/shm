@@ -12,51 +12,246 @@ use Core::Const;
 $ENV{SHM_TEST} = 1;
 
 SHM->new( user_id => 40092 );
+my $spool = get_service('spool');
 
-get_service('events')->add(
-    name => EVENT_REMOVE,
-    title => 'test event',
-    server_gid => 1,
-    settings => {
-        category => 'test',
-    },
-);
+subtest 'Test1: Parent have EVENT' => sub {
+    get_service('events')->add(
+        name => EVENT_REMOVE,
+        title => 'test event',
+        server_gid => 1,
+        settings => {
+            category => 'test1',
+        },
+    );
 
-my $service_id = get_service('service')->add(
-    name => 'test service',
-    category => 'test',
-    cost => 0,
-)->id;
+    my $service_id = get_service('service')->add(
+        name => 'test service',
+        category => 'test1',
+        cost => 0,
+    )->id;
 
 
-my $sub_service_id = get_service('service')->add(
-    name => 'test sub service',
-    category => 'some_category',
-    cost => 0,
-)->id;
+    my $sub_service_id = get_service('service')->add(
+        name => 'test sub service',
+        category => 'some_category',
+        cost => 0,
+    )->id;
 
-my $us = get_service('us')->add(
-    service_id => $service_id,
-    status => 'ACTIVE',
-);
+    my $us = get_service('us')->add(
+        service_id => $service_id,
+        status => 'BLOCK',
+    );
 
-is( $us->has_children, 0 );
+    is( $us->has_children, 0 );
 
-my $sub_us = get_service('us')->add(
-    service_id => $sub_service_id,
-    status => 'BLOCK',
-    parent => $us->id,
-);
+    my $us_sub1 = get_service('us')->add(
+        service_id => $sub_service_id,
+        status => 'BLOCK',
+        parent => $us->id,
+    );
 
-is( $us->has_children, 1 );
-is( $us->has_spool_command, 0 );
-is( $us->is_commands_by_event( EVENT_REMOVE ), 1 );
+    is( $us->has_children, 1 );
+    is( $us->is_commands_by_event( EVENT_REMOVE ), 1 );
+    is( $us->has_spool_command, 0 );
+    is( $us_sub1->is_commands_by_event( EVENT_REMOVE ), 0 );
+    is( $us_sub1->has_spool_command, 0 );
 
-$us->make_commands_by_event( EVENT_REMOVE );
-is( $us->has_spool_command, 1 );
+    $us->touch( EVENT_REMOVE );
+    is( $us->has_spool_command, 1 );
+    is( $us_sub1->has_spool_command, 0 );
+    is( $us->status, 'PROGRESS');
+    is( $us_sub1->status, 'REMOVED');
 
-$sub_us->delete();
-is( $sub_us->status, 'REMOVED');
-is( $us->status, 'PROGRESS');
+    $spool->process_all();
+    is( $us->status, 'REMOVED');
+    is( $us_sub1->status, 'REMOVED');
+};
+
+subtest 'Test2: CHILD have EVENT' => sub {
+    get_service('events')->add(
+        name => EVENT_REMOVE,
+        title => 'test event',
+        server_gid => 1,
+        settings => {
+            category => 'test2',
+        },
+    );
+
+    my $service_id = get_service('service')->add(
+        name => 'test service',
+        category => 'some_category',
+        cost => 0,
+    )->id;
+
+    my $sub_service_id = get_service('service')->add(
+        name => 'test sub service',
+        category => 'test2',
+        cost => 0,
+    )->id;
+
+    my $us = get_service('us')->add(
+        service_id => $service_id,
+        status => 'BLOCK',
+    );
+
+    is( $us->has_children, 0 );
+
+    my $us_sub1 = get_service('us')->add(
+        service_id => $sub_service_id,
+        status => 'BLOCK',
+        parent => $us->id,
+    );
+
+    is( $us->has_children, 1 );
+    is( $us->is_commands_by_event( EVENT_REMOVE ), 0 );
+    is( $us->has_spool_command, 0 );
+    is( $us_sub1->has_spool_command, 0 );
+    is( $us_sub1->is_commands_by_event( EVENT_REMOVE ), 1 );
+
+    $us->touch( EVENT_REMOVE );
+    is( $us->has_spool_command, 0 );
+    is( $us_sub1->has_spool_command, 1 );
+    is( $us->status, 'PROGRESS');
+    is( $us_sub1->status, 'PROGRESS');
+
+    $spool->process_all();
+    is( $us->status, 'REMOVED');
+    is( $us_sub1->status, 'REMOVED');
+};
+
+subtest 'Test3: PARENT have EVENT, CHILD have EVENT' => sub {
+    get_service('events')->add(
+        name => EVENT_REMOVE,
+        title => 'test event',
+        server_gid => 1,
+        settings => {
+            category => 'test3',
+        },
+    );
+
+    my $service_id = get_service('service')->add(
+        name => 'test service',
+        category => 'test3',
+        cost => 0,
+    )->id;
+
+    my $sub_service_id = get_service('service')->add(
+        name => 'test sub service',
+        category => 'test3',
+        cost => 0,
+    )->id;
+
+    my $us = get_service('us')->add(
+        service_id => $service_id,
+        status => 'BLOCK',
+    );
+
+    is( $us->has_children, 0 );
+
+    my $us_sub1 = get_service('us')->add(
+        service_id => $sub_service_id,
+        status => 'BLOCK',
+        parent => $us->id,
+    );
+
+    is( $us->has_children, 1 );
+    is( $us->is_commands_by_event( EVENT_REMOVE ), 1 );
+    is( $us_sub1->is_commands_by_event( EVENT_REMOVE ), 1 );
+    is( $us->has_spool_command, 0 );
+    is( $us_sub1->has_spool_command, 0 );
+
+    $us->touch( EVENT_REMOVE );
+    is( $us->has_spool_command, 0 );
+    is( $us_sub1->has_spool_command, 1 );
+    is( $us->status, 'PROGRESS');
+    is( $us_sub1->status, 'PROGRESS');
+
+    $spool->process_all();
+    is( $us->has_spool_command, 1 );
+    is( $us_sub1->has_spool_command, 0 );
+    is( $us->status, 'PROGRESS');
+    is( $us_sub1->status, 'REMOVED');
+
+    $spool->process_all();
+    is( $us->has_spool_command, 0 );
+    is( $us_sub1->has_spool_command, 0 );
+    is( $us->status, 'REMOVED');
+    is( $us_sub1->status, 'REMOVED');
+};
+
+subtest 'Test4: PARENT have EVENT, CHILD1 have EVENT, CHILD2 have not EVENT' => sub {
+    get_service('events')->add(
+        name => EVENT_REMOVE,
+        title => 'test event',
+        server_gid => 1,
+        settings => {
+            category => 'test4',
+        },
+    );
+
+    my $service_id = get_service('service')->add(
+        name => 'test service',
+        category => 'test4',
+        cost => 0,
+    )->id;
+
+    my $sub_service_id = get_service('service')->add(
+        name => 'test sub service',
+        category => 'test4',
+        cost => 0,
+    )->id;
+
+    my $us = get_service('us')->add(
+        service_id => $service_id,
+        status => 'BLOCK',
+    );
+
+    is( $us->has_children, 0 );
+
+    my $us_sub1 = get_service('us')->add(
+        service_id => $sub_service_id,
+        status => 'BLOCK',
+        parent => $us->id,
+    );
+
+    my $us_sub2 = get_service('us')->add(
+        service_id => 11,
+        status => 'BLOCK',
+        parent => $us->id,
+    );
+
+    is( $us->has_children, 2 );
+    is( $us->is_commands_by_event( EVENT_REMOVE ), 1 );
+    is( $us_sub1->is_commands_by_event( EVENT_REMOVE ), 1 );
+    is( $us_sub2->is_commands_by_event( EVENT_REMOVE ), 0 );
+    is( $us->has_spool_command, 0 );
+    is( $us_sub1->has_spool_command, 0 );
+    is( $us_sub2->has_spool_command, 0 );
+
+    $us->touch( EVENT_REMOVE );
+    is( $us->has_spool_command, 0 );
+    is( $us_sub1->has_spool_command, 1 );
+    is( $us_sub2->has_spool_command, 0 );
+    is( $us->status, 'PROGRESS');
+    is( $us_sub1->status, 'PROGRESS');
+    is( $us_sub2->status, 'REMOVED');
+
+    $spool->process_all();
+    is( $us->has_spool_command, 1 );
+    is( $us_sub1->has_spool_command, 0 );
+    is( $us_sub2->has_spool_command, 0 );
+    is( $us->status, 'PROGRESS');
+    is( $us_sub1->status, 'REMOVED');
+    is( $us_sub2->status, 'REMOVED');
+
+    $spool->process_all();
+    is( $us->has_spool_command, 0 );
+    is( $us_sub1->has_spool_command, 0 );
+    is( $us_sub2->has_spool_command, 0 );
+    is( $us->status, 'REMOVED');
+    is( $us_sub1->status, 'REMOVED');
+    is( $us_sub2->status, 'REMOVED');
+};
 
 done_testing();
+

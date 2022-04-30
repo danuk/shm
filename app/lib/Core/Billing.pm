@@ -71,17 +71,14 @@ sub process_service_recursive {
     my $service = shift;
     my $event = shift || EVENT_PROLONGATE;
 
-    # Дети наследуют событие родителя
     if ( $event = process_service( $service, $event ) ) {
-        # Вызываем событие в услуге
-        $service->event( $event );
-
         for my $child ( $service->children ) {
             process_service_recursive(
                 get_service('us', _id => $child->{user_service_id} ),
                 $event,
             );
         }
+        $service->event( $event );
     }
     return $service;
 }

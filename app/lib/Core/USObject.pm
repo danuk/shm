@@ -117,11 +117,12 @@ sub delete {
     }
 
     if ( $self->get_status eq STATUS_REMOVED ) {
-        return scalar $self->get;
+        $self->SUPER::delete();
+        return ();
     } elsif ( $self->can_delete() ) {
         $self->event( EVENT_REMOVE );
     } else {
-        get_service('report')->add_error( sprintf('User service %d is active', $self->id) );
+        logger->warning( sprintf('User service %d is %s', $self->id, $self->get_status ) );
     }
 
     return scalar $self->get;
@@ -315,14 +316,25 @@ sub spool {
     return get_service('spool', user_id => $self->res->{user_id} );
 }
 
+sub has_children_progress {
+    my $self = shift;
+
+    for ( my @children = $self->children() ) {
+        return 1 if $_->{status} eq STATUS_PROGRESS;
+    }
+    return undef;
+}
+
 sub event {
     my $self = shift;
     my $e = shift;
 
-    my $is_commands = $self->make_commands_by_event( $e );
+    if ( $self->has_children_progress ) {
+        $self->status( STATUS_PROGRESS, $e );
+        return SUCCESS;
+    }
 
-    my ( $is_children ) = $self->children;
-    unless ( $is_commands || $is_children ) {
+    unless ( $self->make_commands_by_event( $e ) ) {
         $self->set_status_by_event( $e );
     }
 
@@ -363,27 +375,22 @@ sub child_status_updated {
         @_,
     );
 
-    # Set progress status for parent if his child is progress
-    if ( $child{status} eq STATUS_PROGRESS ) {
-        return $self->status( $child{status}, event => $child{event} );
-    }
+    return $self->get_status if $self->get_status ne STATUS_PROGRESS;
 
-    my %children_statuses = map { $_->{status} => 1 } $self->children;
+    my %chld_by_statuses = map { $_->{status} => 1 } $self->children;
 
-    if ( scalar (keys %children_statuses) == 1 ) {
-        # Inherit children status
-        $self->status( (keys %children_statuses)[0], event => $child{event} );
-    }
-    elsif ( scalar (keys %children_statuses) == 0 and $child{event} eq EVENT_REMOVE ) {
-        # Remove parent if child already removed
-        $self->status( STATUS_REMOVED, event => EVENT_REMOVE ) unless $self->is_commands_by_event( EVENT_REMOVE );
+    if (( $chld_by_statuses{ $child{status} } && scalar keys %chld_by_statuses == 1 ) ||
+        ( scalar keys %chld_by_statuses == 0 && $child{status} eq STATUS_REMOVED )) {
+        # All children is ready (or removed) and now we can run parent command
+        unless ( $self->make_commands_by_event( $child{event} ) ) {
+            $self->set_status_by_event( $child{event} );
+        }
     }
 
     return $self->get_status;
 }
 
 sub status_by_event {
-    my $self = shift;
     my $event = shift;
 
     my $status;
@@ -404,7 +411,7 @@ sub set_status_by_event {
     my $self = shift;
     my $event = shift;
 
-    my $status = $self->status_by_event( $event );
+    my $status = status_by_event( $event );
 
     return $self->status( $status, event => $event );
 }
@@ -444,14 +451,12 @@ sub service {
 sub stop {
     my $self = shift;
 
-    return 0 if $self->get_status ne STATUS_ACTIVE;
+    return scalar $self->get if $self->get_status ne STATUS_ACTIVE;
 
     $self->set( expired => now ) if $self->get_expired gt now;
     $self->touch( EVENT_BLOCK );
 
-    if ( $self->get_status ne STATUS_BLOCK ) {
-        $self->set( status => STATUS_PROGRESS );
-    }
+    return scalar $self->get;
 }
 
 sub gen_store_pass {
