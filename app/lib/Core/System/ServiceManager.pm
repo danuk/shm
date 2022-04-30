@@ -130,9 +130,9 @@ sub unregister_all {
     my $self = $SERVICE_MANAGER;
 
     my %protected_services = (
-        config => 1,
-        spool => 1,
-        logger => 1,
+        'Core::Config' => 1,
+        'Core::Spool' => 1,
+        'Core::System::Logger' => 1,
     );
 
     for my $service ( keys %{ $self->{services} } ) {
