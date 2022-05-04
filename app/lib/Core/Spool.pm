@@ -204,6 +204,27 @@ sub api_manual_action {
     return $self->id( $args{ id } )->$method( %args );
 }
 
+sub api_success {
+    my $self = shift;
+    my %args = (
+        event => undef,
+        settings => undef,
+        @_,
+    );
+
+    $self->finish_task(
+        status => TASK_SUCCESS,
+    );
+
+    if ( $args{settings} && $args{settings}->{user_service_id} && $args{event} && $args{event}->{name} ) {
+        if ( my $us = get_service('us', _id => $args{settings}->{user_service_id} ) ) {
+            $us->set_status_by_event( $args{event}->{name} );
+        }
+    }
+
+    return scalar $self->get;
+}
+
 sub api_retry {
     my $self = shift;
     my %args = (
