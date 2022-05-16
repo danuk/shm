@@ -5,7 +5,7 @@ SHM: Universal Billing with external actions
 
 ## Документация
 
-https://myshm.ru
+https://docs.myshm.ru
 
 ## Инсталляция
 
