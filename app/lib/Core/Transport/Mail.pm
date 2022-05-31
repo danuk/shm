@@ -29,6 +29,8 @@ sub send {
         }
     }
 
+    $settings{from_name} //= $config->{mail}->{from_name};
+
     $settings{subject} //= $config->{mail}->{subject};
 
     $settings{to} //= get_service('user')->emails || delete $settings{bcc};
