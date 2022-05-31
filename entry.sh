@@ -17,8 +17,8 @@ if [ "${SHM_ROLE}" = "spool" ]; then
 else
     # Create SHM database structure and fill data
     sudo --preserve-env=PERL5LIB -u nginx /app/bin/init.pl
-    sudo -u nginx /usr/sbin/fcgiwrap -f
 
+    /etc/init.d/fcgiwrap start
     nginx -g 'daemon off;'
 fi
 
