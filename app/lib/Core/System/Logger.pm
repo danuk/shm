@@ -122,7 +122,7 @@ sub write_log_file {
     my $config = Core::System::ServiceManager::is_registered( 'config' );
     return unless $config;
 
-    if ( $config->file->{config}{log} ) {
+    if ( $config->file->{config}{log} && $ENV{SHM_LOG_TO_FILE} ) {
         my $log = $config->file->{config}{log}->{path} . '/' . $config->file->{config}{log}->{file};
         my $fd;
         open ( $fd, ">> $log" ) or die $!;
