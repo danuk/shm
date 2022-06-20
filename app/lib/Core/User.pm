@@ -232,7 +232,7 @@ sub passwd {
 
     my $report = get_service('report');
     unless ( $args{password} ) {
-        $report->add_error('PasswordEmpty');
+        $report->add_error('Password is empty');
         return undef;
     }
 
@@ -260,17 +260,17 @@ sub validate_attributes {
     return $report->is_success if $method eq 'set';
 
     unless ( $args{login} ) {
-        $report->add_error('LoginEmpty');
+        $report->add_error('Login is empty');
     }
     unless ( $args{login}=~/^[\w\d@._-]+$/ ) {
-        $report->add_error('LoginShortOrIncorrect');
+        $report->add_error('Login is short or incorrect');
     }
 
     unless ( $args{password} ) {
-        $report->add_error('PasswordEmpty');
+        $report->add_error('Password is empty');
     }
     if ( length $args{password} < 6 ) {
-        $report->add_error('PasswordShort');
+        $report->add_error('Password is short');
     }
 
     return $report->is_success;
@@ -292,7 +292,7 @@ sub reg {
     my $user_id = $self->add( %args, password => $password );
 
     unless ( $user_id ) {
-        get_service('report')->add_error('LoginAlreadyExists');
+        get_service('report')->add_error('Login already exists');
         return undef;
     }
 

@@ -459,7 +459,8 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my $report = get_service('report');
     unless ( $report->is_success ) {
         print_header( status => 400 );
-        print_json( { error => $report->errors } );
+        my ( $err_msg ) = $report->errors;
+        print_json( { error => $err_msg } );
         exit 0;
     }
 
