@@ -502,4 +502,11 @@ sub name {
     );
 }
 
+sub with_name {
+    my $self = shift;
+
+    $self->res->{name}//= $self->name;
+    return $self;
+}
+
 1;

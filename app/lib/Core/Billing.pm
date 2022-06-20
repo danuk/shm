@@ -40,10 +40,8 @@ sub create_service {
         @_,
     );
 
-    for ( keys %args ) {
-        unless ( defined $args{ $_ } ) {
-            logger->error( "Not exists `$_` in args" );
-        }
+    unless ( $args{ service_id } ) {
+        logger->error( "Not exists `$_` in args" );
     }
 
     my $service = get_service('service', _id => $args{service_id} );

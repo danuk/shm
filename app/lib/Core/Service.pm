@@ -156,6 +156,19 @@ sub api_price_list {
     );
 }
 
+sub create {
+    my $self = shift;
+    my %args = (
+        service_id => undef,
+        @_,
+    );
+
+    use Core::Billing;
+    my $us = create_service( %args );
+
+    return $us->with_name;
+}
+
 sub settings {
     my $self = shift;
 

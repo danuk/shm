@@ -16,6 +16,23 @@ use Core::System::ServiceManager qw( get_service );
 # Make new object of user_service
 my $obj = get_service('us', _id => 99);
 
+is_deeply( scalar $obj->with_name->get, {
+    parent => undef,
+    status => 'ACTIVE',
+    name => 'Тариф X-MAX (10000 мб)',
+    next => 0,
+    auto_bill => 1,
+    service_id => 110,
+    user_service_id => 99,
+    settings => {
+        quota => 10000
+    },
+    created => '2014-10-07 12:56:09',
+    expired => '2017-01-31 23:59:50',
+    user_id => 40092,
+    withdraw_id => 3691,
+}, 'get user_service from id (check full structure)');
+
 is ( $obj->id, 99, 'Get user_service_id' );
 
 is ( $obj->top_parent, undef, 'Test get top_parent for root service');

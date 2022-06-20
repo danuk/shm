@@ -104,6 +104,13 @@ my $routes = {
         controller => 'Service',
     },
 },
+'/admin/service/order' => {
+    PUT => {
+        controller => 'Service',
+        method => 'create',
+        required => ['service_id'],
+    },
+},
 '/admin/service/children' => {
     GET => {
         controller => 'Service',
@@ -214,6 +221,7 @@ my $routes = {
         required => ['user_id','user_service_id'],
     },
 },
+
 '/admin/user/service/spool' => {
     GET => {
         controller => 'USObject',
