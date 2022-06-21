@@ -49,12 +49,23 @@ sub send {
     }
 
     my $message;
-    if ( my $template_id = $settings{template_id} ) {
+    if ( $settings{template_id} || $settings{template_name} ) {
 
-        my $template = get_service('template', _id => $template_id );
-        unless ( $template ) {
-            return SUCCESS, {
-                error => "template not found",
+        my $template;
+
+        if ( $settings{template_id} ) {
+            $template = get_service('template', _id => $settings{template_id} );
+            unless ( $template ) {
+                return SUCCESS, {
+                    error => "template with id `$settings{template_id}` not found",
+                }
+            }
+        } elsif ( $settings{template_name} ) {
+            $template = get_service('template')->template_by_name( name => $settings{template_name} );
+            unless ( $template ) {
+                return SUCCESS, {
+                    error => "template with name `$settings{template_name}` not found",
+                }
             }
         }
 
