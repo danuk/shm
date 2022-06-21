@@ -7,6 +7,7 @@ use Core::Base;
 use Core::Utils qw(
     switch_user
     is_email
+    passgen
 );
 use Core::Const;
 
@@ -184,6 +185,16 @@ sub events {
                 method => 'activate_services',
             },
         },
+        'user_password_reset' => {
+            event => {
+                title => 'user password reset',
+                kind => 'Transport::Mail',
+                method => 'send',
+                settings => {
+                    template_name => 'user_password_reset',
+                },
+            },
+        },
     };
 }
 
@@ -249,6 +260,40 @@ sub passwd {
 
     $user->set( password => $password );
     return scalar $user->get;
+}
+
+sub passwd_reset_request {
+    my $self = shift;
+    my %args = (
+        email => undef,
+        @_,
+    );
+
+    my ( $user ) = $self->_list(
+        where => {
+            login => $args{email},
+        },
+    );
+
+    unless ( $user ) {
+        # TODO: search in profiles
+    }
+
+    if ( $user ) {
+        switch_user( $user->{user_id} );
+        $self = $self->id( $user->{user_id} );
+
+        my $new_password = passgen();
+        $self->passwd( password => $new_password );
+
+        $self->make_event( 'user_password_reset',
+            settings => {
+                new_password => $new_password,
+            },
+        );
+    }
+
+    return { msg => 'Successful' };
 }
 
 sub validate_attributes {
