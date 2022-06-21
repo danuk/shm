@@ -437,11 +437,15 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
             $info{error} = "Can't add new object";
         }
     } elsif ( $ENV{REQUEST_METHOD} eq 'POST' ) {
-        if ( $service = $service->id( get_service_id( $service, %args ) ) ) {
+        if ( $user->id ) {
+            if ( $service = $service->id( get_service_id( $service, %args ) ) ) {
+                push @data, $service->$method( %args );
+            } else {
+              $headers{status} = 404;
+                $info{error} = "Service not found";
+            }
+        } elsif ( $service->can( $method ) ) {
             push @data, $service->$method( %args );
-        } else {
-            $headers{status} = 404;
-            $info{error} = "Service not found";
         }
     } elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
         if ( my $obj = $service->id( get_service_id( $service, %args ) ) ) {
