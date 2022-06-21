@@ -84,4 +84,19 @@ sub add {
     return $self->SUPER::add( %args );
 }
 
+sub list_by_transport {
+    my $self = shift;
+    my $transport = shift;
+
+    return () unless $transport;
+
+    my @servers = $self->_list(
+        where => {
+            transport => $transport,
+        },
+    );
+
+    return @servers;
+}
+
 1;
