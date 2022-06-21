@@ -64,6 +64,7 @@ sub parse {
     my %args = (
         usi => undef,
         data => undef,
+        task => undef,
         @_,
     );
 
@@ -72,6 +73,7 @@ sub parse {
     my $vars = {
         user => get_service('user'),
         $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : (),
+        $args{task} ? ( task => $args{task} ) : (),
         config => get_service('config')->data_by_name,
     };
 
