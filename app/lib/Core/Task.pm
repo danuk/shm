@@ -125,8 +125,19 @@ sub server_id {
 
 sub server {
     my $self = shift;
+    my %args = (
+        transport => undef,
+        @_,
+    );
 
-    return undef unless $self->server_id;
+    unless ( $self->server_id ) {
+        if ( my $transport_name = $args{transport} ) {
+            if ( my @server_ids = get_service('Server')->list_by_transport( $transport_name ) ) {
+                return get_service('Server', _id => $server_ids[0]->{server_id} );
+            }
+        }
+        return undef;
+    }
 
     if ( my $server = get_service('Server', _id => $self->server_id ) ) {
         return $server;

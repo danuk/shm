@@ -15,7 +15,14 @@ sub send {
     my $self = shift;
     my $task = shift;
 
-    my %server = $task->server->get;
+    my %server;
+    if ( my $server = $task->server( transport => 'ssh' ) ) {
+        %server = $server->get;
+    } else {
+        return SUCCESS, {
+            error => "Server not defined",
+        }
+    }
 
     my $parser = get_service('template');
 

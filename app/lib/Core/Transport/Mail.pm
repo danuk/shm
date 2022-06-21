@@ -14,7 +14,15 @@ sub send {
     my $self = shift;
     my $task = shift;
 
-    my %server = $task->server->get;
+    my %server;
+    if ( my $server = $task->server( transport => 'mail' ) ) {
+        %server = $server->get;
+    } else {
+        return SUCCESS, {
+            error => "Server not defined",
+        }
+    }
+
     my %settings = (
         %{ $server{settings} || {} },
         %{ $task->event->{settings} || {} },
