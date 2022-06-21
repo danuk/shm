@@ -85,7 +85,7 @@ my $routes = {
 '/template/:name' => {
     GET => {
         controller => 'Template',
-        method => 'template_by_name',
+        method => 'template_by_name_for_api',
         required => ['name'],
     },
 },

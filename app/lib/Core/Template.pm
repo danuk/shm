@@ -46,7 +46,17 @@ sub template_by_name {
         return undef;
     }
 
-    return $self->id( $ret->{id} )->parse( %args );
+    return $self->id( $ret->{id} );
+}
+
+sub template_by_name_for_api {
+    my $self = shift;
+    my %args = (
+        name => undef,
+        @_,
+    );
+
+    return $self->template_by_name( name => delete $args{name} )->parse( %args );
 }
 
 sub parse {
