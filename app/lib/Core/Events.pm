@@ -58,7 +58,7 @@ sub make {
     my %args = @_;
 
     get_service('spool')->add(
-        @_,
+        %args,
     );
 }
 

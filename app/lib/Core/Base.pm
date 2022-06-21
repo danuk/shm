@@ -238,10 +238,15 @@ sub kind {
 sub make_event {
     my $self = shift;
     my $event = shift;
-    my %args;
+    my %args = (
+        @_,
+    );
 
     if ( $self->can('events') ) {
-        %args = %{ $self->events->{ $event } || {} };
+        %args = (
+            %{ $self->events->{ $event } || {} },
+            %args,
+        );
     }
 
     unless ( $args{event} ) {

@@ -137,7 +137,7 @@ sub server {
 sub transport_name {
     my $self = shift;
 
-    if ( $self->event_settings->{transport} ) {
+    if ( $self->event_settings && $self->event_settings->{transport} ) {
         return $self->event_settings->{transport};
     } elsif ( my $server = $self->server ) {
         return $server->get->{transport} || undef;
@@ -149,7 +149,6 @@ sub transport_name {
 sub transport {
     my $self = shift;
 
-    return undef unless $self->server_id;
     return undef unless $self->transport_name;
     return get_service( 'Transport::' . ucfirst( $self->transport_name ) );
 }
