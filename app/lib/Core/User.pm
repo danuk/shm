@@ -283,6 +283,10 @@ sub passwd_reset_request {
         switch_user( $user->{user_id} );
         $self = $self->id( $user->{user_id} );
 
+        if ( $self->is_blocked ) {
+            return { msg => 'User is blocked' };
+        }
+
         my $new_password = passgen();
         $self->passwd( password => $new_password );
 
@@ -294,6 +298,12 @@ sub passwd_reset_request {
     }
 
     return { msg => 'Successful' };
+}
+
+sub is_blocked {
+    my $self = shift;
+
+    return $self->get_block();
 }
 
 sub validate_attributes {
