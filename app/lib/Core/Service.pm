@@ -166,7 +166,13 @@ sub create {
     use Core::Billing;
     my $us = create_service( %args );
 
-    return $us->with_name;
+    my @ret = get_service('UserService')->list_for_api(
+        filter => {
+            user_service_id => $us->id,
+        },
+    );
+
+    return \@ret;
 }
 
 sub settings {
