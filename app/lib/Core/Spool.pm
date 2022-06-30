@@ -19,6 +19,9 @@ sub structure {
             type => 'number',
             auto_fill => 1,
         },
+        user_service_id => {
+            type => 'number',
+        },
         event => { type => 'json', value => undef },
         prio => {           # приоритет команды
             type => 'number',

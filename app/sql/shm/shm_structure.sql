@@ -180,6 +180,7 @@ DROP TABLE IF EXISTS `spool`;
 CREATE TABLE `spool` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
+  `user_service_id` int(11) DEFAULT NULL,
   `response` json DEFAULT NULL,
   `event` json NOT NULL,
   `prio` int(11) NOT NULL DEFAULT '0',
@@ -197,6 +198,7 @@ CREATE TABLE `spool_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `spool_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
+  `user_service_id` int(11) DEFAULT NULL,
   `response` json DEFAULT NULL,
   `event` json DEFAULT NULL,
   `prio` int(11) NOT NULL DEFAULT '0',
