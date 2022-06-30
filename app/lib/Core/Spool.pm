@@ -53,6 +53,10 @@ sub push {
 # список формируется именно в том порядке, в котором должен выполнятся
 sub list_for_all_users {
     my $self = shift;
+    my %args = (
+        limit => 10,
+        @_,
+    );
     my @vars;
 
     return $self->_list(
@@ -64,36 +68,56 @@ sub list_for_all_users {
             ],
         },
         order => [ id => 'asc' ],
-        limit => 100,
+        limit => $args{limit},
+        extra => 'FOR UPDATE SKIP LOCKED',
     );
 }
 
 sub process_all {
     my $self = shift;
 
-    while ( $self->process_one() ) {};
-    $self->{spool} = undef;
+    my @list = $self->list_for_all_users( limit => 10 );
+    $self->process_one( $_ ) for @list;
 }
 
-# обрабатывает один запрос из списка $self->{spool} (список формируется методом: list_for_all_users)
 sub process_one {
     my $self = shift;
+    my $task = shift;
 
-    $self->{spool}//= [ $self->list_for_all_users() ];
-    my $task = shift @{ $self->{spool}//=[] } or
-        return undef, undef, undef;
+    unless ( $task ) {
+       ( $task ) = $self->list_for_all_users( limit => 1 );
+    }
+    return undef unless $task;
 
-    if ( $task->{status} eq TASK_STUCK ) {
-        return TASK_STUCK, $task, { error => 'Task stuck. Skip.' };
+    my $user = get_service('user', _id => $task->{user_id} );
+    switch_user( $task->{user_id } );
+
+    my $spool = get_service('spool', _id => $task->{id} )->res( $task );
+
+    unless ( $user ) {
+        $spool->finish_task(
+            status => TASK_STUCK,
+            response => { error => "User $task->{user_id} not exists" },
+        );
+        return undef;
     }
 
-    switch_user( $task->{user_id } );
+    if ( my $usi = $task->{settings}->{user_service_id} ) {
+        if ( my $service = get_service('us', _id => $usi ) ) {
+            return undef unless $service->lock;
+        } else {
+            $spool->finish_task(
+                status => TASK_STUCK,
+                response => { error => "User service $usi not exists" },
+            );
+            return undef;
+        }
+    }
 
     if ( $task->{event}->{server_gid} ) {
         my @servers = get_service('ServerGroups', _id => $task->{event}->{server_gid} )->get_servers;
         unless ( @servers ) {
             logger->warning("Can't found servers for group: $task->{event}->{server_gid}");
-            my $spool = get_service('spool', _id => $task->{id} )->res( $task );
             $spool->finish_task(
                 status => TASK_STUCK,
                 response => { error => "Can't found servers for group" },
@@ -107,8 +131,6 @@ sub process_one {
             # TODO: create new tasks for all servers
         }
     }
-
-    my $spool = get_service('spool', _id => $task->{id} )->res( $task );
 
     my ( $status, $info ) = $spool->make_task();
 

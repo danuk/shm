@@ -28,9 +28,8 @@ for (;;) {
         }
     } while defined $task;
 
-    $spool->{spool} = undef;
     unregister_all();
-    sleep 2;
+    sleep 1;
 }
 
 exit 0;

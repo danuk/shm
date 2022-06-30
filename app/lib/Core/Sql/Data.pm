@@ -68,7 +68,7 @@ sub configure {
 
     $dbh->{RaiseError} = 0;
     $dbh->{AutoCommit} = 0;
-    $dbh->{mysql_auto_reconnect} = 1;
+    $dbh->{mysql_auto_reconnect} = 0;
     $dbh->{InactiveDestroy} = 1;
 
     $dbh->do("SET CHARACTER SET UTF8");
@@ -548,6 +548,7 @@ sub query_select {
         offset => undef,
         join => undef,
         order => undef,
+        extra => undef,
         @_,
     );
 
@@ -643,7 +644,7 @@ sub query_select {
         }
     }
 
-    return $query;
+    return $args{extra} ? sprintf("%s %s", $query, $args{extra}) : $query;
 }
 
 sub logger {

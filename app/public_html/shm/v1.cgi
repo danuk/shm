@@ -447,9 +447,14 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     } elsif ( $ENV{REQUEST_METHOD} eq 'POST' ) {
         if ( $user->id ) {
             if ( $service = $service->id( get_service_id( $service, %args ) ) ) {
-                push @data, $service->$method( %args );
+                if ( $service->lock( timeout => 3 )) {
+                    push @data, $service->$method( %args );
+                } else {
+                    $headers{status} = 408;
+                    $info{error} = "The service is locked. Try again later.";
+                }
             } else {
-              $headers{status} = 404;
+                $headers{status} = 404;
                 $info{error} = "Service not found";
             }
         } elsif ( $service->can( $method ) ) {
@@ -457,8 +462,13 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         }
     } elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
         if ( my $obj = $service->id( get_service_id( $service, %args ) ) ) {
-            push @data, $obj->$method( %args );
-            $headers{status} = 200;
+            if ( $obj->lock( timeout => 3 )) {
+                push @data, $obj->$method( %args );
+                $headers{status} = 200;
+            } else {
+                $headers{status} = 408;
+                $info{error} = "The service is locked. Try again later.";
+            }
         } else {
             $headers{status} = 404;
             $info{error} = "Service not found";

@@ -62,7 +62,7 @@ is( $task3->{response}->{ret_code}, 0, 'Check make_task for category `test`' );
 
 my $spool = get_service('spool');
 
-while ( $spool->process_one ){};
+$spool->process_all();
 
 is( ($spool->list)[0]->{status}, TASK_STUCK, "Server: 162 not exists" );
 

@@ -127,6 +127,23 @@ sub get {
     return wantarray ? %{ $self->{res} } : $self->{res};
 }
 
+sub lock {
+    my $self = shift;
+    my %args = (
+        timeout => 0,
+        @_,
+    );
+
+    my $res;
+
+    until ( $res = $self->SUPER::get( extra => 'FOR UPDATE SKIP LOCKED' )) {
+        last unless $args{timeout};
+        sleep 1;
+        $args{timeout}--;
+    }
+    return $res ? 1 : 0;
+}
+
 # Пробуем получить уже загруженные данные
 # Проверяем статус операции и обновляем res
 sub _add_or_set {
