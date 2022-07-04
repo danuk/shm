@@ -49,6 +49,9 @@ my $routes = {
     GET => {
         controller => 'UserService',
     },
+    DELETE => {
+        controller => 'USObject',
+    },
 },
 '/user/service/:usi' => {
     GET => {
