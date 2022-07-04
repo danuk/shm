@@ -287,26 +287,51 @@ sub is_commands_by_event {
     return scalar @commands;
 }
 
+sub allow_event_by_status {
+    my $event = shift || return undef;
+    my $status = shift || return undef;
+
+    return 1 if $status eq STATUS_PROGRESS;
+
+    my %event_by_status = (
+        (EVENT_CREATE) => [STATUS_WAIT_FOR_PAY, STATUS_INIT],
+        (EVENT_NOT_ENOUGH_MONEY) => [STATUS_INIT],
+        (EVENT_PROLONGATE) => [STATUS_ACTIVE],
+        (EVENT_BLOCK) => [STATUS_ACTIVE],
+        (EVENT_ACTIVATE) => [STATUS_BLOCK],
+        (EVENT_REMOVE) => [STATUS_BLOCK],
+    );
+
+    return undef unless exists $event_by_status{ $event };
+
+    for ( @{ $event_by_status{ $event } } ) {
+        return 1 if $_ eq $status;
+    }
+
+    return undef;
+}
+
 sub make_commands_by_event {
     my $self = shift;
     my $e = shift;
 
+    return undef unless allow_event_by_status( $e, $self->status() );
+
     my @commands = $self->commands_by_event( $e );
+    return undef unless @commands;
 
-    if ( scalar @commands ) {
-        $self->status( STATUS_PROGRESS, event => $e );
+    $self->status( STATUS_PROGRESS, event => $e );
 
-        for ( @commands ) {
-            $self->spool->add(
-                event => $_,
-                settings => {
-                    exists $self->settings->{server_id} ?
-                        ( server_id => $self->settings->{server_id} ) :
-                        ( server_gid => $_->{server_gid} ),
-                    user_service_id => $self->id,
-                },
-            );
-        }
+    for ( @commands ) {
+        $self->spool->add(
+            event => $_,
+            settings => {
+                exists $self->settings->{server_id} ?
+                    ( server_id => $self->settings->{server_id} ) :
+                    ( server_gid => $_->{server_gid} ),
+                user_service_id => $self->id,
+            },
+        );
     }
     return scalar @commands;
 }

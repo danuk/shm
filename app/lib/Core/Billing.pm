@@ -49,7 +49,7 @@ sub create_service {
         logger->error( "Service not exists: $args{service_id}" );
     }
 
-    my $us = get_service('UserService')->add( %args );
+    my $us = get_service('us')->add( %args );
 
     my $wd_id = add_withdraw(
         calc_withdraw( $us->billing, $service->get, %args ),
@@ -59,7 +59,7 @@ sub create_service {
 
     my $ss = get_service('service', _id => $args{service_id} )->subservices;
     for ( @{ $ss } ) {
-        get_service('UserService')->add( service_id => $_, parent => $us->id );
+        get_service('us')->add( service_id => $_, parent => $us->id );
     }
 
     return process_service_recursive( $us, EVENT_CREATE );
@@ -93,12 +93,6 @@ sub process_service {
     my $event = shift;
 
     logger->debug('Process service: '. $self->id . " Event: [$event]" );
-
-#    TODO: do not execute event twice
-#    if ( $self->get_status == $self->status_by_event( $event ) ) {
-#        logger->debug('Service already processed. Skipping...');
-#        return undef;
-#    }
 
     if ( $self->get_status eq STATUS_PROGRESS ) {
         logger->debug('Service in progress. Skipping...');

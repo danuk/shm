@@ -85,9 +85,7 @@ sub make_task {
 
         if ( $self->settings->{user_service_id} ) {
             my $us = get_service('us', _id => $self->settings->{user_service_id} );
-            $us->set(
-                settings => { server_id => $self->server_id },
-            );
+            $us->settings( { server_id => $self->server_id } )->settings_save();
             $us->set_status_by_event( $self->event->{name} );
         }
     }

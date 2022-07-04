@@ -74,6 +74,7 @@ subtest 'Check create service' => sub {
 
     $spool->process_all();
 
+    is( $us->child_by_category('mysql')->settings->{server_id}, 1 );
     is( $us->get_status, STATUS_ACTIVE, 'Check status of service after the creation childs' );
 };
 
@@ -306,16 +307,34 @@ subtest 'Check create service without money' => sub {
 
     $user->set( balance => 1000, credit => 0, discount => 0 );
     $us->touch();
+
+    is( $us->get_status, STATUS_PROGRESS, 'Check status of non payment service after payment' );
+
+    cmp_deeply( chldrn_by_service( $us ), {
+        5 => superhashof( { status => STATUS_ACTIVE } ),
+        8 => superhashof( { status => STATUS_ACTIVE } ),
+        29 => superhashof( { status => STATUS_PROGRESS } ),
+    }, 'Check children statuses' );
+
     $spool->process_all();
 
     is( $us->get_status, STATUS_ACTIVE, 'Check status of non payment service after payment' );
+
+    cmp_deeply( chldrn_by_service( $us ), {
+        5 => superhashof( { status => STATUS_ACTIVE } ),
+        8 => superhashof( { status => STATUS_ACTIVE } ),
+        29 => superhashof( { status => STATUS_ACTIVE } ),
+    }, 'Check children statuses' );
 };
 
 Test::MockTime::set_fixed_time('2018-01-15T00:00:00Z');
 subtest 'Delete user service' => sub {
 
     $us->stop();
+    is( $us->get_status, STATUS_PROGRESS );
+
     $spool->process_all();
+    is( $us->get_status, STATUS_BLOCK );
 
     $us->delete();
     $spool->process_all();
