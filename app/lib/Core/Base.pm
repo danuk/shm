@@ -141,6 +141,7 @@ sub lock {
         sleep 1;
         $args{timeout}--;
     }
+    $self->reload();
     return $res ? 1 : 0;
 }
 
