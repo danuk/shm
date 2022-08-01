@@ -89,7 +89,7 @@ sub forecast {
 
         my $us =  get_service('us', _id => $usi );
         # Check next pays
-        if ( my %wd_next = $us->withdraws->next ) {
+        if ( my %wd_next = $us->withdraw->next ) {
             # Skip if already paid for
             next if $wd_next{withdraw_date};
             $obj->{withdraws} = \%wd_next;

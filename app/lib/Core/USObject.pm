@@ -208,8 +208,6 @@ sub child_by_category {
     return get_service('us', _id => $child->{user_service_id} );
 }
 
-*withdraws = \&withdraw;
-
 sub withdraw {
     my $self = shift;
     return undef unless $self->get_withdraw_id;

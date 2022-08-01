@@ -240,7 +240,7 @@ subtest 'Try prolongate blocked service' => sub {
             'total' => 1000,
     }, 'Check withdraw' );
 
-    is( $us->get_expired, $us->withdraws->res->{end_date}, 'Check expired date after activate' );
+    is( $us->get_expired, $us->withdraw->res->{end_date}, 'Check expired date after activate' );
     is( $user->get_balance, 0.03, 'Check user balance');
 
     cmp_deeply( chldrn_by_service( $us ), {
@@ -342,7 +342,7 @@ subtest 'Delete user service' => sub {
     $spool->process_all();
     is( $us->get_status, STATUS_REMOVED );
 
-    my $wd = $us->withdraws->get;
+    my $wd = $us->withdraw->get;
     cmp_deeply( $wd, {
             'withdraw_id' => $us->get_withdraw_id,
             'user_service_id' => $us->id,

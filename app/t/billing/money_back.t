@@ -29,7 +29,7 @@ is ( $start_balance, -21.56, 'Check start balance');
 
 my $us = create_service( service_id => $service->id );
 
-my $wd = $us->withdraws;
+my $wd = $us->withdraw;
 cmp_deeply( scalar $wd->get,
     {
           'bonus' => '0',

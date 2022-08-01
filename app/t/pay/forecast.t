@@ -83,7 +83,7 @@ subtest 'Check forecast with next wd' => sub {
 };
 
 subtest 'Check forecast with next already payed wd' => sub {
-    my %wd_next = get_service('us', _id => 99 )->withdraws->next;
+    my %wd_next = get_service('us', _id => 99 )->withdraw->next;
     my $wd_next_id = $wd_next{withdraw_id};
 
     get_service('withdraw', _id => $wd_next_id )->set( withdraw_date => now() );

@@ -140,7 +140,7 @@ sub add_withdraw {
 sub add_withdraw_next {
     my $self = shift;
 
-    my $wd = $self->withdraws->get;
+    my $wd = $self->withdraw->get;
 
     my %wd = calc_withdraw(
         $self->billing,
@@ -189,14 +189,14 @@ sub is_pay {
     my $self = shift;
 
     return undef unless $self->get_withdraw_id;
-    unless ( $self->withdraws ) {
+    unless ( $self->withdraw ) {
         logger->warning(
             sprintf( "Withdraw not exists: %d", $self->get_withdraw_id ),
         );
         return undef;
     }
 
-    my $wd = $self->withdraws->get;
+    my $wd = $self->withdraw->get;
     # Already withdraw
     return 1 if $wd->{withdraw_date};
 
@@ -212,7 +212,7 @@ sub is_pay {
                     !$self->get_pay_in_credit );
 
     $self->user->set_balance( balance => -$wd->{total} );
-    $self->withdraws->set( withdraw_date => now );
+    $self->withdraw->set( withdraw_date => now );
 
     return 1;
 }
@@ -220,7 +220,7 @@ sub is_pay {
 sub set_service_expire {
     my $self = shift;
 
-    my $wd = $self->withdraws->get;
+    my $wd = $self->withdraw->get;
     my $now = now;
 
     if ( $self->get_expired && $self->get_status ne STATUS_BLOCK ) {
@@ -240,7 +240,7 @@ sub set_service_expire {
     #    }
     #}}
 
-    $self->withdraws->set( end_date => $expire_date );
+    $self->withdraw->set( end_date => $expire_date );
 
     return $self->set( expired => $expire_date );
 }
@@ -290,7 +290,7 @@ sub prolongate {
     my $wd = $wd_id ? get_service('wd', _id => $wd_id ) : undef;
 
     if ( $wd && $wd->res->{withdraw_date} ) {
-        if ( my %next = $self->withdraws->next ) {
+        if ( my %next = $self->withdraw->next ) {
             $wd_id = $next{withdraw_id};
         } else {
             $wd_id = add_withdraw_next( $self );
@@ -360,7 +360,7 @@ sub money_back {
     # Do not return money for domains and etc.
     return undef if $service->get->{period_cost} > 1;
 
-    my $wd = $self->withdraws;
+    my $wd = $self->withdraw;
     return undef unless $wd;
 
     my %wd = $wd->get;
