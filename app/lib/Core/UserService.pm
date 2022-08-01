@@ -402,11 +402,15 @@ sub list_for_api {
         usi => undef,
         parent => { '=', undef }, # parent IS NULL
         limit => 25,
-        filter => undef,
+        filter => {},
         @_,
     );
 
-    $args{where} = $self->query_for_filtering( %{ $args{filter} || {} } );
+    $args{where} = $self->query_for_filtering( %{$args{filter}} );
+
+    unless ( $args{admin} ) {
+        $args{where}{status} //= ( status => {'!=', STATUS_REMOVED} );
+    }
 
     my @arr = $self->all( %args )->with('settings','services','withdraws')->get;
 
