@@ -117,7 +117,12 @@ sub delete {
     }
 
     if ( $self->get_status eq STATUS_REMOVED ) {
-        $self->SUPER::delete();
+        if ( my $wd = $self->withdraw ) {
+            if ( $wd->unpaid ) {
+                $self->set( withdraw_id => undef );
+                $wd->delete;
+            }
+        }
         return ();
     } elsif ( $self->can_delete() ) {
         $self->event( EVENT_REMOVE );
@@ -203,7 +208,9 @@ sub child_by_category {
     return get_service('us', _id => $child->{user_service_id} );
 }
 
-sub withdraws {
+*withdraws = \&withdraw;
+
+sub withdraw {
     my $self = shift;
     return undef unless $self->get_withdraw_id;
     return get_service('wd', _id => $self->get_withdraw_id, usi => $self->id );
@@ -455,7 +462,9 @@ sub status {
 
         $self->set( status => $status );
 
-        $self->delete() if $status eq STATUS_REMOVED;
+        if ( $status eq STATUS_REMOVED ) {
+            $self->delete();
+        }
 
         if ( my $parent = $self->parent ) {
             $parent->child_status_updated(

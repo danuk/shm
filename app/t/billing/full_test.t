@@ -337,10 +337,10 @@ subtest 'Delete user service' => sub {
     is( $us->get_status, STATUS_BLOCK );
 
     $us->delete();
-    $spool->process_all();
+    is( $us->get_status, STATUS_PROGRESS );
 
-    my @user_services = get_service('UserService')->id( $us->id )->tree->get;
-    is( scalar @user_services, 0, 'Check that the service is deleted');
+    $spool->process_all();
+    is( $us->get_status, STATUS_REMOVED );
 
     my $wd = $us->withdraws->get;
     cmp_deeply( $wd, {

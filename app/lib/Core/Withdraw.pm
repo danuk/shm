@@ -150,7 +150,6 @@ sub list_for_api {
             );
         }
         else { $_->{name} = '' };
-        $_->{discount_date} = $_->{withdraw_date};
     }
     return @arr;
 }
@@ -164,6 +163,29 @@ sub found_rows {
     }
 
     return $self->{found_rows};
+}
+
+sub unpaid {
+    my $self = shift;
+
+    return $self->res->{withdraw_date} ? 0 : 1;
+}
+
+*delete = \&delete_unpaid;
+
+sub delete_unpaid {
+    my $self = shift;
+    my $usi = shift || $self->usi;
+
+    return undef unless $usi;
+
+    return $self->SUPER::_delete(
+        where => {
+            user_id => $self->user_id,
+            user_service_id => $usi,
+            withdraw_date => undef,
+        },
+    );
 }
 
 1;
