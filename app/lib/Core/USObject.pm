@@ -116,13 +116,14 @@ sub delete {
         $self->id( $_->{user_service_id} )->delete();
     }
 
-    if ( $self->get_status eq STATUS_REMOVED ) {
+    if ( $self->get_status eq STATUS_REMOVED || $self->get_status eq STATUS_WAIT_FOR_PAY ) {
         if ( my $wd = $self->withdraw ) {
             if ( $wd->unpaid ) {
                 $self->set( withdraw_id => undef );
                 $wd->delete;
             }
         }
+        $self->SUPER::delete() if $self->get_status eq STATUS_WAIT_FOR_PAY;
         return ();
     } elsif ( $self->can_delete() ) {
         $self->event( EVENT_REMOVE );
