@@ -37,7 +37,7 @@ subtest 'Check create service' => sub {
 
     $us = create_service( service_id => 4, cost => 1000, months => 1 );
 
-    is( $us->get_expired, '2017-01-30 23:59:59', 'Check expired date after create new service' );
+    is( $us->get_expire, '2017-01-30 23:59:59', 'Check expire date after create new service' );
 };
 
 done_testing();

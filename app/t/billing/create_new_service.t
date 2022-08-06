@@ -24,7 +24,7 @@ use Core::Billing;
 my $us = create_service( service_id => 4, cost => 1004.129, months => 0.01 );
 my $ret = $srv->id( $us->id )->with('withdraws')->get;
 
-is( $ret->{ $us->id }->{expired}, '2017-01-01 23:59:59', 'Check expired service for months = 0.01 (one day)' );
+is( $ret->{ $us->id }->{expire}, '2017-01-01 23:59:59', 'Check expire service for months = 0.01 (one day)' );
 is( $ret->{ $us->id }->{service_id}, 4, 'Check service_id for new service' );
 is( $ret->{ $us->id }->{withdraws}->{months}, 0.01, 'Check months for one day' );
 is( $ret->{ $us->id }->{withdraws}->{total}, 32.39, 'Check total for one day' );
@@ -33,7 +33,7 @@ is( $ret->{ $us->id }->{withdraws}->{total}, 32.39, 'Check total for one day' );
 my $us = create_service( service_id => 1, cost => 1000, months => 1 );
 my $ret = $srv->id( $us->id )->with('withdraws')->get;
 
-is( $ret->{ $us->id }->{expired}, '2017-01-31 23:59:59', 'Check expired service for months = 1 (one month)' );
+is( $ret->{ $us->id }->{expire}, '2017-01-31 23:59:59', 'Check expire service for months = 1 (one month)' );
 is( $ret->{ $us->id }->{service_id}, 1, 'Check service_id for new service' );
 is( $ret->{ $us->id }->{withdraws}->{total}, 1000, 'Check total for one month' );
 
@@ -41,7 +41,7 @@ is( $ret->{ $us->id }->{withdraws}->{total}, 1000, 'Check total for one month' )
 my $us = create_service( service_id => 1, cost => 1000, months => 2.01 );
 my $ret = $srv->id( $us->id )->with('withdraws')->get;
 
-is( $ret->{ $us->id }->{expired}, '2017-03-01 23:59:59', 'Check expired service for months = 2.01' );
+is( $ret->{ $us->id }->{expire}, '2017-03-01 23:59:59', 'Check expire service for months = 2.01' );
 is( $ret->{ $us->id }->{service_id}, 1, 'Check service_id for new service' );
 is( $ret->{ $us->id }->{withdraws}->{total}, 2032.26, 'Check total for 2.01 month' );
 
@@ -49,7 +49,7 @@ is( $ret->{ $us->id }->{withdraws}->{total}, 2032.26, 'Check total for 2.01 mont
 my $us = create_service( service_id => 1, cost => 100, months => 4 );
 my $ret = $srv->id( $us->id )->with('withdraws')->get;
 
-is( $ret->{ $us->id }->{expired}, '2017-04-30 23:59:59', 'Check expired service for months = 4' );
+is( $ret->{ $us->id }->{expire}, '2017-04-30 23:59:59', 'Check expire service for months = 4' );
 is( $ret->{ $us->id }->{service_id}, 1, 'Check service_id for new service' );
 is( $ret->{ $us->id }->{withdraws}->{discount}, 10, 'Check discont for 4 months' );
 is( $ret->{ $us->id }->{withdraws}->{total}, 360, 'Check total for 4 months with discount' );
@@ -58,7 +58,7 @@ is( $ret->{ $us->id }->{withdraws}->{total}, 360, 'Check total for 4 months with
 my $us = create_service( service_id => 11, cost => 1000, months => 12 );
 
 my $ret = $srv->id( $us->id )->with('withdraws')->get;
-is( $ret->{ $us->id }->{expired}, '2017-12-31 23:59:59', 'Check expired service for domain' );
+is( $ret->{ $us->id }->{expire}, '2017-12-31 23:59:59', 'Check expire service for domain' );
 is( $ret->{ $us->id }->{service_id}, 11, 'Check service_id for new service' );
 is( $ret->{ $us->id }->{withdraws}->{discount}, 0, 'Check total for domain' );
 is( $ret->{ $us->id }->{withdraws}->{total}, 1000, 'Check total for domain' );

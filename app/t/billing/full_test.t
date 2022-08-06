@@ -34,7 +34,7 @@ subtest 'Check create service' => sub {
 
     $us = create_service( service_id => 4, cost => 1000, months => 1 );
 
-    is( $us->get_expired, '2017-01-31 23:59:59', 'Check expired date after create new service' );
+    is( $us->get_expire, '2017-01-31 23:59:59', 'Check expire date after create new service' );
     is( $user->get_balance, 1000, 'Check user balance after withdraw');
 
     is( $us->get_status, STATUS_PROGRESS, 'Check status of new service' );
@@ -84,7 +84,7 @@ Test::MockTime::set_fixed_time('2017-01-15T05:06:13Z');
 subtest 'Half month later. Try prolongate service' => sub {
     my $ret = $us->touch();
 
-    is( $us->get_expired, '2017-01-31 23:59:59', 'Check expired date after not prolongate' );
+    is( $us->get_expire, '2017-01-31 23:59:59', 'Check expire date after not prolongate' );
     is( $user->get_balance, 1000, 'Check user balance after withdraw');
 
     cmp_deeply( chldrn_by_service( $us ), {
@@ -100,7 +100,7 @@ Test::MockTime::set_fixed_time('2017-02-01T13:14:01Z');
 subtest 'One month later. Prolongate service' => sub {
     my $ret = $us->touch();
 
-    is( $us->get_expired, '2017-02-28 23:59:57', 'Check expired date after prolongate' );
+    is( $us->get_expire, '2017-02-28 23:59:57', 'Check expire date after prolongate' );
     is( $user->get_balance, 0, 'Check user balance after withdraw');
 
     my @children = $us->children;
@@ -154,7 +154,7 @@ Test::MockTime::set_fixed_time('2017-03-01T00:00:00Z');
 subtest 'Try prolongate service without have money' => sub {
     my $ret = $us->touch();
 
-    is( $us->get_expired, '2017-02-28 23:59:57', 'Check expired date after prolongate' );
+    is( $us->get_expire, '2017-02-28 23:59:57', 'Check expire date after prolongate' );
     is( $user->get_balance, 0, 'Check user balance');
 
     is( $us->get_status, STATUS_PROGRESS, 'Check status of prolong service' );
@@ -240,7 +240,7 @@ subtest 'Try prolongate blocked service' => sub {
             'total' => 1000,
     }, 'Check withdraw' );
 
-    is( $us->get_expired, $us->withdraw->res->{end_date}, 'Check expired date after activate' );
+    is( $us->get_expire, $us->withdraw->res->{end_date}, 'Check expire date after activate' );
     is( $user->get_balance, 0.03, 'Check user balance');
 
     cmp_deeply( chldrn_by_service( $us ), {
@@ -268,7 +268,7 @@ Test::MockTime::set_fixed_time('2018-01-01T00:00:00Z');
 subtest 'Check create service without money' => sub {
     $us = create_service( service_id => 4, cost => 1000, months => 1 );
 
-    is( $us->get_expired, undef, 'Check expired date after create new service' );
+    is( $us->get_expire, undef, 'Check expire date after create new service' );
     is( $user->get_balance, 0.03, 'Check user balance after withdraw');
 
     is( $us->get_status, STATUS_WAIT_FOR_PAY, 'Check status of new service' );

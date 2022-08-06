@@ -70,14 +70,14 @@ sub forecast {
             auto_bill => \[ '= 1'],
             status => STATUS_ACTIVE,
             withdraw_id => { '!=', undef },
-            expired => [
+            expire => [
                 { '<', \[ 'NOW() + INTERVAL ? DAY', $args{days} ] },
                 undef,
             ],
         },
         order => [
             user_service_id => 'asc',
-            expired => 'asc',
+            expire => 'asc',
         ],
     )->with('services','withdraws','settings')->get;
 
@@ -85,7 +85,7 @@ sub forecast {
 
     for my $usi ( sort { $a <=> $b } keys %{ $user_services } ) {
         my $obj = $user_services->{ $usi };
-        next if $obj->{next} == -1 && $obj->{expired};
+        next if $obj->{next} == -1 && $obj->{expire};
 
         my $us =  get_service('us', _id => $usi );
         # Check next pays
@@ -105,7 +105,7 @@ sub forecast {
         push @forecast_services, {
             name => $obj->{services}->{name},
             usi => $obj->{user_service_id},
-            expired => $obj->{expired} || '',
+            expire => $obj->{expire} || '',
             cost => $wd_forecast{cost},
             months => $wd_forecast{months},
             qnt => $wd_forecast{qnt},

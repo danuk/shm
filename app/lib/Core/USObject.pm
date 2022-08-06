@@ -48,7 +48,7 @@ sub structure {
         created => {
             type => 'now',
         },
-        expired => {
+        expire => {
             type => 'date',
         },
         status => {
@@ -148,8 +148,8 @@ sub user {
 sub has_expired {
     my $self = shift;
 
-    return 0 unless $self->get_expired;
-    return int( $self->get_expired lt now );
+    return 0 unless $self->get_expire;
+    return int( $self->get_expire lt now );
 }
 
 sub parent_has_expired {
@@ -486,7 +486,7 @@ sub stop {
 
     return scalar $self->get if $self->get_status ne STATUS_ACTIVE;
 
-    $self->set( expired => now ) if $self->get_expired gt now;
+    $self->set( expire => now ) if $self->get_expire gt now;
     $self->touch( EVENT_BLOCK );
 
     return scalar $self->get;

@@ -370,7 +370,7 @@ sub list_expired_services {
         where => {
             status => STATUS_ACTIVE,
             auto_bill => 1,
-            expired => { '<', now },
+            expire => { '<', now },
         },
         order => [
             user_id => 'ASC',

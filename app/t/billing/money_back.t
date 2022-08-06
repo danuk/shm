@@ -52,7 +52,7 @@ my $balance_after_create = $user->get->{balance};
 is ( $balance_after_create, -921.56, 'Check balance after create');
 
 Test::MockTime::set_fixed_time('2019-04-03T00:00:00Z');
-$us->set( expired => now );
+$us->set( expire => now );
 
 money_back( $us );
 

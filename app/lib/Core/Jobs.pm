@@ -16,7 +16,7 @@ sub job_prolongate {
             $_->{user_id},
             $_->{user_service_id},
             $_->{created},
-            $_->{expired},
+            $_->{expire},
         );
 
         switch_user( $_->{user_id} );

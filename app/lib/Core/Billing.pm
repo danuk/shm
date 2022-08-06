@@ -113,7 +113,7 @@ sub process_service {
         return block( $self );
     }
 
-    unless ( $self->get_expired ) {
+    unless ( $self->get_expire ) {
         # Новая услуга
         logger->debug('New service');
         return create( $self );
@@ -223,15 +223,15 @@ sub set_service_expire {
     my $wd = $self->withdraw->get;
     my $now = now;
 
-    if ( $self->get_expired && $self->get_status ne STATUS_BLOCK ) {
+    if ( $self->has_expired && $self->get_status ne STATUS_BLOCK ) {
         # Услуга истекла (не новая) и не заблокирована ранее
         # Будем продлять с момента истечения
-        $now = $self->get_expired;
+        $now = $self->get_expire;
     }
 
     my $expire_date = calc_end_date_by_months( $self->billing, $now, $wd->{months} );
 
-    #if ( $config->{child_expired_by_parent} {
+    #if ( $config->{child_expire_by_parent} {
     #if ( my $parent_expire_date = parent_has_expired( $self ) ) {
     #     if ( $expire_date gt $parent_expire_date ) {
     #        # дата истечения услуги не должна быть больше чем дата истечения родителя
@@ -242,7 +242,7 @@ sub set_service_expire {
 
     $self->withdraw->set( end_date => $expire_date );
 
-    return $self->set( expired => $expire_date );
+    return $self->set( expire => $expire_date );
 }
 
 sub create {
@@ -351,7 +351,7 @@ sub get_service_discount {
 
 sub money_back {
     my $self = shift;
-    my $date = shift || $self->get_expired;
+    my $date = shift || $self->get_expire;
 
     return undef unless $self->get_withdraw_id;
 

@@ -27,7 +27,7 @@ is_deeply( $obj, {
             quota => 10000
         },
         created => '2014-10-07 12:56:09',
-        expired => '2017-01-31 23:59:50',
+        expire => '2017-01-31 23:59:50',
         user_id => 40092,
         withdraw_id => 3691,
     }

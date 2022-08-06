@@ -20,7 +20,7 @@ subtest 'Check forecast' => sub {
             {
                 name => 'Регистрация домена в зоне .RU: umci.ru',
                 usi => 2949,
-                expired => '2017-07-29 12:39:46',
+                expire => '2017-07-29 12:39:46',
                 cost => 590,
                 total => 590,
                 discount => 0,
@@ -30,7 +30,7 @@ subtest 'Check forecast' => sub {
             {
                 name => 'Тариф X-MAX (10000 мб)',
                 usi => 99,
-                expired => '2017-01-31 23:59:50',
+                expire => '2017-01-31 23:59:50',
                 cost => 123.45,
                 total => 123.45,
                 discount => 0,
@@ -59,7 +59,7 @@ subtest 'Check forecast with next wd' => sub {
             {
                 name => 'Регистрация домена в зоне .RU: umci.ru',
                 usi => 2949,
-                expired => '2017-07-29 12:39:46',
+                expire => '2017-07-29 12:39:46',
                 cost => 590,
                 total => 590,
                 discount => 0,
@@ -69,7 +69,7 @@ subtest 'Check forecast with next wd' => sub {
             {
                 name => 'Тариф X-MAX (10000 мб)',
                 usi => 99,
-                expired => '2017-01-31 23:59:50',
+                expire => '2017-01-31 23:59:50',
                 cost => 100.00,
                 total => 100.00,
                 discount => 0,
@@ -95,7 +95,7 @@ subtest 'Check forecast with next already payed wd' => sub {
             {
                 name => 'Регистрация домена в зоне .RU: umci.ru',
                 usi => 2949,
-                expired => '2017-07-29 12:39:46',
+                expire => '2017-07-29 12:39:46',
                 cost => 590,
                 total => 590,
                 discount => 0,
