@@ -408,9 +408,7 @@ sub list_for_api {
 
     $args{where} = $self->query_for_filtering( %{$args{filter}} );
 
-    unless ( $args{admin} ) {
-        $args{where}{status} //= ( status => {'!=', STATUS_REMOVED} );
-    }
+    $args{where}{status} //= {'!=', STATUS_REMOVED};
 
     my @arr = $self->all( %args )->with('settings','services','withdraws')->get;
 
