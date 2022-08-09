@@ -103,8 +103,12 @@ sub add {
 sub can_delete {
     my $self = shift;
 
+    return 1 if $self->get_status eq STATUS_ACTIVE && $self->service->is_allow_delete_active;
+
     return 1 if $self->get_status eq STATUS_BLOCK ||
                 $self->get_status eq STATUS_WAIT_FOR_PAY;
+
+    get_service('report')->add_error( "Can't delete service with status: " . $self->get_status );
     return 0;
 }
 
@@ -305,7 +309,7 @@ sub allow_event_by_status {
         (EVENT_PROLONGATE) => [STATUS_ACTIVE],
         (EVENT_BLOCK) => [STATUS_ACTIVE],
         (EVENT_ACTIVATE) => [STATUS_BLOCK],
-        (EVENT_REMOVE) => [STATUS_BLOCK],
+        (EVENT_REMOVE) => [STATUS_ACTIVE, STATUS_BLOCK],
     );
 
     return undef unless exists $event_by_status{ $event };

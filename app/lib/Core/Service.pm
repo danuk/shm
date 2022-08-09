@@ -178,7 +178,13 @@ sub create {
 sub settings {
     my $self = shift;
 
-    return $self->config;
+    return $self->config || {};
+}
+
+sub is_allow_delete_active {
+    my $self = shift;
+
+    return $self->settings->{allow_delete_active} ? 1 : 0;
 }
 
 1;
