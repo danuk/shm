@@ -91,8 +91,8 @@ sub add {
 
     my $service = get_service( 'service', _id => $args{service_id} );
     unless ( $service ) {
-        logger->warning("Can't create for not existed service: $args{service_id}");
-        get_service('report')->add_error( "Can't create for not existed service" );
+        logger->warning("Can't create us for a non-existent service: $args{service_id}");
+        get_service('report')->add_error( "Can't create us for a non-existent service" );
         return undef;
     }
 
@@ -128,7 +128,7 @@ sub delete {
     } elsif ( $self->can_delete() ) {
         $self->event( EVENT_REMOVE );
     } else {
-        logger->warning( sprintf('User service %d is %s', $self->id, $self->get_status ) );
+        logger->warning( sprintf('User service cannot be deleted: %d is %s', $self->id, $self->get_status ) );
     }
 
     return scalar $self->get;
