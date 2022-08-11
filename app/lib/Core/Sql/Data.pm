@@ -193,6 +193,10 @@ sub convert_sql_structure_data {
     elsif ( ref $data eq 'HASH' ) {
         my $structure = $self->structure;
         while ( my( $f, $v ) = each( %{ $data } ) ) {
+            if ( ref $v eq 'HASH' ) {
+                $self->convert_sql_structure_data( $v );
+                next;
+            }
             if (    exists $structure->{ $f } &&
                     $structure->{ $f }->{type} eq 'json' ) {
                         my $json = decode_json( $data->{ $f } );

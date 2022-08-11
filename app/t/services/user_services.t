@@ -79,4 +79,7 @@ is ( exists $obj->{101}->{settings}->{quota}, 1, 'Check load services by user_se
 
 is( get_service('us', _id => 101 )->domain->name, 'admin.danuk.ru' );
 
+my $tree = $us->id(17)->with('services')->get;
+is ( $tree->{17}->{services}->{config}->{ns}, 'ns1.biit.ru' );
+
 done_testing();
