@@ -48,7 +48,9 @@ sub ids {
         logger->error("Values must be ARRAY");
     }
 
-    $self->{res} = $self->list(
+    my $method = get_service('user')->authenticated->is_admin ? '_list' : 'list';
+
+    $self->{res} = $self->$method(
         where => {
             $field => { -in => $values },
         },
