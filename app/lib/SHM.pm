@@ -91,7 +91,7 @@ sub new {
     } elsif ( $headers{HTTP_LOGIN} && $headers{HTTP_PASSWORD} ) {
         $user_id = ext_user_auth($headers{HTTP_LOGIN}, $headers{HTTP_PASSWORD});
     } elsif ( !$args->{skip_check_auth} ) {
-        my $session = validate_session();
+        my $session = validate_session( session_id => $headers{HTTP_SESSION_ID} );
         print_not_authorized() unless $session;
         $user_id = $session->get('user_id');
     }
@@ -150,23 +150,26 @@ sub db_connect {
 }
 
 sub validate_session {
-    my $update_time = shift || 1;
+    my %args = (
+        session_id => undef,
+        @_,
+    );
 
-    # Check session
-    my %cookies = fetch CGI::Cookie;
-    return undef if not exists $cookies{session_id};
+    my $session_id = $args{session_id};
 
-    my $session_id = $cookies{session_id}->value;
+    unless ( $session_id ) {
+        my %cookies = fetch CGI::Cookie;
+        return undef if not exists $cookies{session_id};
+        $session_id = $cookies{session_id}->value;
+    }
 
     my $session = new Session $session_id, %{ get_service('config')->file->{session} };
     return undef if not defined($session);
 
-    my $ip = $session->get('ip');
-    return undef if $ip ne $ENV{REMOTE_ADDR};
+    #my $ip = $session->get('ip');
+    #return undef if $ip ne $ENV{REMOTE_ADDR};
 
-    #$admin = 1 if $session->get('admin');
-
-    $session->set(time => time()) if $update_time;
+    $session->set(time => time());
 
     return $session;
 }
