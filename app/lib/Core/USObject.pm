@@ -490,7 +490,7 @@ sub stop {
 
     return scalar $self->get if $self->get_status ne STATUS_ACTIVE;
 
-    $self->set( expire => now ) if $self->get_expire gt now;
+    $self->set( expire => now ) if $self->get_expire && $self->get_expire gt now;
     $self->touch( EVENT_BLOCK );
 
     return scalar $self->get;

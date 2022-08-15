@@ -21,9 +21,9 @@ subtest 'GET /v1/user/service' => sub {
     is scalar @{ $ret{json}->{data} }, 4, 'Check count items in data';
 };
 
-subtest 'GET /v1/user/service/:usi' => sub {
+subtest 'GET /v1/user/service' => sub {
     my %ret = shm_test_api(
-        url => 'v1/user/service/99',
+        url => 'v1/user/service?usi=99',
         method => 'GET',
         %user,
     );

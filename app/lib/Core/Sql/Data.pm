@@ -438,8 +438,8 @@ sub _list {
     }
 
     my $res = $self->query_by_name( $query, $self->get_table_key, @vars );
-
     $self->convert_sql_structure_data( $res );
+
     return $res || [];
 }
 

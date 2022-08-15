@@ -53,10 +53,11 @@ my $routes = {
         controller => 'USObject',
     },
 },
-'/user/service/:usi' => {
-    GET => {
-        controller => 'UserService',
-        required => ['usi'],
+'/user/service/stop' => {
+    POST => {
+        controller => 'USObject',
+        method => 'stop',
+        required => ['user_id','user_service_id'],
     },
 },
 '/user/withdraw' => {
