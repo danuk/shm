@@ -81,7 +81,7 @@ sub parse {
         START_TAG => quotemeta('{{'),
         END_TAG   => quotemeta('}}'),
         ANYCASE => 1,
-        INTERPOLATE  => 1,
+        INTERPOLATE  => 0,
         PRE_CHOMP => 1,
     });
 
