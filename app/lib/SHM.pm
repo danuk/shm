@@ -174,9 +174,7 @@ sub print_not_authorized {
 }
 
 sub print_header {
-    return if $is_header;
-
-    my %settings = (
+    my %args = (
         status => 200,
         type => 'application/json',
         charset => 'utf8',
@@ -185,7 +183,9 @@ sub print_header {
         @_,
     );
 
-    print $cgi->header( map +( "-$_" => $settings{$_} ), keys %settings );
+    return undef if $is_header;
+
+    print $cgi->header( map +( "-$_" => $args{$_} ), keys %args );
     $is_header = 1;
 }
 
