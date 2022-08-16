@@ -490,12 +490,19 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         exit 0;
     }
 
-    print_header( %headers );
-    print_json({
-        TZ => $ENV{TZ},
-        %info,
-        data => \@data,
-    });
+    if ( $args{format} eq 'plain' ) {
+        print_header( %headers, type => 'text/plain' );
+        for ( @data ) {
+            print $_;
+        }
+    } else {
+        print_header( %headers );
+        print_json({
+            TZ => $ENV{TZ},
+            %info,
+            data => \@data,
+        });
+    }
 
     if ( $in{dry_run} ) {
         $user->rollback();

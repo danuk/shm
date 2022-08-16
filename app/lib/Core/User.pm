@@ -269,6 +269,14 @@ sub passwd {
     return scalar $user->get;
 }
 
+sub gen_session_id {
+    my $self = shift;
+
+    return get_service('sessions')->add(
+        user_id => $self->id,
+    );
+}
+
 sub passwd_reset_request {
     my $self = shift;
     my %args = (

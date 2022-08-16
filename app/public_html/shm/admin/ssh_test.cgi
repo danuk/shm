@@ -24,11 +24,11 @@ my $pipeline_id = get_service('console')->new_pipe;
 
 my (undef, $res ) = $ssh->exec(
     host => $in{host},
-    cmd => $cmd,
     key_id => 1,
     wait => $in{wait} || 0,
     pipeline_id => $pipeline_id,
     %{ $in{settings} || {} },
+    cmd => $cmd,
 );
 
 print_header();
