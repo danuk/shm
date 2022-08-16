@@ -8,6 +8,7 @@ use Core::Utils qw(
     switch_user
     is_email
     passgen
+    now
 );
 use Core::Const;
 
@@ -217,21 +218,27 @@ sub auth {
         @_,
     );
 
-    my ( $user ) = $self->_list( where => { login => $args{login} } );
-    return undef unless $user;
-
-    return undef if $user->{block};
+    return undef unless $args{login} || $args{password};
 
     my $password = $self->crypt_password(
         salt => $args{login},
         password => $args{password},
     );
 
-    if ( $user->{password} ne $password ) {
-        return undef;
-    }
+    my ( $user_row ) = $self->_list(
+        where => {
+            login => $args{login},
+            password => $password,
+        }
+    );
+    return undef unless $user_row;
 
-    return get_service('user', _id => $user->{user_id} );
+    my $user = $self->id( $user_row->{user_id} );
+    return undef if $user->is_blocked;
+
+    $user->set( last_login => now );
+
+    return $user;
 }
 
 sub passwd {
