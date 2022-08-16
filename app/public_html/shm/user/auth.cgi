@@ -6,7 +6,6 @@ use v5.14;
 my $cgi = CGI->new;
 
 use CGI::Carp qw(fatalsToBrowser);
-use Session;
 
 use Core::Utils qw(
     parse_args
@@ -25,9 +24,9 @@ if ( $in{session_id} ) {
 
 use Core::System::ServiceManager qw( get_service );
 
-my $session = validate_session();
-if ($session) {
-    print_json( { status => 0, msg => 'Already authorized', session_id => $session->session_id(), user_id => $session->get('user_id')   } );
+my $session = get_service('sessions');
+if ($session->id( $in{session_id} ) ) {
+    print_json( { status => 0, msg => 'Already authorized', session_id => $session->id, user_id => $session->user_id } );
 	exit 0;
 }
 
@@ -49,12 +48,11 @@ if ( $in{admin} && !$user->is_admin ) {
     exit 0;
 }
 
-my $session = Session->new( undef, %{ get_service('config')->file->{session} } );
-my $session_id = $session->session_id();
+$session->add(
+    user_id => $user->id,
+);
 
-$session->set( user_id => $user->id() );
-$session->set( ip => $ENV{REMOTE_ADDR} );
-$session->set( time => time() );
+my $session_id = $session->id;
 
 print_header( cookie => create_cookie('session_id',$session_id) );
 print_json( { status => 200, msg => 'Successfully', session_id => $session_id, user_id => $user->id() } );

@@ -9,7 +9,6 @@ use CGI::Carp qw(fatalsToBrowser);
 
 use CGI;
 use CGI::Cookie;
-use Session;
 use JSON qw//;
 use MIME::Base64;
 
@@ -75,12 +74,11 @@ sub new {
         $ENV{SHM_TEST} = 1;
     }
 
-    if ( $args->{skip_check_auth} ) {
-        db_connect;
-        return get_service('user')
-    }
+    db_connect;
 
-    if ( $args->{user_id} ) {
+    if ( $args->{skip_check_auth} ) {
+        return get_service('user')
+    } elsif ( $args->{user_id} ) {
         $user_id = $args->{user_id};
     } elsif ( $ENV{HTTP_AUTHORIZATION} ) {
         my $auth = $ENV{HTTP_AUTHORIZATION};
@@ -93,7 +91,7 @@ sub new {
     } elsif ( !$args->{skip_check_auth} ) {
         my $session = validate_session( session_id => $headers{HTTP_SESSION_ID} );
         print_not_authorized() unless $session;
-        $user_id = $session->get('user_id');
+        $user_id = $session->user_id;
     }
 
     unless ( $args->{skip_check_auth} || $user_id ) {
@@ -101,8 +99,6 @@ sub new {
         print_json( { status => 400, msg => 'User not found' } );
         exit 0;
     }
-
-    db_connect;
 
     # Store current user_id to local config
     switch_user( $user_id );
@@ -163,13 +159,10 @@ sub validate_session {
         $session_id = $cookies{session_id}->value;
     }
 
-    my $session = new Session $session_id, %{ get_service('config')->file->{session} };
-    return undef if not defined($session);
-
-    #my $ip = $session->get('ip');
-    #return undef if $ip ne $ENV{REMOTE_ADDR};
-
-    $session->set(time => time());
+    my $session = get_service('sessions')->validate(
+        session_id => $session_id,
+    );
+    return undef unless $session;
 
     return $session;
 }

@@ -1,5 +1,4 @@
 requires 'CGI';
-requires 'Session';
 requires 'MIME::Lite';
 requires 'Time::DaysInMonth';
 requires 'Date::Calc';

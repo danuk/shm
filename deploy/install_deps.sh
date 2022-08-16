@@ -1,6 +1,5 @@
 yes | cpan -T -i \
  'CGI' \
- 'Session' \
  'MIME::Lite' \
  'Time::DaysInMonth' \
  'Date::Calc' \

@@ -346,4 +346,14 @@ CREATE TABLE `config` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `sessions`;
+CREATE TABLE `sessions` (
+  `id` char(32) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `settings` json DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 COMMIT;
