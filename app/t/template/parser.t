@@ -12,7 +12,7 @@ use Core::System::ServiceManager qw( get_service );
 SHM->new( user_id => 40092 );
 
 subtest 'Check template 1' => sub {
-    my $t = get_service('template', _id => 1);
+    my $t = get_service('template', _id => 'web_tariff_create');
 
     my $ret = $t->parse( usi => 99 );
 
@@ -33,7 +33,7 @@ subtest 'Check template 1' => sub {
 };
 
 subtest 'Check template 3' => sub {
-    my $t = get_service('template', _id => 3);
+    my $t = get_service('template', _id => 'forecast');
 
     my $ret = $t->parse();
 
@@ -59,4 +59,5 @@ subtest 'Check template 3' => sub {
 Это письмо сформировано автоматически. Если оно попало к Вам по ошибке,
 пожалуйста, сообщите об этом нам: mail@domain.ru';
 };
+
 done_testing();

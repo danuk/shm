@@ -94,11 +94,11 @@ my $routes = {
         required => ['service_id'],
     },
 },
-'/template/:name' => {
+'/template/:id' => {
     GET => {
         controller => 'Template',
-        method => 'template_by_name_for_api',
-        required => ['name'],
+        method => 'list_for_api',
+        required => ['id'],
     },
 },
 
@@ -318,6 +318,7 @@ my $routes = {
 '/admin/template' => {
     GET => {
         controller => 'Template',
+        method => 'list',
     },
     PUT => {
         controller => 'Template',

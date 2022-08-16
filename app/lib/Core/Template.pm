@@ -12,10 +12,6 @@ sub structure {
         id => {
             type => 'key',
         },
-        name => {
-            type => 'text',
-            required => 1,
-        },
         title => {
             type => 'text',
             required => 1,
@@ -25,38 +21,6 @@ sub structure {
         },
         settings => { type => 'json', value => undef },
     }
-}
-
-sub template_by_name {
-    my $self = shift;
-    my %args = (
-        name => undef,
-        @_,
-    );
-
-    my ( $ret ) = $self->_list(
-        where => {
-            name => $args{name},
-        },
-    );
-
-    unless ( $ret ) {
-        logger->warning("Template not found");
-        get_service('report')->add_error('Template not found');
-        return undef;
-    }
-
-    return $self->id( $ret->{id} );
-}
-
-sub template_by_name_for_api {
-    my $self = shift;
-    my %args = (
-        name => undef,
-        @_,
-    );
-
-    return $self->template_by_name( name => delete $args{name} )->parse( %args );
 }
 
 sub parse {
@@ -92,6 +56,24 @@ sub parse {
     }
 
     return $result;
+}
+
+sub list_for_api {
+    my $self = shift;
+    my %args = (
+        id => undef,
+        @_,
+    );
+
+    my $template = $self->id( delete $args{id} );
+
+    unless ( $template ) {
+        logger->warning("Template not found");
+        get_service('report')->add_error('Template not found');
+        return undef;
+    }
+
+    return scalar $template->parse( %args );
 }
 
 1;

@@ -61,7 +61,7 @@ sub send {
                 }
             }
         } elsif ( $settings{template_name} ) {
-            $template = get_service('template')->template_by_name( name => $settings{template_name} );
+            $template = get_service('template')->id( $settings{template_name} );
             unless ( $template ) {
                 return SUCCESS, {
                     error => "template with name `$settings{template_name}` not found",
