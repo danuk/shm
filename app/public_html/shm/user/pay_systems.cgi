@@ -5,8 +5,8 @@ use v5.14;
 use SHM qw(:all);
 my $user = SHM->new();
 
-my $config = get_service("config");
-my $list = $config->data_by_name(key => 'pay_systems')->{pay_systems};
+my $config = get_service("config", _id => 'pay_systems');
+my $list = $config ? $config->get_data : {};
 
 my @ret;
 

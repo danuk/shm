@@ -10,15 +10,14 @@ my $user = SHM->new( skip_check_auth => 1 );
 
 our %vars = parse_args();
 
-my $config = get_service('config')->id('pay_systems');
+my $config = get_service('config', _id => 'pay_systems');
 
 unless ( $config ) {
     print_json( { status => 400, msg => 'Error: config pay_systems->yoomoney->secret not exists' } );
     exit 0;
 }
 
-my $secret = $config->get->{value}->{yoomoney}->{secret};
-
+my $secret = $config->get_data->{yoomoney}->{secret};
 
 my $digest = sha1_hex( join('&',
 	@vars{ qw/notification_type operation_id amount currency datetime sender codepro/ },

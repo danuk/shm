@@ -344,6 +344,13 @@ my $routes = {
         controller => 'Config',
     },
 },
+'/admin/config/:key' => {
+    GET => {
+        controller => 'Config',
+        method => 'get_data',
+        required => ['key'],
+    },
+},
 '/admin/console' => {
 
 

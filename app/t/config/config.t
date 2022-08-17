@@ -15,6 +15,7 @@ use Core::System::ServiceManager qw( get_service );
 SHM->new( user_id => 40092 );
 
 my $config = get_service("config");
+
 my $data = $config->data_by_name;
 
 is( $data->{company}->{name}, 'My Company LTD', 'Check company name' );
@@ -28,10 +29,9 @@ my $key = $config->add(
 is( $key, 'new_param');
 
 my $test = get_service("config", _id => 'mail');
-is( $test->get->{value}->{from}, 'mail@domain.ru' );
+is( $test->get_data->{from}, 'mail@domain.ru' );
 
 $test->set( value => { "QAZ" => 1} );
-is( $test->get->{value}->{"QAZ"}, 1 );
-
+is( $test->get_data->{"QAZ"}, 1 );
 
 done_testing();

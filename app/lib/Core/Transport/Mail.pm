@@ -28,18 +28,19 @@ sub send {
         %{ $task->event->{settings} || {} },
     );
 
-    my $config = get_service("config")->data_by_name;
+    my $config = get_service("config", _id => 'mail');
+    $config = $config ? $config->get_data : {};
 
-    $settings{from} //= $config->{mail}->{from};
+    $settings{from} //= $config->{from};
     unless ( $settings{from} ) {
         return SUCCESS, {
             error => "From undefined",
         }
     }
 
-    $settings{from_name} //= $config->{mail}->{from_name};
+    $settings{from_name} //= $config->{from_name};
 
-    $settings{subject} //= $config->{mail}->{subject};
+    $settings{subject} //= $config->{subject};
 
     $settings{to} //= get_service('user')->emails || delete $settings{bcc};
     unless ( $settings{to} ) {

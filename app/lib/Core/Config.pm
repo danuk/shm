@@ -94,6 +94,31 @@ sub delete {
     return $self->SUPER::delete( %args );
 }
 
+sub get_data {
+    my $self = shift;
+    my %args = (
+        key => undef,
+        @_,
+    );
+
+    my $obj = $self;
+    if ( $args{key} ) {
+        unless ( $obj = $self->id( $args{key} ) ) {
+            logger->warning("Config not found");
+            get_service('report')->add_error('Config not found');
+            return undef;
+        }
+    }
+
+    my $config = $obj->list(
+        where => {
+            key => $obj->id,
+        }
+    );
+
+    return $config->{ $obj->id }->{value};
+}
+
 sub list_for_api {
     my $self = shift;
     my %args = (
