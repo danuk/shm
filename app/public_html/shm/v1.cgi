@@ -233,12 +233,18 @@ my $routes = {
         required => ['user_id','user_service_id'],
     },
 },
-
 '/admin/user/service/spool' => {
     GET => {
         controller => 'USObject',
         method => 'api_spool_commands',
         required => ['id'],
+    },
+},
+'/admin/user/session' => {
+    PUT => {
+        controller => 'User',
+        method => 'gen_session',
+        required => ['user_id'],
     },
 },
 '/admin/server' => {
