@@ -111,14 +111,23 @@ sub delete {
     my $self = shift;
     my %args = @_;
 
-    my @usi = get_service('UserService')->_list(
-        where => {
-            service_id => $self->id,
-        },
-    );
+    if ( my ($usi) = get_service('UserService')->_list(
+            where => {
+                service_id => $self->id,
+            },
+            limit => 1,
+        )) {
+        get_service('report')->add_error("Service is used in user_service: " . $usi->{user_service_id});
+        return undef;
+    }
 
-    if ( @usi ) {
-        get_service('report')->add_error("Service used");
+    if ( my ($wd) = get_service('Withdraw')->_list(
+            where => {
+                service_id => $self->id,
+            },
+            limit => 1,
+        )) {
+        get_service('report')->add_error("Service is used in withdraw: " . $wd->{withdraw_id});
         return undef;
     }
 
