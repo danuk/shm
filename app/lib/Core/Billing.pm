@@ -111,6 +111,8 @@ sub process_service {
 
     if ( $event eq EVENT_BLOCK ) {
         return block( $self );
+    } elsif ( $event eq EVENT_REMOVE ) {
+        return remove( $self );
     }
 
     unless ( $self->get_expire ) {
@@ -311,13 +313,14 @@ sub block {
     my $self = shift;
     return 0 unless $self->get_status eq STATUS_ACTIVE;
 
-    money_back( $self );
-
     return EVENT_BLOCK;
 }
 
 sub remove {
     my $self = shift;
+
+    money_back( $self );
+
     return EVENT_REMOVE;
 }
 

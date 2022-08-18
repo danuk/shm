@@ -103,12 +103,9 @@ sub add {
 sub can_delete {
     my $self = shift;
 
-    return 1 if $self->get_status eq STATUS_ACTIVE && $self->service->is_allow_delete_active;
-
-    return 1 if $self->get_status eq STATUS_BLOCK ||
+    return 1 if $self->get_status eq STATUS_ACTIVE ||
+                $self->get_status eq STATUS_BLOCK ||
                 $self->get_status eq STATUS_WAIT_FOR_PAY;
-
-    get_service('report')->add_error( "Can't delete service with status: " . $self->get_status );
     return 0;
 }
 
@@ -116,24 +113,13 @@ sub delete {
     my $self = shift;
     my %args = @_;
 
-    for ( $self->children ) {
-        $self->id( $_->{user_service_id} )->delete();
+    unless ( $self->can_delete ) {
+        get_service('report')->add_error( "Can't delete service with status: " . $self->get_status );
+        return undef;
     }
 
-    if ( $self->get_status eq STATUS_REMOVED || $self->get_status eq STATUS_WAIT_FOR_PAY ) {
-        if ( my $wd = $self->withdraw ) {
-            if ( $wd->unpaid ) {
-                $self->set( withdraw_id => undef );
-                $wd->delete;
-            }
-        }
-        $self->SUPER::delete() if $self->get_status eq STATUS_WAIT_FOR_PAY;
-        return ();
-    } elsif ( $self->can_delete() ) {
-        $self->event( EVENT_REMOVE );
-    } else {
-        logger->warning( sprintf('User service cannot be deleted: %d is %s', $self->id, $self->get_status ) );
-    }
+    $self->make_expired;
+    $self->touch( EVENT_REMOVE );
 
     return scalar $self->get;
 }
@@ -466,7 +452,12 @@ sub status {
         $self->set( status => $status );
 
         if ( $status eq STATUS_REMOVED ) {
-            $self->delete();
+            if ( my $wd = $self->withdraw ) {
+                if ( $wd->unpaid ) {
+                    $self->set( withdraw_id => undef );
+                    $wd->delete;
+                }
+            }
         }
 
         if ( my $parent = $self->parent ) {
@@ -485,12 +476,18 @@ sub service {
     return get_service('service', _id => $self->get_service_id);
 }
 
+sub make_expired {
+    my $self = shift;
+
+    $self->set( expire => now ) if $self->get_expire && $self->get_expire gt now;
+}
+
 sub stop {
     my $self = shift;
 
     return scalar $self->get if $self->get_status ne STATUS_ACTIVE;
 
-    $self->set( expire => now ) if $self->get_expire && $self->get_expire gt now;
+    $self->make_expired;
     $self->touch( EVENT_BLOCK );
 
     return scalar $self->get;
