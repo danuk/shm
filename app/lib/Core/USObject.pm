@@ -487,7 +487,6 @@ sub stop {
 
     return scalar $self->get if $self->get_status ne STATUS_ACTIVE;
 
-    $self->make_expired;
     $self->touch( EVENT_BLOCK );
 
     return scalar $self->get;
