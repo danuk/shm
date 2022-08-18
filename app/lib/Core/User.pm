@@ -464,7 +464,9 @@ sub profile {
 
     my $profile = get_service("profile");
     my ( $item ) = $profile->_list(
-        user_id => $self->id,
+        where => {
+            user_id => $self->id,
+        },
         limit => 1,
     );
 
