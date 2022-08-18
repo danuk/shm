@@ -51,6 +51,7 @@ my $routes = {
     },
     DELETE => {
         controller => 'USObject',
+        required => ['user_id','user_service_id'],
     },
 },
 '/user/service/stop' => {
@@ -111,9 +112,11 @@ my $routes = {
     },
     POST => {
         controller => 'Service',
+        required => ['service_id'],
     },
     DELETE => {
         controller => 'Service',
+        required => ['service_id'],
     },
 },
 '/admin/service/order' => {
@@ -210,9 +213,11 @@ my $routes = {
     },
     POST => {
         controller => 'USObject',
+        required => ['user_id', 'user_service_id'],
     },
     DELETE => {
         controller => 'USObject',
+        required => ['user_id', 'user_service_id'],
     },
 },
 '/admin/user/service/withdraw' => {
@@ -224,6 +229,7 @@ my $routes = {
     },
     POST => {
         controller => 'Withdraw',
+        required => ['user_id', 'withdraw_id'],
     },
 },
 '/admin/user/service/stop' => {
