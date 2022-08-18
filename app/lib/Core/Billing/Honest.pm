@@ -104,7 +104,7 @@ sub calc_total_by_date_range {
     }
 
     # calc first month
-    if ( $wd{end_date} lt end_of_month( $wd{withdraw_date} ) ) {
+    if ( $wd{end_date} le end_of_month( $wd{withdraw_date} ) ) {
         # Услуга начинается и заканчивается в одном месяце
         my $data = calc_month_cost( cost => $wd{cost}, from_date => $wd{withdraw_date}, to_date => $wd{end_date} );
         $total = $data->{total};

@@ -153,7 +153,7 @@ sub has_expired {
     my $self = shift;
 
     return 0 unless $self->get_expire;
-    return int( $self->get_expire lt now );
+    return int( $self->get_expire le now );
 }
 
 sub parent_has_expired {
