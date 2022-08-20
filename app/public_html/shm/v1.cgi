@@ -102,6 +102,39 @@ my $routes = {
         required => ['id'],
     },
 },
+'/storage/manage' => {
+    GET => {
+        controller => 'Storage',
+        method => 'list',
+    },
+},
+'/storage/manage/:name' => {
+    GET => {
+        controller => 'Storage',
+        method => 'list_for_api',
+        required => ['name'],
+    },
+    PUT => {
+        controller => 'Storage',
+        method => 'add',
+        required => ['name','PUTDATA'],
+    },
+    DELETE => {
+        controller => 'Storage',
+        method => 'delete',
+        required => ['name'],
+    },
+},
+'/storage/download/:name' => {
+    GET => {
+        controller => 'Storage',
+        method => 'download',
+        required => ['name'],
+        args => {
+            format => 'plain',
+        },
+    },
+},
 
 '/admin/service' => {
     GET => {

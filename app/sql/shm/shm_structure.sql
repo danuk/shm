@@ -354,4 +354,15 @@ CREATE TABLE IF NOT EXISTS `sessions` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS `storage` (
+  `user_id` int(11) NOT NULL,
+  `name` char(32) NOT NULL,
+  `user_service_id` int(11) DEFAULT NULL,
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `data` text DEFAULT NULL, -- ~64kb
+  `settings` json DEFAULT NULL,
+  FOREIGN KEY (`user_service_id`) REFERENCES `user_services` (`user_service_id`),
+  PRIMARY KEY (`user_id`,`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+
 COMMIT;

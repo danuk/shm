@@ -271,9 +271,16 @@ sub passwd {
 
 sub gen_session {
     my $self = shift;
+    my %args = (
+        usi => undef,
+        @_,
+    );
 
     my $session_id = get_service('sessions')->add(
         user_id => $self->id,
+        settings => {
+            $args{usi} ? ( usi => $args{usi} ) : (),
+        },
     );
 
     return {
