@@ -29,6 +29,7 @@ sub send {
     my $cmd = $parser->parse(
         data => $task->event->{settings}->{cmd},
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
+        task => $task->{res},
     );
     my $stdin_data = $parser->parse(
         data => ( $task->event->{settings}->{stdin} || $server{settings}->{payload} ),

@@ -289,6 +289,7 @@ sub api_resume {
 
     $self->set(
         status => TASK_NEW,
+        delayed => 0,
     );
     return scalar $self->get;
 }

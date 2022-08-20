@@ -40,7 +40,7 @@ sub add {
         @_,
     );
 
-    my $session_id = $self->SUPER::add( %args );
+    my $session_id = $self->SUPER::_add( %args );
     return undef unless $session_id;
 
     $self->res->{id} = $session_id;
