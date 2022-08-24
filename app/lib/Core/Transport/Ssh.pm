@@ -24,23 +24,14 @@ sub send {
         }
     }
 
-    my $parser = get_service('template');
-
-    my $cmd = $parser->parse(
-        data => $task->event->{settings}->{cmd},
-        $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
-        task => $task->{res},
-    );
-    my $stdin_data = $parser->parse(
-        data => ( $task->event->{settings}->{stdin} || $server{settings}->{payload} ),
-    );
-
     return $self->exec(
         %{ $server{settings} || () },
         host => $server{host},
         key_id => $task->server->key_id,
-        cmd => $cmd,
-        stdin_data => $stdin_data,
+        cmd => $task->event->{settings}->{cmd},
+        $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
+        stdin => $task->event->{settings}->{stdin} || $server{settings}->{stdin},
+        $task ? ( task => $task->{res} ) : (),
     );
 }
 
@@ -52,13 +43,42 @@ sub exec {
         key_id => undef,
         timeout => 10,
         cmd => undef,
-        stdin_data => undef,
+        template_id => undef,
+        usi => undef,
+        stdin => undef,
+        task => undef,
         wait => 1,
         pipeline_id => undef,
         shell => $ENV{SHM_TEST} ? 'echo' : 'bash -e -v -c',
         proxy_jump => undef,
         @_,
     );
+
+    if ( $args{template_id} ) {
+        if ( my $template = get_service('template', _id => $args{template_id} ) ) {
+            $args{cmd} //= 'bash';
+            $args{stdin} = $template->parse( %args );
+        }
+        else {
+            get_service('report')->add_error('Template not found: ' . $args{template_id});
+            return undef;
+        }
+    } elsif ( $args{cmd} ) {
+        my $parser = get_service('template');
+        $args{cmd} = $parser->parse(
+            data => $args{cmd},
+            %args,
+        );
+
+        if ( $args{stdin} ) {
+            $args{stdin} = $parser->parse(
+                data => $args{stdin},
+                %args,
+            );
+            $args{stdin} ||= '*STDIN_EMPTY*';
+        }
+    }
+
 
     my $fork_mode = 0;
     my ($pid, $ret_code, $child_dbh);
@@ -137,16 +157,16 @@ sub exec {
             my $out;
             my ($in, $rout, undef, $ssh_pid) = $ssh->open_ex(
                 {
-                    stdin_pipe => ( $args{stdin_data} ? 1 : 0 ),
+                    stdin_pipe => ( $args{stdin} ? 1 : 0 ),
                     stdout_pipe => 1,
                     stderr_to_stdout => 1,
-                    tty => 1,
+                    tty => ( $args{stdin} ? 0 : 1 ),
                 },
                 @commands,
             ) or die "pipe_out method failed: " . $ssh->error;
 
-            if ( $args{stdin_data} ) {
-                print $in $args{stdin_data};
+            if ( $args{stdin} ) {
+                print $in $args{stdin};
                 close $in;
             }
 

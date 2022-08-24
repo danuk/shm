@@ -138,7 +138,7 @@ INSERT INTO `pays_history` VALUES
 (default,40092,1,455.00,'2016-01-04 20:33:35','');
 
 INSERT INTO `servers` VALUES
-(1,1,'test server (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,1,'{\"cmd\": \"bash < {{ tpl.read(\\\"bash_script_example\\\") }}\", \"key_id\": 1, \"host_name\": \"host1.domain.ru\"}'),
+(1,1,'test server (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,1,'{\"cmd\": \"\", \"key_id\": 1, \"host_name\": \"host1.domain.ru\", \"template_id\": \"bash_script_example\"}'),
 (25,5,'mail-1','mail','127.0.0.1:25',NULL,100,0,0,1,NULL);
 
 INSERT INTO `servers_groups` VALUES
@@ -288,7 +288,7 @@ INSERT INTO `templates` VALUES
 ('web_tariff_create','Создание тарифа хостинга','Здравствуйте {{ user.full_name }}\n\nВы зарегистрировали новую услугу: {{ us.name }}\n\nДата истечения услуги: {{ us.expire }}\n\nСтоимость услуги: {{ us.service.cost }} руб.\n\n{{ IF us.child_by_category(\'web\') }}\nХостинг сайтов:\nХост: {{ us.child_by_category(\'web\').server.settings.host_name }}\nЛогин: {{ us.child_by_category(\'web\').settings.login }}\nПароль: {{ us.child_by_category(\'web\').settings.password }}\n{{ END }}\n\nЖелаем успехов.',NULL),
 ('forecast','Прогноз оплаты','Уважаемый {{ user.full_name }}\n\nУведомляем Вас о сроках действия услуг:\n\n{{ FOR item IN user.pays.forecast.items }}\n- Услуга: {{ item.name }}\n  Стоимость: {{ item.total }} руб.\n  Истекает: {{ item.expire }}\n{{ END }}\n\n{{ IF user.pays.forecast.dept }}\nПогашение задолженности: {{ user.pays.forecast.dept }} руб.\n{{ END }}\n\nИтого к оплате: {{ user.pays.forecast.total }} руб.\n\nУслуги, которые не будут оплачены до срока их истечения, будут приостановлены.\n\nПодробную информацию по Вашим услугам Вы можете посмотреть в вашем личном кабинете: {{ config.api.url }}\n\nЭто письмо сформировано автоматически. Если оно попало к Вам по ошибке,\nпожалуйста, сообщите об этом нам: {{ config.mail.from }}',NULL),
 ('user_password_reset','Восстановление пароля','Уважаемый клиент.\n\nВаш новый пароль: {{ task.settings.new_password }}','{\"subject\": \"SHM - Восстановление пароля\"}'),
-('bash_script_example','My test bash script','#!/bin/bash\n\necho \"Hello world!\"\necho \"User id: {{ user.id }}\"',NULL),
+('bash_script_example','My test bash script','#!/bin/bash\n\nset -v\n\nUSER_ID=\"{{ user.id }}\"\nUSI=\"{{ us.id }}\"\nEVENT=\"{{ task.event.name }}\"\nSESSION_ID=\"{{ user.gen_session.id }}\"',NULL),
 ('yoomoney_template','Код платежной формы ЮMoney','<iframe src=\"https://yoomoney.ru/quickpay/shop-widget?writer=seller&targets=%D0%9E%D0%BF%D0%BB%D0%B0%D1%82%D0%B0%20%D0%BF%D0%BE%20%D0%B4%D0%BE%D0%B3%D0%BE%D0%B2%D0%BE%D1%80%D1%83%20{{ user.id }}&targets-hint=&default-sum=100&label={{ user.id }}&button-text=12&payment-type-choice=on&hint=&successURL=&quickpay=shop&account={{ config.pay_systems.yoomoney.account }}\" width=\"100%\" height=\"198\" frameborder=\"0\" allowtransparency=\"true\" scrolling=\"no\"></iframe>',NULL)
 ;
 

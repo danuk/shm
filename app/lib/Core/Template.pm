@@ -77,25 +77,4 @@ sub list_for_api {
     return scalar $template->parse( %args );
 }
 
-sub read {
-    my $self = shift;
-    my $name = shift;
-
-    unless ( $name ) {
-        get_service('report')->add_error('Template name is required');
-        return undef;
-    }
-
-    my $config_cli = get_service('config', _id => 'cli');
-    unless ( $config_cli ) {
-        get_service('report')->add_error('config.cli.url is required');
-        return undef;
-    }
-
-    return sprintf('<(curl -sH "session-id: %s" %s)',
-        get_service('user')->gen_session->{id},
-        $config_cli->get_data->{url} . "/shm/v1/template/$name?format=plain",
-    );
-}
-
 1;
