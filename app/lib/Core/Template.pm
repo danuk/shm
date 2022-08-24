@@ -14,7 +14,6 @@ sub structure {
         },
         title => {
             type => 'text',
-            required => 1,
         },
         data => {
             type => 'text',
