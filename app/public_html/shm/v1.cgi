@@ -169,16 +169,16 @@ my $routes = {
 
 '/admin/service/event' => {
     GET => {
-        controller => 'Event',
+        controller => 'Events',
     },
     PUT => {
-        controller => 'Event',
+        controller => 'Events',
     },
     POST => {
-        controller => 'Event',
+        controller => 'Events',
     },
     DELETE => {
-        controller => 'Event',
+        controller => 'Events',
     },
 },
 
