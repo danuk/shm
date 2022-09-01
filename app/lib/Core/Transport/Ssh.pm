@@ -56,7 +56,7 @@ sub exec {
 
     if ( $args{template_id} ) {
         if ( my $template = get_service('template', _id => $args{template_id} ) ) {
-            $args{cmd} //= 'bash';
+            $args{cmd} ||= 'bash';
             $args{stdin} = $template->parse( %args );
         }
         else {
