@@ -7,6 +7,8 @@ use Core::Utils qw( now );
 
 sub table { return 'sessions' };
 
+sub table_allow_insert_key { return 1 };
+
 sub structure {
     return {
         id => {
@@ -36,11 +38,11 @@ sub add {
     my $self = shift;
     my %args = (
         id => _generate_id(),
-        user_id => undef,
+        user_id => $self->SUPER::user_id,
         @_,
     );
 
-    my $session_id = $self->SUPER::_add( %args );
+    my $session_id = $self->SUPER::add( %args );
     return undef unless $session_id;
 
     $self->res->{id} = $session_id;
