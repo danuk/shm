@@ -20,6 +20,7 @@ my (undef, $res ) = $ssh->exec(
     key_id => 1,
     wait => $in{wait} || 0,
     pipeline_id => $pipeline_id,
+    event_name => 'test',
     %{ $in{settings} || {} },
 );
 

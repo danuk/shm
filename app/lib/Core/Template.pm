@@ -25,6 +25,7 @@ sub parse {
         usi => undef,
         data => undef,
         task => undef,
+        event_name => undef,
         @_,
     );
 
@@ -36,6 +37,7 @@ sub parse {
         $args{task} ? ( task => $args{task} ) : (),
         config => get_service('config')->data_by_name,
         tpl => get_service('template'),
+        $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
     };
 
     my $template = Template->new({

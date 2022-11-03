@@ -47,6 +47,7 @@ sub exec {
         usi => undef,
         stdin => undef,
         task => undef,
+        event_name => undef,
         wait => 1,
         pipeline_id => undef,
         shell => $ENV{SHM_TEST} ? 'echo' : 'bash -e -v -c',
@@ -54,10 +55,18 @@ sub exec {
         @_,
     );
 
+    my $event_name = $args{event_name};
+    if ( $args{taks} && $args{task}->event ) {
+        $event_name = $args{task}->event->{name};
+    }
+
     if ( $args{template_id} ) {
         if ( my $template = get_service('template', _id => $args{template_id} ) ) {
             $args{cmd} ||= 'bash';
-            $args{stdin} = $template->parse( %args );
+            $args{stdin} = $template->parse(
+                %args,
+                event_name => $event_name,
+            );
         }
         else {
             get_service('report')->add_error('Template not found: ' . $args{template_id});
