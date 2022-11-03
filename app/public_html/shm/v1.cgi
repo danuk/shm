@@ -375,6 +375,27 @@ my $routes = {
         controller => 'Template',
     },
 },
+'/admin/template/:id' => {
+    GET => {
+        controller => 'Template',
+        required => ['id'],
+        args => {
+            format => 'plain',
+        },
+    },
+    PUT => {
+        controller => 'Template',
+        required => ['id','PUTDATA'],
+    },
+    POST => {
+        controller => 'Template',
+        required => ['id','POSTDATA'],
+    },
+    DELETE => {
+        controller => 'Template',
+        required => ['id'],
+    },
+},
 '/admin/config' => {
     GET => {
         controller => 'Config',
@@ -499,7 +520,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         }
         else {
             $headers{status} = 400;
-            $info{error} = "Can't add new object";
+            $info{error} = "Can't add new object. Perhaps it already exists?";
         }
     } elsif ( $ENV{REQUEST_METHOD} eq 'POST' ) {
         if ( $user->id ) {
@@ -512,7 +533,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
                 }
             } else {
                 $headers{status} = 404;
-                $info{error} = "Service not found";
+                $info{error} = "Can't get service. Check the ID.";
             }
         } elsif ( $service->can( $method ) ) {
             push @data, $service->$method( %args );

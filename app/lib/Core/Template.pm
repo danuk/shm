@@ -73,4 +73,28 @@ sub list_for_api {
     return scalar $template->parse( %args );
 }
 
+sub add {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    return $self->SUPER::add(
+        %args,
+        data => $args{data} || delete $args{PUTDATA},
+    );
+}
+
+sub set {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    return $self->SUPER::set(
+        %args,
+        data => $args{data} || delete $args{POSTDATA},
+    );
+}
+
 1;
