@@ -12,9 +12,6 @@ sub structure {
         id => {
             type => 'key',
         },
-        title => {
-            type => 'text',
-        },
         data => {
             type => 'text',
         },

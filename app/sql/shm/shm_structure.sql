@@ -312,7 +312,6 @@ CREATE TABLE `identities` (
 DROP TABLE IF EXISTS `templates`;
 CREATE TABLE `templates` (
   `id` char(32) NOT NULL,
-  `title` char(64) DEFAULT NULL,
   `data` text DEFAULT NULL,
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
