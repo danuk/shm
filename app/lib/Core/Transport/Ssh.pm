@@ -221,10 +221,44 @@ sub exec {
             port => $args{port},
             key_id => $args{key_id},
         },
-        command => $args{cmd},
+        cmd => $args{cmd},
         ret_code => $ret_code,
         pipeline_id => $args{pipeline_id},
     };
 }
+
+sub ssh_test {
+    my $self = shift;
+    my %args = (
+        host => undef,
+        key_id => undef,
+        cmd => 'uname -a',
+        event_name => 'test',
+        pipeline_id => get_service('console')->new_pipe,
+        wait => 0,
+        @_,
+    );
+
+    my (undef, $res ) = $self->exec( %args );
+    return $res;
+}
+
+sub ssh_init {
+    my $self = shift;
+    my %args = (
+        host => undef,
+        key_id => undef,
+        server_id => undef,
+        template_id => undef,
+        event_name => 'init',
+        pipeline_id => get_service('console')->new_pipe,
+        wait => 0,
+        @_,
+    );
+
+    my (undef, $res ) = $self->exec( %args );
+    return $res;
+}
+
 
 1;

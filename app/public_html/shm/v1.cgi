@@ -422,12 +422,29 @@ my $routes = {
 
 
 },
-'/admin/test/ssh' => {
-    POST => {
-
+'/admin/transport/ssh/test' => {
+    PUT => {
+        controller => 'Transport::Ssh',
+        method => 'ssh_test',
+        required => [
+            'host',
+            'key_id',
+        ],
     },
 },
-'/admin/test/mail' => {
+'/admin/transport/ssh/init' => {
+    PUT => {
+        controller => 'Transport::Ssh',
+        method => 'ssh_init',
+        required => [
+            'host',
+            'key_id',
+            'server_id',
+            'template_id',
+        ],
+    },
+},
+'/admin/transport/mail/test' => {
     POST => {
 
     },
