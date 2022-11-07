@@ -32,7 +32,7 @@ sub send {
         cmd => $task->event->{settings}->{cmd},
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
         stdin => $task->event->{settings}->{stdin} || $server{settings}->{stdin},
-        $task ? ( task => $task->{res} ) : (),
+        $task ? ( task => $task ) : (),
     );
 }
 
@@ -58,7 +58,7 @@ sub exec {
     );
 
     my $event_name = $args{event_name};
-    if ( $args{taks} && $args{task}->event ) {
+    if ( $args{task} && $args{task}->event ) {
         $event_name = $args{task}->event->{name};
     }
 
