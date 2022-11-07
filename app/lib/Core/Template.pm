@@ -25,6 +25,7 @@ sub parse {
         usi => undef,
         data => undef,
         task => undef,
+        server_id => undef,
         event_name => undef,
         @_,
     );
@@ -35,6 +36,7 @@ sub parse {
         user => get_service('user'),
         $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : (),
         $args{task} ? ( task => $args{task} ) : (),
+        $args{server_id} ? ( server => get_service('server', _id => $args{server_id}) ) : (),
         config => get_service('config')->data_by_name,
         tpl => get_service('template'),
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
