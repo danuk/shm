@@ -586,6 +586,14 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         for ( @data ) {
             print $_;
         }
+    } elsif ( $args{format} eq 'other' ) {
+        print_header( %headers,
+            type => 'application/octet-stream',
+            $args{filename} ? ('Content-Disposition' => "attachment; filename=$args{filename}") : (),
+        );
+        for ( @data ) {
+            print $_;
+        }
     } else {
         print_header( %headers );
         print_json({
