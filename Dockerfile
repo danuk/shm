@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     openssh-client \
     sudo \
     gcc \
+    qrencode \
     make
 
 COPY deploy /app/deploy

@@ -594,6 +594,12 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         for ( @data ) {
             print $_;
         }
+    } elsif ( $args{format} eq 'qrcode' ) {
+        print_header( %headers,
+            type => 'image/svg+xml',
+        );
+        my $data = join('', @data);
+        system("echo \"$data\" | qrencode -t svg");
     } else {
         print_header( %headers );
         print_json({
