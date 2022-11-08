@@ -45,6 +45,7 @@ sub add {
     my $session_id = $self->SUPER::add( %args );
     return undef unless $session_id;
 
+    $self->_delete_expired;
     $self->res->{id} = $session_id;
     return $session_id;
 }
@@ -59,6 +60,7 @@ sub validate {
     my $session = $self->id( $args{session_id} );
     return undef unless $session;
 
+    # do not update more than 3 minutes
     $self->_set(
         updated => now,
         where => {
