@@ -10,6 +10,7 @@ use Net::OpenSSH;
 use POSIX qw(:signal_h WNOHANG);
 use POSIX ":sys_wait_h";
 use POSIX 'setsid';
+use Core::Utils qw( html_escape );
 
 sub send {
     my $self = shift;
@@ -52,7 +53,7 @@ sub exec {
         event_name => undef,
         wait => 1,
         pipeline_id => undef,
-        shell => $ENV{SHM_TEST} ? 'echo' : 'bash -e -v -c',
+        shell => $ENV{SHM_TEST} ? 'echo' : 'bash -c',
         proxy_jump => undef,
         @_,
     );
@@ -132,7 +133,7 @@ sub exec {
         $host_msg .= " through $args{proxy_jump}" if $args{proxy_jump};
 
         logger->debug('SSH: ' . $host_msg );
-        $console->append( $host_msg . "... ");
+        $console->append( "<font color=yellow>$host_msg ... </font>" );
 
         my $key_file = get_service( 'Identities', _id => $args{key_id} )->private_key_file;
 
@@ -156,10 +157,10 @@ sub exec {
 
         if ( $ssh->error ) {
             logger->warning( $ssh->error );
-            $console->append("FAIL\n".$ssh->error."\n");
+            $console->append("<font color=red>FAIL\n".$ssh->error."</font>\n");
             $ret_code = -1;
         } else {
-            $console->append("SUCCESS\n\n");
+            $console->append("<font color=green>SUCCESS</font>\n\n");
 
             my @commands;
             push @commands, split('\s+', @args{shell} ) if $args{shell};
@@ -183,7 +184,7 @@ sub exec {
 
             while (<$rout>) {
                 $out .= $_;
-                $console->append( $_ );
+                $console->append( html_escape($_) );
             }
             close $rout;
 
@@ -192,10 +193,10 @@ sub exec {
         }
 
         if ( $ret_code ) {
-            $console->append("ERROR $ret_code\n\n");
+            $console->append('<font color="red">ERROR '. $ret_code .'</font>');
         }
         else {
-            $console->append("\n\nDONE\n\n");
+            $console->append('<font color="green">DONE</font>');
         }
 
         $console->set_eof();

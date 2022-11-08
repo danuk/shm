@@ -30,6 +30,7 @@ our @EXPORT_OK = qw(
     passgen
     shm_test_api
     is_email
+    html_escape
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -279,6 +280,24 @@ sub shm_test_api {
         json => decode_json( $response->decoded_content ),
         status_line => $response->status_line,
     );
+}
+
+sub html_escape {
+    my $data = shift;
+
+    my %map = (
+        "&" => "&amp;",
+        "<" => "&lt;",
+        ">" => "&gt;",
+        '"' => '&quot;',
+        "'" => '&#39;',
+        "/" => '&#x2F;',
+    );
+
+    my $chars = join '', keys %map;
+    $data =~s/([$chars])/$map{$1}/g;
+
+    return $data;
 }
 
 1;
