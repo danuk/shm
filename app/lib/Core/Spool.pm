@@ -117,7 +117,7 @@ sub process_one {
         }
     }
 
-    if ( !$task->{event}->{server_id} && $task->{event}->{server_gid} ) {
+    if ( !$task->{settings}->{server_id} && $task->{event}->{server_gid} ) {
         my @servers = get_service('ServerGroups', _id => $task->{event}->{server_gid} )->get_servers;
         unless ( @servers ) {
             logger->warning("Can't found servers for group: $task->{event}->{server_gid}");

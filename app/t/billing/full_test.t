@@ -74,7 +74,8 @@ subtest 'Check create service' => sub {
 
     $spool->process_all();
 
-    is( $us->child_by_category('mysql')->settings->{server_id}, 1 );
+    my $mysql_server_id = $us->child_by_category('mysql')->settings->{server_id};
+    is( $mysql_server_id == 1 || $mysql_server_id == 2, 1 );
     is( $us->get_status, STATUS_ACTIVE, 'Check status of service after the creation childs' );
 };
 
