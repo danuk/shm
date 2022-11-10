@@ -29,7 +29,7 @@ sub send {
         %{ $server{settings} || () },
         host => $server{host},
         key_id => $task->server->key_id,
-        server_id => $task->server_id,
+        server_id => $server{server_id},
         cmd => $task->event->{settings}->{cmd},
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
         stdin => $task->event->{settings}->{stdin} || $server{settings}->{stdin},
@@ -218,6 +218,7 @@ sub exec {
 
     return ( !defined($ret_code) ||  $ret_code == 0 ) ? SUCCESS : FAIL, {
         server => {
+            id => $args{server_id},
             host => $args{host},
             port => $args{port},
             key_id => $args{key_id},

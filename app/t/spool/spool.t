@@ -13,7 +13,9 @@ use Core::System::ServiceManager qw( get_service );
 
 SHM->new( user_id => 40092 );
 
-my $task1 = get_service('spool')->add(
+my $spool = get_service('spool');
+
+my %task1 = (
     event => {
         kind => 'user_service',
         name => 'update',
@@ -24,11 +26,12 @@ my $task1 = get_service('spool')->add(
     },
     settings => {
         user_service_id => 16,
-        server_id => 1,
+        server_id => 2,
     },
 );
+my $task1_id = $spool->add( %task1 );
 
-my $task2 = get_service('spool')->add(
+my %task2 = (
     event => {
         kind => 'user_service',
         name => 'update',
@@ -42,6 +45,7 @@ my $task2 = get_service('spool')->add(
         server_id => 162,
     },
 );
+my $task2_id = $spool->add( %task2 );
 
 my $task3 = get_service('task')->res({
     event => {
@@ -60,14 +64,14 @@ my $task3 = get_service('task')->res({
 
 is( $task3->{response}->{ret_code}, 0, 'Check make_task for category `test`' );
 
-my $spool = get_service('spool');
+$spool->process_all( );
 
-$spool->process_all();
-
+is( ($spool->list)[0]->{response}->{error}, 'Transport not exists');
+is( ($spool->list)[0]->{settings}->{server_id}, 162);
 is( ($spool->list)[0]->{status}, TASK_STUCK, "Server: 162 not exists" );
 
 my @ret = get_service('SpoolHistory')->list(
-    where => { spool_id => { -in => [ $task1, $task2 ] } },
+    where => { spool_id => { -in => [ $task1_id, $task2_id ] } },
     order => [ spool_id => 'ASC' ],
 );
 

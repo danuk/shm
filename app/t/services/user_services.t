@@ -82,4 +82,23 @@ is( get_service('us', _id => 101 )->domain->name, 'admin.danuk.ru' );
 my $tree = $us->id(17)->with('services')->get;
 is ( $tree->{17}->{services}->{config}->{ns}, 'ns1.biit.ru' );
 
+
+my $spool = get_service('spool');
+$spool->_delete();
+
+my $test_us = get_service('us', _id => 102);
+$test_us->set( settings => { server_id => 123 } );
+is ( $test_us->id, 102 );
+
+my @commands = $test_us->make_commands_by_event( EVENT_BLOCK );
+is ( scalar @commands, 1 );
+
+$spool->process_all();
+
+my ( $spool_service ) = $spool->_list;
+is ( $spool_service->{settings}->{server_id}, 123 );
+is ( $spool_service->{settings}->{server_gid}, undef );
+is ( $spool_service->{status}, 'STUCK');
+
+
 done_testing();

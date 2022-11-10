@@ -138,7 +138,8 @@ INSERT INTO `pays_history` VALUES
 (default,40092,1,455.00,'2016-01-04 20:33:35','');
 
 INSERT INTO `servers` VALUES
-(1,1,'test server (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,1,'{\"cmd\": \"\", \"key_id\": 1, \"host_name\": \"host1.domain.ru\", \"template_id\": \"bash_script_example\"}'),
+(1,1,'test server1 (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,1,'{\"cmd\": \"\", \"key_id\": 1, \"host_name\": \"host1.domain.ru\", \"template_id\": \"bash_script_example\"}'),
+(2,1,'test server2 (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,1,'{\"cmd\": \"\", \"key_id\": 1, \"host_name\": \"host1.domain.ru\", \"template_id\": \"bash_script_example\"}'),
 (25,5,'mail-1','mail','127.0.0.1:25',NULL,100,0,0,1,NULL);
 
 INSERT INTO `servers_groups` VALUES
