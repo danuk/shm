@@ -459,9 +459,7 @@ for my $uri ( keys %{ $routes } ) {
     }
 }
 
-my $uri = $ENV{SCRIPT_NAME};
-$uri =~s/^\/shm\/v\d+//;
-$uri =~s/\/$//;
+my $uri = $ENV{PATH_INFO};
 
 if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 

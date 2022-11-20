@@ -1,32 +1,45 @@
-FROM nginx
+FROM nginx:1.23-alpine AS api
+EXPOSE 80
+COPY nginx/default.conf /etc/nginx/conf.d/
+
+
+FROM debian:bullseye-slim AS core
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
-    fcgiwrap \
+    uwsgi \
     default-libmysqlclient-dev \
+    openssh-client \
+    qrencode
+
+RUN apt-get install -y \
     perl \
     libdbi-perl \
+    libdbd-mysql-perl \
+    libcgi-simple-perl \
+    libmime-lite-perl \
+    libtime-parsedate-perl \
+    libdate-calc-perl \
+    libjson-perl \
+    libtest-mocktime-perl \
+    libsql-abstract-perl \
+    libnet-openssh-perl \
+    libnet-idn-encode-perl \
+    libdata-validate-domain-perl \
+    libdata-validate-email-perl \
+    libdigest-sha-perl \
+    libscalar-util-numeric-perl \
+    libtemplate-perl \
     libauthen-sasl-perl \
-    openssh-client \
-    sudo \
-    gcc \
-    qrencode \
-    make
+    libwww-perl \
+    librouter-simple-perl
 
-COPY deploy /app/deploy
 RUN set -x \
-    && cd /app/deploy \
-    && /app/deploy/install_deps.sh \
-    && usermod nginx -d /var/shm \
-    && apt-get remove --purge --auto-remove -y gcc make \
+    && useradd shm -d /var/shm -m \
     && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /app/deploy \
-    && rm -rf /root/.cpan \
-    && rm -rf /root/.cpanm \
-    && mkdir /var/shm && chown nginx: /var/shm
+    && rm -rf /app/deploy
 
-COPY nginx/default.conf /etc/nginx/conf.d/
-COPY nginx/fcgiwrap /etc/default/
+COPY nginx/uwsgi.ini /etc/uwsgi/apps-enabled/shm.ini
 
 ENV SHM_ROOT_DIR /app
 ENV SHM_DATA_DIR /var/shm

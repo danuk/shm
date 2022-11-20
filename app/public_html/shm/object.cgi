@@ -28,7 +28,7 @@ if ( $admin && $in{user_id} ) {
     switch_user( $in{user_id} );
 }
 
-$in{object} ||= $ENV{SCRIPT_NAME};
+$in{object} ||= $ENV{PATH_INFO};
 
 unless ( $in{object} ) {
     print_header( status => 400 );

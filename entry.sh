@@ -16,9 +16,8 @@ if [ "${SHM_ROLE}" = "spool" ]; then
     /app/bin/spool.pl
 else
     # Create SHM database structure and fill data
-    sudo --preserve-env=PERL5LIB -u nginx /app/bin/init.pl
+    /app/bin/init.pl
 
-    /etc/init.d/fcgiwrap start
-    nginx -g 'daemon off;'
+    uwsgi --ini=/etc/uwsgi/apps-enabled/shm.ini
 fi
 

@@ -1,5 +1,10 @@
 version: '2.1'
 services:
+  api:
+    image: "danuk/shm-api:latest"
+    restart: always
+    ports:
+      - "8080:80"
   core:
     image: "danuk/shm:latest"
     restart: always
@@ -10,8 +15,6 @@ services:
       DB_PASS: ${MYSQL_PASS}
       DB_HOST: mysql
       DB_PORT: 3306
-    ports:
-      - "8080:80"
     depends_on:
       mysql:
         condition: service_healthy
@@ -33,14 +36,14 @@ services:
     image: "danuk/shm-admin:latest"
     restart: always
     environment:
-      SHM_URL: http://core
+      SHM_URL: http://api
     ports:
       - "8081:80"
   client:
     image: "danuk/shm-client:latest"
     restart: always
     environment:
-      SHM_URL: http://core
+      SHM_URL: http://api
     ports:
       - "8082:80"
   mysql:
