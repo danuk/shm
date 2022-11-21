@@ -16,25 +16,14 @@ my $ssh = get_service( 'Transport::Ssh' );
 my $pipeline_id = get_service('console')->new_pipe;
 
 my (undef, $res ) = $ssh->exec(
-    host => $in{host},
+    host => 'ssm@127.0.0.1',
+    server_id => 1,
     key_id => 1,
-    wait => $in{wait} || 0,
     pipeline_id => $pipeline_id,
     event_name => 'test',
+    cmd => 'uname -a',
     %{ $in{settings} || {} },
 );
-
-print_header();
-print_json( $res );
-
-
-if ( $in{debug} && $in{wait} ) {
-    my %ret = get_service('console', _id => $pipeline_id)->reload;
-    say "\n\n";
-    say "="x100;
-    say "$ret{log}";
-    say "="x100;
-}
 
 $user->commit;
 

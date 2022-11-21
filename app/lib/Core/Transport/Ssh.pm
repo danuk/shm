@@ -12,6 +12,19 @@ use POSIX ":sys_wait_h";
 use POSIX 'setsid';
 use Core::Utils qw( html_escape );
 
+sub events {
+    return {
+        'exec' => {
+            event => {
+                title => 'Execute ssh command',
+                kind => 'Transport::Ssh',
+                method => 'send',
+                settings => {},
+            },
+        },
+    };
+}
+
 sub send {
     my $self = shift;
     my $task = shift;
@@ -28,11 +41,11 @@ sub send {
     return $self->exec(
         %{ $server{settings} || () },
         host => $server{host},
-        key_id => $task->server->key_id,
         server_id => $server{server_id},
         cmd => $task->event->{settings}->{cmd},
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
         stdin => $task->event->{settings}->{stdin} || $server{settings}->{stdin},
+        pipeline_id => $task->event->{settings}->{pipeline_id},
         $task ? ( task => $task ) : (),
     );
 }
@@ -51,7 +64,6 @@ sub exec {
         stdin => undef,
         task => undef,
         event_name => undef,
-        wait => 1,
         pipeline_id => undef,
         shell => $ENV{SHM_TEST} ? 'echo' : 'bash -c',
         proxy_jump => undef,
@@ -91,121 +103,82 @@ sub exec {
         }
     }
 
-
-    my $fork_mode = 0;
-    my ($pid, $ret_code, $child_dbh);
-
-    unless ( $args{wait} ) {
-        unless ( $args{pipeline_id} ) {
-            logger->error("Error: Can't use `no_wait` flag without `pipeline_id`");
-            exit 1;
-        }
-
-        unless (defined ($pid = fork)) {
-            die "cannot fork: $!";
-        }
-        $fork_mode = 1;
-    }
-
-    unless ( $args{pipeline_id} ) {
-        # Auto create new pipe only for not fork mode
-        # We cannot create auto pipelines in fork mode due to the transactional model of the database.
-        $args{pipeline_id} = get_service('console')->new_pipe;
-    }
+    $args{pipeline_id} //= get_service('console')->new_pipe;
 
     my $console = get_service('console', _id => $args{pipeline_id} );
 
-    unless ( $pid ) {
-        if ( $fork_mode ) {
-            # I'm a child
-            POSIX::setsid();
-            unless ( $ENV{DEBUG} ) {
-                open(STDOUT,">/dev/null");
-                open(STDERR,">/dev/null");
-            }
-            alarm(0);
+    my $host_msg = "Trying connect to: $args{host}";
+    $host_msg .= " through $args{proxy_jump}" if $args{proxy_jump};
 
-            # Create own db connection
-            $child_dbh = $self->dbh_new();
+    logger->debug('SSH: ' . $host_msg );
+    $console->append( "<font color=yellow>$host_msg ... </font>" );
+
+    my $key_file = get_service( 'Identities', _id => $args{key_id} )->private_key_file;
+
+    $Net::OpenSSH::debug = ~0 if $ENV{DEBUG};
+
+    my $ret_code;
+    my $ssh = Net::OpenSSH->new(
+        $args{host},
+        port => $args{port},
+        key_path => $key_file,
+        passphrase => undef,
+        batch_mode => 1,
+        timeout => $args{timeout},
+        kill_ssh_on_timeout => 1,
+        strict_mode => 0,
+        master_opts => [-o => "StrictHostKeyChecking=no" ],
+        $args{proxy_jump} ? (
+            proxy_command => "ssh -o StrictHostKeyChecking=no -i $key_file -W %h:%p $args{proxy_jump}"
+        ) : (),
+    );
+    unlink $key_file;
+
+    if ( $ssh->error ) {
+        logger->warning( $ssh->error );
+        $console->append("<font color=red>FAIL\n".$ssh->error."</font>\n");
+        $ret_code = -1;
+    } else {
+        $console->append("<font color=green>SUCCESS</font>\n\n");
+
+        my @commands;
+        push @commands, split('\s+', @args{shell} ) if $args{shell};
+        push @commands, ref $args{cmd} eq 'ARRAY' ? join("\n", @{ $args{cmd} } ) : $args{cmd};
+
+        my $out;
+        my ($in, $rout, undef, $ssh_pid) = $ssh->open_ex(
+            {
+                stdin_pipe => ( $args{stdin} ? 1 : 0 ),
+                stdout_pipe => 1,
+                stderr_to_stdout => 1,
+                tty => ( $args{stdin} ? 0 : 1 ),
+            },
+            @commands,
+        ) or die "pipe_out method failed: " . $ssh->error;
+
+        if ( $args{stdin} ) {
+            print $in $args{stdin};
+            close $in;
         }
 
-        my $host_msg = "Trying connect to: $args{host}";
-        $host_msg .= " through $args{proxy_jump}" if $args{proxy_jump};
-
-        logger->debug('SSH: ' . $host_msg );
-        $console->append( "<font color=yellow>$host_msg ... </font>" );
-
-        my $key_file = get_service( 'Identities', _id => $args{key_id} )->private_key_file;
-
-        $Net::OpenSSH::debug = ~0 if $ENV{DEBUG};
-
-        my $ssh = Net::OpenSSH->new(
-            $args{host},
-            port => $args{port},
-            key_path => $key_file,
-            passphrase => undef,
-            batch_mode => 1,
-            timeout => $args{timeout},
-            kill_ssh_on_timeout => 1,
-            strict_mode => 0,
-            master_opts => [-o => "StrictHostKeyChecking=no" ],
-            $args{proxy_jump} ? (
-                proxy_command => "ssh -o StrictHostKeyChecking=no -i $key_file -W %h:%p $args{proxy_jump}"
-            ) : (),
-        );
-        unlink $key_file;
-
-        if ( $ssh->error ) {
-            logger->warning( $ssh->error );
-            $console->append("<font color=red>FAIL\n".$ssh->error."</font>\n");
-            $ret_code = -1;
-        } else {
-            $console->append("<font color=green>SUCCESS</font>\n\n");
-
-            my @commands;
-            push @commands, split('\s+', @args{shell} ) if $args{shell};
-            push @commands, ref $args{cmd} eq 'ARRAY' ? join("\n", @{ $args{cmd} } ) : $args{cmd};
-
-            my $out;
-            my ($in, $rout, undef, $ssh_pid) = $ssh->open_ex(
-                {
-                    stdin_pipe => ( $args{stdin} ? 1 : 0 ),
-                    stdout_pipe => 1,
-                    stderr_to_stdout => 1,
-                    tty => ( $args{stdin} ? 0 : 1 ),
-                },
-                @commands,
-            ) or die "pipe_out method failed: " . $ssh->error;
-
-            if ( $args{stdin} ) {
-                print $in $args{stdin};
-                close $in;
-            }
-
-            while (<$rout>) {
-                $out .= $_;
-                $console->append( html_escape($_) );
-            }
-            close $rout;
-
-            my $ssh_kid = waitpid $ssh_pid, 0;
-            $ret_code = $?>>8;
+        while (<$rout>) {
+            $out .= $_;
+            $console->append( html_escape($_) );
         }
+        close $rout;
 
-        if ( $ret_code ) {
-            $console->append('<font color="red">ERROR '. $ret_code .'</font>');
-        }
-        else {
-            $console->append('<font color="green">DONE</font>');
-        }
-
-        $console->set_eof();
-
-        if ( $fork_mode ) {
-            $child_dbh->disconnect;
-            exit $ret_code;
-        }
+        my $ssh_kid = waitpid $ssh_pid, 0;
+        $ret_code = $?>>8;
     }
+
+    if ( $ret_code ) {
+        $console->append('<font color="red">ERROR '. $ret_code .'</font>');
+    }
+    else {
+        $console->append('<font color="green">DONE</font>');
+    }
+
+    $console->set_eof();
 
     if ( $ret_code == 0 ) {
         logger->debug("SSH CMD: $args{cmd}" );
@@ -231,36 +204,52 @@ sub exec {
 
 sub ssh_test {
     my $self = shift;
-    my %args = (
+    my $args = {
         host => undef,
         key_id => undef,
-        cmd => 'uname -a',
+        server_id => undef,
+        cmd => 'uname',
         event_name => 'test',
         pipeline_id => get_service('console')->new_pipe,
-        wait => 0,
         @_,
+    };
+
+    $self->make_event( 'exec',
+        settings => {
+            server_id => delete $args->{server_id},
+        },
+        event => {
+            title => 'Run TEST script',
+            settings => $args,
+        },
     );
 
-    my (undef, $res ) = $self->exec( %args );
-    return $res;
+    return $args;
 }
 
 sub ssh_init {
     my $self = shift;
-    my %args = (
+    my $args = {
         host => undef,
         key_id => undef,
         server_id => undef,
         template_id => undef,
         event_name => 'init',
         pipeline_id => get_service('console')->new_pipe,
-        wait => 0,
         @_,
+    };
+
+    $self->make_event( 'exec',
+        settings => {
+            server_id => delete $args->{server_id},
+        },
+        event => {
+            title => 'Run INIT script',
+            settings => $args,
+        },
     );
 
-    my (undef, $res ) = $self->exec( %args );
-    return $res;
+    return $args;
 }
-
 
 1;
