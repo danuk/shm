@@ -597,7 +597,8 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
             type => 'image/svg+xml',
         );
         my $data = join('', @data);
-        system("echo \"$data\" | qrencode -t svg");
+        my $output = qx(echo "$data" | qrencode -t svg);
+        print $output;
     } else {
         print_header( %headers );
         print_json({
