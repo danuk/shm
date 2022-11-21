@@ -28,25 +28,18 @@ sub events {
 sub send {
     my $self = shift;
     my $task = shift;
-
     my %server;
-    if ( my $server = $task->server( transport => 'ssh' ) ) {
+
+    if ( my $server = $task->server ) {
         %server = $server->get;
-    } else {
-        return SUCCESS, {
-            error => "Server not defined",
-        }
     }
 
     return $self->exec(
-        %{ $server{settings} || () },
-        host => $server{host},
-        server_id => $server{server_id},
-        cmd => $task->event->{settings}->{cmd},
+        %server,
+        %{ $server{settings} },
+        %{ $task->event_settings },
+        task => $task,
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
-        stdin => $task->event->{settings}->{stdin} || $server{settings}->{stdin},
-        pipeline_id => $task->event->{settings}->{pipeline_id},
-        $task ? ( task => $task ) : (),
     );
 }
 
