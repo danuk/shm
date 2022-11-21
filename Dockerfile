@@ -36,8 +36,7 @@ RUN apt-get install -y \
 
 RUN set -x \
     && useradd shm -d /var/shm -m \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /app/deploy
+    && rm -rf /var/lib/apt/lists/*
 
 COPY nginx/uwsgi.ini /etc/uwsgi/apps-enabled/shm.ini
 
