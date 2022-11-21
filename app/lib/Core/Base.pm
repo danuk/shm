@@ -8,7 +8,10 @@ use Core::Sql::Data;
 use Carp qw(confess);
 use Data::Dumper;
 use JSON qw( to_json );
-use Core::Utils qw( force_numbers );
+use Core::Utils qw(
+    force_numbers
+    hash_merge
+);
 $Data::Dumper::Deepcopy = 1;
 
 our @EXPORT = qw(
@@ -261,11 +264,11 @@ sub make_event {
     );
 
     if ( $self->can('events') ) {
-        %args = (
-            %{ $self->events->{ $event } || {} },
-            %args,
+        %args = %{ hash_merge(
+            $self->events->{ $event } || {},
+            \%args,
         );
-    }
+    }}
 
     unless ( $args{event} ) {
         logger->error('Event not defined');

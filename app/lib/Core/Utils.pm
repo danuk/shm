@@ -31,6 +31,7 @@ our @EXPORT_OK = qw(
     shm_test_api
     is_email
     html_escape
+    hash_merge
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -298,6 +299,32 @@ sub html_escape {
     $data =~s/([$chars])/$map{$1}/g;
 
     return $data;
+}
+
+sub hash_merge {
+    shift unless ref $_[0];
+    my ($left, @right) = @_;
+
+    return $left unless @right;
+
+    return hash_merge($left, hash_merge(@right)) if @right > 1;
+
+    my ($right) = @right;
+
+    my %merge = %$left;
+
+    for my $key (keys %$right) {
+
+        my ($hr, $hl) = map { ref $_->{$key} eq 'HASH' } $right, $left;
+
+        if ($hr and $hl) {
+            $merge{$key} = hash_merge($left->{$key}, $right->{$key});
+        }
+        else {
+            $merge{$key} = $right->{$key};
+        }
+    }
+    return \%merge;
 }
 
 1;
