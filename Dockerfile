@@ -16,7 +16,7 @@ RUN apt-get install -y \
     perl \
     libdbi-perl \
     libdbd-mysql-perl \
-    libcgi-simple-perl \
+    libcgi-pm-perl \
     libmime-lite-perl \
     libtime-parsedate-perl \
     libdate-calc-perl \
