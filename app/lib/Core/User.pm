@@ -12,7 +12,7 @@ use Core::Utils qw(
 );
 use Core::Const;
 
-use Digest::SHA1 qw(sha1_hex);
+use Digest::SHA qw(sha1_hex);
 use vars qw($AUTOLOAD);
 
 sub AUTOLOAD {
