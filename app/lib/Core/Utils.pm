@@ -218,7 +218,8 @@ sub file_by_string {
 
     my $fh = File::Temp->new( UNLINK => 0, SUFFIX => '.dat' );
     print $fh $string;
-    $fh->seek( 0, SEEK_END );
+    #$fh->seek( 0, SEEK_END );
+    close($fh);
     return $fh->filename;
 }
 
