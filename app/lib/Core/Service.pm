@@ -172,6 +172,10 @@ sub create {
         @_,
     );
 
+    unless ( get_service('user')->authenticated->is_admin ) {
+        delete $args{cost};
+    }
+
     use Core::Billing;
     my $us = create_service( %args );
 
