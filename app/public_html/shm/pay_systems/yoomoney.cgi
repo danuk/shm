@@ -4,7 +4,7 @@
 
 use v5.14;
 
-use Digest::SHA1 qw(sha1_hex);
+use Digest::SHA qw(sha1_hex);
 use SHM qw(:all);
 my $user = SHM->new( skip_check_auth => 1 );
 
