@@ -14,7 +14,7 @@ INSERT INTO `events` VALUES
 (4,'UserService','vpn activate','activate',2,'{\"category\": \"vpn\"}');
 
 INSERT INTO `services` VALUES
-(1,'VPN',0.00,1.00,'vpn','[]',NULL,1,NULL,NULL,1,0,NULL,0,NULL);
+(1,'VPN',0.00,1.00,'vpn','[]',NULL,0,NULL,NULL,1,0,NULL,0,NULL);
 
 INSERT INTO `templates` VALUES
 ('web_tariff_create','Здравствуйте {{ user.full_name }}\n\nВы зарегистрировали новую услугу: {{ us.service.name }}\n\nДата истечения услуги: {{ us.expire }}\n\nСтоимость услуги: {{ us.service.cost }} руб.\n\nХостинг сайтов:\nХост: {{ child(\'web\').server.settings.host_name }}\nЛогин: {{ child(\'web\').settings.login }}\nПароль: {{ child(\'web\').settings.password }}\n\nЖелаем успехов.',NULL),
