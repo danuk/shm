@@ -5,6 +5,8 @@ services:
     restart: always
     ports:
       - "8080:80"
+    links:
+      - core
   core:
     image: "danuk/shm:latest"
     restart: always
@@ -39,6 +41,8 @@ services:
       SHM_URL: http://api
     ports:
       - "8081:80"
+    links:
+      - api
   client:
     image: "danuk/shm-client:latest"
     restart: always
@@ -46,6 +50,8 @@ services:
       SHM_URL: http://api
     ports:
       - "8082:80"
+    links:
+      - api
   mysql:
     platform: linux/amd64
     image: "mysql:8.0"
