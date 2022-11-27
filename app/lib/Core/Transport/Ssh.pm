@@ -65,7 +65,7 @@ sub exec {
 
     my $event_name = $args{event_name};
     if ( $args{task} && $args{task}->event ) {
-        $event_name = $args{task}->event->{name};
+        $event_name //= $args{task}->event->{name};
     }
 
     if ( $args{template_id} ) {
