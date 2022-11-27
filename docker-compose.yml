@@ -1,14 +1,14 @@
 version: '2.1'
 services:
   api:
-    image: "danuk/shm-api:latest"
+    image: "danuk/shm-api:0.1"
     restart: always
     ports:
       - "8080:80"
     links:
       - core
   core:
-    image: "danuk/shm:latest"
+    image: "danuk/shm-core:0.1"
     restart: always
     environment:
       TZ: ${TZ}
@@ -21,7 +21,7 @@ services:
       mysql:
         condition: service_healthy
   spool:
-    image: "danuk/shm:latest"
+    image: "danuk/shm-core:0.1"
     restart: always
     environment:
       TZ: ${TZ}
@@ -35,7 +35,7 @@ services:
       mysql:
         condition: service_healthy
   admin:
-    image: "danuk/shm-admin:latest"
+    image: "danuk/shm-admin:0.1"
     restart: always
     environment:
       SHM_URL: http://api
@@ -44,7 +44,7 @@ services:
     links:
       - api
   client:
-    image: "danuk/shm-client:latest"
+    image: "danuk/shm-client:0.1"
     restart: always
     environment:
       SHM_URL: http://api
