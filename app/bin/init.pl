@@ -9,6 +9,13 @@ use Core::Sql::Data;
 
 my $sql = Core::Sql::Data->new;
 
+my $version;
+if ( -f "$ENV{SHM_ROOT_DIR}/version" ) {
+    $version = read_file( "$ENV{SHM_ROOT_DIR}/version" );
+    chomp $version;
+    say "SHM version: $version";
+}
+
 my $config = get_service('config');
 my $dbh = db_connect( %{ $config->file->{config}{database} } ) or die "Can't connect to DN";
 $config->local('dbh', $dbh );
@@ -26,6 +33,11 @@ unless ( $tables_count ) {
     say "done";
 }
 
+if ( $version ) {
+    get_service('config', _id => '_shm')->set( value => { version => $version } );
+}
+
+$dbh->commit();
 $dbh->disconnect();
 
 exit 0;
