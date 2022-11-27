@@ -4,6 +4,7 @@ VERSION=$(git tag --points-at | head -n1)
 
 if [ -z "$VERSION" ]; then
     echo "Error: tag required"
+    exit 1
 fi
 
 VERSION_MINOR=$(echo $VERSION | cut -d '.' -f 1,2)
