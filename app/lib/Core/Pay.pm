@@ -17,8 +17,7 @@ sub structure {
             auto_fill => 1,
         },
         pay_system_id => {
-            type => 'number',
-            default => 1,
+            type => 'text',
         },
         money => {
             type => 'number',

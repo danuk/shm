@@ -102,20 +102,11 @@ DROP TABLE IF EXISTS `pays_history`;
 CREATE TABLE `pays_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
-  `pay_system_id` int(11) NOT NULL,
+  `pay_system_id` char(16) DEFAULT NULL,
   `money` decimal(10,2) NOT NULL DEFAULT '0.00',
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `comment` char(255) DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
-  FOREIGN KEY (pay_system_id) REFERENCES pay_systems (id),
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
-
-DROP TABLE IF EXISTS `pay_systems`;
-CREATE TABLE `pay_systems` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` char(255) DEFAULT NULL,
-  `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 

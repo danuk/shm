@@ -46,6 +46,7 @@ unless ( $user_id ) {
 $user->payment(
     user_id => $user_id,
     money => $amount,
+    pay_system_id => 'yoomoney',
     comment => sprintf("operation_id=%s", $vars{operation_id} ),
 );
 

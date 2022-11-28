@@ -19,6 +19,7 @@ my %ret = shm_test_api(
     data => {
         user_id => 40094,
         money => $payment,
+        pay_system_id => 'manual',
     },
 );
 
@@ -26,7 +27,7 @@ cmp_deeply( $ret{json}->{data}->[0], {
     id => ignore(),
     user_id => 40094,
     money => 123,
-    pay_system_id => 1,
+    pay_system_id => 'manual',
     date => ignore(),
     comment => undef
 }, 'Test /v1/admin/user/payment');

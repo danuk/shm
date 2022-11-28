@@ -39,7 +39,4 @@ INSERT INTO `spool` (id,status,user_id,event) VALUES
 (default,'PAUSED',1,'{"title":"send forecasts","kind":"Jobs","method":"job_make_forecasts","period":"86400","settings":{"server_id":25,"template_id": "forecast"}}')
 ;
 
-INSERT INTO `pay_systems` (id,name) VALUES
-(1,'Платеж');
-
 COMMIT;
