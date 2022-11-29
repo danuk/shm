@@ -1,20 +1,15 @@
 #!/bin/bash
 
-VERSION=$(git tag --points-at | head -n1)
-
-if [ -z "$VERSION" ]; then
-    echo "Error: tag required"
-    exit 1
-fi
-
-VERSION_MINOR=$(echo $VERSION | cut -d '.' -f 1,2)
-
 function build_and_push {
-    TAGS=(
-        danuk/shm-$1:$VERSION
-        danuk/shm-$1:$VERSION_MINOR
-        danuk/shm-$1
-    )
+    TAGS=("danuk/shm-$1:latest")
+
+    VERSION=$(git tag --points-at | head -n1)
+    if [ "$VERSION" ]; then
+        TAGS+=("danuk/shm-$1:$VERSION")
+
+        VERSION_MINOR=$(echo $VERSION | cut -d '.' -f 1,2)
+        TAGS+=("danuk/shm-$1:$VERSION_MINOR")
+    fi
 
     docker build \
         $(printf " -t %s" "${TAGS[@]}") \
