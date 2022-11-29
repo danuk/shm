@@ -22,12 +22,16 @@ $config->local('dbh', $dbh );
 
 my $tables_count = $sql->do("SHOW TABLES");
 
-unless ( $tables_count ) {
-    print "Init database... ";
+if ( $ENV{DEV} || $tables_count == 0 ) {
+    print "Creating structure of database... ";
     import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_structure.sql" );
+    say "done";
+
     if ( $ENV{DEV} ) {
+        print "Loading data for developers... ";
         import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_dev_test_data.sql" );
     } else {
+        print "Loading data... ";
         import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_data.sql" );
     }
     say "done";
