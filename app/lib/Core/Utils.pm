@@ -272,7 +272,7 @@ sub shm_test_api {
 
     my $method = lc $args{method};
     my $response = $ua->$method(
-        sprintf( "http://shm.local/shm/%s", $args{url} ),
+        sprintf( "http://api/shm/%s", $args{url} ),
         $args{data} ? $args{data} : (),
     );
 

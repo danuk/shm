@@ -19,6 +19,26 @@ tzset;
 
 my $spool = get_service('spool');
 
+my $t = get_service('Transport::Ssh');
+no warnings 'once';
+no warnings qw(redefine);
+*Core::Transport::Ssh::exec = sub {
+    my $self = shift;
+    my %args = @_;
+
+    return SUCCESS, {
+        server => {
+            id => $args{server_id},
+            host => $args{host},
+            port => $args{port},
+            key_id => $args{key_id},
+        },
+        cmd => $args{cmd},
+        ret_code => 0,
+        pipeline_id => $args{pipeline_id},
+    };
+};
+
 my $us;
 my $user_services = get_service('UserService');
 

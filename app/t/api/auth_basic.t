@@ -8,7 +8,7 @@ subtest 'Check Basic auth for Admin' => sub {
     my $ret = qx(
         curl -s \\
         -u admin:admin \\
-        http://shm.local/shm/v1/user
+        http://api/shm/v1/user
     );
 
     my $json_ret = decode_json( $ret );
@@ -20,7 +20,7 @@ subtest 'Check Basic auth for User' => sub {
     my $ret = qx(
         curl -s \\
         -u danuk:danuk \\
-        http://shm.local/shm/v1/user
+        http://api/shm/v1/user
     );
 
     my $json_ret = decode_json( $ret );

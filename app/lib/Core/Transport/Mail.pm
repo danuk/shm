@@ -118,14 +118,16 @@ sub send_mail {
 
     $msg->replace("X-Mailer", "SHM mailer");
 
-    $msg->send(
-        'smtp',
-        $args{host},
-        Debug => $args{debug} ? 1 : 0,
-        $args{user} ? ( AuthUser => $args{user} ) : (),
-        $args{password} ? ( AuthPass => $args{password} ) : (),
-        $args{ssl} ? ( SSL => $args{ssl} ) : (),
-    );
+    unless ( $ENV{SHM_TEST} ) {
+        $msg->send(
+            'smtp',
+            $args{host},
+            Debug => $args{debug} ? 1 : 0,
+            $args{user} ? ( AuthUser => $args{user} ) : (),
+            $args{password} ? ( AuthPass => $args{password} ) : (),
+            $args{ssl} ? ( SSL => $args{ssl} ) : (),
+        );
+    }
 
     return SUCCESS, {
         server => {

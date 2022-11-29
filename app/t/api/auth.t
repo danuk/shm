@@ -13,7 +13,7 @@ subtest 'Check auth with incorrect credentials' => sub {
         -H "login: foo" \\
         -H "password: bar" \\
         -X PUT \\
-        http://shm.local/shm/v1/admin/user/payment
+        http://api/shm/v1/admin/user/payment
     );
 
     my $json_ret = decode_json( $ret );
@@ -31,7 +31,7 @@ subtest 'Check auth with correct credentials' => sub {
         -H "login: admin" \\
         -H "password: admin" \\
         -X GET \\
-        http://shm.local/shm/v1/user
+        http://api/shm/v1/user
     );
 
     my $json_ret = decode_json( $ret );
@@ -47,7 +47,7 @@ subtest 'Check common auth (auth.cgi)' => sub {
         -H "Content-Type: application/x-www-form-urlencoded" \\
         -d "login=admin&password=admin&admin=1" \\
         -X POST \\
-        http://shm.local/shm/user/auth.cgi
+        http://api/shm/user/auth.cgi
     );
 
     my $json_ret = decode_json( $ret );
@@ -61,7 +61,7 @@ subtest 'Check auth with cookies' => sub {
         curl -s \\
         -b "session_id=$session_id" \\
         -X GET \\
-        http://shm.local/admin/user.cgi
+        http://api/shm/v1/user
     );
 
     my $json_ret = decode_json( $ret );
@@ -73,7 +73,7 @@ subtest 'Check auth with incorrect cookies' => sub {
         curl -s \\
         -b "session_id=df2342fsdfs" \\
         -X GET \\
-        http://shm.local/admin/user.cgi
+        http://api/shm/v1/user
     );
 
     my $json_ret = decode_json( $ret );
@@ -85,7 +85,7 @@ subtest 'Check access with incorrect cookies' => sub {
         curl -s \\
         -b "session_id=34fsdffs2" \\
         -X GET \\
-        http://shm.local/admin/user.cgi
+        http://api/shm/v1/user
     );
 
     my $json_ret = decode_json( $ret );
@@ -94,7 +94,7 @@ subtest 'Check access with incorrect cookies' => sub {
 
 subtest 'Check access without cookies' => sub {
     my $ret = qx(
-        curl -s http://shm.local/admin/user.cgi
+        curl -s http://api/shm/v1/user
     );
 
     my $json_ret = decode_json( $ret );

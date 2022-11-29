@@ -20,7 +20,6 @@ no warnings 'once';
     my $self = shift;
     my %args = @_;
     return 'MOCK', \%args;
-    return TASK_SUCCESS, \%args;
 };
 
 subtest 'Get server_id by event settings' => sub {

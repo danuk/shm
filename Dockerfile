@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     uwsgi \
     default-libmysqlclient-dev \
     openssh-client \
+    curl \
     qrencode
 
 RUN apt-get install -y \
