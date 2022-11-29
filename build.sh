@@ -24,6 +24,7 @@ function build_and_push {
 build_and_push api
 
 # Build Core
+[ -z "$VERSION" ]; VERSION="latest"
 echo -n "$VERSION" > app/version
 build_and_push core
 
