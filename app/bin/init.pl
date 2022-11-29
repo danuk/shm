@@ -22,7 +22,7 @@ $config->local('dbh', $dbh );
 
 my $tables_count = $sql->do("SHOW TABLES");
 
-if ( $ENV{DEV} || $tables_count == 0 ) {
+if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
     print "Creating structure of database... ";
     import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_structure.sql" );
     say "done";
