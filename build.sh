@@ -24,7 +24,7 @@ function build_and_push {
 build_and_push api
 
 # Build Core
-[ -z "$VERSION" ]; VERSION="latest"
+[ -z "$VERSION" ]; VERSION=$(git describe --abbrev=0 --tags)
 echo -n "$VERSION" > app/version
 build_and_push core
 
