@@ -300,8 +300,8 @@ INSERT INTO `config` VALUES
 ("_shm", '{"version":"0.0.3"}'),
 ("_billing",'{"type":"Honest"}'),
 ("company", '{"name":"My Company LTD"}'),
-("api",     '{"url":"http://shm.local"}'),
-("cli",     '{"url":"http://cli.local"}'),
+("api",     '{"url":"http://127.0.0.1:8081"}'),
+("cli",     '{"url":"http://127.0.0.1:8082"}'),
 ("pay_systems",'{"manual":{"name":"Платеж","show_for_client":false},"yoomoney":{"name":"ЮMoney","account":"000000000000000","secret":"","template_id":"yoomoney_template","show_for_client":true}}'),
 ("mail",    '{"from":"mail@domain.ru"}');
 
