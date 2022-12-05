@@ -1,0 +1,107 @@
+version: '2.1'
+services:
+  api:
+    image: danuk/shm-api:latest
+    build:
+      context: shm
+      dockerfile: ./Dockerfile
+      target: api
+    restart: always
+    ports:
+      - "8080:80"
+    links:
+      - core
+  core:
+    image: danuk/shm-core:latest
+    build:
+      context: shm
+      dockerfile: ./Dockerfile
+      target: core
+    restart: always
+    environment:
+      DEV: 1
+      TRUNCATE_DB_ON_START: 1
+      TZ: Europe/Moscow
+      DB_NAME: shm-db
+      DB_USER: shm-db-user
+      DB_PASS: shm-db-user-pass
+      DB_HOST: mysql
+      DB_PORT: 3306
+    volumes:
+      - ./shm/app:/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+  spool:
+    image: danuk/shm-core:latest
+    build:
+      context: shm
+      dockerfile: ./Dockerfile
+      target: core
+    restart: always
+    environment:
+      TZ: Europe/Moscow
+      SHM_ROLE: spool
+      DB_NAME: shm-db
+      DB_USER: shm-db-user
+      DB_PASS: shm-db-user-pass
+      DB_HOST: mysql
+      DB_PORT: 3306
+    volumes:
+      - ./shm/app:/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+  admin:
+    image: danuk/shm-admin:latest
+    build:
+      context: shm-admin
+      dockerfile: ./Dockerfile
+      target: admin
+    restart: always
+    environment:
+      SHM_URL: http://api
+    volumes:
+      - ./shm-admin/app:/app
+    ports:
+      - "8081:80"
+    links:
+      - api
+  client:
+    image: danuk/shm-client:latest
+    build:
+      context: shm-client
+      dockerfile: ./Dockerfile
+      target: client
+    restart: always
+    environment:
+      SHM_URL: http://api
+    volumes:
+      - ./shm-client/app:/app
+    ports:
+      - "8082:80"
+    links:
+      - api
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      TZ: Europe/Moscow
+      MYSQL_ROOT_PASSWORD: shm-db-root-pass
+      MYSQL_DATABASE: shm-db
+      MYSQL_USER: shm-db-user
+      MYSQL_PASSWORD: shm-db-user-pass
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  mysql-data:
+    driver: local
+
