@@ -93,8 +93,6 @@ services:
       MYSQL_PASSWORD: shm-db-user-pass
     volumes:
       - mysql-data:/var/lib/mysql
-    ports:
-      - "3306:3306"
     healthcheck:
       test: "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD"
       interval: 5s
