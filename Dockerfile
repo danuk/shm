@@ -18,7 +18,6 @@ RUN apt-get install -y \
     libdbi-perl \
     libdbd-mysql-perl \
     libcgi-pm-perl \
-    libmime-lite-perl \
     libtime-parsedate-perl \
     libdate-calc-perl \
     libjson-perl \
@@ -31,7 +30,7 @@ RUN apt-get install -y \
     libdigest-sha-perl \
     libscalar-util-numeric-perl \
     libtemplate-perl \
-    libauthen-sasl-perl \
+    libemail-sender-perl \
     libwww-perl \
     librouter-simple-perl
 

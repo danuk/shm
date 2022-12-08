@@ -7,7 +7,9 @@ use utf8;
 use Core::Base;
 use Core::Const;
 
-use MIME::Lite;
+use Email::Sender::Simple qw(sendmail);
+use Email::Sender::Transport::SMTP qw();
+use Try::Tiny;
 use MIME::Base64 qw(encode_base64);
 
 sub send {
@@ -106,36 +108,48 @@ sub send_mail {
         @_,
     );
 
-    my $msg = MIME::Lite->new(
-        From    => sprintf("=?UTF-8?B?%s?= <%s>", MIME::Base64::encode_base64($args{from_name}), $args{from} ),
-        To      => $args{to},
-        Cc      => $args{cc} || "",
-        BCc     => $args{bcc} || "",
-        Subject => sprintf("=?UTF-8?B?%s?=", MIME::Base64::encode_base64($args{subject})),
-        Type    => 'text/plain;charset=UTF-8',
-        Data    =>  $args{message},
+    my $email = Email::Simple->create(
+        header => [
+            From    => sprintf("=?UTF-8?B?%s?= <%s>", MIME::Base64::encode_base64($args{from_name}), $args{from} ),
+            To      => $args{to},
+            Cc      => $args{cc} || "",
+            BCc     => $args{bcc} || "",
+            Subject => sprintf("=?UTF-8?B?%s?=", MIME::Base64::encode_base64($args{subject})),
+            Type    => 'text/plain;charset=UTF-8',
+        ],
+        body => $args{message},
     );
 
-    $msg->replace("X-Mailer", "SHM mailer");
+    my @err;
+    my $status = SUCCESS;
 
     unless ( $ENV{SHM_TEST} ) {
-        $msg->send(
-            'smtp',
-            $args{host},
-            Debug => $args{debug} ? 1 : 0,
-            $args{user} ? ( AuthUser => $args{user} ) : (),
-            $args{password} ? ( AuthPass => $args{password} ) : (),
-            $args{ssl} ? ( SSL => $args{ssl} ) : (),
-        );
+        my ( $host, $port ) = split(/:/, $args{host} );
+
+        my $transport = Email::Sender::Transport::SMTP->new({
+          host => $host,
+          port => $port,
+          ssl => "starttls",
+          $args{user} ? ( sasl_username => $args{user} ) : (),
+          $args{password} ? ( sasl_password => $args{password} ) : (),
+        });
+
+        try {
+            sendmail( $email, { transport => $transport });
+        } catch {
+            @err = split(/\n/, $_ );
+            $status = FAIL;
+        };
     }
 
-    return SUCCESS, {
+    return $status, {
         server => {
             host => $args{host},
         },
         mail => {
             %args,
         },
+        $err[0] ? ( error => $err[0] ) : (),
     };
 }
 
