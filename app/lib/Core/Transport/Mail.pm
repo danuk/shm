@@ -110,11 +110,11 @@ sub send_mail {
 
     my $email = Email::Simple->create(
         header => [
-            From    => sprintf("=?UTF-8?B?%s?= <%s>", MIME::Base64::encode_base64($args{from_name}), $args{from} ),
+            From    => sprintf("=?UTF-8?B?%s?= <%s>", MIME::Base64::encode_base64($args{from_name}, ''), $args{from} ),
             To      => $args{to},
             Cc      => $args{cc} || "",
             BCc     => $args{bcc} || "",
-            Subject => sprintf("=?UTF-8?B?%s?=", MIME::Base64::encode_base64($args{subject})),
+            Subject => sprintf("=?UTF-8?B?%s?=", MIME::Base64::encode_base64($args{subject}, '')),
             Type    => 'text/plain;charset=UTF-8',
         ],
         body => $args{message},
