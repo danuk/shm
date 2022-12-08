@@ -126,10 +126,18 @@ sub send_mail {
     unless ( $ENV{SHM_TEST} ) {
         my ( $host, $port ) = split(/:/, $args{host} );
 
+        my $ssl = 0;
+        if ( $port == 465 ) {
+            $ssl = 'ssl';
+        } elsif ( $port == 587 ) {
+            $ssl = 'starttls';
+        }
+
         my $transport = Email::Sender::Transport::SMTP->new({
           host => $host,
           port => $port,
-          ssl => "starttls",
+          ssl => $args{ssl} || $ssl,
+          timeout => $args{timeout} || 30,
           $args{user} ? ( sasl_username => $args{user} ) : (),
           $args{password} ? ( sasl_password => $args{password} ) : (),
         });
