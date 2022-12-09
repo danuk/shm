@@ -41,10 +41,12 @@ sub send {
     }
 
     $settings{from_name} //= $config->{from_name};
-
     $settings{subject} //= $config->{subject};
+    $settings{to} //= delete $settings{bcc};
 
-    $settings{to} //= get_service('user')->emails || delete $settings{bcc};
+    if ( my $email = get_service('user')->emails ) {
+        $settings{to} = $email;
+    }
     unless ( $settings{to} ) {
         return SUCCESS, {
             error => "User email undefined",
