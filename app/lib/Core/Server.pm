@@ -93,6 +93,7 @@ sub list_by_transport {
     my @servers = $self->_list(
         where => {
             transport => $transport,
+            enabled => 1,
         },
     );
 
