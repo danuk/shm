@@ -7,8 +7,6 @@ services:
       dockerfile: ./Dockerfile
       target: api
     restart: always
-    ports:
-      - "8080:80"
     links:
       - core
   core:
@@ -27,6 +25,8 @@ services:
       DB_PASS: shm-db-user-pass
       DB_HOST: mysql
       DB_PORT: 3306
+    links:
+      - mysql
     volumes:
       - ./shm/app:/app
     depends_on:
@@ -47,6 +47,8 @@ services:
       DB_PASS: shm-db-user-pass
       DB_HOST: mysql
       DB_PORT: 3306
+    links:
+      - mysql
     volumes:
       - ./shm/app:/app
     depends_on:

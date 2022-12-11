@@ -3,8 +3,6 @@ services:
   api:
     image: "danuk/shm-api:0.1"
     restart: always
-    ports:
-      - "8080:80"
     links:
       - core
   core:
@@ -17,6 +15,8 @@ services:
       DB_PASS: ${MYSQL_PASS}
       DB_HOST: mysql
       DB_PORT: 3306
+    links:
+      - mysql
     depends_on:
       mysql:
         condition: service_healthy
@@ -31,6 +31,8 @@ services:
       DB_PASS: ${MYSQL_PASS}
       DB_HOST: mysql
       DB_PORT: 3306
+    links:
+      - mysql
     depends_on:
       mysql:
         condition: service_healthy
