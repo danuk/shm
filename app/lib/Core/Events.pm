@@ -47,7 +47,7 @@ sub get_events {
         where => {
             $args{kind} ? ( kind => $args{kind} ) : (),
             $args{name} ? ( name => $args{name} ) : (),
-            $args{category} ? ( 'settings->category' => $args{category} ) : (),
+            $args{category} ? ( sprintf('\'"%s"\'', $args{category}) => \"LIKE settings->'\$.category'" ) : (),
         },
     );
     return wantarray ? @res : \@res;

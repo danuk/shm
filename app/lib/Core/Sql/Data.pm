@@ -589,7 +589,7 @@ sub query_select {
     }
 
     for my $k ( keys %{ $args{where} } ) {
-        if ( !ref $args{where}{$k} && $k=~/(\w+)->(\w+)/ ) {
+        if ( $k=~/(\w+)->(\w+)/ ) {
             $args{where}{ sprintf("%s->'\$.%s'", $1, $2) } = force_numbers( delete $args{where}{$k} );
         }
     }
