@@ -117,7 +117,13 @@ sub delete {
             },
             limit => 1,
         )) {
-        get_service('report')->add_error("Service is used in user_service: " . $usi->{user_service_id});
+        get_service('report')->add_error(
+            sprintf( "Can't delete service %d. Still in use for user_id: %d, user_service_id: %d",
+                $self->id,
+                $usi->{user_id},
+                $usi->{user_service_id},
+            )
+        );
         return undef;
     }
 
