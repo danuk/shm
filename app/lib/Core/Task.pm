@@ -83,9 +83,17 @@ sub make_task {
             }
         }
 
-        if ( $self->settings->{user_service_id} ) {
-            my $us = get_service('us', _id => $self->settings->{user_service_id} );
-            $us->settings( { server_id => $self->server_id } )->settings_save();
+        if ( my $usi = $self->settings->{user_service_id} ) {
+            my $us = get_service('us', _id => $usi );
+
+            if ( !$us->settings->{server_id} &&
+                 $response_data &&
+                 $response_data->{server} &&
+                 $response_data->{server}->{id}
+             ) {
+                $us->settings( { server_id => $self->server_id } )->settings_save();
+            }
+
             $us->set_status_by_event( $self->event->{name} );
         }
     }
