@@ -421,18 +421,22 @@ sub payment {
         return undef;
     }
 
-    switch_user( $args{user_id} ) if $args{user_id};
+    if ( $args{user_id} ) {
+        switch_user( $args{user_id} );
+        $self = $self->id( $args{user_id} );
+    }
 
+    my $pays = $self->pays;
     my $pay_id;
-    unless ( $pay_id = get_service('pay')->add( %args ) ) {
+    unless ( $pay_id = $pays->add( %args ) ) {
         get_service('report')->add_error("Can't make payment");
         return undef;
     }
 
-    get_service('user', $args{user_id} ? ( _id => $args{user_id} ) : ())->set_balance( balance => $args{money} );
+    $self->set_balance( balance => $args{money} );
 
     $self->make_event( 'payment' );
-    return scalar get_service('pay', _id => $pay_id )->get;
+    return scalar $pays->id( $pay_id )->get;
 }
 
 sub pays {
