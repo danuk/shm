@@ -111,6 +111,8 @@ sub process_service {
 
     if ( $event eq EVENT_BLOCK ) {
         return block( $self );
+    } elsif ( $event eq EVENT_ACTIVATE ) {
+        return activate( $self );
     } elsif ( $event eq EVENT_REMOVE ) {
         return remove( $self );
     }
@@ -314,6 +316,13 @@ sub block {
     return 0 unless $self->get_status eq STATUS_ACTIVE;
 
     return EVENT_BLOCK;
+}
+
+sub activate {
+    my $self = shift;
+    return 0 unless $self->get_status eq STATUS_BLOCK;
+
+    return EVENT_ACTIVATE;
 }
 
 sub remove {

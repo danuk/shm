@@ -491,6 +491,16 @@ sub stop {
     return scalar $self->get;
 }
 
+sub activate {
+    my $self = shift;
+
+    return scalar $self->get if $self->get_status ne STATUS_BLOCK;
+
+    $self->touch( EVENT_ACTIVATE );
+
+    return scalar $self->get;
+}
+
 sub gen_store_pass {
     my $self = shift;
     my $len = shift || 10;

@@ -272,6 +272,13 @@ my $routes = {
         required => ['user_id','user_service_id'],
     },
 },
+'/admin/user/service/activate' => {
+    POST => {
+        controller => 'USObject',
+        method => 'activate',
+        required => ['user_id','user_service_id'],
+    },
+},
 '/admin/user/service/spool' => {
     GET => {
         controller => 'USObject',
