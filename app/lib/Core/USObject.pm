@@ -269,7 +269,6 @@ sub commands_by_event {
     my $e = shift;
 
     return get_service('Events')->get_events(
-        kind => 'UserService',
         name => $e,
         category => $self->get_category,
     );

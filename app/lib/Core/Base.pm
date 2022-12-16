@@ -258,25 +258,29 @@ sub kind {
 
 sub make_event {
     my $self = shift;
-    my $event = shift;
+    my $event_name = shift;
     my %args = (
         @_,
     );
 
+    my $event = get_service('Events');
+
     if ( $self->can('events') ) {
         %args = %{ hash_merge(
-            $self->events->{ $event } || {},
+            $self->events->{ $event_name } || {},
             \%args,
         );
     }}
 
-    unless ( $args{event} ) {
-        logger->error('Event not defined');
+    if ( $args{event} ) {
+        $args{event}->{kind}||= $self->kind;
+        $event->make( %args );
     }
 
-    $args{event}->{kind}||= $self->kind;
-
-    return get_service('Events')->make( %args );
+    my @commands = $event->get_events( name => $event_name );
+    for ( @commands ) {
+        $event->make( event => $_ );
+    }
 }
 
 sub list_by_settings {
