@@ -1,0 +1,17 @@
+#!/bin/bash
+
+BACKUP_DIR="/var/shm/backups"
+
+# Use `docker ps` command to determine container name with mysql
+CONTAINER="shm_mysql_1"
+
+set -e
+set -o pipefail
+
+mkdir -p ${BACKUP_DIR}
+cd ${BACKUP_DIR}
+
+docker exec ${CONTAINER} /bin/bash -c 'MYSQL_PWD=${MYSQL_ROOT_PASSWORD} mysqldump -u root shm' \
+    | gzip > shm_$(date +%d%m%Y-%H%M%S).sql.gz
+
+
