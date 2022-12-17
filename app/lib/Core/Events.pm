@@ -25,7 +25,6 @@ sub structure {
         },
         server_gid => {     # Group_id of servers
             type => 'number',
-            required => 1,
         },
         settings => {
             type => 'json',
