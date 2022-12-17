@@ -19,7 +19,8 @@ sub send {
     # First trying to determine server_id by group.
     my %server;
     if ( my $server_gid = $task->event->{server_gid} ) {
-        ( %server ) = get_service('ServerGroups', _id => $server_gid )->get_servers;
+        my ( $server ) = get_service('ServerGroups', _id => $server_gid )->get_servers;
+        %server = %{ $server };
     } elsif ( my $server = $task->server ) {
         %server = $server->get;
     } else {
