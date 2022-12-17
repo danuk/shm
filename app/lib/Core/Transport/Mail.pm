@@ -16,12 +16,12 @@ sub send {
     my $self = shift;
     my $task = shift;
 
+    # Always ignore server_id for mail transport. Trying to determine server by group.
     my %server;
-    if ( my $server = $task->server( transport => 'mail' ) ) {
-        %server = $server->get;
-    } else {
+    my $server_gid = $task->event->{server_gid};
+    unless ( ( %server ) = get_service('ServerGroups', _id => $server_gid )->get_servers ) {
         return SUCCESS, {
-            error => "Server not defined",
+            error => sprintf( "Can't found server for server group", $server_gid ),
         }
     }
 
@@ -155,6 +155,7 @@ sub send_mail {
     return $status, {
         server => {
             host => $args{host},
+            # Never return id (it shouldn't be saved into user_services setting)
         },
         mail => {
             %args,
