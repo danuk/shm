@@ -16,10 +16,13 @@ sub send {
     my $self = shift;
     my $task = shift;
 
-    # Always ignore server_id for mail transport. Trying to determine server by group.
+    # First trying to determine server_id by group.
     my %server;
-    my $server_gid = $task->event->{server_gid};
-    unless ( ( %server ) = get_service('ServerGroups', _id => $server_gid )->get_servers ) {
+    if ( my $server_gid = $task->event->{server_gid} ) {
+        ( %server ) = get_service('ServerGroups', _id => $server_gid )->get_servers;
+    } elsif ( my $server = $task->server ) {
+        %server = $server->get;
+    } else {
         return SUCCESS, {
             error => sprintf( "Can't found server for server group", $server_gid ),
         }
