@@ -117,6 +117,7 @@ sub process_one {
         }
     }
 
+    # Set server_id by server_gid
     if ( !$task->{settings}->{server_id} && $task->{event}->{server_gid} ) {
         my @servers = get_service('ServerGroups', _id => $task->{event}->{server_gid} )->get_servers;
         unless ( @servers ) {

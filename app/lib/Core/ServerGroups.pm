@@ -42,7 +42,7 @@ sub get_servers {
 
     if ( $group->{type} eq 'random' ) {
         my $num_server = int rand scalar @servers;
-        return $servers[ $num_server ];
+        return ( $servers[ $num_server ] );
     } else {
         logger->error('Unknown type: ' . $group->{type} );
     }
