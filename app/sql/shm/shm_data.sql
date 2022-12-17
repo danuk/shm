@@ -1,20 +1,24 @@
 BEGIN;
 
 INSERT INTO `users` VALUES
-(1,0,'admin','0df78fa86a30eca0a918fdd21a94e238133ce7ab',0,NOW(),NULL,0,0,0,0.00,NULL,NULL,0,0,1,0,'Admin',0,0.00,NULL,NULL,NULL);
+(1,0,'admin','0df78fa86a30eca0a918fdd21a94e238133ce7ab',0,NOW(),NULL,0,0,0,0.00,NULL,NULL,0,0,1,0,'Admin',0,0.00,NULL,NULL,NULL)
+;
 
 INSERT INTO `servers_groups` VALUES
-(1,'Основная','ssh','random',NULL),
-(2,'VPN','ssh','random',NULL);
-
-INSERT INTO `events` VALUES
-(1,'UserService','vpn create','create',2,'{\"category\": \"vpn\"}'),
-(2,'UserService','vpn remove','remove',2,'{\"category\": \"vpn\"}'),
-(3,'UserService','vpn block','block',2,'{\"category\": \"vpn\"}'),
-(4,'UserService','vpn activate','activate',2,'{\"category\": \"vpn\"}');
+(1,'Сервера рассылки уведомлений','mail','random',NULL),
+(2,'VPN','ssh','random',NULL)
+;
 
 INSERT INTO `services` VALUES
-(1,'VPN',0.00,1.00,'vpn','[]',NULL,0,NULL,NULL,1,0,NULL,0,NULL);
+(1,'VPN (Россия)',0.00,1.00,'vpn-russia','[]',NULL,0,NULL,NULL,1,0,NULL,0,NULL)
+;
+
+INSERT INTO `events` VALUES
+(1,'UserService','vpn create','create',2,'{\"category\": \"vpn-%\"}'),
+(2,'UserService','vpn remove','remove',NULL,'{\"category\": \"vpn-%\"}'),
+(3,'UserService','vpn block','block',NULL,'{\"category\": \"vpn-%\"}'),
+(4,'UserService','vpn activate','activate',NULL,'{\"category\": \"vpn-%\"}')
+;
 
 INSERT INTO `templates` VALUES
 ('web_tariff_create','Здравствуйте {{ user.full_name }}\n\nВы зарегистрировали новую услугу: {{ us.service.name }}\n\nДата истечения услуги: {{ us.expire }}\n\nСтоимость услуги: {{ us.service.cost }} руб.\n\nХостинг сайтов:\nХост: {{ child(\'web\').server.settings.host_name }}\nЛогин: {{ child(\'web\').settings.login }}\nПароль: {{ child(\'web\').settings.password }}\n\nЖелаем успехов.',NULL),
@@ -32,11 +36,12 @@ INSERT INTO `config` VALUES
 ("api",     '{"url":"http://127.0.0.1:8081"}'),
 ("cli",     '{"url":"http://127.0.0.1:8082"}'),
 ("pay_systems",'{"manual":{"name":"Платеж","show_for_client":false},"yoomoney":{"name":"ЮMoney","account":"000000000000000","secret":"","template_id":"yoomoney_template","show_for_client":true}}'),
-("mail",    '{"from":"mail@domain.ru"}');
+("mail",    '{"from":"mail@domain.ru"}')
+;
 
 INSERT INTO `spool` (id,status,user_id,event) VALUES
-(default,'PAUSED',1,'{"title":"prolongate services","kind":"Jobs","method":"job_prolongate","period":"60"}'),
-(default,'PAUSED',1,'{"title":"send forecasts","kind":"Jobs","method":"job_make_forecasts","period":"86400","settings":{"server_id":25,"template_id": "forecast"}}')
+(default,'NEW',1,'{"title":"prolongate services","kind":"Jobs","method":"job_prolongate","period":"600"}'),
+(default,'PAUSED',1,'{"title":"send forecasts","kind":"Jobs","method":"job_make_forecasts","period":"86400","settings":{"server_gid":1,"template_id": "forecast"}}')
 ;
 
 COMMIT;
