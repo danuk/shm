@@ -27,7 +27,9 @@ cmp_deeply( $json_ret->{data}->[0], {
     date => ignore(),
     pay_system_id => 'test',
     money => 123.45,
-    comment => 'Test payment #4'
+    comment => {
+        comment => 'Test payment #4',
+    },
 }, 'Test API');
 
 done_testing();

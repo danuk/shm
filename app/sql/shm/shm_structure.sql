@@ -105,7 +105,7 @@ CREATE TABLE `pays_history` (
   `pay_system_id` char(16) DEFAULT NULL,
   `money` decimal(10,2) NOT NULL DEFAULT '0.00',
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `comment` char(255) DEFAULT NULL,
+  `comment` json DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;

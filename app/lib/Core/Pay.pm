@@ -27,9 +27,23 @@ sub structure {
             type => 'now',
         },
         comment => {
-            type => 'text',
+            type => 'json',
+            value => undef,
         },
     }
+}
+
+sub add {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    if ( $args{comment} && ref $args{comment} eq '' ) {
+        $args{comment} = { comment => $args{comment } };
+    }
+
+    return $self->SUPER::add( %args );
 }
 
 sub pays {
