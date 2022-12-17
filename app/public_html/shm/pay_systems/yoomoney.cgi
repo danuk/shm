@@ -6,6 +6,7 @@ use v5.14;
 
 use Digest::SHA qw(sha1_hex);
 use SHM qw(:all);
+use JSON qw( to_json );
 my $user = SHM->new( skip_check_auth => 1 );
 
 our %vars = parse_args();
@@ -47,7 +48,7 @@ $user->payment(
     user_id => $user_id,
     money => $amount,
     pay_system_id => 'yoomoney',
-    comment => \%vars,
+    comment => to_json( \%vars ),
 );
 
 print_json( { status => 200, msg => "Payment successful" } );
