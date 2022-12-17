@@ -153,6 +153,7 @@ CREATE TABLE `services` (
   `descr` char(255) DEFAULT NULL,
   `pay_in_credit` tinyint(4) DEFAULT '0',
   `config` json DEFAULT NULL,
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
   PRIMARY KEY (`service_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 

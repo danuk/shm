@@ -59,6 +59,10 @@ sub structure {
             default => 0,
         },
         config => { type => 'json', value => undef },
+        deleted => {
+            type => 'number',
+            default => 0,
+        },
     };
 }
 
@@ -96,6 +100,7 @@ sub api_subservices_list {
 
     my $list = $self->_list( where => {
         service_id => { -in => $service->subservices },
+        deleted => 0,
     });
 
     # Making order of priority
@@ -111,33 +116,7 @@ sub delete {
     my $self = shift;
     my %args = @_;
 
-    if ( my ($usi) = get_service('UserService')->_list(
-            where => {
-                service_id => $self->id,
-            },
-            limit => 1,
-        )) {
-        get_service('report')->add_error(
-            sprintf( "Can't delete service %d. Still in use for user_id: %d, user_service_id: %d",
-                $self->id,
-                $usi->{user_id},
-                $usi->{user_service_id},
-            )
-        );
-        return undef;
-    }
-
-    if ( my ($wd) = get_service('Withdraw')->_list(
-            where => {
-                service_id => $self->id,
-            },
-            limit => 1,
-        )) {
-        get_service('report')->add_error("Service is used in withdraw: " . $wd->{withdraw_id});
-        return undef;
-    }
-
-    $self->SUPER::delete( %args );
+    $self->set( deleted => 1 );
     return ();
 }
 
@@ -147,8 +126,13 @@ sub list_for_api {
         admin => 0,
         parent => undef,
         service_id => undef,
+        deleted => undef,
         @_,
     );
+
+    unless ( $args{filter} && $args{filter}->{deleted} ) {
+        $args{where} = { deleted => 0 };
+    }
 
     if ( $args{admin} && $args{parent} ) {
         if ( my $service = get_service('service', _id => $args{parent} ) ) {
@@ -167,7 +151,10 @@ sub api_price_list {
     my $self = shift;
 
     return $self->list(
-        where => { allow_to_order => 1 },
+        where => {
+            allow_to_order => 1,
+            deleted => 0,
+        },
     );
 }
 

@@ -4,6 +4,7 @@ do_sql( q(
     UPDATE pays_history SET comment_tmp = JSON_SET( '{}', "$.comment", comment )  WHERE length(comment);
     ALTER TABLE pays_history DROP COLUMN comment;
     ALTER TABLE pays_history RENAME COLUMN comment_tmp TO comment;
+    ALTER TABLE services ADD COLUMN deleted tinyint(4) NOT NULL DEFAULT '0';
 ));
 
 1;
