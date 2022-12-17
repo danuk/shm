@@ -20,6 +20,7 @@ my $data = $config->data_by_name;
 
 is( $data->{company}->{name}, 'My Company LTD', 'Check company name' );
 is( $config->id('company')->get->{value}->{name}, 'My Company LTD' );
+is( $config->id('company')->get_data->{name}, 'My Company LTD' );
 
 my $key = $config->add(
     key => 'new_param',
@@ -33,5 +34,10 @@ is( $test->get_data->{from}, 'mail@domain.ru' );
 
 $test->set( value => { "QAZ" => 1} );
 is( $test->get_data->{"QAZ"}, 1 );
+
+my $version = $config->id( '_shm')->get_data;
+cmp_deeply( $version, {
+    version => ignore(),
+});
 
 done_testing();

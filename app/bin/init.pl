@@ -4,8 +4,8 @@ use v5.14;
 use SHM;
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw( read_file );
-
 use Core::Sql::Data;
+use version;
 
 my $sql = Core::Sql::Data->new;
 
@@ -35,10 +35,28 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
         import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_data.sql" );
     }
     say "done";
-}
+} elsif ( $version ) {
+    # Start migrations
+    chdir "$ENV{SHM_ROOT_DIR}/bin/migrations";
 
-if ( $version ) {
-    get_service('config', _id => '_shm')->set( value => { version => $version } );
+    my $config = $config->id( '_shm' );
+    my $cur_version = $config->get_data->{version};
+
+    my @migrations = `ls`; chomp for @migrations;
+    my @versions = sort { version->parse( $a ) <=> version->parse( $b ) } @migrations;
+
+    for my $nv ( @versions ) {
+        next if version->parse( $nv ) <= version->parse( $cur_version );
+        next if version->parse( $nv ) > version->parse( $version );
+
+        say "Applying migration for version: $nv ...";
+        eval `cat $nv`;
+        $config->set( value => { version => $nv } );
+        $dbh->commit();
+        say "done"
+    }
+
+    $config->set( value => { version => $version } );
 }
 
 $dbh->commit();
@@ -88,5 +106,22 @@ sub sql_split {
         $in_string = 1 if $token eq "'";
     }
     return grep { /\S/ } @statements;
+}
+
+sub do_sql {
+    my $data = shift;
+
+    my @sql = sql_split( $data );
+
+    my $report = get_service('report');
+
+    for ( @sql ) {
+        say $_;
+        $sql->do( $_ );
+        unless ( $report->is_success ) {
+            say $_ for ( $report->errors );
+            exit 1;
+        }
+    }
 }
 
