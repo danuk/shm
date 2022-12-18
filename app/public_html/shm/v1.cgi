@@ -616,6 +616,8 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         print_header( %headers );
         print_json({
             TZ => $ENV{TZ},
+            version => get_service('config')->id( '_shm' )->get_data->{'version'},
+            date => scalar localtime,
             %info,
             data => \@data,
         });
