@@ -19,6 +19,12 @@ our %in = parse_args();
 $in{filter} = decode_json( $in{filter} ) if $in{filter};
 
 my $routes = {
+'/test' => {
+    GET => {
+        controller => 'Test',
+        skip_check_auth => 1,
+    },
+},
 '/user' => {
     GET => {
         controller => 'User',
