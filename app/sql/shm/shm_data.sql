@@ -15,9 +15,9 @@ INSERT INTO `services` VALUES
 
 INSERT INTO `events` VALUES
 (1,'UserService','vpn create','create',2,'{\"category\": \"vpn-%\"}'),
-(2,'UserService','vpn remove','remove',NULL,'{\"category\": \"vpn-%\"}'),
-(3,'UserService','vpn block','block',NULL,'{\"category\": \"vpn-%\"}'),
-(4,'UserService','vpn activate','activate',NULL,'{\"category\": \"vpn-%\"}')
+(2,'UserService','vpn remove','remove',0,'{\"category\": \"vpn-%\"}'),
+(3,'UserService','vpn block','block',0,'{\"category\": \"vpn-%\"}'),
+(4,'UserService','vpn activate','activate',0,'{\"category\": \"vpn-%\"}')
 ;
 
 INSERT INTO `templates` VALUES
