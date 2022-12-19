@@ -34,6 +34,7 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
         print "Loading data... ";
         import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_data.sql" );
     }
+    $config->id( '_shm' )->set( value => { version => $version } ) if $version;
     say "done";
 } elsif ( $version ) {
     # Start migrations
@@ -41,6 +42,7 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
 
     my $config = $config->id( '_shm' );
     my $cur_version = $config->get_data->{version};
+    say "Current version: $cur_version";
 
     my @migrations = `ls`; chomp for @migrations;
     my @versions = sort { version->parse( $a ) <=> version->parse( $b ) } @migrations;
