@@ -1,0 +1,10 @@
+
+do_sql( q(
+    ALTER TABLE events MODIFY COLUMN name CHAR(32);
+    DELETE FROM templates WHERE id='user_password_reset';
+    INSERT templates VALUES('user_password_reset','Уважаемый клиент.\n\nВаш новый пароль: {{ user.set_new_passwd }}\n\nАдрес кабинета: {{ config.cli.url }}','{\"subject\": \"SHM - Восстановление пароля\"}');
+    INSERT events VALUES(default,'UserService','User password reset','user_password_reset',1,'{\"category\": \"%\", \"template_id\": \"user_password_reset\"}');
+));
+
+1;
+

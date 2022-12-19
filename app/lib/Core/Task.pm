@@ -154,8 +154,12 @@ sub server {
 sub transport_name {
     my $self = shift;
 
-    if ( $self->event_settings && $self->event_settings->{transport} ) {
-        return $self->event_settings->{transport};
+    if ( my $transport = $self->event_settings->{transport} ) {
+        return $transport;
+    } elsif ( my $server_gid = $self->event->{server_gid} ) {
+        my $ServerGroups = get_service('ServerGroups', _id => $server_gid );
+        return undef unless $ServerGroups;
+        return $ServerGroups->get->{transport};
     } elsif ( my $server = $self->server ) {
         return $server->get->{transport} || undef;
     }

@@ -162,7 +162,7 @@ CREATE TABLE `events` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `kind` char(32) NOT NULL,
   `title` char(128) NOT NULL,
-  `name` char(16) NOT NULL,
+  `name` char(32) NOT NULL,
   `server_gid` int(11) DEFAULT NULL,
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)

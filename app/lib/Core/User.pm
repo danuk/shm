@@ -186,16 +186,6 @@ sub events {
                 method => 'activate_services',
             },
         },
-        'user_password_reset' => {
-            event => {
-                title => 'user password reset',
-                kind => 'Transport::Mail',
-                method => 'send',
-                settings => {
-                    template_name => 'user_password_reset',
-                },
-            },
-        },
     };
 }
 
@@ -269,6 +259,15 @@ sub passwd {
     return scalar $user->get;
 }
 
+sub set_new_passwd {
+    my $self = shift;
+
+    my $new_password = passgen();
+    $self->passwd( password => $new_password );
+
+    return $new_password;
+}
+
 sub gen_session {
     my $self = shift;
     my %args = (
@@ -313,14 +312,7 @@ sub passwd_reset_request {
             return { msg => 'User is blocked' };
         }
 
-        my $new_password = passgen();
-        $self->passwd( password => $new_password );
-
-        $self->make_event( 'user_password_reset',
-            settings => {
-                new_password => $new_password,
-            },
-        );
+        $self->make_event( 'user_password_reset' );
     }
 
     return { msg => 'Successful' };
