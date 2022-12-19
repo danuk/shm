@@ -32,6 +32,10 @@ sub parse {
 
     my $data = $args{data} || $self->data || return '';
 
+    if ( $args{task} && $args{task}->event ) {
+        $args{event_name} //= $args{task}->event->{name};
+    }
+
     my $vars = {
         user => get_service('user'),
         $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : (),
