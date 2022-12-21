@@ -30,10 +30,8 @@ sub job_make_forecasts {
     my $self = shift;
     my $task = shift;
 
-    unless ($task->event_settings &&
-            $task->event_settings->{template_id} &&
-            $task->server_id ) {
-        return FAIL, { error => 'template_id or server_id not defined' };
+    unless ( $task->event_settings && $task->event_settings->{template_id} ) {
+        return FAIL, { error => 'template_id not defined' };
     }
 
     my @users = get_service('user')->_list(
@@ -55,10 +53,7 @@ sub job_make_forecasts {
             event => {
                 title => 'Send forecast to user',
                 kind => 'Transport::Mail',
-                settings => {
-                    template_id => $task->event_settings->{template_id},
-                    server_id => $task->server_id,
-                },
+                settings => $task->event_settings,
             },
         );
     }
