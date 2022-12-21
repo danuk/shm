@@ -27,15 +27,24 @@ subtest 'Delete password reset request from spool' => sub {
 
     cmp_deeply( $row, superhashof({
           user_id => 40092,
+          prio => 0,
           status => 'NEW',
+          settings => undef,
+          user_service_id => undef,
+          response => undef,
           event => {
-              kind => "Transport::Mail",
-              method => "send",
+              id => 1,
+              name => 'user_password_reset',
+              kind => 'UserService',
+              server_gid => 3,
               settings => {
-                  template_name => "user_password_reset",
+                  template_id => 'user_password_reset',
+                  category => '%',
               },
-              title => "user password reset",
+              title => 'User password reset',
           },
+          delayed => 0,
+          executed => undef,
     }));
 
     $spool->id( $row->{id} )->delete();

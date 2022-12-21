@@ -112,7 +112,19 @@ subtest 'DELETE /v1/admin/service' => sub {
         method => 'DELETE',
         %user,
     );
-    is scalar $ret{json}->{error}, "Service not found";
+    is scalar $ret{json}->{error}, undef;
+};
+
+subtest 'Realy delete service' => sub {
+    use SHM;
+    use Core::System::ServiceManager qw( get_service );
+    SHM->new( user_id => 40092 );
+
+    my $service = get_service('service', _id => 1000 );
+
+    is( $service->get->{deleted}, 1 );
+    $service->_delete( where => { $service->get_table_key => 1000 } );
+    $service->commit();
 };
 
 done_testing();
