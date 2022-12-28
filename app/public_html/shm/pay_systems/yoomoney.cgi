@@ -31,6 +31,12 @@ if ( $digest ne $vars{sha1_hash} ) {
 }
 
 if ( $vars{test_notification} ) {
+    $user->payment(
+        user_id => 1,
+        money => 0,
+        pay_system_id => 'yoomoney-test',
+        comment => \%vars,
+    );
     print_json( { status => 200,  msg => 'Test OK' } );
     exit 0;
 }
