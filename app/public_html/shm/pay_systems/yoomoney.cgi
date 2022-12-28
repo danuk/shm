@@ -37,6 +37,7 @@ if ( $vars{test_notification} ) {
         pay_system_id => 'yoomoney-test',
         comment => \%vars,
     );
+    $user->commit;
     print_json( { status => 200,  msg => 'Test OK' } );
     exit 0;
 }
