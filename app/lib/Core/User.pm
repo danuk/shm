@@ -404,14 +404,9 @@ sub set_balance {
 sub payment {
     my $self = shift;
     my %args = (
-        money => undef,
+        money => 0,
         @_,
     );
-
-    unless ( $args{money} ) {
-        get_service('report')->add_error("`money` required");
-        return undef;
-    }
 
     if ( $args{user_id} ) {
         switch_user( $args{user_id} );
