@@ -5,7 +5,7 @@ function build_and_push {
 
     VERSION=$(git tag --points-at | head -n1)
     if [ "$VERSION" ]; then
-        TAGS+=("danuk/shm-$1:$VERSION")
+        #TAGS+=("danuk/shm-$1:$VERSION")
 
         VERSION_MINOR=$(echo $VERSION | cut -d '.' -f 1,2)
         TAGS+=("danuk/shm-$1:$VERSION_MINOR")
