@@ -45,7 +45,9 @@ sub job_make_forecasts {
 
     for ( @users ) {
         switch_user( $_->{user_id} );
-        my $ret = $pay->forecast();
+        my $ret = $pay->forecast(
+            $task->settings->{days_before_notification} ? ( days => $task->settings->{days_before_notification} ) : (),
+        );
         next unless $ret->{total};
 
         $spool->push(

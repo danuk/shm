@@ -74,7 +74,7 @@ sub pays {
 sub forecast {
     my $self = shift;
     my %args = (
-        days => 10,
+        days => 3,
         @_,
     );
 
