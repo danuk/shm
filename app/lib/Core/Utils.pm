@@ -30,6 +30,7 @@ our @EXPORT_OK = qw(
     passgen
     shm_test_api
     is_email
+    is_host
     html_escape
     hash_merge
 );
@@ -40,6 +41,8 @@ use JSON qw//;
 use Scalar::Util qw(looks_like_number);
 use File::Temp;
 use Data::Validate::Email qw(is_email);
+use Data::Validate::Domain qw(is_domain);
+use Data::Validate::IP qw(is_ipv4 is_ipv6);
 
 our %in;
 
@@ -326,6 +329,16 @@ sub hash_merge {
         }
     }
     return \%merge;
+}
+
+sub is_host {
+    my $host = shift;
+
+    return 1 if is_domain( $host );
+    return 1 if is_ipv4( $host );
+    return 1 if is_ipv6( $host );
+
+    return 0;
 }
 
 1;

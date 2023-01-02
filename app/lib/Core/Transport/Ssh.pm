@@ -10,7 +10,10 @@ use Net::OpenSSH;
 use POSIX qw(:signal_h WNOHANG);
 use POSIX ":sys_wait_h";
 use POSIX 'setsid';
-use Core::Utils qw( html_escape );
+use Core::Utils qw(
+    html_escape
+    is_host
+);
 
 sub events {
     return {
@@ -68,6 +71,16 @@ sub exec {
         $event_name //= $args{task}->event->{name};
     }
 
+    my $host = get_ssh_host( $args{host} );
+    unless ( $host ) {
+        get_service('report')->add_error("Incorrect ssh host: $host");
+        return undef, {
+            error => "Incorrect ssh host: $args{host}",
+        };
+    }
+
+    my $proxy_jump = get_ssh_host( $args{proxy_host} );
+
     if ( $args{template_id} ) {
         if ( my $template = get_service('template', _id => $args{template_id} ) ) {
             $args{cmd} ||= 'bash';
@@ -77,8 +90,10 @@ sub exec {
             );
         }
         else {
-            get_service('report')->add_error('Template not found: ' . $args{template_id});
-            return undef;
+            get_service('report')->add_error("Template not found: $args{template_id}");
+            return undef, {
+                error => "Template not found: $args{template_id}",
+            };
         }
     } elsif ( $args{cmd} ) {
         my $parser = get_service('template');
@@ -100,8 +115,8 @@ sub exec {
 
     my $console = get_service('console', _id => $args{pipeline_id} );
 
-    my $host_msg = "Trying connect to: $args{host}";
-    $host_msg .= " through $args{proxy_jump}" if $args{proxy_jump};
+    my $host_msg = "Trying connect to: $host";
+    $host_msg .= " through $proxy_jump" if $proxy_jump;
 
     logger->debug('SSH: ' . $host_msg );
     $console->append( "<font color=yellow>$host_msg ... </font>" );
@@ -112,7 +127,7 @@ sub exec {
 
     my $ret_code;
     my $ssh = Net::OpenSSH->new(
-        $args{host},
+        $host,
         port => $args{port},
         key_path => $key_file,
         passphrase => undef,
@@ -121,8 +136,8 @@ sub exec {
         kill_ssh_on_timeout => 1,
         strict_mode => 0,
         master_opts => [-o => "StrictHostKeyChecking=no" ],
-        $args{proxy_jump} ? (
-            proxy_command => "ssh -o StrictHostKeyChecking=no -i $key_file -W %h:%p $args{proxy_jump}"
+        $proxy_jump ? (
+            proxy_command => "ssh -o StrictHostKeyChecking=no -i $key_file -W %h:%p $proxy_jump"
         ) : (),
     );
     unlink $key_file;
@@ -245,4 +260,31 @@ sub ssh_init {
     return $args;
 }
 
+sub get_ssh_host {
+    my $host = shift;
+
+    my ( $user, $host_name );
+    if ( $host=~/@/ ) {
+        ( $user, $host_name ) = split( /\@/, $host );
+    }
+    $host_name //= $host;
+
+    if ( $user ) {
+        unless ( $user=~/^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)$/i ) {
+            logger->warning('SSH user incorrect: ' . $user );
+            return undef;
+        }
+    } else {
+        $user = 'root';
+    }
+
+    unless ( is_host( $host_name ) ) {
+        logger->warning('SSH host incorrect: ' . $host_name );
+        return undef;
+    }
+
+    return sprintf("%s@%s", $user, $host_name );
+}
+
 1;
+

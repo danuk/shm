@@ -69,13 +69,14 @@ sub make_task {
     }
 
     my ( $status, $response_data ) = $transport->send( $self );
-    unless ( $status ) {
-        return $self->task_answer( TASK_FAIL, error => "Transport error", %{ $response_data//={} } );
+    if ( !defined $status ) {
+        return $self->task_answer( TASK_STUCK, %{ $response_data//={} } );
     }
 
-    my $service = $self->get_service_for_transport;
-
-    if ( $status == SUCCESS ) {
+    if ( $status == FAIL ) {
+        return $self->task_answer( TASK_FAIL, error => 'Transport error', %{ $response_data//={} } );
+    } elsif ( $status == SUCCESS ) {
+        my $service = $self->get_service_for_transport;
         if ( $service->can('transport_response_data') ) {
             my ( $status, $payload ) = $service->transport_response_data( %{ $response_data || {} } );
             unless ( $status ) {

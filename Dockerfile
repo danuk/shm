@@ -27,6 +27,7 @@ RUN apt-get install -y \
     libnet-idn-encode-perl \
     libdata-validate-domain-perl \
     libdata-validate-email-perl \
+    libdata-validate-ip-perl \
     libdigest-sha-perl \
     libscalar-util-numeric-perl \
     libtemplate-perl \
