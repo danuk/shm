@@ -27,7 +27,7 @@ sub send {
     } elsif ( my $server = $task->server ) {
         %server = $server->get;
     } else {
-        return SUCCESS, {
+        return undef, {
             error => sprintf( "Can't found server for server group", $server_gid ),
         }
     }
@@ -42,7 +42,7 @@ sub send {
 
     $settings{from} //= $config->{from};
     unless ( $settings{from} ) {
-        return SUCCESS, {
+        return undef, {
             error => "From undefined",
         }
     }
@@ -62,20 +62,18 @@ sub send {
 
     my $message;
     if ( $settings{template_id} || $settings{template_name} ) {
-
         my $template;
-
         if ( $settings{template_id} ) {
             $template = get_service('template', _id => $settings{template_id} );
             unless ( $template ) {
-                return SUCCESS, {
+                return undef, {
                     error => "template with id `$settings{template_id}` not found",
                 }
             }
         } elsif ( $settings{template_name} ) {
             $template = get_service('template')->id( $settings{template_name} );
             unless ( $template ) {
-                return SUCCESS, {
+                return undef, {
                     error => "template with name `$settings{template_name}` not found",
                 }
             }
@@ -92,7 +90,7 @@ sub send {
         );
     } else {
         unless ( $message = $settings{message} ) {
-            return SUCCESS, {
+            return undef, {
                 error => "message undefined",
             }
         }
