@@ -11,6 +11,9 @@ use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP qw();
 use Try::Tiny;
 use MIME::Base64 qw(encode_base64);
+use Core::Utils qw(
+    is_email
+);
 
 sub send {
     my $self = shift;
@@ -113,6 +116,26 @@ sub send_mail {
         message => undef,
         @_,
     );
+
+    return undef, {
+        error => "Incorrect FROM address: $args{from}",
+    } unless is_email( $args{from} );
+
+    return undef, {
+        error => "Incorrect email address: $args{to}",
+    } unless is_email( $args{to} );
+
+    if ( my $email = $args{cc} ) {
+        return undef, {
+            error => "Incorrect CC address: $email",
+        } unless is_email( $email );
+    }
+
+    if ( my $email = $args{bcc} ) {
+        return undef, {
+            error => "Incorrect BCc address: $email",
+        } unless is_email( $email );
+    }
 
     my $email = Email::Simple->create(
         header => [

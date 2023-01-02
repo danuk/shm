@@ -5,6 +5,9 @@ use utf8;
 use Test::More;
 use Test::Deep;
 use Data::Dumper;
+use Core::Utils qw(
+    is_email
+);
 
 $ENV{SHM_TEST} = 1;
 
@@ -24,6 +27,11 @@ my $ret = $mail->send_mail(
 );
 
 is 1,1;
+
+is( is_email('test@server.ru'), 'test@server.ru' );
+is( is_email('server.ru'), undef );
+is( is_email('<test>test@server.ru'), undef );
+
 
 done_testing();
 
