@@ -20,6 +20,7 @@ services:
       DEV: 1
       TRUNCATE_DB_ON_START: 1
       TZ: Europe/Moscow
+      LANG: C.UTF-8
       DB_NAME: shm-db
       DB_USER: shm-db-user
       DB_PASS: shm-db-user-pass
@@ -41,6 +42,7 @@ services:
     restart: always
     environment:
       TZ: Europe/Moscow
+      LANG: C.UTF-8
       SHM_ROLE: spool
       DB_NAME: shm-db
       DB_USER: shm-db-user
@@ -89,6 +91,7 @@ services:
     restart: always
     environment:
       TZ: Europe/Moscow
+      LANG: C.UTF-8
       MYSQL_ROOT_PASSWORD: shm-db-root-pass
       MYSQL_DATABASE: shm-db
       MYSQL_USER: shm-db-user

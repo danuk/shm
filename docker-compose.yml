@@ -10,6 +10,7 @@ services:
     restart: always
     environment:
       TZ: ${TZ}
+      LANG: C.UTF-8
       DB_NAME: ${MYSQL_DATABASE}
       DB_USER: ${MYSQL_USER}
       DB_PASS: ${MYSQL_PASS}
@@ -25,6 +26,7 @@ services:
     restart: always
     environment:
       TZ: ${TZ}
+      LANG: C.UTF-8
       SHM_ROLE: "spool"
       DB_NAME: ${MYSQL_DATABASE}
       DB_USER: ${MYSQL_USER}
@@ -59,6 +61,7 @@ services:
     restart: always
     environment:
       TZ: ${TZ}
+      LANG: C.UTF-8
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASS}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
