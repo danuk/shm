@@ -215,6 +215,7 @@ sub print_json {
 
     my $json = new JSON;
     $json->canonical( 1 );
+    $json->latin1( 1 );
     $json->pretty( 1 ) if $ENV{DEBUG};
 
     say $json->canonical->encode( force_numbers( $ref ) );
