@@ -181,6 +181,7 @@ sub calc_withdraw {
     }
 
     $wd{discount}||= get_service_discount( %wd );
+    $wd{discount} = 0 if $service{no_discount};
 
     $wd{total} = ( $wd{total} - $wd{total} * $wd{discount} / 100 ) * $wd{qnt};
 
@@ -334,7 +335,6 @@ sub remove {
 }
 
 # Анализируем услугу и решаем какую скидку давать (доменам не давать)
-# более 50% не давать
 sub get_service_discount {
     my %args = (
         months => undef,
@@ -357,7 +357,7 @@ sub get_service_discount {
         }
     }
 
-    $percent = 50 if $percent > 50;
+    $percent = 100 if $percent > 100;
     return $percent;
 }
 
