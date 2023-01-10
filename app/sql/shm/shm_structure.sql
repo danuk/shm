@@ -227,7 +227,7 @@ CREATE TABLE `user_services` (
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
-  `owner` int(11) NOT NULL DEFAULT '0',
+  `partner_id` int(11) DEFAULT NULL,
   `login` char(64) NOT NULL,
   `password` char(64) DEFAULT NULL,
   `type` tinyint(4) DEFAULT NULL,
@@ -235,12 +235,10 @@ CREATE TABLE `users` (
   `last_login` datetime DEFAULT NULL,
   `discount` tinyint(4) NOT NULL DEFAULT '0',
   `balance` decimal(10,2) NOT NULL,
-  `partner` tinyint(4) DEFAULT '10',
   `credit` decimal(10,2) NOT NULL,
   `comment` char(255) DEFAULT NULL,
   `dogovor` char(32) DEFAULT NULL,
   `block` tinyint(4) NOT NULL DEFAULT '0',
-  `partner_disc` tinyint(4) DEFAULT '0',
   `gid` tinyint(4) DEFAULT NULL,
   `perm_credit` tinyint(4) DEFAULT '0',
   `full_name` char(255) DEFAULT NULL,

@@ -8,14 +8,18 @@ use Carp qw(confess);
 use CGI::Carp qw(fatalsToBrowser);
 
 use CGI;
-use CGI::Cookie;
 use JSON qw//;
 use MIME::Base64;
 
 use Core::System::ServiceManager qw( get_service );
 use Core::Sql::Data;
 use Scalar::Util qw(blessed);
-use Core::Utils qw(force_numbers switch_user parse_headers);
+use Core::Utils qw(
+    force_numbers
+    switch_user
+    parse_headers
+    get_cookies
+);
 
 use base qw(Exporter);
 
@@ -154,9 +158,8 @@ sub validate_session {
     my $session_id = $args{session_id};
 
     unless ( $session_id ) {
-        my %cookies = fetch CGI::Cookie;
-        return undef if not exists $cookies{session_id};
-        $session_id = $cookies{session_id}->value;
+        $session_id = get_cookies('session_id');
+        return undef unless $session_id;
     }
 
     my $session = get_service('sessions')->validate(

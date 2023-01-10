@@ -9,6 +9,7 @@ use Core::Utils qw(
     is_email
     passgen
     now
+    get_cookies
 );
 use Core::Const;
 
@@ -47,7 +48,7 @@ sub structure {
         user_id => {
             type => 'key',
         },
-        owner => {
+        partner_id => {
             type => 'number',
             hide_for_user => 1,
         },
@@ -78,10 +79,6 @@ sub structure {
             type => 'number',
             default => 0,
         },
-        partner => {
-            type => 'number',
-            default => 0,
-        },
         credit => {
             type => 'number',
             default => 0,
@@ -94,10 +91,6 @@ sub structure {
             type => 'text',
         },
         block => {
-            type => 'number',
-            default => 0,
-        },
-        partner_disc => {
             type => 'number',
             default => 0,
         },
@@ -361,6 +354,10 @@ sub reg {
         salt => $args{login},
         password => $args{password},
     );
+
+    if ( my $partner_id = get_cookies('partner_id') ) {
+        $args{partner_id} = $partner_id if $self->id( $partner_id );
+    }
 
     my $user_id = $self->add( %args, password => $password );
 

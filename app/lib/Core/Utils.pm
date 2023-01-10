@@ -3,6 +3,7 @@ package Core::Utils;
 use v5.14;
 use utf8;
 use Encode qw/_utf8_on/;
+use CGI::Cookie;
 
 use base qw(Exporter);
 
@@ -20,6 +21,7 @@ our @EXPORT_OK = qw(
     now
     parse_args
     parse_headers
+    get_cookies
     string_to_utime
     utime_to_string
     decode_json
@@ -339,6 +341,19 @@ sub is_host {
     return 1 if is_ipv6( $host );
 
     return 0;
+}
+
+sub get_cookies {
+    my $name = shift;
+
+    my %cookies = fetch CGI::Cookie;
+
+    if ( $name ) {
+        return undef unless $cookies{ $name };
+        return $cookies{ $name }->value;
+    } else {
+        return %cookies;
+    }
 }
 
 1;

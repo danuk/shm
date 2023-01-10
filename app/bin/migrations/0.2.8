@@ -1,0 +1,10 @@
+
+do_sql( q(
+    ALTER TABLE users RENAME COLUMN owner TO partner_id;
+    ALTER TABLE users MODIFY partner_id int(11) DEFAULT NULL;
+    ALTER TABLE users DROP COLUMN partner;
+    ALTER TABLE users DROP COLUMN partner_disc;
+));
+
+1;
+
