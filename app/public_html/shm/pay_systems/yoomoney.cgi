@@ -46,7 +46,17 @@ my $date = time;
 my ( $user_id, $amount ) = @vars{ qw/label withdraw_amount/ };
 
 unless ( $user_id ) {
-    print_json( { status => 400 } );
+    print_json( { status => 400, msg => 'User (label) required' } );
+    exit 0;
+}
+
+unless ( $user = $user->id( $user_id ) ) {
+    print_json( { status => 404, msg => "User [$user_id] not found" } );
+    exit 0;
+}
+
+unless ( $user->lock( timeout => 10 )) {
+    print_json( { status => 408, msg => "The service is locked. Try again later" } );
     exit 0;
 }
 
@@ -57,9 +67,9 @@ $user->payment(
     comment => \%vars,
 );
 
-print_json( { status => 200, msg => "Payment successful" } );
-
 $user->commit;
+
+print_json( { status => 200, msg => "Payment successful" } );
 
 exit 0;
 
