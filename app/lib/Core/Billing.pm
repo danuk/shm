@@ -149,7 +149,7 @@ sub add_withdraw_next {
     my %wd = calc_withdraw(
         $self->billing,
         %{ $wd },
-        months => int $wd->{months},
+        #months => int $wd->{months},
         bonus => 0,
     );
 
