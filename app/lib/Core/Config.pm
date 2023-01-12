@@ -66,16 +66,20 @@ sub local {
 
 sub data_by_name {
     my $self = shift;
-    my %args = (
-        key => undef,
-        @_,
-    );
+    my $key = shift;
 
     my @list = $self->list( where => {
-        $args{key} ? ( key => $args{key} ) : (),
+        $key ? ( key => $key ) : (),
     });
 
     my %ret = map{ $_->{key} => $_->{value} } @list;
+
+    if ( $key ) {
+        for ( keys %{ $ret{ $key } } ) {
+            $ret{ $_ } = delete $ret{ $key }->{ $_ };
+        }
+        delete $ret{ $key };
+    }
 
     return \%ret;
 }
@@ -96,27 +100,14 @@ sub delete {
 
 sub get_data {
     my $self = shift;
-    my %args = (
-        key => undef,
-        @_,
-    );
 
-    my $obj = $self;
-    if ( $args{key} ) {
-        unless ( $obj = $self->id( $args{key} ) ) {
-            logger->warning("Config not found");
-            get_service('report')->add_error('Config not found');
-            return undef;
-        }
-    }
-
-    my $config = $obj->list(
+    my $config = $self->list(
         where => {
-            key => $obj->id,
+            key => $self->id,
         }
     );
 
-    return $config->{ $obj->id }->{value};
+    return $config->{ $self->id }->{value};
 }
 
 sub list_for_api {

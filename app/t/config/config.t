@@ -21,6 +21,8 @@ my $data = $config->data_by_name;
 is( $data->{company}->{name}, 'My Company LTD', 'Check company name' );
 is( $config->id('company')->get->{value}->{name}, 'My Company LTD' );
 is( $config->id('company')->get_data->{name}, 'My Company LTD' );
+is( $config->id('company')->get_data->{_name}, undef );
+is( $config->data_by_name('company')->{name}, 'My Company LTD' );
 
 my $key = $config->add(
     key => 'new_param',
@@ -39,5 +41,8 @@ my $version = $config->id( '_shm')->get_data;
 cmp_deeply( $version, {
     version => ignore(),
 });
+
+is( $config->data_by_name( 'billing')->{partner}->{income_percent}, 10 );
+is( $config->data_by_name( '_billing')->{partner}->{income_percent}, undef );
 
 done_testing();
