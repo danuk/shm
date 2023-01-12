@@ -43,15 +43,16 @@ sub job_make_forecasts {
     my $spool = get_service('spool');
     my $pay = get_service('pay');
 
-    for ( @users ) {
-        switch_user( $_->{user_id} );
+    for my $u ( @users ) {
+        switch_user( $u->{user_id} );
         my $ret = $pay->forecast(
             $task->settings->{days_before_notification} ? ( days => $task->settings->{days_before_notification} ) : (),
         );
         next unless $ret->{total};
+        next if $ret->{total} <= $u->{balance} + $u->{bonus} + $u->{credit};
 
         $spool->push(
-            user_id => $_->{user_id},
+            user_id => $u->{user_id},
             event => {
                 title => 'Send forecast to user',
                 kind => 'Transport::Mail',
