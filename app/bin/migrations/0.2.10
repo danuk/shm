@@ -1,0 +1,7 @@
+
+do_sql( q(
+    UPDATE config SET `key`='billing' WHERE `key`='_billing';
+));
+
+1;
+

@@ -22,7 +22,7 @@ my $us;
 my $user_services = get_service('UserService');
 
 # Switch billing to Simpler
-my $config = get_service("config", _id => '_billing' );
+my $config = get_service("config", _id => 'billing' );
 $config->set( value => {'type' => 'Simpler' } );
 
 subtest 'Prepare user for test billing' => sub {

@@ -299,7 +299,7 @@ INSERT INTO `profiles` VALUES
 
 INSERT INTO `config` VALUES
 ("_shm", '{"version":"0.0.3"}'),
-("_billing",'{"type":"Honest"}'),
+("billing",'{"type":"Honest"}'),
 ("company", '{"name":"My Company LTD"}'),
 ("api",     '{"url":"http://127.0.0.1:8081"}'),
 ("cli",     '{"url":"http://127.0.0.1:8082"}'),
