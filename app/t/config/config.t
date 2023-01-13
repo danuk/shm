@@ -42,7 +42,7 @@ cmp_deeply( $version, {
     version => ignore(),
 });
 
-is( $config->data_by_name( 'billing')->{partner}->{income_percent}, 10 );
+is( $config->data_by_name( 'billing')->{partner}->{income_percent}, 20 );
 is( $config->data_by_name( '_billing')->{partner}->{income_percent}, undef );
 
 done_testing();

@@ -32,7 +32,7 @@ INSERT INTO `templates` VALUES
 
 INSERT INTO `config` VALUES
 ("_shm", '{"version":"0.0.3"}'),
-("billing",'{"type":"Simpler"}'),
+('billing','{"type": "Simpler", "partner": {"income_percent": 0}}'),
 ("company", '{"name":"My Company LTD"}'),
 ("api",     '{"url":"http://127.0.0.1:8081"}'),
 ("cli",     '{"url":"http://127.0.0.1:8082"}'),

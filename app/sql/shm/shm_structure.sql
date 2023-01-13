@@ -354,4 +354,15 @@ CREATE TABLE IF NOT EXISTS `storage` (
   PRIMARY KEY (`user_id`,`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS `bonus_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `bonus` decimal(10,2) NOT NULL,
+  `comment` json DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+
+
 COMMIT;

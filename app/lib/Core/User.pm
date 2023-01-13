@@ -398,6 +398,19 @@ sub set_balance {
     return $ret;
 }
 
+sub set_bonus {
+    my $self = shift;
+    my %args = (
+        bonus => 0,
+        comment => {},
+        @_,
+    );
+
+    $self->bonus->add( %args );
+
+    return $self->set_balance( bonus => $args{bonus} );
+}
+
 sub payment {
     my $self = shift;
     my %args = (
@@ -426,6 +439,11 @@ sub payment {
 sub pays {
     my $self = shift;
     return get_service('pay', user_id => $self->id );
+}
+
+sub bonus {
+    my $self = shift;
+    return get_service('bonus', user_id => $self->id );
 }
 
 sub withdraws {
