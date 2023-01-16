@@ -22,13 +22,27 @@ sub send {
     # First trying to determine server_id by group.
     my %server;
     if ( my $server_gid = $task->event->{server_gid} ) {
-        my ( $server ) = get_service('ServerGroups', _id => $server_gid )->get_servers;
+
+        my $sg = get_service('ServerGroups', _id => $server_gid );
+        unless ( $sg ) {
+            return undef, {
+                error => sprintf( "Can't find server group", $server_gid ),
+            };
+        }
+
+        my ( $server ) = $sg->get_servers;
+        unless ( $server ) {
+            return undef, {
+                error => sprintf( "Can't find server for server group", $server_gid ),
+            };
+        }
+
         %server = %{ $server };
     } elsif ( my $server = $task->server ) {
         %server = $server->get;
     } else {
         return undef, {
-            error => sprintf( "Can't found server for server group", $server_gid ),
+            error => sprintf( "Can't find server for server group", $server_gid ),
         }
     }
 
