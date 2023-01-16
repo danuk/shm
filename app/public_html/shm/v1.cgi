@@ -426,7 +426,7 @@ my $routes = {
 '/admin/config/:key' => {
     GET => {
         controller => 'Config',
-        method => 'get_data',
+        method => 'api_data_by_name',
         required => ['key'],
     },
 },

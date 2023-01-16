@@ -64,6 +64,16 @@ sub local {
     return $self->{config}->{local}->{ $section };
 }
 
+sub api_data_by_name {
+    my $self = shift;
+    my %args = (
+        keys => undef,
+        @_,
+    );
+
+    return $self->data_by_name( $args{key} );
+}
+
 sub data_by_name {
     my $self = shift;
     my $key = shift;
