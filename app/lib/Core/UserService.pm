@@ -350,12 +350,20 @@ sub activate_services {
         order => [ user_service_id => 'ASC' ],
     );
 
+    my @locked_services;
+
     for ( @list ) {
-        get_service('USObject', _id => $_->{user_service_id})->touch;
+        my $us = get_service('USObject', _id => $_->{user_service_id});
+        unless ( $us->lock( timeout => 5 ) ) {
+            push @locked_services, $_->{user_service_id};
+            next;
+        }
+        $us->touch;
     }
 
-    return SUCCESS, {
+    return @locked_services ? FAIL: SUCCESS, {
         msg => sprintf("affected services: [%s]", (join ",", map $_->{user_service_id}, @list)),
+         @locked_services ? ( error =>  sprintf("locked services: [%s]", (join ",", @locked_services )) ) : (),
     };
 }
 

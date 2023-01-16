@@ -19,8 +19,13 @@ sub job_prolongate {
             $_->{expire},
         );
 
-        switch_user( $_->{user_id} );
-        get_service('us', _id => $_->{user_service_id} )->touch;
+        my $user_id = $_->{user_id};
+        my $user = get_service('user', _id => $user_id );
+        return undef, { msg => 'ERROR: user not exists' } unless $user;
+        next unless $user->lock( timeout => 5 );
+
+        switch_user( $user_id );
+        get_service('us',  user_id => $user_id, _id => $_->{user_service_id} )->touch;
     }
 
     return SUCCESS, { msg => 'successful' };

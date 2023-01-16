@@ -94,6 +94,9 @@ sub process_one {
 
     my $user = get_service('user', _id => $task->{user_id} );
     switch_user( $task->{user_id } );
+    if ( $user->id != 1 ) {
+        return undef unless $user->lock( timeout => 5 );
+    }
 
     my $spool = get_service('spool', _id => $task->{id} )->res( $task );
 
