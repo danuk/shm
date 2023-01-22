@@ -19,6 +19,7 @@ $service->set( cost => 5 );
 my $si = get_service('service', _id => 1)->get;
 is ( $si->{service_id}, 1 );
 is ( $si->{cost}, 5 );
+is ( $service->get_cost, 5 );
 
 $si = get_service('service', _id => 2)->get;
 

@@ -25,8 +25,8 @@ use vars qw($AUTOLOAD);
 sub AUTOLOAD {
     my $self = shift;
 
-    if ( $AUTOLOAD =~ /^.*::(\w+)$/ ) {
-        my $method = $1;
+    if ( $AUTOLOAD =~ /^.*::(get_)?(\w+)$/ ) {
+        my $method = $2;
 
         unless ( my %res = $self->res ) {
             # load data if not loaded before

@@ -201,24 +201,23 @@ sub is_pay {
         return undef;
     }
 
-    my $wd = $self->withdraw->get;
+    my $wd = $self->withdraw;
     # Already withdraw
-    return 1 if $wd->{withdraw_date};
+    return 1 if $wd->get_withdraw_date;
 
-    my $user = get_service('user')->get;
-
-    my $balance = $user->{balance} + $user->{credit};;
+    my $user = $self->user;
+    my $balance = $user->get_balance + $user->get_credit;
 
     # No enough money
     return 0 if (
-                    $wd->{total} > 0 &&
-                    $balance < $wd->{total} &&
-                    !$user->{can_overdraft} &&
+                    $wd->get_total > 0 &&
+                    $balance < $wd->get_total &&
+                    !$user->get_can_overdraft &&
                     !$self->get_pay_in_credit );
 
-    $self->user->set_balance( balance => -$wd->{total} );
-    $self->withdraw->set( withdraw_date => now );
-    $self->add_bonuses_for_partners( $wd->{total} );
+    $user->set_balance( balance => -$wd->get_total );
+    $wd->set( withdraw_date => now );
+    $self->add_bonuses_for_partners( $wd->get_total );
 
     return 1;
 }

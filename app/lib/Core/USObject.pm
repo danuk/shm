@@ -7,22 +7,6 @@ use Core::Const;
 use Core::Utils qw/ now passgen /;
 use Core::Billing;
 
-use vars qw($AUTOLOAD);
-
-sub AUTOLOAD {
-    my $self = shift;
-
-    if ( $AUTOLOAD =~ /^.*::(get_)?(\w+)$/ ) {
-        my $method = $2;
-        return $self->res->{ $method };
-    } elsif ( $AUTOLOAD=~/::DESTROY$/ ) {
-        # Skip
-    } else {
-        confess ("Method not exists: " . $AUTOLOAD );
-    }
-    return 'us_'.$self->id;
-}
-
 sub table { return 'user_services' };
 
 sub structure {
@@ -132,7 +116,7 @@ sub switch_to_next {
 
 sub user {
     my $self = shift;
-    return get_service('user', _id => $self->res->{user_id} );
+    return get_service('user', _id => $self->get_user_id );
 }
 
 sub has_expired {
@@ -211,7 +195,7 @@ sub data_for_transport {
         @_,
     );
 
-    my ( $ret ) = get_service('UserService', user_id => $self->res->{user_id} )->
+    my ( $ret ) = get_service('UserService', user_id => $self->get_user_id )->
         res( { $self->id => scalar $self->get } )->with('settings','services','withdraws')->get;
 
     return SUCCESS, {
@@ -333,7 +317,7 @@ sub make_commands_by_event {
 
 sub spool {
     my $self = shift;
-    return get_service('spool', user_id => $self->res->{user_id} );
+    return get_service('spool', user_id => $self->get_user_id );
 }
 
 sub has_children_progress {

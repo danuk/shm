@@ -14,32 +14,6 @@ use Core::Utils qw(
 use Core::Const;
 
 use Digest::SHA qw(sha1_hex);
-use vars qw($AUTOLOAD);
-
-sub AUTOLOAD {
-    my $self = shift;
-
-    if ( $AUTOLOAD =~ /^.*::(get_)?(\w+)$/ ) {
-        my $method = $2;
-
-        unless ( my %res = $self->res ) {
-            # load data if not loaded before
-            $self->get;
-        }
-
-        if ( exists $self->res->{ $method } ) {
-            return $self->res->{ $method };
-        }
-        else {
-            logger->warning("Field `$method` not exists in structure. User not found?");
-            return undef;
-        }
-    } elsif ( $AUTOLOAD=~/::DESTROY$/ ) {
-        # Skip
-    } else {
-        confess ("Method not exists: " . $AUTOLOAD );
-    }
-}
 
 sub table { return 'users' };
 

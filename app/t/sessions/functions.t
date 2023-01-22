@@ -23,8 +23,8 @@ subtest 'Check user gen_session()' => sub {
 
 subtest 'Check session add' => sub {
     my $new_session = get_service('sessions')->add();
-    my $session = get_service('sessions', _id => $new_session )->get;
-    is ( $session->{user_id}, 40092, 'Check session user_id' );
+    my $session = get_service('sessions', _id => $new_session );
+    is ( $session->get_user_id, 40092, 'Check session user_id' );
 };
 
 subtest 'Check session add with custom parameters' => sub {
@@ -32,8 +32,8 @@ subtest 'Check session add with custom parameters' => sub {
         user_id => 1,
         settings => {},
     );
-    my $session = get_service('sessions', _id => $new_session )->get;
-    is ( $session->{user_id}, 1, 'Check session user_id' );
+    my $session = get_service('sessions', _id => $new_session );
+    is ( $session->get_user_id, 1, 'Check session user_id' );
 };
 
 done_testing();
