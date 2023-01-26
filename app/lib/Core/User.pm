@@ -175,6 +175,8 @@ sub auth {
         @_,
     );
 
+    $args{login} = lc( $args{login} );
+
     return undef unless $args{login} || $args{password};
 
     my $password = $self->crypt_password(
@@ -323,6 +325,8 @@ sub reg {
         password => undef,
         @_,
     );
+
+    $args{login} = lc( $args{login} );
 
     my $password = $self->crypt_password(
         salt => $args{login},
