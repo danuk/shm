@@ -199,7 +199,7 @@ sub decode_json {
 
     my $json;
     eval{ $json = JSON->new->decode( $data ) } or do {
-        get_service('logger')->warning("Incorrect JSON data: " . $data);
+        get_service('logger')->error("Incorrect JSON data: " . $data);
     };
 
     return $json;
@@ -209,8 +209,8 @@ sub encode_json {
     my $data = shift || return undef;
 
     my $json;
-    eval{ $json = JSON->new->latin1->encode( $data ) } or do {
-        get_service('logger')->warning("Incorrect JSON data: " . $data);
+    eval{ $json = JSON->new->latin1->canonical(1)->encode( $data ) } or do {
+        get_service('logger')->error("Incorrect JSON data: " . $data);
     };
 
     return $json;

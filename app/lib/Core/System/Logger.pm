@@ -6,6 +6,7 @@ use base qw( Core::System::Service );
 
 use Data::Dumper;
 use Core::System::ServiceManager qw(get_service $data);
+use Core::Utils qw( encode_json  );
 
 $SIG{__DIE__} = sub { get_service('logger')->warning( @_ ) };
 
@@ -71,30 +72,43 @@ sub add_stacktrace_from_level {
 sub make_message {
     my $self = shift;
     my %args = (
-        msg => '',
-        tag => '',
+        msg => [],
+        tag => 'DEBUG',
         stacktrace => 1,
+        time => 1,
         color => 1,
+        pid => 1,
         @_,
     );
+
+    my @msg = @{ $args{msg} };
+    for ( @msg ) {
+        if ( ref $_ eq 'HASH' || ref $_ eq 'ARRAY' ) {
+            $_ = encode_json( $_ );
+        }
+    }
+    my $msg = join(' ', @msg );
 
     my ($package, $filename, $line) = caller(1);
 
     my %tag_color = (
+        INFO => "\033[0;34m$args{tag}\033[0m",
         ERROR => "\033[0;31m$args{tag}\033[0m",
         FATAL => "\033[0;31m$args{tag}\033[0m",
         WARNING => "\033[0;33m$args{tag}\033[0m",
-        DEFAULT => "\033[0;32m$args{tag}\033[0m",
+        DEBUG => "\033[0;32m$args{tag}\033[0m",
     );
 
-    my $tag_string = $tag_color{ $args{tag} } || $tag_color{DEFAULT};
-    my $res = ( $args{color} ? "$tag_string\t" : '' )
-            . "[" . scalar(localtime) .  "]"
-            . " pid: $$"
-            . " message: {{ $args{msg} }}"
-            . "\n";
+    my @ret;
+    push @ret, $args{color} ? "$tag_color{ $args{tag} }\t" : "$args{tag}\t" if $args{tag};
+    push @ret, "[" . scalar(localtime) .  "]" if $args{time};
+    push @ret, "pid: $$" if $args{pid};
+    push @ret, "message: {{ $msg }}";
+
+    my $res = join ' ', @ret;
 
     if ($args{stacktrace}) {
+        $res .= "\n";
         my $level = 2;
         while ( my ($package, $filename, $line, $subroutine) = caller($level++) ) {
             $res .= "\t$subroutine at $filename line $line\n";
@@ -150,22 +164,22 @@ sub level_permitted {
 sub _log {
     my $self = shift;
     my $level = shift;
-    my $msg = join '', @_;
+    my @msg = @_;
 
     my $level_number = $LEVELS{ uc $level } // die "Wrong log level '$level'";
     if ( $self->level_permitted( $level ) ) {
         $self->my_warn( $self->make_message(
-            msg => $msg, tag => $level,
+            msg => \@msg, tag => $level,
             stacktrace => $level_number >= $self->{stacktrace_from}? 1 : 0,
         ) );
     }
-    write_log_file(
-        $self->make_message(
-            msg => $msg,
-            tag => $level,
-            color => 0,
-        )
-    );
+    # write_log_file(
+    #     $self->make_message(
+    #         msg => $msg,
+    #         tag => $level,
+    #         color => 0,
+    #     )
+    # );
     return $self;
 }
 

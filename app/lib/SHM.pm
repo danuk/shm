@@ -47,9 +47,11 @@ my $real_user_id;
 my $cgi = CGI->new;
 my %in;
 
-
 sub new {
     my $class = shift;
+
+    # Redirect logs to PIPE
+    open STDERR, ">>/tmp/shm_log" if -p "/tmp/shm_log";
 
     if ( $ENV{REQUEST_METHOD} eq 'OPTIONS' ) {
         print_header(

@@ -18,6 +18,7 @@ services:
     restart: always
     environment:
       DEV: 1
+      DEBUG: DEBUG
       TRUNCATE_DB_ON_START: 1
       TZ: Europe/Moscow
       LANG: C.UTF-8

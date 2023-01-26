@@ -18,6 +18,8 @@ else
     # Create SHM database structure and fill data
     /app/bin/init.pl
 
-    uwsgi --ini=/etc/uwsgi/apps-enabled/shm.ini
+    uwsgi --ini=/etc/uwsgi/apps-enabled/shm.ini &
+    test -p /tmp/shm_log || mkfifo /tmp/shm_log
+    tail -f /tmp/shm_log
 fi
 

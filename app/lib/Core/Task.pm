@@ -113,6 +113,9 @@ sub task_answer {
     my $status = shift;
     my %args = @_;
 
+    my $logger_level = $status eq TASK_SUCCESS ? 'debug' : 'error';
+    logger->$logger_level( 'TASK ANSWER:', $status,  %args );
+
     return $status, {
         response => {
             %args,
