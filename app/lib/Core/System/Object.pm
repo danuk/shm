@@ -11,8 +11,7 @@ sub _eval_extra_attributes {
         if ( $self->get__extra() ) {
             my $extra = eval 'my ' . $self->get__extra();
             if($@){
-                logger->error( 'Can not evaling data: '.$@.'; FIELD: _extra; ID: '.$self->get_id() );
-                return undef;
+                logger->fatal( 'Can not evaling data: '.$@.'; FIELD: _extra; ID: '.$self->get_id() );
             } else {
                 $self->{_extra_attributes_} = $extra;
             }
@@ -203,8 +202,7 @@ sub DESTROY {
 sub AUTOLOAD {
     my $self = shift;
     my $method = our $AUTOLOAD;
-    logger->error("Unknown method has been called: " . $method);
-    return undef;
+    logger->fatal("Unknown method has been called: " . $method);
 }
 
 1;

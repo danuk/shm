@@ -73,7 +73,7 @@ sub next {
     my $self = shift;
 
     unless ( $self->res->{user_service_id} ) {
-        logger->error("Can't get next services for unknown service");
+        logger->fatal("Can't get next services for unknown service");
     }
 
     my @list = $self->list(

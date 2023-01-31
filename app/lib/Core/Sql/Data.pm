@@ -209,7 +209,7 @@ sub convert_sql_structure_data {
         }
     }
     else {
-        logger->error('Unknown type of data');
+        logger->fatal('Unknown type of data');
     }
 }
 
@@ -269,7 +269,7 @@ sub clean_query_args {
             for my $k ( keys %{ $args } ) {
                 next if $k eq 'where';
                 unless ( exists $structure{ $k } ) {
-                    logger->warning( "Unknown field `$k` in table. Deleting");
+                    logger->debug( "Unknown field `$k` in table. Deleting");
                     delete $args->{ $k };
                 }
             }
@@ -286,7 +286,7 @@ sub clean_query_args {
                         } elsif ( $self->can( $f ) ) {
                             $args->{where}{ $f } = $self->$f;
                         }
-                        logger->error( "`$f` required" ) unless $args->{where}{ $f };
+                        logger->fatal( "`$f` required" ) unless $args->{where}{ $f };
                     }
                     # Запрещаем обновлять ключевое поле
                     delete $args->{ $f } if exists $args->{ $f };
@@ -306,7 +306,7 @@ sub clean_query_args {
                     } elsif ( $self->can( $f ) ) {
                         $args->{ $f } = $self->$f;
                     }
-                    logger->error( "Can't get `$f` from self" ) unless $args->{ $f };
+                    logger->fatal( "Can't get `$f` from self" ) unless $args->{ $f };
                 }
                 next;
             }
@@ -320,9 +320,9 @@ sub clean_query_args {
                 } elsif ( $self->can( $f ) ) {
                     $args->{ $f } = $self->$f;
                 }
-                logger->error( "Can't get `$f` from self" ) unless $args->{ $f };
+                logger->fatal( "Can't get `$f` from self" ) unless $args->{ $f };
             } elsif ( $v->{required} ) {
-                logger->error( "`$f` required" ) if not exists $args->{$f};
+                logger->fatal( "`$f` required" ) if not exists $args->{$f};
             } elsif ( $v->{type} eq 'now' ) {
                 if ( get_service('user')->authenticated->is_admin ) {
                     $args->{ $f } //= now;
@@ -557,13 +557,13 @@ sub query_select {
     );
 
     unless ( $args{table} ) {
-        logger->error("Can't get table") unless $self;
+        logger->fatal("Can't get table") unless $self;
         $args{table} = $self->can( 'table' ) ? $self->table : die 'Table required';
     }
 
     if ( $args{where} && ref $args{where} ) {
         if ( ref $args{where} ne 'HASH' ) {
-            logger->error('WHERE not HASH!');
+            logger->fatal('WHERE not HASH!');
         }
     }
     $args{where}||= {};

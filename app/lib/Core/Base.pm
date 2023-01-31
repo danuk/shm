@@ -102,7 +102,7 @@ sub res {
     }
 
     if ( ref $res ne 'HASH' ) {
-        logger->error("Can't set SCALAR data to resource");
+        logger->fatal("Can't set SCALAR data to resource");
     }
 
     $self->{res} = $res;

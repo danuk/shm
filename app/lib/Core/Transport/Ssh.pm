@@ -143,7 +143,7 @@ sub exec {
     unlink $key_file;
 
     if ( $ssh->error ) {
-        logger->warning( $ssh->error );
+        logger->error( $ssh->error );
         $console->append("<font color=red>FAIL\n".$ssh->error."</font>\n");
         $ret_code = -1;
     } else {
@@ -180,6 +180,7 @@ sub exec {
     }
 
     if ( $ret_code ) {
+        logger->error("ERROR: $ret_code");
         $console->append('<font color="red">ERROR '. $ret_code .'</font>');
     }
     else {
@@ -193,8 +194,8 @@ sub exec {
         logger->debug("SSH RET_CODE: $ret_code");
     }
     elsif ( defined $ret_code ) {
-        logger->warning("SSH CMD: $args{cmd}" );
-        logger->warning("SSH RET_CODE: $ret_code");
+        logger->error("SSH CMD: $args{cmd}" );
+        logger->error("SSH RET_CODE: $ret_code");
     }
 
     return ( !defined($ret_code) ||  $ret_code == 0 ) ? SUCCESS : FAIL, {

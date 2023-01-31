@@ -152,8 +152,8 @@ sub dump    { shift->_log( 'DEBUG', Data::Dumper->new( [@_] )->Indent(1)->Quotek
 sub debug   { shift->_log( 'DEBUG', @_ ) }
 sub info    { shift->_log( 'INFO', @_ ) }
 sub warning { shift->_log( 'WARNING', @_ ) }
-sub error   { shift->_log( 'ERROR', @_ ); exit 1 }
-sub fatal   { shift->_log( 'FATAL', @_ ) }
+sub error   { shift->_log( 'ERROR', @_ ) }
+sub fatal   { shift->_log( 'FATAL', @_ ); exit 1 }
 
 sub level_permitted {
     my $self = shift;

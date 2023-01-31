@@ -45,6 +45,7 @@ sub get_servers {
         return ( $servers[ $num_server ] );
     } else {
         logger->error('Unknown type: ' . $group->{type} );
+        return undef;
     }
 
     return undef;

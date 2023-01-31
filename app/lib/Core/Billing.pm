@@ -41,12 +41,12 @@ sub create_service {
     );
 
     unless ( $args{ service_id } ) {
-        logger->error( "Not exists `$_` in args" );
+        logger->fatal( "Not exists `$_` in args" );
     }
 
     my $service = get_service('service', _id => $args{service_id} );
     unless ( $service ) {
-        logger->error( "Service not exists: $args{service_id}" );
+        logger->fatal( "Service not exists: $args{service_id}" );
     }
 
     my $us = get_service('us')->add( %args );

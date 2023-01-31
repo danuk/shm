@@ -45,7 +45,7 @@ sub ids {
     my ( $field, $values ) = @_;
 
     unless ( ref $values eq 'ARRAY' ) {
-        logger->error("Values must be ARRAY");
+        logger->fatal("Values must be ARRAY");
     }
 
     my $method = get_service('user')->authenticated->is_admin ? '_list' : 'list';
