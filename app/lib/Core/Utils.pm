@@ -25,7 +25,7 @@ our @EXPORT_OK = qw(
     string_to_utime
     utime_to_string
     decode_json
-    to_json
+    encode_json
     force_numbers
     file_by_string
     read_file
@@ -204,6 +204,18 @@ sub decode_json {
 
     return $json;
 }
+
+sub encode_json {
+    my $data = shift || return undef;
+
+    my $json;
+    eval{ $json = JSON->new->latin1->encode( $data ) } or do {
+        get_service('logger')->warning("Incorrect JSON data: " . $data);
+    };
+
+    return $json;
+}
+
 
 sub force_numbers {
     if (ref $_[0] eq ""){

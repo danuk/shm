@@ -7,10 +7,10 @@ use Core::System::ServiceManager qw( get_service logger );
 use Core::Sql::Data;
 use Carp qw(confess);
 use Data::Dumper;
-use JSON qw( to_json );
 use Core::Utils qw(
     force_numbers
     hash_merge
+    encode_json
 );
 $Data::Dumper::Deepcopy = 1;
 
@@ -176,17 +176,6 @@ sub _add_or_set {
         }
     }
     return $ret;
-}
-
-sub encode_json {
-    my $data = shift || return undef;
-
-    my $json;
-    eval{ $json = JSON->new->latin1->encode( $data ) } or do {
-        get_service('logger')->warning("Incorrect JSON data: " . $data);
-    };
-
-    return $json;
 }
 
 sub api_set {
