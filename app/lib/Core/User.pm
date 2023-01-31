@@ -101,6 +101,11 @@ sub structure {
             type => 'number',
             default => 1,
         },
+        settings => {
+            allow_update_by_user => 1,
+            type => 'json',
+            value => undef
+        },
     };
 }
 

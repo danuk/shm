@@ -35,6 +35,9 @@ my $routes = {
         skip_check_auth => 1,
         required => ['login','password'],
     },
+    POST => {
+        controller => 'User',
+    },
 },
 '/user/passwd' => {
     POST => {

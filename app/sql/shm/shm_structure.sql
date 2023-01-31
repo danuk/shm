@@ -247,6 +247,7 @@ CREATE TABLE `users` (
   `phone` char(20) DEFAULT NULL,
   `verified` int(11) DEFAULT NULL,
   `create_act` tinyint(4) DEFAULT NULL,
+  `settings` json DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `users_uniq` (`login`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;

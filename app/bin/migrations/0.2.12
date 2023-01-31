@@ -1,6 +1,7 @@
 
 do_sql( q(
     UPDATE users SET login = LCASE(login);
+    ALTER TABLE users ADD COLUMN settings json DEFAULT NULL;
 ));
 
 1;
