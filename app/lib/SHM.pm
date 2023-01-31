@@ -95,7 +95,8 @@ sub new {
     } elsif ( $headers{HTTP_LOGIN} && $headers{HTTP_PASSWORD} ) {
         $user_id = ext_user_auth($headers{HTTP_LOGIN}, $headers{HTTP_PASSWORD});
     } elsif ( !$args->{skip_check_auth} ) {
-        my $session = validate_session( session_id => $headers{HTTP_SESSION_ID} );
+        my %in = parse_args();
+        my $session = validate_session( session_id => $headers{HTTP_SESSION_ID} || $in{session_id} );
         print_not_authorized() unless $session;
         $user_id = $session->user_id;
     }
