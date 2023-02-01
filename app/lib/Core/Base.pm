@@ -11,6 +11,7 @@ use Core::Utils qw(
     force_numbers
     hash_merge
     encode_json
+    hash_merge
 );
 $Data::Dumper::Deepcopy = 1;
 
@@ -146,6 +147,22 @@ sub lock {
     }
     $self->reload();
     return $res ? 1 : 0;
+}
+
+sub set_json {
+    my $self = shift;
+    my $key = shift;
+    my $new_data = shift;
+
+    if ( $self->structure->{ $key }->{type} eq 'json' ) {
+        my $cur_data = $self->get->{ $key } || {};
+        my %args = (
+            $key => hash_merge( $cur_data, $new_data ),
+        );
+        return $self->_add_or_set('set', %args );
+    }
+
+    return undef;
 }
 
 # Пробуем получить уже загруженные данные
