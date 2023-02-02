@@ -147,7 +147,8 @@ INSERT INTO `servers_groups` VALUES
 (2,'Сервера MySQL хостинга','ssh','random',NULL),
 (3,'Сервера Mail хостинга','ssh','random',NULL),
 (4,'Сервера DNS','ssh','random',NULL),
-(5,'Сервис email уведомлений','mail','random',NULL);
+(default,'Email уведомления','mail','random',NULL),
+(default,'Telegram уведомления','telegram','random',NULL);
 
 INSERT INTO `services` VALUES
 (1,'Тариф \"Почтовый\" (${QUOTA} мб)',75,0,'web_tariff_lock','[8]',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL,0),
@@ -301,6 +302,7 @@ INSERT INTO `config` VALUES
 ("_shm", '{"version":"0.0.3"}'),
 ('billing','{"type": "Honest", "partner": {"income_percent": 20}}'),
 ("company", '{"name":"My Company LTD"}'),
+("telegram", '{"token":""}'),
 ("api",     '{"url":"http://127.0.0.1:8081"}'),
 ("cli",     '{"url":"http://127.0.0.1:8082"}'),
 ("pay_systems",'{"manual":{"name":"Платеж","show_for_client":false},"yoomoney":{"name":"ЮMoney","account":"000000000000000","secret":"","template_id":"yoomoney_template","show_for_client":true}}'),

@@ -5,8 +5,9 @@ INSERT INTO `users` VALUES
 ;
 
 INSERT INTO `servers_groups` VALUES
-(1,'Сервера рассылки уведомлений','mail','random',NULL),
-(2,'VPN','ssh','random',NULL)
+(default,'Email уведомления','mail','random',NULL),
+(default,'Telegram уведомления','telegram','random',NULL),
+(default,'VPN','ssh','random',NULL)
 ;
 
 INSERT INTO `services` VALUES
@@ -34,6 +35,7 @@ INSERT INTO `config` VALUES
 ("_shm", '{"version":"0.0.3"}'),
 ('billing','{"type": "Simpler", "partner": {"income_percent": 0}}'),
 ("company", '{"name":"My Company LTD"}'),
+("telegram", '{"token":""}'),
 ("api",     '{"url":"http://127.0.0.1:8081"}'),
 ("cli",     '{"url":"http://127.0.0.1:8082"}'),
 ("pay_systems",'{"manual":{"name":"Платеж","show_for_client":false},"yoomoney":{"name":"ЮMoney","account":"000000000000000","secret":"","template_id":"yoomoney_template","show_for_client":true}}'),
