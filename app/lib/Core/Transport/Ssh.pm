@@ -121,7 +121,14 @@ sub exec {
     logger->debug('SSH: ' . $host_msg );
     $console->append( "<font color=yellow>$host_msg ... </font>" );
 
-    my $key_file = get_service( 'Identities', _id => $args{key_id} )->private_key_file;
+    my $key_file;
+    if ( my $ident = get_service( 'Identities', _id => $args{key_id} ) ) {
+        $key_file = $ident->private_key_file;
+    } else {
+        return undef, {
+            error => sprintf('Identities with id: %s not exists', $args{key_id}),
+        };
+    }
 
     $Net::OpenSSH::debug = ~0 if $ENV{DEBUG};
 
