@@ -222,7 +222,7 @@ sub auth {
 
     my ( $user ) = $self->user->_list(
         where => {
-            sprintf('%s->"$.%s"', 'settings', 'telegram.login') => $message->{chat}->{username},
+            sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.login') => lc( $message->{chat}->{username} ),
         },
         limit => 1,
     );
