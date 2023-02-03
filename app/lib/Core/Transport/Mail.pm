@@ -70,7 +70,7 @@ sub send {
     }
     unless ( $settings{to} ) {
         return SUCCESS, {
-            error => "User email undefined",
+            error => "User email undefined. For test email set `bcc` in server",
         }
     }
 
