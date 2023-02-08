@@ -52,6 +52,8 @@ services:
     restart: always
     environment:
       SHM_URL: http://api
+#    volumes:
+#      - ./styles-alternative.css:/app/assets/css/styles-alternative.css
     ports:
       - "8082:80"
     links:
