@@ -518,14 +518,14 @@ sub list_for_delete {
                     parent => undef,
                     status => STATUS_BLOCK,
                     expire => {
-                        '<', \[ 'NOW() + INTERVAL ? DAY', $args{days} ],
+                        '<', \[ 'NOW() - INTERVAL ? DAY', $args{days} ],
                     },
                 },
                 {
                     parent => undef,
                     status => STATUS_WAIT_FOR_PAY,
                     created =>{
-                        '<', \[ 'NOW() + INTERVAL ? DAY', $args{days} ],
+                        '<', \[ 'NOW() - INTERVAL ? DAY', $args{days} ],
                     },
                 },
             ],
