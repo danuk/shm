@@ -20,12 +20,35 @@ sub job_prolongate {
         );
 
         my $user_id = $_->{user_id};
-        my $user = get_service('user', _id => $user_id );
-        return undef, { msg => 'ERROR: user not exists' } unless $user;
-        next unless $user->lock( timeout => 5 );
+        next unless get_service('user', _id => $user_id )->lock( timeout => 1 );
 
         switch_user( $user_id );
         get_service('us',  user_id => $user_id, _id => $_->{user_service_id} )->touch;
+    }
+
+    return SUCCESS, { msg => 'successful' };
+}
+
+sub job_cleanup {
+    my $self = shift;
+    my $task = shift;
+
+    my $days = $task->event_settings->{days} || 10;
+    my @arr = get_service('us')->list_for_delete( days => $days );;
+
+    for ( @arr ) {
+        say sprintf("%d %d %s %s",
+            $_->{user_id},
+            $_->{user_service_id},
+            $_->{created},
+            $_->{expire},
+        );
+
+        my $user_id = $_->{user_id};
+        next unless get_service('user', _id => $user_id )->lock( timeout => 1 );
+
+        switch_user( $user_id );
+        get_service('us',  user_id => $user_id, _id => $_->{user_service_id} )->delete;
     }
 
     return SUCCESS, { msg => 'successful' };

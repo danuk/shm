@@ -17,13 +17,13 @@ sub settings {
 
 sub event {
     my $self = shift;
-    return $self->res->{event};
+    return $self->res->{event} || {};
 }
 
 sub event_settings {
     my $self = shift;
 
-    return $self->event ? $self->event->{settings} : {};
+    return $self->event->{settings} || {};
 }
 
 sub payload {

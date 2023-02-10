@@ -1,0 +1,7 @@
+
+do_sql( q(
+    INSERT spool (id,status,user_id,event) VALUES(default,'PAUSED',1,'{"title":"cleanup services","kind":"Jobs","method":"job_cleanup","period":"86400","settings":{"days":10}}');
+));
+
+1;
+

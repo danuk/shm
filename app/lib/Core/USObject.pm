@@ -505,6 +505,34 @@ sub list_for_api {
     return scalar $self->get;
 }
 
+sub list_for_delete {
+    my $self = shift;
+    my %args = (
+        days => 10,
+        @_,
+    );
+
+    return $self->_list(
+        where => { -OR => [
+                {
+                    parent => undef,
+                    status => STATUS_BLOCK,
+                    expire => {
+                        '<', \[ 'NOW() + INTERVAL ? DAY', $args{days} ],
+                    },
+                },
+                {
+                    parent => undef,
+                    status => STATUS_WAIT_FOR_PAY,
+                    created =>{
+                        '<', \[ 'NOW() + INTERVAL ? DAY', $args{days} ],
+                    },
+                },
+            ],
+        },
+    );
+}
+
 sub server {
     my $self = shift;
 
