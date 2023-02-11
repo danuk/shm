@@ -146,4 +146,15 @@ sub forecast {
     return \%ret;
 }
 
+sub last {
+    my $self = shift;
+
+    my ( $pay ) = $self->list(
+        order => [ date => 'desc' ],
+        limit => 1,
+    );
+
+    return $pay;
+}
+
 1;
