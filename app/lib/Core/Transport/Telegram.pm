@@ -19,8 +19,6 @@ sub init {
     );
 
     $self->{server} = 'https://api.telegram.org';
-    $self->{token} = get_service('config')->data_by_name('telegram')->{token};
-
     $self->{lwp} = LWP::UserAgent->new(timeout => 5);
 
     return $self;
@@ -34,18 +32,6 @@ sub send {
         %{ $task->event->{settings} || {} },
     );
 
-    unless ( $self->{token} ) {
-        return undef, {
-            error => "telegram token not found",
-        }
-    }
-
-    unless ( $self->chat_id ) {
-        return SUCCESS, {
-            error => "The user didn't initialize the chat. Skip it.",
-        }
-    }
-
     my $message;
     if ( my $template = get_service('template', _id => $settings{template_id} ) ) {
         unless ( $template ) {
@@ -53,12 +39,30 @@ sub send {
                 error => "template with id `$settings{template_id}` not found",
             }
         }
+
+        if ( my $settings = $template->get_settings ) {
+            $self->chat_id( $settings->{telegram}->{chat_id} );
+            $self->token( $settings->{telegram}->{token} ) if $settings->{telegram}->{token};
+        }
+
         $message = $template->parse(
             $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
             task => $task,
         );
     }
     return undef, { error => "message is empty" } unless $message;
+
+    unless ( $self->chat_id ) {
+        return SUCCESS, {
+            error => "The user didn't initialize the chat. Skip it.",
+        }
+    }
+
+    unless ( $self->token ) {
+        return undef, {
+            error => "telegram token not found. Please set it into config.telegram.token",
+        }
+    }
 
     return $self->sendMessage(
         text => $message,
@@ -67,6 +71,19 @@ sub send {
 
 sub user {
     return get_service('user');
+}
+
+sub token {
+    my $self = shift;
+    my $token = shift;
+
+    if ( $token ) {
+        $self->{token} = $token;
+    }
+
+    $self->{token} ||= get_service('config')->data_by_name('telegram')->{token};
+
+    return $self->{token};
 }
 
 sub chat_id {
@@ -142,7 +159,7 @@ sub http {
     }
 
     my $response = $self->{lwp}->$method(
-        sprintf('%s/bot%s/%s', $self->{server}, $self->{token}, $url ),
+        sprintf('%s/bot%s/%s', $self->{server}, $self->token, $url ),
         Content_Type => $args{content_type},
         Content => $content,
     );
