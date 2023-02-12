@@ -235,8 +235,12 @@ sub passwd {
 
 sub set_new_passwd {
     my $self = shift;
+    my %args = (
+        len => 10,
+        @_,
+    );
 
-    my $new_password = passgen();
+    my $new_password = passgen( $args{len} );
     $self->passwd( password => $new_password );
 
     return $new_password;
