@@ -54,7 +54,7 @@ sub send {
 
     unless ( $self->chat_id ) {
         return SUCCESS, {
-            error => "The user didn't initialize the chat. Skip it.",
+            error => "The user doesn't initialize the chat (chat_id not found). Skip it.",
         }
     }
 
