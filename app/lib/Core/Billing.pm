@@ -403,13 +403,10 @@ sub money_back {
 
     my $service = get_service('service', _id => $self->get_service_id );
 
-    # Do not return money for domains and etc.
-    return undef if $service->get->{period_cost} > 1;
-
     my $wd = $self->withdraw;
     return undef unless $wd;
 
-    my %wd = $wd->get;
+    my %wd = ( $service->get, $wd->get );
     return undef unless $wd{end_date};
     return undef if $wd{end_date} le $date;
     return undef if $wd{create_date} gt $date;
