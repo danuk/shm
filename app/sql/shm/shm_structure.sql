@@ -9,7 +9,7 @@ CREATE TABLE `acts` (
   `show_act` tinyint(4) DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`act_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `acts_data`;
 CREATE TABLE `acts_data` (
@@ -25,7 +25,7 @@ CREATE TABLE `acts_data` (
   `stop_date` datetime DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `apps`;
 CREATE TABLE `apps` (
@@ -37,7 +37,7 @@ CREATE TABLE `apps` (
   `settings` json DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `discounts`;
 CREATE TABLE `discounts` (
@@ -47,7 +47,7 @@ CREATE TABLE `discounts` (
   `percent` tinyint(4) NOT NULL,
   `share` tinyint(4) DEFAULT NULL,
   PRIMARY KEY (`discount_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `dns_services`;
 CREATE TABLE `dns_services` (
@@ -60,7 +60,7 @@ CREATE TABLE `dns_services` (
   `ttl` tinyint(4) DEFAULT NULL,
   FOREIGN KEY (domain_id) REFERENCES domains (domain_id),
   PRIMARY KEY (`dns_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `domains`;
 CREATE TABLE `domains` (
@@ -75,7 +75,7 @@ CREATE TABLE `domains` (
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`domain_id`),
   UNIQUE KEY `domain` (`domain`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `domains_services`;
 CREATE TABLE `domains_services` (
@@ -85,7 +85,7 @@ CREATE TABLE `domains_services` (
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `domain_service_id` (`domain_id`,`user_service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `invoices`;
 CREATE TABLE `invoices` (
@@ -96,7 +96,7 @@ CREATE TABLE `invoices` (
   `text` char(128) DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `pays_history`;
 CREATE TABLE `pays_history` (
@@ -108,7 +108,7 @@ CREATE TABLE `pays_history` (
   `comment` json DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `servers`;
 CREATE TABLE `servers` (
@@ -124,7 +124,7 @@ CREATE TABLE `servers` (
   `enabled` int(1) NOT NULL DEFAULT '1',
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`server_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `servers_groups`;
 CREATE TABLE `servers_groups` (
@@ -134,7 +134,7 @@ CREATE TABLE `servers_groups` (
   `type` char(16) NOT NULL DEFAULT 'random',
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`group_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `services`;
 CREATE TABLE `services` (
@@ -155,7 +155,7 @@ CREATE TABLE `services` (
   `config` json DEFAULT NULL,
   `deleted` tinyint(4) NOT NULL DEFAULT '0',
   PRIMARY KEY (`service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `events`;
 CREATE TABLE `events` (
@@ -166,7 +166,7 @@ CREATE TABLE `events` (
   `server_gid` int(11) DEFAULT NULL,
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `spool`;
 CREATE TABLE `spool` (
@@ -183,7 +183,7 @@ CREATE TABLE `spool` (
   `settings` json DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `spool_history`;
 CREATE TABLE `spool_history` (
@@ -201,7 +201,7 @@ CREATE TABLE `spool_history` (
   `settings` json DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `user_services`;
 CREATE TABLE `user_services` (
@@ -222,7 +222,7 @@ CREATE TABLE `user_services` (
   FOREIGN KEY (parent) REFERENCES user_services (user_service_id) ON DELETE SET NULL,
   FOREIGN KEY (withdraw_id) REFERENCES withdraw_history (withdraw_id),
   UNIQUE KEY `user_services_idx` (`user_service_id`,`user_id`,`service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
@@ -250,7 +250,7 @@ CREATE TABLE `users` (
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `users_uniq` (`login`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `withdraw_history`;
 CREATE TABLE `withdraw_history` (
@@ -270,7 +270,7 @@ CREATE TABLE `withdraw_history` (
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   FOREIGN KEY (service_id) REFERENCES services (service_id),
   PRIMARY KEY (`withdraw_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `zones`;
 CREATE TABLE `zones` (
@@ -288,7 +288,7 @@ CREATE TABLE `zones` (
   `idn` tinyint(4) DEFAULT '0',
   `punycode_only` tinyint(4) DEFAULT '0',
   PRIMARY KEY (`zone_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `identities`;
 CREATE TABLE `identities` (
@@ -298,7 +298,7 @@ CREATE TABLE `identities` (
   `public_key` text,
   `fingerprint` char(128),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `templates`;
 CREATE TABLE `templates` (
@@ -306,7 +306,7 @@ CREATE TABLE `templates` (
   `data` text DEFAULT NULL,
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `console`;
 CREATE TABLE `console` (
@@ -316,7 +316,7 @@ CREATE TABLE `console` (
   `log` text NOT NULL,
   `eof` boolean DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `profiles`;
 CREATE TABLE `profiles` (
@@ -326,14 +326,14 @@ CREATE TABLE `profiles` (
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `config`;
 CREATE TABLE `config` (
   `key` char(32) NOT NULL,
   `value` json DEFAULT NULL,
   PRIMARY KEY (`key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `sessions` (
   `id` char(32) NOT NULL,
@@ -342,7 +342,7 @@ CREATE TABLE IF NOT EXISTS `sessions` (
   `updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `storage` (
   `user_id` int(11) NOT NULL,
@@ -353,7 +353,7 @@ CREATE TABLE IF NOT EXISTS `storage` (
   `settings` json DEFAULT NULL,
   FOREIGN KEY (`user_service_id`) REFERENCES `user_services` (`user_service_id`),
   PRIMARY KEY (`user_id`,`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `bonus_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -363,7 +363,7 @@ CREATE TABLE IF NOT EXISTS `bonus_history` (
   `comment` json DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 
 COMMIT;

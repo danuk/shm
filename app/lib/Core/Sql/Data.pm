@@ -71,8 +71,8 @@ sub configure {
     $dbh->{mysql_auto_reconnect} = 0;
     $dbh->{InactiveDestroy} = 1;
 
-    $dbh->do("SET CHARACTER SET UTF8");
-    $dbh->do("SET NAMES utf8 COLLATE utf8_general_ci");
+    $dbh->do("SET CHARACTER SET utf8mb4");
+    $dbh->do("SET NAMES utf8mb4");
     $dbh->do( sprintf( "SET time_zone = '%s'", $ENV{TZ}) );
 }
 
