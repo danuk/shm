@@ -238,8 +238,10 @@ sub auth {
     return undef unless $message->{chat}->{username};
 
     my ( $user ) = $self->user->_list(
-        where => {
+        where => { -OR => [
+            sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $message->{chat}->{id},
             sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.login') => lc( $message->{chat}->{username} ),
+        ],
         },
         limit => 1,
     );
