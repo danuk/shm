@@ -44,7 +44,12 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
     my $cur_version = $config->get_data->{version};
     say "Current version: $cur_version";
 
-    my @migrations = `ls`; chomp for @migrations;
+    my @migrations = `ls`;
+    for ( @migrations ) {
+        chomp;
+        ~s/\.sql$//;
+    }
+
     my @versions = sort { version->parse( $a ) <=> version->parse( $b ) } @migrations;
 
     for my $nv ( @versions ) {
@@ -52,7 +57,11 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
         next if version->parse( $nv ) > version->parse( $version );
 
         say "Applying migration for version: $nv ...";
-        eval `cat $nv`;
+        if ( version->parse( $nv ) > version->parse( '0.2.17' ) ) {
+            import_sql_file( $dbh, "$nv.sql" );
+        } else {
+            eval `cat $nv`;
+        }
         $config->set( value => { version => $nv } );
         $dbh->commit();
         say "done"
