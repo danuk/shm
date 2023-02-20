@@ -173,9 +173,7 @@ sub create {
     my $us = create_service( %args );
 
     my @ret = get_service('UserService')->list_for_api(
-        filter => {
-            user_service_id => $us->id,
-        },
+        usi => $us->id,
     );
 
     return \@ret;

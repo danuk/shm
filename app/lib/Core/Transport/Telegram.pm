@@ -10,6 +10,8 @@ use LWP::UserAgent ();
 use Core::Utils qw(
     switch_user
     encode_json
+    decode_json
+    passgen
 );
 
 sub init {
@@ -82,6 +84,7 @@ sub token {
     }
 
     $self->{token} ||= get_service('config')->data_by_name('telegram')->{token};
+    logger->error( 'Token not found' ) unless $self->{token};
 
     return $self->{token};
 }
@@ -99,10 +102,21 @@ sub chat_id {
     return $self->{chat_id};
 }
 
+sub message {
+    my $self = shift;
+    my $message = shift;
+
+    if ( $message ) {
+        $self->{message} = $message;
+    }
+
+    return $self->{message};
+}
+
 sub uploadDocument {
     my $self = shift;
-    my $data = shift;
     my %args = (
+        data => undef,
         filename => 'file.conf',
         @_,
     );
@@ -111,15 +125,15 @@ sub uploadDocument {
         'sendDocument',
         content_type => 'form-data',
         data => {
-            document => [ undef, $args{filename}, Content => $data ],
+            document => [ undef, $args{filename}, Content => $args{data} ],
         }
     );
 }
 
 sub uploadPhoto {
     my $self = shift;
-    my $data = shift;
     my %args = (
+        data => undef,
         filename => 'image.png',
         @_,
     );
@@ -128,7 +142,7 @@ sub uploadPhoto {
         'sendPhoto',
         content_type => 'form-data',
         data => {
-            photo => [ undef, $args{filename}, Content => $data ],
+            photo => [ undef, $args{filename}, Content => $args{data} ],
         }
     );
 }
@@ -138,7 +152,7 @@ sub http {
     my $url = shift;
     my %args = (
         method => 'post',
-        content_type => 'application/json',
+        content_type => 'application/json;  charset=utf-8',
         data => {},
         @_,
     );
@@ -163,6 +177,8 @@ sub http {
         Content_Type => $args{content_type},
         Content => $content,
     );
+
+    logger->dump( $response->request );
 
     if ( $response->is_success ) {
         logger->info(
@@ -190,6 +206,10 @@ sub sendMessage {
         @_,
     );
 
+    if ( length( $args{text} ) > 4096 ) {
+        $args{text} = substr( $args{text}, 0, 4093 ) . '...';
+    }
+
     return $self->http( 'sendMessage',
         data => \%args,
     );
@@ -197,12 +217,15 @@ sub sendMessage {
 
 sub deleteMessage {
     my $self = shift;
-    my $id = shift;
+    my %args = (
+        message_id => undef,
+        @_,
+    );
 
     return $self->http(
         'deleteMessage',
         data => {
-            message_id => $id,
+            %args,
         },
     );
 }
@@ -267,183 +290,239 @@ sub process_message {
         @_,
     );
 
+    return undef unless $self->token;
+
     logger->debug('REQUEST:', \%args );
 
     my $message = $args{callback_query} ? $args{callback_query}->{message} : $args{message};
-    my $message_id = $message->{message_id};
+    $self->message( $message );
 
     $self->chat_id( $message->{chat}->{id} );
 
-    my $user = $self->auth( $message );
-    unless ( $user ) {
-        logger->warning( 'User with login', $message->{chat}->{username}, 'not found' );
-        $self->sendMessage(
-            text => sprintf("Для работы с Telegram ботом укажите _Telegram логин_ в профиле личного кабинета.\n\n*Telegram логин*: %s\n\n*Кабинет пользователя*: %s ",
-                    $message->{chat}->{username},
-                    get_service('config')->data_by_name('cli')->{url},
-            ),
-        );
+    my $query;
+    if ( $args{message} ) {
+        $query = $args{message}->{text};
+    } elsif ( $args{callback_query} ) {
+        $query = $args{callback_query}->{data};
+    }
+
+    my ( $cmd, @callback_args ) = split( /\s+/, $query );
+
+    if ( $cmd ne '/register' ) {
+        unless ( my $user = $self->auth( $message ) ) {
+            logger->warning( 'User with login', $message->{chat}->{username}, 'not found' );
+            $cmd = 'USER_NOT_FOUND';
+        }
+    }
+
+    my $obj = get_script( $cmd,
+        vars => {
+            cmd => $cmd,
+            message => $message,
+            args => \@callback_args,
+        },
+    );
+
+    for my $script ( @{ $obj } ) {
+        logger->debug( 'Script:', $script );
+        my $method = get_script_method( $script );
+
+        unless ( $self->can( $method ) ) {
+            logger->error("Method $method not exists");
+            next;
+        }
+
+        $self->$method(  %{ $script->{ $method } } );
+    }
+
+    return 1;
+}
+
+sub get_script_method {
+    my $data = shift;
+    return ( keys %{ $data } )[0];
+}
+
+sub get_script {
+    my $cmd = shift;
+    my %args = (
+        vars => {},
+        @_,
+    );
+
+    my $template = get_service('template', _id => 'telegram_bot');
+    unless ( $template ) {
+        logger->error("Telegram bot: telegram_bot not exists");
+        return [];
+    }
+
+    my $data = $template->parse(
+        START_TAG => '<%',
+        END_TAG => '%>',
+        vars => {
+            cmd => $cmd,
+        },
+    );
+    unless ( $data ) {
+        logger->warning("Telegram bot: command $cmd not found or empty in telegram_bot");
         return undef;
     }
 
-    my $cmd;
-    if ( $args{message} ) {
-        $cmd = $args{message}->{text};
-    } elsif ( $args{callback_query} ) {
-        $cmd = $args{callback_query}->{data};
+    my $ret = $template->parse(
+        data => $data,
+        %args,
+    );
+    unless ( $ret ) {
+        logger->warning("Telegram bot: data is empty in telegram_bot");
+        return undef;
     }
 
-    $self->deleteMessage( $message_id ) if $cmd !~/^\/(start|show_qr|download_qr)/;
-
-    if ( $cmd eq '/list' ) {
-        my @data = $self->user->services->list_for_api;
-
-        my @list;
-        for ( @data ) {
-            my $icon = $self->get_status_icon( $_->{status} );
-
-            push @list, [{
-                text => "$icon $_->{name}",
-                callback_data => "/service $_->{user_service_id}",
-            }];
-        }
-
-        $self->sendMessage(
-            text => "🗝 Ключи",
-            reply_markup => {
-                inline_keyboard => [
-                    @list,
-                    # [
-                    #     {
-                    #         text => "🔒 Купить VPN ключ",
-                    #         callback_data => "/balance",
-                    #     },
-                    # ],
-                    [
-                        {
-                            text => "⇦ Назад",
-                            callback_data => "/menu",
-                        },
-                    ],
-                ]
-            },
-        );
-    } elsif ( $cmd eq '/balance' ) {
-        $self->sendMessage(
-            text => sprintf("💰 *Баланс*: %s\n\nНеобходимо оплатить: *%s* ",
-                $self->user->get_balance, $self->user->pays->forecast->{total},
-            ),
-            reply_markup => {
-                inline_keyboard => [
-                    # [
-                    #     {
-                    #         text => "✚ Пополнить баланс",
-                    #         callback_data => "/payment",
-                    #     },
-                    # ],
-                    [
-                        {
-                            text => "⇦ Назад",
-                            callback_data => "/menu",
-                        },
-                    ],
-                ],
-            },
-        );
-    } elsif ( $cmd =~/^\/service (\d+)/ ) {
-        my $usi = $1;
-        my ( $us ) =  $self->user->services->list_for_api( usi => $usi );
-
-        $self->sendMessage(
-            text => sprintf("*Ключ*: %s\n\n*Оплачен до*: %s\n\n*Статус*: %s (%s) ",
-                $us->{name},
-                $us->{expire},
-                $self->get_status_icon( $us->{status} ),
-                $us->{status},
-            ),
-            reply_markup => {
-                inline_keyboard => [
-                    [
-                        {
-                            text => "🗝 Скачать ключ",
-                            callback_data => "/download_qr $usi",
-                        },
-                        {
-                            text => "👀 Показать QR код",
-                            callback_data => "/show_qr $usi",
-                        },
-                    ],
-                    [
-                        {
-                            text => "⇦ Назад",
-                            callback_data => "/list",
-                        },
-                    ],
-                ],
-            },
-        );
-    } elsif ( $cmd =~/^\/download_qr (\d+)/ ) {
-        my $usi = $1;
-
-        if ( my $data = get_service('storage')->list_for_api( name => "vpn$usi" ) ) {
-            $self->uploadDocument( $data,
-                filename => "vpn$usi.conf",
-            );
-        } else {
-            $self->sendMessage(
-                text => "*ОШИБКА*: Ключ не найден",
-            );
-        }
-    } elsif ( $cmd =~/^\/show_qr (\d+)/ ) {
-        my $usi = $1;
-
-        if ( my $data = get_service('storage')->list_for_api( name => "vpn$usi" ) ) {
-            my $output = qx(echo "$data" | qrencode -t PNG -o -);
-            $self->uploadPhoto( $output );
-        } else {
-            $self->sendMessage(
-                text => "*ОШИБКА*: QR код не найден",
-            );
-        }
-    } elsif ( $cmd eq '/pay' ) {
-        $self->sendMessage(
-            text => "pay",
-        );
-    } else {
-        $self->sendMessage(
-            text => "Создавайте и управляйте своими VPN ключами",
-            reply_markup => {
-                inline_keyboard => [
-                    [
-                        {
-                            text => "💰 Баланс",
-                            callback_data => "/balance",
-                        },
-                    ],
-                    [
-                        {
-                            text => "🗝 Ключи",
-                            callback_data => "/list",
-                        },
-                    ],
-                ],
-            },
-        );
-    }
-
-    return 'q';
+    return decode_json( "[ $ret ]" ) || [];
 }
 
-sub get_status_icon {
+sub get_data_from_storage {
     my $self = shift;
-    my $status = shift;
+    my $name = shift;
 
-    my $icon = '⏳';
-    $icon = '❌' if $status eq 'BLOCK';
-    $icon = '💰' if $status eq 'NOT PAID';
-    $icon = '✅' if $status eq 'ACTIVE';
+    my $data = get_service('storage')->list_for_api( name => $name );
+    unless ( $data ) {
+        logger->error('Data with name', $name, 'not found');
+        return undef;
+    }
 
-    return $icon;
+    return $data;
+}
+
+sub uploadDocumentFromStorage {
+    my $self = shift;
+    my %args = (
+        name => undef,
+        filename => undef,
+        @_,
+    );
+
+    my $data = $self->get_data_from_storage( $args{name} );
+    return undef unless $data;
+
+    return $self->uploadDocument(
+        data => $data,
+        filename => $args{filename},
+    );
+}
+
+sub uploadPhotoFromStorage {
+    my $self = shift;
+    my %args = (
+        name => undef,
+        format => 'qr_code_png',
+        @_,
+    );
+
+    my $data = $self->get_data_from_storage( $args{name} );
+    return undef unless $data;
+
+    if ( $args{format} eq 'qr_code_png' ) {
+        $data = qx(echo "$data" | qrencode -t PNG -o -);
+    }
+
+    return $self->uploadPhoto(
+        data => $data,
+    );
+}
+
+sub shmRegister {
+    my $self = shift;
+    my %args = (
+        callback_data => undef,
+        error => undef,
+        @_,
+    );
+
+    my $user = get_service('user')->reg(
+        login => sprintf( "@%s-%s", $self->message->{chat}->{username}, $self->message->{chat}->{id} ),
+        password => passgen(),
+        settings => {
+            telegram => {
+                login => $self->message->{chat}->{username},
+                chat_id => $self->message->{chat}->{id},
+            },
+        },
+    );
+
+    if ( $user ) {
+        my $message = $self->message;
+        $message->{text} = $args{callback_data};
+        return $self->process_message(
+            message => $message,
+        );
+    } else {
+        if ( $args{error} ) {
+            return $self->sendMessage(
+                text => $args{error},
+            );
+        }
+    }
+
+    return 1;
+}
+
+sub shmServiceOrder {
+    my $self = shift;
+    my %args = (
+        service_id => undef,
+        callback_data => undef,
+        error => undef,
+        @_,
+    );
+
+    my $us = get_service('service')->create(
+        %args,
+    );
+
+    if ( $us ) {
+        my $message = $self->message;
+        $message->{text} = $args{callback_data};
+        return $self->process_message(
+            message => $message,
+        );
+    } else {
+        if ( $args{error} ) {
+            return $self->sendMessage(
+                text => $args{error},
+            );
+        }
+    }
+
+    return 1;
+}
+
+sub shmServiceDelete {
+    my $self = shift;
+    my %args = (
+        usi => undef,
+        callback_data => undef,
+        error => undef,
+        @_,
+    );
+
+    my $us = get_service('us')->id( $args{usi} );
+
+    if ( $us ) {
+        $us->delete();
+        my $message = $self->message;
+        $message->{text} = $args{callback_data};
+        return $self->process_message(
+            message => $message,
+        );
+    } else {
+        if ( $args{error} ) {
+            return $self->sendMessage(
+                text => $args{error},
+            );
+        }
+    }
+
+    return 1;
 }
 
 1;

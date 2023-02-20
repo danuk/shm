@@ -64,6 +64,7 @@ sub all {
         admin => 0,
         usi => undef,
         parent => undef,
+        category => undef,
         where => undef,
         order => undef,
         @_,
@@ -73,7 +74,7 @@ sub all {
         $args{where} ? ( %{ $args{where} } ) : (),
         $args{usi} ? ( user_service_id => $args{usi} ) : (),
         $args{parent} ? ( parent => $args{parent} ) : (),
-
+        $args{category} ? ( category => { -like => $args{category} } ) : (),
     );
 
     my $order = $self->query_for_order( %args );
@@ -411,6 +412,7 @@ sub list_for_api {
         admin => 0,
         usi => undef,
         parent => { '=', undef }, # parent IS NULL
+        category => undef,
         limit => 25,
         filter => {},
         @_,
@@ -420,9 +422,10 @@ sub list_for_api {
 
     $args{where}{status} //= {'!=', STATUS_REMOVED};
 
-    my @arr = $self->all( %args )->with('settings','services','withdraws')->get;
+    my @arr = sort { $a->{user_service_id} <=> $b->{user_service_id} }
+        $self->all( %args )->with('settings','services','withdraws')->get;
 
-    return sort { $a->{user_service_id} <=> $b->{user_service_id} } @arr;
+    return wantarray ? @arr : \@arr;
 }
 
 1;

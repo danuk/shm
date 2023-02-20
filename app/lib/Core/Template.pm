@@ -5,6 +5,10 @@ use parent 'Core::Base';
 use Core::Base;
 use Template;
 
+use Core::Utils qw(
+    encode_json
+);
+
 sub table { return 'templates' };
 
 sub structure {
@@ -27,6 +31,9 @@ sub parse {
         task => undef,
         server_id => undef,
         event_name => undef,
+        vars => {},
+        START_TAG => '{{',
+        END_TAG => '}}',
         @_,
     );
 
@@ -43,20 +50,28 @@ sub parse {
         $args{server_id} ? ( server => get_service('server', _id => $args{server_id}) ) : (),
         config => get_service('config')->data_by_name,
         tpl => get_service('template'),
+        service => get_service('service'),
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
+        %{ $args{vars} },
     };
 
     my $template = Template->new({
-        START_TAG => quotemeta('{{'),
-        END_TAG   => quotemeta('}}'),
+        START_TAG => quotemeta( $args{START_TAG} ),
+        END_TAG   => quotemeta( $args{END_TAG} ),
         ANYCASE => 1,
         INTERPOLATE  => 0,
         PRE_CHOMP => 1,
+        # FILTERS => {
+        #     toJson => sub {
+        #         my $data = shift;
+        #         return encode_json( $data );
+        #     },
+        # }
     });
 
     my $result = "";
     unless ($template->process( \$data, $vars, \$result )) {
-        logger->warning("Template rander error: ", $template->error() );
+        logger->error("Template rander error: ", $template->error() );
         return '';
     }
 

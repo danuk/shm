@@ -602,19 +602,15 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         exit 0;
     }
 
-    if ( $args{format} eq 'plain' ) {
-        print_header( %headers, type => 'text/plain' );
-        for ( @data ) {
-            print $_;
-        }
+    if ( $args{format} eq 'plain' || $args{format} eq 'html' ) {
+        print_header( %headers, type => "text/$args{format}" );
+        print $_ for @data;
     } elsif ( $args{format} eq 'other' ) {
         print_header( %headers,
             type => 'application/octet-stream',
             $args{filename} ? ('Content-Disposition' => "attachment; filename=$args{filename}") : (),
         );
-        for ( @data ) {
-            print $_;
-        }
+        print $_ for @data;
     } elsif ( $args{format} eq 'qrcode' ) {
         print_header( %headers,
             type => 'image/svg+xml',
