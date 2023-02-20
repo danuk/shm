@@ -53,6 +53,10 @@ sub parse {
         service => get_service('service'),
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
         %{ $args{vars} },
+        ref => sub {
+            my @data = @_;
+            return ref $data[0] eq 'HASH' ? [ $data[0] ] : @data;
+        },
     };
 
     my $template = Template->new({
