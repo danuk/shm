@@ -97,7 +97,11 @@ sub chat_id {
         $self->{chat_id} = $chat_id;
     }
 
-    $self->{chat_id} ||= $self->user->get->{settings}->{telegram}->{chat_id};
+    unless ( $self->{chat_id} ) {
+        if ( my $user = $self->user->get ) {
+            $self->{chat_id} = $user->{settings}->{telegram}->{chat_id};
+        }
+    }
 
     return $self->{chat_id};
 }
@@ -201,7 +205,7 @@ sub sendMessage {
     my $self = shift;
     my %args = (
         text => undef,
-        parse_mode => 'Markdown',
+        parse_mode => 'HTML',
         disable_web_page_preview => 'True',
         @_,
     );
@@ -261,10 +265,12 @@ sub auth {
     return undef unless $message->{chat}->{username};
 
     my ( $user ) = $self->user->_list(
-        where => { -OR => [
-            sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $message->{chat}->{id},
-            sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.login') => lc( $message->{chat}->{username} ),
-        ],
+        where => {
+            block => 0,
+            -OR => [
+                sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $message->{chat}->{id},
+                sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.login') => lc( $message->{chat}->{username} ),
+            ],
         },
         limit => 1,
     );
