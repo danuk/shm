@@ -328,7 +328,7 @@ CREATE TABLE `profiles` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IN NOT EXISTS `config` (
+CREATE TABLE IF NOT EXISTS `config` (
   `key` char(32) NOT NULL,
   `value` json DEFAULT NULL,
   PRIMARY KEY (`key`)
