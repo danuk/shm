@@ -81,7 +81,11 @@ sub forecast {
     my $user_services = get_service('UserService')->list_prepare(
         where => {
             auto_bill => \[ '= 1'],
-            status => STATUS_ACTIVE,
+            status => { -in => [
+                    STATUS_ACTIVE,
+                    STATUS_WAIT_FOR_PAY,
+                ],
+            },
             withdraw_id => { '!=', undef },
             expire => [
                 { '<', \[ 'NOW() + INTERVAL ? DAY', $args{days} ] },
