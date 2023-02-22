@@ -49,6 +49,10 @@ sub create_service {
         logger->fatal( "Service not exists: $args{service_id}" );
     }
 
+    if ( $service->get_period_cost ) {
+        $args{months} ||= $service->get_period_cost;
+    }
+
     my $us = get_service('us')->add( %args );
 
     my $wd_id = add_withdraw(

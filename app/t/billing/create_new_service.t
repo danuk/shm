@@ -1,6 +1,7 @@
 use v5.14;
 
 use Test::More;
+use Test::Deep;
 use Data::Dumper;
 
 use POSIX qw(tzset);
@@ -63,6 +64,28 @@ is( $ret->{ $us->id }->{service_id}, 11, 'Check service_id for new service' );
 is( $ret->{ $us->id }->{withdraws}->{discount}, 0, 'Check total for domain' );
 is( $ret->{ $us->id }->{withdraws}->{total}, 1000, 'Check total for domain' );
 is( $ret->{ $us->id }->{withdraws}->{months}, 12, 'Check months for domain' );
+
+subtest 'Check create service with period_cost' => sub {
+    my $si = get_service('service')->add( name => 'TEST', cost => 123, category => 'new', period_cost => 3 );
+
+    my $us = create_service( service_id => $si->get_service_id );
+
+    cmp_deeply( scalar $us->get, superhashof(
+        {
+            status => 'ACTIVE',
+            created => '2017-01-01 00:00:00',
+            expire => '2017-03-31 23:59:59',
+            parent => undef,
+            settings => undef,
+            service_id => $si->get_service_id,
+            next => undef,
+            auto_bill => 1,
+            user_service_id => ignore(),
+            withdraw_id => ignore(),
+            user_id => 40092,
+        },
+    ));
+};
 
 done_testing();
 
