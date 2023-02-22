@@ -21,7 +21,7 @@ sub init {
     );
 
     $self->{server} = 'https://api.telegram.org';
-    $self->{lwp} = LWP::UserAgent->new(timeout => 5);
+    $self->{lwp} = LWP::UserAgent->new(timeout => 10);
 
     return $self;
 }
