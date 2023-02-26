@@ -54,8 +54,8 @@ sub parse {
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
         %{ $args{vars} },
         ref => sub {
-            my @data = @_;
-            return ref $data[0] eq 'HASH' ? [ $data[0] ] : @data;
+            my $data = shift;
+            return ref $data eq 'HASH' ? [ $data ] : $data;
         },
     };
 
