@@ -262,14 +262,17 @@ sub auth {
     my $self = shift;
     my $message = shift;
 
-    return undef unless $message->{chat}->{username};
+    my $chat_id = $message->{chat}->{id};
+    my $username = $message->{chat}->{username};
+
+    return undef unless $chat_id;
 
     my ( $user ) = $self->user->_list(
         where => {
             block => 0,
             -OR => [
-                sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $message->{chat}->{id},
-                sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.login') => lc( $message->{chat}->{username} ),
+                sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $chat_id,
+                $username ? ( sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.login') => lc( $username ) ) : (),
             ],
         },
         limit => 1,
@@ -316,7 +319,7 @@ sub process_message {
 
     if ( $cmd ne '/register' ) {
         unless ( my $user = $self->auth( $message ) ) {
-            logger->warning( 'User with login', $message->{chat}->{username}, 'not found' );
+            logger->warning( 'USER_NOT_FOUND. Chat_id', $message->{chat}->{id}, 'username:', $message->{chat}->{username} );
             $cmd = 'USER_NOT_FOUND';
         }
     }
