@@ -269,7 +269,6 @@ sub auth {
 
     my ( $user ) = $self->user->_list(
         where => {
-            block => 0,
             -OR => [
                 sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $chat_id,
                 $username ? ( sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.login') => lc( $username ) ) : (),
@@ -318,9 +317,14 @@ sub process_message {
     my ( $cmd, @callback_args ) = split( /\s+/, $query );
 
     if ( $cmd ne '/register' ) {
-        unless ( my $user = $self->auth( $message ) ) {
+        my $user = $self->auth( $message );
+        if ( !$user ) {
             logger->warning( 'USER_NOT_FOUND. Chat_id', $message->{chat}->{id}, 'username:', $message->{chat}->{username} );
             $cmd = 'USER_NOT_FOUND';
+        } elsif ( $user->{block} ) {
+            return $self->sendMessage(
+                text => sprintf("You are blocked! (user_id: %s)", $user->{user_id} ),
+            );
         }
     }
 
@@ -453,6 +457,7 @@ sub shmRegister {
     my $user = get_service('user')->reg(
         login => sprintf( "@%s", $chat_id ),
         password => passgen(),
+        full_name => sprintf("%s %s", $self->message->{chat}->{first_name}, $self->message->{chat}->{last_name} ),
         settings => {
             telegram => {
                 $username ? ( login => $username ) : (),
