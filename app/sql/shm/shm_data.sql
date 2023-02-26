@@ -5,9 +5,9 @@ INSERT INTO `users` VALUES
 ;
 
 INSERT INTO `servers_groups` VALUES
-(default,'Email уведомления','mail','random',NULL),
-(default,'Telegram уведомления','telegram','random',NULL),
-(default,'VPN','ssh','random',NULL)
+(1,'Email уведомления','mail','random',NULL),
+(2,'VPN','ssh','random',NULL),
+(3,'Telegram уведомления','telegram','random',NULL)
 ;
 
 INSERT INTO `services` VALUES
