@@ -338,7 +338,7 @@ sub process_message {
             next;
         }
 
-        $self->$method(  %{ $script->{ $method } } );
+        $self->$method( %{ $script->{ $method } || {} } );
     }
 
     return 1;
@@ -444,13 +444,16 @@ sub shmRegister {
         @_,
     );
 
+    my $username = $self->message->{chat}->{username};
+    my $chat_id = $self->message->{chat}->{id};
+
     my $user = get_service('user')->reg(
-        login => sprintf( "@%s-%s", $self->message->{chat}->{username}, $self->message->{chat}->{id} ),
+        login => sprintf( "@%s", $chat_id ),
         password => passgen(),
         settings => {
             telegram => {
-                login => $self->message->{chat}->{username},
-                chat_id => $self->message->{chat}->{id},
+                $username ? ( login => $username ) : (),
+                chat_id => $chat_id,
             },
         },
     );
