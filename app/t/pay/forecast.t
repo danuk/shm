@@ -8,7 +8,7 @@ use Core::Utils qw( now );
 use SHM ();
 
 $ENV{SHM_TEST} = 1;
-SHM->new( user_id => 40092 );
+my $user = SHM->new( user_id => 40092 );
 
 my $pay = get_service('pay');
 
@@ -106,6 +106,27 @@ subtest 'Check forecast with next already payed wd' => sub {
         dept => 21.56,
         total => 611.56,
     });
+
+
+    $user->set_balance( balance => 321.56 );
+    $ret = $pay->forecast();
+
+    cmp_deeply( $ret, {
+        items => bag(
+            {
+                name => 'Регистрация домена в зоне .RU: umci.ru',
+                usi => 2949,
+                expire => '2017-07-29 12:39:46',
+                cost => 590,
+                total => 590,
+                discount => 0,
+                qnt => 1,
+                months => 12,
+            },
+        ),
+        total => 290,
+    });
+
 };
 
 done_testing();
