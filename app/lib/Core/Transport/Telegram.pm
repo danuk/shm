@@ -219,45 +219,6 @@ sub sendMessage {
     );
 }
 
-sub deleteMessage {
-    my $self = shift;
-    my %args = (
-        message_id => undef,
-        @_,
-    );
-
-    return $self->http(
-        'deleteMessage',
-        data => {
-            %args,
-        },
-    );
-}
-
-sub sendDocument {
-    my $self = shift;
-    my %args = (
-        document => undef,
-        @_,
-    );
-
-    return $self->http( 'sendDocument',
-        data => \%args,
-    );
-}
-
-sub sendPhoto {
-    my $self = shift;
-    my %args = (
-        photo => undef,
-        @_,
-    );
-
-    return $self->http( 'sendPhoto',
-        data => \%args,
-    );
-}
-
 sub auth {
     my $self = shift;
     my $message = shift;
@@ -340,12 +301,34 @@ sub process_message {
         logger->debug( 'Script:', $script );
         my $method = get_script_method( $script );
 
-        unless ( $self->can( $method ) ) {
+        my %allow_telegram_methods = (
+            sendPhoto => 1,
+            sendAudio => 1,
+            sendDocument => 1,
+            sendVideo => 1,
+            sendAnimation => 1,
+            sendVoice => 1,
+            sendVideoNote => 1,
+            sendMediaGroup => 1,
+            sendLocation => 1,
+            sendVenue => 1,
+            sendContact => 1,
+            sendPoll => 1,
+            sendDice => 1,
+            sendChatAction => 1,
+            deleteMessage => 1,
+        );
+
+        if ( $self->can( $method ) ) {
+            $self->$method( %{ $script->{ $method } || {} } );
+        } elsif ( $allow_telegram_methods{ $method } ) {
+            $self->http( $method,
+                data => $script->{ $method } || {},
+            );
+        } else {
             logger->error("Method $method not exists");
             next;
         }
-
-        $self->$method( %{ $script->{ $method } || {} } );
     }
 
     return 1;
