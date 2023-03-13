@@ -147,15 +147,39 @@ sub list_for_api {
     return @arr;
 }
 
-sub api_price_list {
+sub price_list {
     my $self = shift;
 
-    return $self->list(
+    my $list = $self->list(
         where => {
             allow_to_order => 1,
             deleted => 0,
         },
     );
+
+    for my $si ( keys %$list ) {
+        if ( $list->{ $si }->{config}->{order_only_once} ) {
+            my @wd = get_service('wd')->list(
+                where => {
+                    service_id => $si,
+                },
+                limit => 1,
+            );
+            delete $list->{ $si } if scalar @wd;
+        }
+    }
+
+    return $list;
+}
+
+sub api_price_list {
+    my $self = shift;
+
+    my $list = $self->price_list;
+
+    my @ret;
+    push @ret, $list->{ $_ } for keys %$list;
+    return @ret;
 }
 
 sub create {
@@ -167,6 +191,12 @@ sub create {
 
     unless ( get_service('user')->authenticated->is_admin ) {
         delete $args{cost};
+
+        my $allowed_services_list = $self->price_list;
+        unless ( exists $allowed_services_list->{ $args{service_id} } ) {
+            logger->warning('Attempt to register not allowed service', $args{service_id} );
+            return undef;
+        }
     }
 
     use Core::Billing;
