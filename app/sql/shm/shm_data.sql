@@ -17,7 +17,6 @@ INSERT INTO `services` VALUES
 INSERT INTO `events` VALUES
 (default,'UserService','User password reset','user_password_reset',1,'{\"category\": \"%\", \"template_id\": \"user_password_reset\"}'),
 (default,'UserService','vpn create','create',2,'{\"category\": \"vpn-%\"}'),
-(default,'UserService','vpn create mail','create',1,'{\"subject\": \"VPN создан\", \"category\": \"vpn-%\", \"template_id\": \"vpn_created\"}'),
 (default,'UserService','vpn remove','remove',0,'{\"category\": \"vpn-%\"}'),
 (default,'UserService','vpn block','block',0,'{\"category\": \"vpn-%\"}'),
 (default,'UserService','vpn activate','activate',0,'{\"category\": \"vpn-%\"}')
@@ -37,8 +36,8 @@ INSERT INTO `config` VALUES
 ('billing','{"type": "Simpler", "partner": {"income_percent": 0}}'),
 ("company", '{"name":"My Company LTD"}'),
 ("telegram", '{"token":""}'),
-("api",     '{"url":"http://127.0.0.1:8081"}'),
-("cli",     '{"url":"http://127.0.0.1:8082"}'),
+("api",     '{"url":"https://bill.domain.ru"}'),
+("cli",     '{"url":"https://bill.domain.ru"}'),
 ("pay_systems",'{"manual":{"name":"Платеж","show_for_client":false},"yoomoney":{"name":"ЮMoney","account":"000000000000000","secret":"","template_id":"yoomoney_template","show_for_client":true}}'),
 ("mail",    '{"from":"mail@domain.ru"}')
 ;
