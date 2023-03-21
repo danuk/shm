@@ -58,10 +58,6 @@ sub job_make_forecasts {
     my $self = shift;
     my $task = shift;
 
-    unless ( $task->event_settings && $task->event_settings->{template_id} ) {
-        return FAIL, { error => 'template_id not defined' };
-    }
-
     my @users = get_service('user')->_list(
         where => {
             block => 0,
@@ -79,14 +75,7 @@ sub job_make_forecasts {
         next unless $ret->{total};
         next if $ret->{total} <= $u->{balance} + $u->{bonus} + $u->{credit};
 
-        $spool->push(
-            user_id => $u->{user_id},
-            event => {
-                title => 'Send forecast to user',
-                kind => 'Transport::Mail',
-                settings => $task->event_settings,
-            },
-        );
+        $self->make_event( 'forecast' );
     }
     return SUCCESS, { msg => 'successful' };
 }

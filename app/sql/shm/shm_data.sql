@@ -45,7 +45,7 @@ INSERT INTO `config` VALUES
 INSERT INTO `spool` (id,status,user_id,event) VALUES
 (default,'NEW',1,'{"title":"prolongate services","kind":"Jobs","method":"job_prolongate","period":"600"}'),
 (default,'PAUSED',1,'{"title":"cleanup services","kind":"Jobs","method":"job_cleanup","period":"86400","settings":{"days":10}}'),
-(default,'PAUSED',1,'{"title":"send forecasts","kind":"Jobs","method":"job_make_forecasts","period":"86400","settings":{"server_gid":1,"template_id": "forecast"}}')
+(default,'PAUSED',1,'{"title":"send forecasts","kind":"Jobs","method":"job_make_forecasts","period":"86400"}')
 ;
 
 COMMIT;
