@@ -30,6 +30,8 @@ sub send {
     my $self = shift;
     my $task = shift;
 
+    delete $self->{chat_id};
+
     my %settings = (
         %{ $task->event->{settings} || {} },
     );
