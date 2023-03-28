@@ -116,6 +116,7 @@ sub exec {
     my $console = get_service('console', _id => $args{pipeline_id} );
 
     my $host_msg = "Trying connect to: $host";
+    $host_msg .= " port $args{port}";
     $host_msg .= " through $proxy_jump" if $proxy_jump;
 
     logger->debug('SSH: ' . $host_msg );
