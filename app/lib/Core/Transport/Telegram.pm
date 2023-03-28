@@ -197,7 +197,8 @@ sub http {
         logger->error(
             $response->decoded_content,
         );
-        return FAIL, {
+        # Always return SUCCESS. Skip broken messages
+        return SUCCESS, {
             error => $response->decoded_content,
         };
     }
