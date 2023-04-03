@@ -474,6 +474,7 @@ sub shmServiceOrder {
     my %args = (
         service_id => undef,
         callback_data => undef,
+        cb_not_enough_money => undef,
         error => undef,
         @_,
     );
@@ -484,6 +485,11 @@ sub shmServiceOrder {
 
     if ( $us ) {
         my $message = $self->message;
+
+        if ( $us->{status} eq STATUS_WAIT_FOR_PAY && $args{cb_not_enough_money} ) {
+            $args{callback_data} = $args{cb_not_enough_money};
+        }
+
         $message->{text} = $args{callback_data};
         return $self->process_message(
             message => $message,

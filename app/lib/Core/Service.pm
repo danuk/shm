@@ -202,11 +202,11 @@ sub create {
     use Core::Billing;
     my $us = create_service( %args );
 
-    my @ret = get_service('UserService')->list_for_api(
+    my ( $ret ) = get_service('UserService')->list_for_api(
         usi => $us->id,
     );
 
-    return \@ret;
+    return $ret;
 }
 
 sub settings {
