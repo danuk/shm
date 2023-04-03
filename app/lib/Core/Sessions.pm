@@ -89,6 +89,22 @@ sub delete {
     $self->SUPER::delete( @_ );
 }
 
+sub delete_user_sessions {
+    my $self = shift;
+    my %args = (
+        user_id => undef,
+        @_,
+    );
+
+    return undef unless $args{user_id};
+
+    return $self->_delete(
+        where => {
+            user_id => $args{user_id},
+        },
+    );
+}
+
 sub user_id {
     my $self = shift;
 

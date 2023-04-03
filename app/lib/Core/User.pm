@@ -365,6 +365,10 @@ sub set {
     my $self = shift;
     my %args = ( @_ );
 
+    if ( $args{block} ) {
+        get_service('sessions')->delete_user_sessions( user_id => $self->user_id );
+    }
+
     return $self->SUPER::set( %args );
 }
 

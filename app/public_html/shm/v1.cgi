@@ -488,6 +488,12 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     my $user = SHM->new( skip_check_auth => $p->{skip_check_auth} );
 
+    if ( $user->is_blocked ) {
+        print_header( status => 403 );
+        print_json( { error => "User is blocked"} );
+        exit 0;
+    }
+
     if ( $uri =~/^\/admin\// && !$user->is_admin ) {
         print_header( status => 403 );
         print_json( { error => "Permission denied"} );
