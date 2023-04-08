@@ -35,6 +35,9 @@ sub structure {
         fail_count => {
             type => 'number',
         },
+        services_count => {
+            type => 'number',
+        },
         enabled => {
             type => 'number',
         },
@@ -98,6 +101,20 @@ sub list_by_transport {
     );
 
     return @servers;
+}
+
+sub services_count_increase {
+    my $self = shift;
+
+    my $ret = $self->do("UPDATE servers SET services_count=services_count+1 WHERE server_id=?", $self->id );
+    $self->reload() if $ret;
+}
+
+sub services_count_decrease {
+    my $self = shift;
+
+    my $ret = $self->do("UPDATE servers SET services_count=services_count-1 WHERE server_id=?", $self->id );
+    $self->reload() if $ret;
 }
 
 1;

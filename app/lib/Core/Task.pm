@@ -93,6 +93,9 @@ sub make_task {
                  $response_data->{server}->{id}
              ) {
                 $us->settings( { server_id => $self->server_id } )->settings_save();
+                if ( my $server = $self->server ) {
+                    $server->services_count_increase;
+                }
             }
 
             $us->set_status_by_event( $self->event->{name} );

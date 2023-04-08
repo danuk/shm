@@ -121,6 +121,7 @@ CREATE TABLE `servers` (
   `weight` int(11) DEFAULT '100',
   `success_count` int(11) NOT NULL DEFAULT '0',
   `fail_count` int(11) NOT NULL DEFAULT '0',
+  `services_count` int(11) NOT NULL DEFAULT '0',
   `enabled` int(1) NOT NULL DEFAULT '1',
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`server_id`)

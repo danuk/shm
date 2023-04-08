@@ -441,6 +441,11 @@ sub status {
                     $wd->delete;
                 }
             }
+
+            if ( my $server = $self->server ) {
+                $server->services_count_decrease;
+                $self->settings( { server_id => undef } )->settings_save();
+            }
         }
 
         if ( my $parent = $self->parent ) {

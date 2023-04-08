@@ -138,9 +138,9 @@ INSERT INTO `pays_history` VALUES
 (default,40092,'manual',455.00,'2016-01-04 20:33:35',NULL);
 
 INSERT INTO `servers` VALUES
-(1,1,'test server1 (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,1,'{\"key_id\": 1, \"host_name\": \"host1.domain.ru\", \"template_id\": \"bash_script_example\"}'),
-(2,1,'test server2 (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,1,'{\"key_id\": 1, \"host_name\": \"host2.domain.ru\", \"template_id\": \"bash_script_example\"}'),
-(25,5,'mail-1','mail','127.0.0.1:25',NULL,100,0,0,1,NULL);
+(1,1,'test server1 (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,25,1,'{\"key_id\": 1, \"host_name\": \"host1.domain.ru\", \"template_id\": \"bash_script_example\"}'),
+(2,1,'test server2 (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,0,1,'{\"key_id\": 1, \"host_name\": \"host2.domain.ru\", \"template_id\": \"bash_script_example\"}'),
+(25,5,'mail-1','mail','127.0.0.1:25',NULL,100,0,0,0,1,NULL);
 
 INSERT INTO `servers_groups` VALUES
 (1,'Сервера Web хостинга','ssh','random',NULL),
