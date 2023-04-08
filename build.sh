@@ -3,7 +3,7 @@
 function build_and_push {
     TAGS=("danuk/shm-$1:latest")
 
-    VERSION=$(git tag --points-at | head -n1)
+    [ -z "$VERSION" ] && VERSION=$(git tag --points-at | head -n1)
     if [ "$VERSION" ]; then
         #TAGS+=("danuk/shm-$1:$VERSION")
 
@@ -24,7 +24,7 @@ function build_and_push {
 build_and_push api
 
 # Build Core
-[ -z "$VERSION" ]; VERSION=$(git describe --abbrev=0 --tags)
+[ -z "$VERSION" ] && VERSION=$(git describe --abbrev=0 --tags)
 echo -n "$VERSION" > app/version
 build_and_push core
 
