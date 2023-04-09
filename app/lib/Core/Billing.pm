@@ -53,6 +53,8 @@ sub create_service {
         $args{months} ||= $service->get_period_cost;
     }
 
+    $args{next} = $service->get_next;
+
     my $us = get_service('us')->add( %args );
 
     my $wd_id = add_withdraw(
@@ -323,9 +325,21 @@ sub prolongate {
         # Удаляем услугу
         return remove( $self );
     }
-    elsif ( $self->get_next ) {
+    elsif ( my $new_service_id = $self->get_next ) {
         # Change service to new
-        # TODO: change( $self );
+        my $service = get_service('service', _id => $new_service_id );
+        logger->fatal( "Service not exists: $new_service_id" ) unless $service;
+
+        my $wd_id = add_withdraw(
+            calc_withdraw( $self->billing, $service->get ),
+            user_service_id => $self->id,
+        );
+
+        $self->set(
+            service_id => $new_service_id,
+            next => undef,
+            withdraw_id => $wd_id,
+        );
     }
 
     # Для существующей услуги используем текущее/следующее/новое списание
