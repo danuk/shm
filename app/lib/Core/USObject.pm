@@ -442,6 +442,8 @@ sub status {
                 }
             }
 
+            get_service('storage')->delete( usi => $self->id );
+
             if ( my $server = $self->server ) {
                 $server->services_count_decrease;
                 $self->settings( { server_id => undef } )->settings_save();

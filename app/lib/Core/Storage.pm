@@ -59,13 +59,15 @@ sub delete {
     my $self = shift;
     my %args = (
         name => undef,
+        usi => undef,
         @_,
     );
 
     my ( $data ) = $self->SUPER::_delete(
         where => {
             user_id => $self->user_id,
-            name => $args{name},
+            $args{name} ? ( name => $args{name} ) : (),
+            $args{usi} ? ( user_service_id => $args{usi} ) : (),
         },
     );
 
