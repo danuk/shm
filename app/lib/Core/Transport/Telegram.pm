@@ -255,6 +255,18 @@ sub auth {
     return $user;
 }
 
+sub deleteMessage {
+    my $self = shift;
+    my %args = (
+        message_id => undef,
+        @_,
+    );
+
+    $self->http( 'deleteMessage',
+        data => \%args,
+    );
+}
+
 sub process_message {
     my $self = shift;
     my %args = (
