@@ -498,7 +498,7 @@ sub shmServiceOrder {
     if ( $us ) {
         my $message = $self->message;
 
-        if ( $us->{status} eq STATUS_WAIT_FOR_PAY && $args{cb_not_enough_money} ) {
+        if ( $args{cb_not_enough_money} && !$us->is_paid ) {
             $args{callback_data} = $args{cb_not_enough_money};
         }
 

@@ -202,6 +202,14 @@ sub create {
     use Core::Billing;
     my $us = create_service( %args );
 
+    return $us;
+}
+
+sub create_for_api {
+    my $self = shift;
+
+    my $us = $self->create( @_ );
+
     my ( $ret ) = get_service('UserService')->list_for_api(
         usi => $us->id,
     );

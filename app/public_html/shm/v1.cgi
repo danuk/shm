@@ -93,7 +93,7 @@ my $routes = {
     },
     PUT => {
         controller => 'Service',
-        method => 'create',
+        method => 'create_for_api',
         required => ['service_id'],
     },
 },
@@ -164,7 +164,7 @@ my $routes = {
 '/admin/service/order' => {
     PUT => {
         controller => 'Service',
-        method => 'create',
+        method => 'create_for_api',
         required => ['service_id'],
     },
 },

@@ -266,6 +266,15 @@ sub is_commands_by_event {
     return scalar @commands;
 }
 
+sub is_paid {
+    my $self = shift;
+
+    if ( my $withdraw = $self->withdraw ) {
+        return 1 if $withdraw->get_withdraw_date;
+    }
+    return 0;
+}
+
 sub allow_event_by_status {
     my $event = shift || return undef;
     my $status = shift || return undef;
