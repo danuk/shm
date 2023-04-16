@@ -29,27 +29,51 @@ if ( $vars{action} eq 'create' ) {
     }
 
     my $config = get_service('config', _id => 'pay_systems');
-    my $api_key =    $config->get_data->{yookassa}->{api_key};
-    my $account_id = $config->get_data->{yookassa}->{account_id};
-    my $return_url = $config->get_data->{yookassa}->{return_url};
+    my $api_key =        $config->get_data->{yookassa}->{api_key};
+    my $account_id =     $config->get_data->{yookassa}->{account_id};
+    my $return_url =     $config->get_data->{yookassa}->{return_url};
+    my $description =    $config->get_data->{yookassa}->{description};
+    my $customer_email = $config->get_data->{yookassa}->{customer_email};
+
+    $description ||= $vars{description};
 
     print_json({ status => 400, msg => 'Error: api_key required. Please set it in config' }) unless $api_key;
     print_json({ status => 400, msg => 'Error: account_id required. Please set it in config' }) unless $account_id;
-    exit 0 unless( $api_key && $account_id );
+    print_json({ status => 400, msg => 'Error: description required. Please set it in config' }) unless $description;
+    print_json({ status => 400, msg => 'Error: customer_email required. Please set it in config' }) unless $customer_email;
+    exit 0 unless( $api_key && $account_id && $description && $customer_email );
 
     my $ua = LWP::UserAgent->new( timeout => 10 );
 
+    $vars{amount} ||= 100;
+
     my $content = encode_json({
         amount => {
-            value => $vars{amount} || 100,
+            value => $vars{amount},
             currency => "RUB",
         },
-        description => $user->id,
         confirmation => {
             type => "redirect",
             return_url => $return_url || 'https://www.example.com',
         },
         capture => "true",
+        description => $user->id,
+        receipt => {
+            customer => {
+                email => $customer_email,
+            },
+            items => [
+                {
+                    description => $description,
+                    quantity => 1,
+                    amount => {
+                        value => $vars{amount},
+                        currency => "RUB",
+                    },
+                    vat_code => "1",
+                },
+            ],
+        },
     });
 
     my $browser = LWP::UserAgent->new;
@@ -61,6 +85,7 @@ if ( $vars{action} eq 'create' ) {
     my $response = $browser->request( $req );
 
     logger->dump( $response->request );
+    logger->dump( $response->content );
 
     if ( $response->is_success ) {
         my $response_data = decode_json( $response->decoded_content );
@@ -69,11 +94,8 @@ if ( $vars{action} eq 'create' ) {
             status => 301,
         );
     } else {
-        print_json({
-                status => 503,
-                decoded_content => $response->decoded_content,
-                status_line => $response->status_line,
-            });
+        print_header( status => 503 );
+        print $response->content;
     }
     exit 0;
 }
