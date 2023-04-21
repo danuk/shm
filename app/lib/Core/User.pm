@@ -229,6 +229,8 @@ sub passwd {
         password => $args{password},
     );
 
+    get_service('sessions')->delete_user_sessions( user_id => $self->user_id );
+
     $user->set( password => $password );
     return scalar $user->get;
 }
