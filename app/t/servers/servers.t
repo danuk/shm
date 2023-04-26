@@ -23,4 +23,6 @@ is ( $server->get_services_count, 26 );
 $server->services_count_decrease;
 is ( $server->get_services_count, 25 );
 
+is ( $server->group->get_name, 'Сервера Web хостинга' );
+
 done_testing();

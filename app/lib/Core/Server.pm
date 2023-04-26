@@ -117,4 +117,13 @@ sub services_count_decrease {
     $self->reload() if $ret;
 }
 
+sub group {
+    my $self = shift;
+
+    if ( my $group = get_service('ServerGroups', _id => $self->get_server_gid ) ) {
+        return $group;
+    }
+    return undef;
+}
+
 1;
