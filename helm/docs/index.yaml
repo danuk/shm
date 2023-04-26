@@ -2,7 +2,7 @@ apiVersion: v1
 entries:
   shm:
   - apiVersion: v2
-    created: "2023-04-26T22:01:36.14185+03:00"
+    created: "2023-04-26T22:29:46.450449+03:00"
     dependencies:
     - name: helm-common
       repository: file://charts/helm-common
@@ -11,7 +11,7 @@ entries:
       repository: https://charts.bitnami.com/bitnami
       version: 9.7.2
     description: A Helm chart for Kubernetes
-    digest: fea24e4c50cea10a8b16519d18fc5c55913f06561aa5e46c6f99f9e7b8a05c37
+    digest: 32f24e1ebd67a2b6f5784003ead9856546d3627d343132bc378b5992751a3b57
     home: https://github.com/danuk/shm
     maintainers:
     - email: danek1982@gmail.com
@@ -21,4 +21,4 @@ entries:
     urls:
     - https://danuk.github.io/shm/shm-0.0.1.tgz
     version: 0.0.1
-generated: "2023-04-26T22:01:36.13907+03:00"
+generated: "2023-04-26T22:29:46.446055+03:00"

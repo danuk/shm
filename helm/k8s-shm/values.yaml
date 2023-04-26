@@ -3,10 +3,10 @@ global:
     domain: 'domain.com'
     version: "latest"
     tz: &shm_tz Europe/Moscow
-    user: &shm_user shm
-    pass: &shm_pass mi7biekiNgi1tixo
-    root_pass: &shm_root_pass fize8Eewois2esho
-    database: &shm_database shm
+    db_user: &shm_user shm
+    db_pass: &shm_pass mi7biekiNgi1tixo
+    db_root_pass: &shm_root_pass fize8Eewois2esho
+    db_name: &shm_database shm
 
 mysql:
   auth:
