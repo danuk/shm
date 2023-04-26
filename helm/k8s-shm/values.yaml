@@ -43,7 +43,6 @@ env: &shm_env
   DB_NAME: *shm_database
   DB_USER: *shm_user
   DB_PASS: *shm_pass
-  DB_HOST: shm-mysql
   DB_PORT: 3306
 
 helm-common:
@@ -61,6 +60,9 @@ helm-common:
           - containerPort: 80
       - name: core
         image: '{{ printf "danuk/shm-core:%s" .Values.global.shm.version }}'
+        env:
+          - name: DB_HOST
+            value: '{{ .Release.Name }}-mysql'
         env_by_tier:
           <<: *shm_env
     spool:
@@ -69,6 +71,8 @@ helm-common:
       - name: spool
         image: '{{ printf "danuk/shm-core:%s" .Values.global.shm.version }}'
         env:
+          - name: DB_HOST
+            value: '{{ .Release.Name }}-mysql'
           - name: SHM_ROLE
             value: spool
         env_by_tier:
