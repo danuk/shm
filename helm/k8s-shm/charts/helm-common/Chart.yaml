@@ -1,0 +1,12 @@
+apiVersion: v2
+appVersion: 1.16.0
+description: A base Helm chart for Kubernetes applications
+icon: http://storage/devops/default-deploy.png
+maintainers:
+- email: devops@pimsolutions.ru
+  name: PimSolutions DevOps Team
+name: helm-common
+sources:
+- https://gitlab.pimpay.ru/infra/helm-common
+type: application
+version: 0.2.12

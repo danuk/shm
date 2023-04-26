@@ -1,0 +1,28 @@
+{{- range $name, $root := .Values.services }}
+{{- if include "should_be_deployed" (list $ .) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+    app: {{ .selectorAppName | default $name }}
+  {{- with .annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .type }}
+  {{- if .externalName }}
+  externalName: {{ .externalName }}
+  {{- end }}
+  {{- with .ports }}
+  ports: {{ toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if ne .type "ExternalName" }}
+  selector:
+    {{- include "helm.selectorLabels" $ | fromJson | toYaml | nindent 4 }}
+    app: {{ .selectorAppName | default $name }}
+  {{- end }}
+{{- end }}
+{{- end }}

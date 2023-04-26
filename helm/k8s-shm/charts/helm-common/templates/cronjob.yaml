@@ -1,0 +1,108 @@
+{{- range $name, $cronjob := .Values.cronjobs }}
+{{- if include "should_be_deployed" (list $ .) }}
+---
+{{- $secrets :=  include "imagePullSecrets" (list $ .imagePullSecrets ) }}
+{{ if $.Capabilities.KubeVersion.Version | semverCompare ">=1.21.0-0" }}
+apiVersion: batch/v1
+{{- else }}
+apiVersion: batch/v1beta1
+{{- end }}
+kind: CronJob
+metadata:
+  name: {{ $name }}
+  labels: &Labels
+    {{- include "helm.labels" $ | nindent 4 }}
+    cron: {{ $name }}
+    type: cronjob
+spec:
+  concurrencyPolicy: {{ .concurrencyPolicy | default "Forbid" }}
+  failedJobsHistoryLimit: {{ .failedJobsHistoryLimit | default 3 }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            <<: *Labels
+        spec:
+        {{- if hasKey . "serviceAccount" }}
+        {{- if hasKey .serviceAccount "name" }}
+          serviceAccountName: {{ .serviceAccount.name }}
+        {{- else }}
+          serviceAccountName: {{ .name }}
+        {{- end }}
+        {{- end }}
+          containers:
+          - image: {{ tpl .image $ }}
+            imagePullPolicy: {{ .imagePullPolicy | default "Always" }}
+            name: {{ $name }}
+            {{- if or .env .env_by_tier .env_by_br .env_tpl }}
+            env:
+              {{- if .env }}
+              {{- include "env_tpl" (list $ .env) | nindent 14 }}
+              {{- end }}
+              {{- include "env_by_pluck" (list $.Values.global.tier .env_by_tier) | nindent 14 }}
+              {{- include "env_by_pluck" (list $.Values.global.git_branch .env_by_br) | nindent 14 }}
+              {{- if .env_tpl }}
+              {{- tpl .env_tpl $ | nindent 14 }}
+              {{- end }}
+            {{- end }}
+            {{- with .envFrom }}
+            envFrom: {{ toYaml . | nindent 14 }}
+            {{- end }}
+            {{- with .command }}
+            command: {{ toJson . }}
+            {{- end }}
+            {{- with .args }}
+            args: {{ toJson . }}
+              {{- end }}
+            {{- include "pod_resources" (set $.Values.global "_app" $name) | nindent 12 }}
+            {{- with .volumeMounts }}
+            volumeMounts: {{ toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .pool }}
+          {{- if $pool_name:= pluck $.Values.global.tier .pool | first }}
+          nodeSelector:
+            pool: {{ $pool_name }}
+          tolerations:
+            - key: "pool"
+              operator: "Equal"
+              value: {{ $pool_name }}
+              effect: "NoSchedule"
+          {{- end }}
+          {{- end }}
+          {{- if and .nodeSelector ( not .pool ) }}
+          {{- if $nodeSelector:= pluck $.Values.global.tier .nodeSelector | first }}
+          nodeSelector:
+          {{- with $nodeSelector }}
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- if and .tolerations ( not .pool ) }}
+          {{- if $tolerations:= pluck $.Values.global.tier .tolerations | first }}
+          {{- include "tolerations" (set $.Values.global "_tolerations" $tolerations) | nindent 10 }}
+          {{- end }}
+          {{- end }}
+          {{- if .antiAffinity }}
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                  - key: cron
+                    operator: In
+                    values:
+                    - {{ $name }}
+                topologyKey: "kubernetes.io/hostname"
+          {{- end }}
+          {{- $secrets | nindent 10}}
+          restartPolicy: {{ .restartPolicy | default "Never" }}
+          {{- with .volumes }}
+          volumes: {{ toYaml . | nindent 12 }}
+          {{- end }}
+  schedule: {{ .schedule | quote }}
+  startingDeadlineSeconds: {{ .startingDeadlineSeconds | default 120 }}
+  successfulJobsHistoryLimit: {{ .successfulJobsHistoryLimit | default 1 }}
+  suspend: {{ include "var_by_pluck" (list $.Values.global.tier .suspend) | default false }}
+{{- end }}
+{{- end }}

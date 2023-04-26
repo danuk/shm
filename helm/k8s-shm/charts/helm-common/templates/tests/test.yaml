@@ -1,0 +1,60 @@
+{{- range $name, $tests := .Values.tests }}
+{{- if include "should_be_deployed" (list $ .) }}
+{{- $secrets :=  include "imagePullSecrets" (list $ .imagePullSecrets ) }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ $name }}
+  {{- with .annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+    app: {{ $name }}
+    role: {{ .role | default "tests" }}
+    {{- with .labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  containers:
+    - name: {{ $name }}
+      imagePullPolicy: {{ .imagePullPolicy | default "Always" }}
+      image: {{ tpl .image $ }}
+      {{- with .command }}
+      command: {{ toJson . }}
+      {{- end }}
+      {{- with .args }}
+      args: {{ toJson . }}
+      {{- end }}
+      {{- if or .env .env_by_tier .env_by_br .env_tpl }}
+      env:
+        {{- if .env }}
+        {{- include "env_tpl" (list $ .env) | nindent 10 }}
+        {{- end }}
+        {{- include "env_by_pluck" (list $.Values.global.tier .env_by_tier) | nindent 10 }}
+        {{- include "env_by_pluck" (list $.Values.global.git_branch .env_by_br) | nindent 10 }}
+        {{- if .env_tpl }}
+        {{- tpl .env_tpl $ | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      {{- include "pod_resources" (set $.Values.global "_app" $name) | nindent 6 }}
+  {{- $secrets | nindent 2}}
+  restartPolicy: {{ .restartPolicy | default "Never" }}
+  {{- with .hostAliases }}
+  hostAliases: {{ toYaml . | nindent 2 }}
+  {{- end }}
+  {{- if .pool }}
+  {{- if $pool_name:= pluck $.Values.global.tier .pool | first }}
+  nodeSelector:
+    pool: {{ $pool_name }}
+  tolerations:
+    - key: "pool"
+      operator: "Equal"
+      value: {{ $pool_name }}
+      effect: "NoSchedule"
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}

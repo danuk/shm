@@ -1,0 +1,82 @@
+{{- range $name, $root := .Values.ingress }}
+{{- if include "should_be_deployed" (list $ .) }}
+---
+{{- $is_className := include "var_by_pluck" (list $.Values.global.tier .className) -}}
+{{- $is_className_br := include "var_by_pluck" (list $.Values.global.git_branch .classNameForBranches) -}}
+{{- $className := or $is_className_br $is_className -}}
+{{- $annotations := .annotations | default dict }}
+{{- if $annotations_by_tier := include "var_by_pluck" (list $.Values.global.tier .annotations_by_tier) }}
+{{- $annotations := merge $annotations ($annotations_by_tier | fromJson) }}
+{{- end }}
+{{- if and $className (not (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion)) }}
+  {{- $_ := set $annotations "kubernetes.io/ingress.class" $className}}
+{{- end }}
+{{- $is_acme := include "var_by_pluck" (list $.Values.global.tier .acme) -}}
+{{- $is_acme_br := has $.Values.global.git_branch .acme_for_branches -}}
+{{- $acme := or $is_acme $is_acme_br -}}
+{{- if $acme }}
+{{- $_ := set $annotations "kubernetes.io/tls-acme" "true" }}
+{{- end }}
+{{- if .no_ssl_redirect }}
+{{- $_ := set $annotations "nginx.ingress.kubernetes.io/ssl-redirect" "false" }}
+{{- end }}
+{{ $ing_name := printf "%s-%s" $name $.Release.Name }}
+{{- if and ($.Values.global.git_branch) ( not (contains $.Values.global.git_branch $.Release.Name)) }}
+{{ $ing_name = printf "%s-%s-%s" $name $.Release.Name $.Values.global.git_branch }}
+{{ end }}
+{{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1
+{{- else if semverCompare ">=1.14-0" $.Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1beta1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ $ing_name }}
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if and $className (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ $className }}
+  {{- end }}
+  rules:
+    {{- range .rules }}
+    {{- if $host:= include "var_by_pluck" (list $.Values.global.tier .host) }}
+    - host: {{ tpl $host $ | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            {{- if and .pathType (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion) }}
+            pathType: {{ .pathType }}
+            {{- end }}
+            backend:
+              {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
+              service:
+                name: {{ .service.name  }}
+                port:
+                  number: {{ .service.port }}
+              {{- else }}
+              serviceName: {{ .service.name  }}
+              servicePort: {{ .service.port }}
+              {{- end }}
+          {{- end }}
+    {{- end }}
+    {{- end }}
+  {{- if $acme }}
+  tls:
+    - hosts:
+    {{- range .rules }}
+    {{- if $host := include "var_by_pluck" (list $.Values.global.tier .host) }}
+      - {{ tpl $host $ | quote }}
+    {{- end }}
+    {{- end }}
+      secretName: {{ $name }}-tls
+  {{- end }}
+{{- end }}
+{{- end }}

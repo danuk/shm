@@ -1,0 +1,9 @@
+dependencies:
+- name: helm-common
+  repository: file://charts/helm-common
+  version: 0.2.12
+- name: mysql
+  repository: https://charts.bitnami.com/bitnami
+  version: 9.7.2
+digest: sha256:331956480e6f9f40f6a2de377b77ca78a79ac8c48972a22aee28956c552d8bfa
+generated: "2023-04-26T20:14:11.720698+03:00"

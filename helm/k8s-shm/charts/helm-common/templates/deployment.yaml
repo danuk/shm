@@ -1,0 +1,135 @@
+{{- range $name, $root := .Values.apps }}
+{{- if include "should_be_deployed" (list $ .) }}
+---
+{{- $selectorLabels := set (include "helm.selectorLabels" $ | fromJson) "app" $name }}
+{{- if hasKey . "labels" }}
+  {{- $selectorLabels := merge $selectorLabels .labels }}
+{{- end }}
+{{- $secrets :=  include "imagePullSecrets" (list $ .imagePullSecrets ) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+    app: {{ $name }}
+    {{- with .labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ include "var_by_pluck" (list $.Values.global.tier .replicas) | default 1 }}
+  {{- if .strategy_by_tier }}
+  {{- if $strategy:= include "var_by_pluck" (list $.Values.global.tier .strategy_by_tier) }}
+  strategy: {{ fromJson $strategy | toYaml | nindent 4 }}
+  {{- end }}
+  {{- end }}
+  {{- with .strategy }}
+  strategy: {{ toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels: &selectorLabels
+      {{- with $selectorLabels }}
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
+  template:
+    metadata:
+      labels: *selectorLabels
+      {{- if .annotations }}
+      annotations:
+      {{- range $key, $value := .annotations }}
+        {{ $key }}: {{ tpl $value $ }}
+      {{- end }}
+      {{- end }}
+    spec:
+      {{- $secrets | nindent 6}}
+      {{- with .volumes }}
+      volumes: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if hasKey . "serviceAccount" }}
+      {{- if hasKey .serviceAccount "name" }}
+      serviceAccountName: {{ .serviceAccount.name }}
+      {{- else }}
+      serviceAccountName: {{ .name }}
+      {{- end }}
+      {{- end }}
+      {{- with .podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      {{- range .containers }}
+        - name: {{ .name }}
+          imagePullPolicy: {{ .imagePullPolicy | default "Always" }}
+          {{- with .securityContext }}
+          securityContext:
+            {{ toYaml . | nindent 12 }}
+          {{- end }}
+          image: {{ tpl .image $ }}
+          {{- with .command }}
+          command: {{ toJson . }}
+          {{- end }}
+          {{- with .args }}
+          args: {{ toJson . }}
+          {{- end }}
+          {{- if or .env .env_by_tier .env_by_br .env_tpl }}
+          env:
+            {{- if .env }}
+            {{- include "env_tpl" (list $ .env) | nindent 12 }}
+            {{- end }}
+            {{- include "env_by_pluck" (list $.Values.global.tier .env_by_tier) | nindent 12 }}
+            {{- include "env_by_pluck" (list $.Values.global.git_branch .env_by_br) | nindent 12 }}
+            {{- if .env_tpl }}
+            {{- tpl .env_tpl $ | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with .envFrom }}
+          envFrom: {{ toYaml . | nindent 12 }}
+          {{- end }}
+          {{- include "pod_resources" (set $.Values.global "_app" .name) | nindent 10 }}
+          {{- with .ports }}
+          ports:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .livenessProbe }}
+          livenessProbe: {{ toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .readinessProbe }}
+          readinessProbe: {{ toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .volumeMounts }}
+          volumeMounts: {{ toYaml . | nindent 12 }}
+          {{- end }}
+      {{- end }}
+      {{- with .hostAliases }}
+      hostAliases: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .pool }}
+      {{- if $pool_name:= pluck $.Values.global.tier .pool | first }}
+      nodeSelector:
+        pool: {{ $pool_name }}
+      tolerations:
+        - key: "pool"
+          operator: "Equal"
+          value: {{ $pool_name }}
+          effect: "NoSchedule"
+      {{- end }}
+      {{- end }}
+      {{- if and .nodeSelector ( not .pool ) }}
+      {{- if $nodeSelector:= pluck $.Values.global.tier .nodeSelector | first }}
+      nodeSelector:
+      {{- with $nodeSelector }}
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- if and .tolerations ( not .pool ) }}
+      {{- if $tolerations:= pluck $.Values.global.tier .tolerations | first }}
+      {{- include "tolerations" (set $.Values.global "_tolerations" $tolerations) | nindent 6 }}
+      {{- end }}
+      {{- end }}
+      {{- if $root.antiAffinity }}
+      affinity:
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "antiAffinitySoft" $root.antiAffinitySoft "labels" $selectorLabels) | nindent 10 }}
+      {{- end }}
+{{- end }}
+{{- end }}

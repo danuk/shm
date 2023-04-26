@@ -1,0 +1,23 @@
+nameOverride: ""
+global:
+  resources:
+    _default:
+      limits:
+        cpu: 2
+        memory: 2Gi
+      requests:
+        cpu: 50m
+        memory: 100Mi
+
+apps: {}
+services: {}
+ingress: {}
+cronjobs: []
+
+imagePullCredentials:
+  auths:
+    https://gitlab.pimpay.ru:4567/v2/:
+      email: devops@pimsolutions.ru
+      username: regcred
+      password:
+

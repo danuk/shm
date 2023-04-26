@@ -1,0 +1,23 @@
+{{- range $name, $root := .Values.apps }}
+{{- $replicas := include "var_by_pluck" (list $.Values.global.tier .replicas) | int -}}
+{{ if ge $replicas 2 }}
+---
+{{ if $.Capabilities.KubeVersion.Version | semverCompare ">=1.21.0-0" }}
+apiVersion: policy/v1
+{{- else }}
+apiVersion: policy/v1beta1
+{{- end }}
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $name }}-pdb
+spec:
+  minAvailable: {{ include "var_by_pluck" (list $.Values.global.tier .podDisruptionBudget) | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "helm.labels" $ | nindent 6 }}
+      app: {{ $name }}
+      {{- with .labels }}
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,155 @@
+global:
+  shm:
+    domain: 'domain.com'
+    version: "latest"
+    tz: &shm_tz Europe/Moscow
+    user: &shm_user shm
+    pass: &shm_pass mi7biekiNgi1tixo
+    root_pass: &shm_root_pass fize8Eewois2esho
+    database: &shm_database shm
+
+mysql:
+  auth:
+    database: *shm_database
+    username: *shm_user
+    password: *shm_pass
+    rootPassword: *shm_root_pass
+
+  primary:
+    persistence:
+      enabled: true
+      storageClass: ""
+      size: 1Gi
+
+    tolerations:
+      - operator: Exists
+        effect: NoExecute
+      - operator: Exists
+        effect: NoSchedule
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - mysql
+          topologyKey: kubernetes.io/hostname
+
+env: &shm_env
+  TZ: *shm_tz
+  LANG: C.UTF-8
+  DB_NAME: *shm_database
+  DB_USER: *shm_user
+  DB_PASS: *shm_pass
+  DB_HOST: shm-mysql
+  DB_PORT: 3306
+
+helm-common:
+  apps:
+    shm:
+      replicas: 1
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "core"
+      containers:
+      - name: nginx
+        image: '{{ printf "danuk/shm-api:%s" .Values.global.shm.version }}'
+        ports:
+          - containerPort: 80
+      - name: core
+        image: '{{ printf "danuk/shm-core:%s" .Values.global.shm.version }}'
+        env_by_tier:
+          <<: *shm_env
+    spool:
+      replicas: 1 # Do not change count of replicas for spool. It hasnt' been tested yet
+      containers:
+      - name: spool
+        image: '{{ printf "danuk/shm-core:%s" .Values.global.shm.version }}'
+        env:
+          - name: SHM_ROLE
+            value: spool
+        env_by_tier:
+          <<: *shm_env
+    admin:
+      replicas: 1
+      containers:
+      - name: nginx
+        image: '{{ printf "danuk/shm-admin:%s" .Values.global.shm.version }}'
+        env_by_tier:
+          SHM_URL: http://shm-api
+        ports:
+          - containerPort: 80
+    client:
+      replicas: 1
+      containers:
+      - name: nginx
+        image: '{{ printf "danuk/shm-client:%s" .Values.global.shm.version }}'
+        env_by_tier:
+          SHM_URL: http://shm-api
+        ports:
+          - containerPort: 80
+
+  services:
+    shm-api:
+      selectorAppName: shm
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 80
+          targetPort: 80
+          protocol: TCP
+    shm-admin:
+      selectorAppName: admin
+      # type: LoadBalancer
+      # annotations:
+      #   cloud.google.com/load-balancer-type: Internal
+      #   external-dns.alpha.kubernetes.io/hostname: some-domain.com
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 80
+          targetPort: 80
+          protocol: TCP
+    shm-client:
+      selectorAppName: client
+      type: ClusterIP
+      # type: LoadBalancer
+      # annotations:
+      #   cloud.google.com/load-balancer-type: Internal
+      #   external-dns.alpha.kubernetes.io/hostname: some-domain.com
+      ports:
+        - name: http
+          port: 80
+          targetPort: 80
+          protocol: TCP
+
+  ingress:
+    admin:
+      # annotations: {}
+      # className: nginx
+      # acme: true
+      rules:
+        - host: '{{ printf "admin.%s" .Values.global.shm.domain }}'
+          paths:
+            - path: /
+              service:
+                name: shm-admin
+                port: 80
+              pathType: Prefix
+
+    client:
+      # annotations: {}
+      # className: nginx
+      # acme: true
+      rules:
+        - host: '{{ printf "client.%s" .Values.global.shm.domain }}'
+          paths:
+            - path: /
+              service:
+                name: shm-client
+                port: 80
+              pathType: Prefix
+
