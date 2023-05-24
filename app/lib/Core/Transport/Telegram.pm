@@ -12,6 +12,7 @@ use Core::Utils qw(
     encode_json
     decode_json
     passgen
+    _utf8_off
 );
 
 sub init {
@@ -366,6 +367,9 @@ sub get_script {
         logger->error("Telegram bot: telegram_bot not exists");
         return [];
     }
+
+    # Hack for working with Cyrillic commands
+    _utf8_off( $cmd );
 
     my $data = $template->parse(
         START_TAG => '<%',

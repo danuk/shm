@@ -2,7 +2,7 @@ package Core::Utils;
 
 use v5.14;
 use utf8;
-use Encode qw/_utf8_on/;
+use Encode qw/_utf8_on _utf8_off/;
 use CGI::Cookie;
 
 use base qw(Exporter);
@@ -35,6 +35,8 @@ our @EXPORT_OK = qw(
     is_host
     html_escape
     hash_merge
+    _utf8_on
+    _utf8_off
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
