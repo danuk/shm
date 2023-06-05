@@ -59,6 +59,10 @@ sub structure {
             default => 0,
         },
         config => { type => 'json', value => undef },
+        is_composite => {
+            type => 'number',
+            default => 0,
+        },
         deleted => {
             type => 'number',
             default => 0,

@@ -11,7 +11,7 @@ INSERT INTO `servers_groups` VALUES
 ;
 
 INSERT INTO `services` VALUES
-(1,'VPN (Россия)',0.00,1.00,'vpn-russia','[]',NULL,0,NULL,NULL,1,0,NULL,0,NULL,0)
+(1,'VPN (Россия)',0.00,1.00,'vpn-russia','[]',NULL,0,NULL,NULL,1,0,NULL,0,NULL,0,0)
 ;
 
 INSERT INTO `events` VALUES

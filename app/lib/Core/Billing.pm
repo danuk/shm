@@ -95,6 +95,9 @@ sub process_service_recursive {
                 $event,
             );
         }
+        if ( $event eq EVENT_PROLONGATE ) {
+            $event = $service->get_status eq STATUS_BLOCK ? EVENT_ACTIVATE : EVENT_PROLONGATE;
+        }
         $service->event( $event );
     }
     return $service;
@@ -111,7 +114,7 @@ sub process_service {
     my $self = shift;
     my $event = shift;
 
-    logger->debug('Process service: '. $self->id . " Event: [$event]" );
+    logger->info('Process service: '. $self->id . " Event: [$event]" );
 
     if ( $self->get_status eq STATUS_PROGRESS ) {
         logger->debug('Service in progress. Skipping...');
@@ -226,13 +229,26 @@ sub is_pay {
 
     my $user = $self->user;
     my $balance = $user->get_balance + $user->get_credit;
+    my $total = $wd->get_total;
 
-    # No enough money
+    my $root = $self->top_parent;
+    if ( $root->service->get_is_composite ) {
+        if ( $self->id == $root->id ) {
+            # I'm a root
+            $total = $self->wd_total_composite;
+        } else {
+            # I'm a child
+            return 0 unless $root->is_paid;
+        }
+    }
+
+    # Not enough money
     return 0 if (
-                    $wd->get_total > 0 &&
-                    $balance < $wd->get_total &&
+                    $total > 0 &&
+                    $balance < $total &&
                     !$user->get_can_overdraft &&
                     !$self->get_pay_in_credit );
+
 
     $user->set_balance( balance => -$wd->get_total );
     $wd->set( withdraw_date => now );
@@ -323,7 +339,7 @@ sub create {
 sub prolongate {
     my $self = shift;
 
-    logger->debug('Trying to prolong the service: ' . $self->id );
+    logger->info('Trying to prolong the service: ' . $self->id );
 
     if ( $self->parent_has_expired ) {
         # Не продлеваем услугу если родитель истек
@@ -359,7 +375,7 @@ sub prolongate {
     my $wd_id = $self->get_withdraw_id;
     my $wd = $wd_id ? get_service('wd', _id => $wd_id ) : undef;
 
-    if ( $wd && $wd->res->{withdraw_date} ) {
+    if ( $wd && $wd->get_withdraw_date ) {
         if ( my %next = $self->withdraw->next ) {
             $wd_id = $next{withdraw_id};
         } else {
@@ -369,12 +385,12 @@ sub prolongate {
     }
 
     unless ( is_pay( $self ) ) {
-        logger->debug('Not enough money');
+        logger->info('Not enough money');
         return block( $self );
     }
 
     set_service_expire( $self );
-    return $self->get_status eq STATUS_BLOCK ? EVENT_ACTIVATE : EVENT_PROLONGATE;
+    return EVENT_PROLONGATE;
 }
 
 sub block {

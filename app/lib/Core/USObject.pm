@@ -146,7 +146,7 @@ sub top_parent {
     my $self = shift;
 
     my $root = $self->parent;
-    return unless $root;
+    return $self unless $root;
 
     while ( my $obj = $root->parent ) { $root = $obj };
     return $root;
@@ -187,6 +187,23 @@ sub withdraw {
     my $self = shift;
     return undef unless $self->get_withdraw_id;
     return get_service('wd', _id => $self->get_withdraw_id, usi => $self->id );
+}
+
+sub wd_total_composite {
+    my $self = shift;
+
+    my $total = 0;
+
+    if ( my $wd = $self->withdraw ) {
+        $total += $wd->get_total;
+    }
+
+    for ( $self->children ) {
+        my $child = $self->id( $_->{user_service_id} );
+        $total += $child->wd_total_composite;
+    }
+
+    return $total;
 }
 
 sub data_for_transport {

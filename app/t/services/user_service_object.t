@@ -35,7 +35,7 @@ is_deeply( scalar $obj->with_name->get, {
 
 is ( $obj->id, 99, 'Get user_service_id' );
 
-is ( $obj->top_parent, undef, 'Test get top_parent for root service');
+is ( $obj->top_parent, $obj, 'Test get top_parent for root service');
 is ( get_service('us', _id => 665 )->top_parent->id, 99, 'Test get top_parent for child' );
 
 is ( $obj->get_expire, '2017-01-31 23:59:50', 'Check getter for expire field' );
