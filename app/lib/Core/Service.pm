@@ -85,7 +85,14 @@ sub convert_name {
 
 sub subservices {
     my $self = shift;
-    return $self->res->{children} || [];
+
+    my @children = @{ $self->res->{children} || [] };
+
+    for ( @children ) {
+        $_ = { service_id => $_ } if ref eq 'SCALAR';
+    }
+
+    return \@children;
 }
 
 sub api_subservices_list {
@@ -99,14 +106,14 @@ sub api_subservices_list {
     return [] unless $service;
 
     my $list = $self->_list( where => {
-        service_id => { -in => $service->subservices },
+        service_id => { -in => [ map $_->{service_id}, @{ $service->subservices } ] },
         deleted => 0,
     });
 
     # Making order of priority
     my @ret;
     for ( @{ $service->subservices || [] } ) {
-        push @ret, $list->{ $_ };
+        push @ret, $list->{ $_->{service_id} };
     }
 
     return @ret;
@@ -136,7 +143,7 @@ sub list_for_api {
 
     if ( $args{admin} && $args{parent} ) {
         if ( my $service = get_service('service', _id => $args{parent} ) ) {
-            $args{where} = { service_id => { -in => $service->subservices } };
+            $args{where} = { service_id => { -in => [ map $_->{service_id}, @{ $service->subservices } ] } };
         }
     }
     elsif ( $args{service_id} ) {
