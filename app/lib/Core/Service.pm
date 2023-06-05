@@ -89,7 +89,7 @@ sub subservices {
     my @children = @{ $self->res->{children} || [] };
 
     for ( @children ) {
-        $_ = { service_id => $_ } if ref eq 'SCALAR';
+        $_ = { service_id => $_ } unless ref;
     }
 
     return \@children;
@@ -98,7 +98,7 @@ sub subservices {
 sub api_subservices_list {
     my $self = shift;
     my %args = (
-        service_id => undef,
+        service_id => $self->id,
         @_,
     );
 
@@ -110,10 +110,10 @@ sub api_subservices_list {
         deleted => 0,
     });
 
-    # Making order of priority
+    # Making order of priority and join sub_services params
     my @ret;
     for ( @{ $service->subservices || [] } ) {
-        push @ret, $list->{ $_->{service_id} };
+        push @ret, { %{ $list->{ $_->{service_id} } }, %{ $_ } };
     }
 
     return @ret;

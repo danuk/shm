@@ -129,8 +129,8 @@ sub has_expired {
 sub parent_has_expired {
     my $self = shift;
 
-    while ( my $parent = $self->parent ) {
-        return 1 if $parent->has_expired;
+    if ( my $parent = $self->parent ) {
+        return $parent->has_expired;
     }
     return 0;
 }

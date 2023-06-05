@@ -40,6 +40,17 @@ sub create_service {
         @_,
     );
 
+    my $us = create_service_recursive( %args );
+
+    return process_service_recursive( $us, EVENT_CREATE );
+}
+
+sub create_service_recursive {
+    my %args = (
+        service_id => undef,
+        @_,
+    );
+
     unless ( $args{ service_id } ) {
         logger->fatal( "Not exists `$_` in args" );
     }
@@ -57,18 +68,20 @@ sub create_service {
 
     my $us = get_service('us')->add( %args );
 
-    my $wd_id = add_withdraw(
-        calc_withdraw( $us->billing, $service->get, %args ),
-        user_service_id => $us->id,
-    );
-    $us->set( withdraw_id => $wd_id );
+    unless ( $args{parent} && !$service->get_cost ) {
+        my $wd_id = add_withdraw(
+            calc_withdraw( $us->billing, $service->get, %args ),
+            user_service_id => $us->id,
+        );
+        $us->set( withdraw_id => $wd_id );
+    }
 
     my $ss = get_service('service', _id => $args{service_id} )->subservices;
     for ( @{ $ss } ) {
-        get_service('us')->add( service_id => $_, parent => $us->id );
+        create_service_recursive( %{ $_ }, parent => $us->id );
     }
 
-    return process_service_recursive( $us, EVENT_CREATE );
+    return $us;
 }
 
 sub process_service_recursive {
