@@ -188,7 +188,16 @@ subtest 'Check old style sub services' => sub {
         children => [30,31],
     );
 
-    cmp_deeply( $old_service->subservices, [{ service_id => 30 },{ service_id => 31 }] );
+    cmp_deeply( $old_service->subservices, [
+        {
+            service_id => 30,
+            qnt => 1,
+        },
+        {
+            service_id => 31,
+            qnt => 1,
+        },
+    ]);
 };
 
 subtest 'Check `qnt` for api_subservices_list' => sub {

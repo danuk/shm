@@ -94,6 +94,7 @@ sub subservices {
 
     for ( @children ) {
         $_ = { service_id => $_ } unless ref;
+        $_->{qnt} ||=1;
     }
 
     return \@children;
