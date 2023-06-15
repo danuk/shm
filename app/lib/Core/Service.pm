@@ -78,6 +78,37 @@ sub add {
     return undef;
 }
 
+sub set {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    delete $args{children};
+    return $self->SUPER::set( %args );
+}
+
+sub children {
+    my $self = shift;
+    my %args = (
+        children => undef,
+        @_,
+    );
+
+    if ( $args{ children } ) {
+        my @ret;
+        for ( @{ $args{ children } } ) {
+            next if $_->{service_id} == $self->id;
+            push @ret, {
+                service_id => $_->{service_id},
+                qnt => $_->{qnt} || 1,
+            };
+        }
+        $self->SUPER::set( children => \@ret ) if scalar @ret;
+    }
+    return $self->get_children || [];
+}
+
 sub convert_name {
     my $self = shift;
     my $name = shift;
@@ -90,7 +121,7 @@ sub convert_name {
 sub subservices {
     my $self = shift;
 
-    my @children = @{ $self->res->{children} || [] };
+    my @children = @{ $self->children };
 
     for ( @children ) {
         $_ = { service_id => $_ } unless ref;

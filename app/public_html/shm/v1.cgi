@@ -174,6 +174,11 @@ my $routes = {
         method => 'api_subservices_list',
         required => ['service_id'],
     },
+    POST => {
+        controller => 'Service',
+        method => 'children',
+        required => ['service_id', 'children'],
+    },
 },
 
 '/admin/service/event' => {
