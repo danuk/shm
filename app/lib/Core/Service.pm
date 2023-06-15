@@ -131,6 +131,23 @@ sub subservices {
     return \@children;
 }
 
+sub cost_composite {
+    my $self = shift;
+    my %args = (
+        qnt => 1,
+        @_,
+    );
+
+    my $cost = $self->get_cost * $args{qnt};
+
+    for ( @{ $self->subservices } ) {
+        my $child = $self->id( $_->{service_id} );
+        $cost += $child->cost_composite( qnt => $_->{qnt} );
+    }
+    return $cost;
+}
+
+
 sub api_subservices_list {
     my $self = shift;
     my %args = (
@@ -209,6 +226,11 @@ sub price_list {
                 limit => 1,
             );
             delete $list->{ $si } if scalar @wd;
+        }
+
+        if ( $list->{ $si }->{is_composite} ) {
+            my $service = $self->id( $si );
+            $list->{ $si }->{cost} = $service->cost_composite();
         }
     }
 

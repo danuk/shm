@@ -36,6 +36,7 @@ my $service = get_service('service')->add(
     category => 'test',
     no_discount => 1,
     is_composite => 1,
+    allow_to_order => 1,
     children => [
         {
             service_id => $sub_service->id,
@@ -88,5 +89,9 @@ is( $us_child->status, 'ACTIVE' );
 is( $us->get_expire, '2019-06-02 23:25:08');
 is( $us_child->get_expire, '2019-06-02 23:25:08');
 
+is( get_service('service')->price_list->{ $service->id }->{cost}, 120 );
+
+$service->set( is_composite => 0 );
+is( get_service('service')->price_list->{ $service->id }->{cost}, 100 );
 
 done_testing();
