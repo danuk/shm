@@ -151,6 +151,9 @@ sub forecast {
         $ret{total} += $ret{dept};
     }
 
+    # Do not send forecast if services not expired or not exists
+    $ret{total} = 0 unless scalar @forecast_services;
+
     return \%ret;
 }
 
