@@ -57,6 +57,10 @@ sub parse {
             my $data = shift;
             return ref $data eq 'HASH' ? [ $data ] : $data;
         },
+        toJson => sub {
+            my $data = shift;
+            return encode_json( $data );
+        },
     };
 
     my $template = Template->new({
@@ -65,12 +69,6 @@ sub parse {
         ANYCASE => 1,
         INTERPOLATE  => 0,
         PRE_CHOMP => 1,
-        # FILTERS => {
-        #     toJson => sub {
-        #         my $data = shift;
-        #         return encode_json( $data );
-        #     },
-        # }
     });
 
     my $result = "";

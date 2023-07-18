@@ -60,4 +60,19 @@ subtest 'Check template 3' => sub {
 пожалуйста, сообщите об этом нам: mail@domain.ru';
 };
 
+subtest 'Check toJson function' => sub {
+    my $t = get_service('template');
+
+    my $json = $t->parse(
+        data => '{{ toJson(
+            {
+                a => 1,
+                b => 2,
+            }
+        ) }}',
+    );
+
+    is( $json, '{"a":1,"b":2}' );
+};
+
 done_testing();
