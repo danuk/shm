@@ -187,8 +187,16 @@ sub finish_task {
             }
         }
     } else {
-        if ( $self->event->{period} ) {
+        if ( $self->event->{kind} eq 'Jobs' ) {
             # Do not delete periodic services and write history only if fail
+            unless ( $self->event->{period} ) {
+                $self->set(
+                    status => TASK_STUCK,
+                    response => {
+                        error => 'period not defined',
+                    },
+                );
+            }
             $self->write_history if $args{status} ne TASK_SUCCESS;
         }
         else {
