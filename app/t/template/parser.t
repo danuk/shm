@@ -75,4 +75,20 @@ subtest 'Check toJson function' => sub {
     is( $json, '{"a":1,"b":2}' );
 };
 
+subtest 'Check EVAL_PERL' => sub {
+    my $t = get_service('template');
+
+    my $perl = $t->parse(
+        data => '
+            {{ PERL }}
+                use v5.14;
+                say "My login is: {{ user.login }}";
+            {{ END -}}
+        ',
+    );
+
+    is( $perl, 'My login is: danuk        ' );
+};
+
+
 done_testing();
