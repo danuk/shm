@@ -24,56 +24,72 @@ sub send {
         }
     }
 
+
     my $settings = $template->get_settings;
 
-    my %options;
-    $options{agent} = $settings->{http}->{user_agent} // 'libwww-perl-shm';
-    $options{ssl_opts}{verify_hostname} = $settings->{http}->{verify_hostname} // 1;
-    $options{timeout} = $settings->{http}->{timeout} // 10;
-
-    my $url = $settings->{http}->{url} // undef;
-    unless ( defined $url ) {
-        return undef, {
-            error => "not configure `URL`",
-        }
-    }
-
+    # check method
     my $method = $settings->{http}->{method} // 'post';
     unless ( $method =~ m/^(get|post|put|delete)$/ ) {
-        return undef, {
-            error => "unknown method `$method`",
-        }
+        return undef, {error => "unknown method `$method`"};
     }
+
+    # check url
+    my $url = $settings->{http}->{url};
+    unless ( defined $url ) {
+        return undef, {error => "not configure `URL`"};
+    }
+
+    my %headers = %{$settings->{http}->{headers} || {}};
 
     my $content = $template->parse(
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
         task => $task,
     );
 
-    if ($method eq 'get') {
-        $url .= sprintf("?%s", $content);
-    }
+    my $verify_hostname = $settings->{http}->{verify_hostname} // 1;
 
-    my $ua = LWP::UserAgent->new(%options);
+    my $timeout = $settings->{http}->{timeout} // 10;
 
-    my %headers = %{$settings->{http}->{headers} || {}};
-    foreach my $key (keys %headers) {
-        $ua->default_headers->header($key => $headers{$key});
-    }
+    return $self->send_req({
+        method => uc($method), # method uc
+        url => $url,
+        headers => %headers,
+        configure => $content,
+        verify_hostname => $verify_hostname,
+        timeout => $timeout
+    });
+}
 
-    my $response = $ua->$method(
-        $url,
-        Content => $content
+sub send_req {
+    my $self = shift;
+    my %args = (
+        method => 'POST',
+        url => undef,
+        headers => {},
+        content => undef,
+        verify_hostname => 1,
+        timeout => 10,
+        @_,
     );
+
+    $ua = LWP::UserAgent->(timeout => $args{timeout}, ssl_opts => { verify_hostname => $verify_hostname });
+
+    my $req =  HTTP::Request->new($args{method} => $args{url});
+    foreach my $key (keys %headers) {
+        $req->header($key => $args{headers}{$key});
+    }
+    $req->content($args{content});
+
+    my $response = $ua->request($req);
 
     if ( $response->is_success ) {
         return SUCCESS, {
             message => "successful",
-        }
+        };
     } else {
         return undef, {
             error => sprintf("%s / %s", $response->status_line, $response->decoded_content)
-        }
+        };
     }
 }
 
