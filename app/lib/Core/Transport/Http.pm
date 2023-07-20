@@ -24,7 +24,6 @@ sub send {
         }
     }
 
-
     my $settings = $template->get_settings;
 
     # check method
@@ -72,10 +71,14 @@ sub send_req {
         @_,
     );
 
-    $ua = LWP::UserAgent->(timeout => $args{timeout}, ssl_opts => { verify_hostname => $verify_hostname });
+    my $ua = LWP::UserAgent->new(timeout => $args{timeout}, ssl_opts => { verify_hostname => $args{verify_hostname} });
+
+    if ($args{method} eq 'GET') {
+        $args{url} .= $args{content};
+    }
 
     my $req =  HTTP::Request->new($args{method} => $args{url});
-    foreach my $key (keys %headers) {
+    foreach my $key (keys %{$args{headers}}) {
         $req->header($key => $args{headers}{$key});
     }
     $req->content($args{content});
