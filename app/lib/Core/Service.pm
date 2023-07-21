@@ -287,7 +287,11 @@ sub categories {
 
     my $list = $self->dbh->selectcol_arrayref('SELECT category FROM '. $self->table . ' GROUP by category' );
 
-    return $list;
+    if ( wantarray ) {
+        return @$list;
+    } else {
+        return $list;
+    }
 }
 
 sub settings {
