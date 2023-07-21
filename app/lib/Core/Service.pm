@@ -24,7 +24,7 @@ sub structure {
             default => 1,
         },
         category => {
-            type => 'number',
+            type => 'text',
             required => 1,
         },
         children => {
@@ -280,6 +280,14 @@ sub create_for_api {
     );
 
     return $ret;
+}
+
+sub categories {
+    my $self = shift;
+
+    my $list = $self->dbh->selectcol_arrayref('SELECT category FROM '. $self->table . ' GROUP by category' );
+
+    return $list;
 }
 
 sub settings {

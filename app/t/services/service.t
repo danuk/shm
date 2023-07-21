@@ -29,5 +29,19 @@ is ( $si->{cost}, 100 );
 $si = $service->add( name => 'TEST', cost => 123, category => 'new' )->get;
 is ( $si->{name}, 'TEST', 'Check create new service' );
 
+is_deeply( $service->categories, [
+    'web_tariff_lock',
+    'web_tariff',
+    'web',
+    'mail',
+    'domain',
+    'domain_prolong',
+    'mysql',
+    'dns',
+    'domain_add',
+    'transfer',
+    'test',
+    'new',
+], 'Check categories() function');
 
 done_testing();

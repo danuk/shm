@@ -267,6 +267,12 @@ my $routes = {
         required => ['user_id', 'user_service_id'],
     },
 },
+'/admin/user/service/categories' => {
+    GET => {
+        controller => 'Service',
+        method => 'categories',
+    },
+},
 '/admin/user/service/withdraw' => {
     GET => {
         controller => 'Withdraw',
