@@ -209,9 +209,15 @@ sub list_for_api {
 
 sub price_list {
     my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    $args{category} = { -like => $args{category} } if $args{category};
 
     my $list = $self->list(
         where => {
+            %args,
             allow_to_order => 1,
             deleted => 0,
         },
@@ -240,7 +246,7 @@ sub price_list {
 sub api_price_list {
     my $self = shift;
 
-    my $list = $self->price_list;
+    my $list = $self->price_list( @_ );
 
     my @ret;
     push @ret, $list->{ $_ } for keys %$list;
