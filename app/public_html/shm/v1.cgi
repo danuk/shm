@@ -24,6 +24,11 @@ my $routes = {
         controller => 'Test',
         skip_check_auth => 1,
     },
+    POST => {
+        controller => 'Test',
+        method => 'test_post',
+        skip_check_auth => 1,
+    },
 },
 '/user' => {
     GET => {
