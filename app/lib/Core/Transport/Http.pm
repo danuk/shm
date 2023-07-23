@@ -6,64 +6,79 @@ use v5.14;
 use utf8;
 use Core::Base;
 use Core::Const;
-
+use Core::Utils qw(
+    decode_json
+);
 use LWP::UserAgent ();
 
 sub send {
     my $self = shift;
     my $task = shift;
+    my %server;
 
-    my %settings = (
-        %{ $task->event->{settings} || {} },
-    );
+    if ( my $server = $task->server ) {
+        %server = $server->get;
+    } else {
+        return undef, {
+            error => 'Server not exists',
+        };
+    }
 
-    my $template = get_service('template', _id => $settings{template_id});
+    my $template_id = $task->event_settings->{template_id} || $server{settings}->{template_id};
+
+    my $template = get_service('template', _id => $template_id );
     unless ( $template ) {
         return undef, {
-            error => "template with id `$settings{template_id}` not found",
+            error => "template with id `$template_id` not found",
         }
     }
 
-    my $settings = $template->get_settings;
-
-    # check method
-    my $method = $settings->{http}->{method} // 'post';
-    unless ( $method =~ m/^(get|post|put|delete)$/ ) {
-        return undef, {error => "unknown method `$method`"};
-    }
-
-    # check url
-    my $url = $settings->{http}->{url};
-    unless ( defined $url ) {
-        return undef, {error => "not configure `URL`"};
-    }
-
-    my %headers = %{$settings->{http}->{headers} || {}};
+    my %settings = (
+        %{ $server{settings} || {} },
+        %{ $template->get_settings || {} },
+        %{ $task->event_settings },
+    );
 
     my $content = $template->parse(
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
         task => $task,
     );
 
-    my $verify_hostname = $settings->{http}->{verify_hostname} // 1;
+    my $method = lc( $settings{method} ) || 'post';
+    unless ( $method =~ /^(get|post|put|delete)$/ ) {
+        return undef, {error => "unknown method `$method`"};
+    }
 
-    my $timeout = $settings->{http}->{timeout} // 10;
+    my $url = $template->parse(
+        data => $server{host},
+        $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
+        task => $task,
+    );
 
-    return $self->send_req({
-        method => uc($method), # method uc
+    unless ( defined $url ) {
+        return undef, {error => "not configure `URL`"};
+    }
+
+    my $verify_hostname = $settings{verify_hostname} // 1;
+    my $timeout = $settings{timeout} || 10;
+
+    return $self->http(
         url => $url,
-        headers => %headers,
-        configure => $content,
+        method => $method,
+        content_type => $settings{content_type},
+        headers => $settings{headers},
+        content => $content,
         verify_hostname => $verify_hostname,
-        timeout => $timeout
-    });
+        timeout => $timeout,
+    );
 }
 
-sub send_req {
+sub http {
     my $self = shift;
     my %args = (
-        method => 'POST',
         url => undef,
+        method => 'post',
+        content_type => '',
         headers => {},
         content => undef,
         verify_hostname => 1,
@@ -71,27 +86,43 @@ sub send_req {
         @_,
     );
 
-    my $ua = LWP::UserAgent->new(timeout => $args{timeout}, ssl_opts => { verify_hostname => $args{verify_hostname} });
+    $args{content_type} ||= 'application/json; charset=utf-8';
 
-    if ($args{method} eq 'GET') {
-        $args{url} .= $args{content};
+    my $method = lc( $args{method} );
+
+    my $ua = LWP::UserAgent->new(
+        agent => 'SHM',
+        timeout => $args{timeout},
+        ssl_opts => {
+            verify_hostname => $args{verify_hostname},
+        },
+    );
+
+    my $response = $ua->$method(
+        $args{url},
+        Content_Type => $args{content_type},
+        Content => $args{content},
+        %{ $args{headers} || {} },
+    );
+
+    my $response_content = $response->decoded_content;
+    if ( $response->header('content-type') =~ /application\/json/ ) {
+        $response_content = decode_json( $response_content );
     }
 
-    my $req =  HTTP::Request->new($args{method} => $args{url});
-    foreach my $key (keys %{$args{headers}}) {
-        $req->header($key => $args{headers}{$key});
-    }
-    $req->content($args{content});
-
-    my $response = $ua->request($req);
+    logger->dump( $response->request );
 
     if ( $response->is_success ) {
         return SUCCESS, {
             message => "successful",
+            request => \%args,
+            response => $response_content,
         };
     } else {
-        return undef, {
-            error => sprintf("%s / %s", $response->status_line, $response->decoded_content)
+        return FAIL, {
+            error => $response->status_line,
+            request => \%args,
+            response => $response_content,
         };
     }
 }
