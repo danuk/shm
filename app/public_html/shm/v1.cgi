@@ -592,6 +592,9 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
             }
         } elsif ( $service->can( $method ) ) {
             push @data, $service->$method( %args );
+        } else {
+            $headers{status} = 400;
+            $info{error} = "Unknown error";
         }
     } elsif ( $ENV{REQUEST_METHOD} eq 'DELETE' ) {
         if ( my $obj = $service->id( get_service_id( $service, %args ) ) ) {

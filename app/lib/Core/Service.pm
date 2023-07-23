@@ -104,7 +104,7 @@ sub children {
                 qnt => $_->{qnt} || 1,
             };
         }
-        $self->SUPER::set( children => \@ret ) if scalar @ret;
+        $self->SUPER::set( children => \@ret );
     }
     return $self->get_children || [];
 }

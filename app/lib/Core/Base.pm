@@ -138,6 +138,8 @@ sub lock {
         @_,
     );
 
+    return 1 unless $self->table;
+
     my $res;
 
     until ( $res = $self->SUPER::get( extra => 'FOR UPDATE SKIP LOCKED' )) {
