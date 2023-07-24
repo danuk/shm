@@ -453,6 +453,8 @@ sub shmRegister {
         @_,
     );
 
+    return 1 if $self->auth( $self->message );
+
     my $username = $self->message->{chat}->{username};
     my $chat_id = $self->message->{chat}->{id};
 
