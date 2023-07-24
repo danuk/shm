@@ -213,11 +213,9 @@ sub price_list {
         @_,
     );
 
-    $args{category} = { -like => $args{category} } if $args{category};
-
     my $list = $self->list(
         where => {
-            %args,
+            $args{category} ? ( category => { -like => $args{category} } ) : (),
             allow_to_order => 1,
             deleted => 0,
         },
