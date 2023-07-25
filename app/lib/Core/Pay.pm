@@ -110,6 +110,12 @@ sub forecast {
             # Skip if already paid for
             next if $wd_next{withdraw_date};
             $obj->{withdraws} = \%wd_next;
+        } elsif ( $obj->{next} ) {
+            if ( my $service_next = get_service('service', _id => $obj->{next} )) {
+                $obj->{withdraws}->{cost} = $service_next->get_cost;
+                $obj->{withdraws}->{months} = $service_next->get_period_cost;
+                $obj->{services}->{name} = $service_next->convert_name( $service_next->get_name, $obj->{settings} );
+            }
         }
 
         delete $obj->{withdraws}->{bonus};

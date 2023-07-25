@@ -40,7 +40,6 @@ is_deeply( scalar $service->categories, [
     'dns',
     'domain_add',
     'transfer',
-    'test',
     'new',
 ], 'Check categories() function');
 

@@ -10,6 +10,13 @@ use SHM ();
 $ENV{SHM_TEST} = 1;
 my $user = SHM->new( user_id => 40092 );
 
+subtest 'Check curent us' => sub {
+    my $us = get_service('us', _id => 2949 );
+    is ( $us->name, 'Регистрация домена в зоне .RU: umci.ru', 'Check current us name' );
+    is ( $us->withdraw->get_cost, 590, 'Check current us cost' );
+    is ( $us->withdraw->get_total + $us->withdraw->get_bonus, 590, 'Check current us total' );
+};
+
 my $pay = get_service('pay');
 
 subtest 'Check forecast' => sub {
@@ -18,11 +25,11 @@ subtest 'Check forecast' => sub {
     cmp_deeply( $ret, {
         items => bag(
             {
-                name => 'Регистрация домена в зоне .RU: umci.ru',
+                name => 'Продление домена в зоне .RU: umci.ru',
                 usi => 2949,
                 expire => '2017-07-29 12:39:46',
-                cost => 590,
-                total => 590,
+                cost => 890,
+                total => 890,
                 discount => 0,
                 qnt => 1,
                 months => 12,
@@ -36,10 +43,10 @@ subtest 'Check forecast' => sub {
                 discount => 0,
                 qnt => 1,
                 months => 1,
-            }
+            },
         ),
         dept => 21.56,
-        total => 735.01,
+        total => 1035.01,
     });
 };
 
@@ -57,11 +64,11 @@ subtest 'Check forecast with next wd' => sub {
     cmp_deeply( $ret, {
         items => bag(
             {
-                name => 'Регистрация домена в зоне .RU: umci.ru',
+                name => 'Продление домена в зоне .RU: umci.ru',
                 usi => 2949,
                 expire => '2017-07-29 12:39:46',
-                cost => 590,
-                total => 590,
+                cost => 890,
+                total => 890,
                 discount => 0,
                 qnt => 1,
                 months => 12,
@@ -78,7 +85,7 @@ subtest 'Check forecast with next wd' => sub {
             }
         ),
         dept => 21.56,
-        total => 711.56,
+        total => 1011.56,
     });
 };
 
@@ -93,18 +100,18 @@ subtest 'Check forecast with next already payed wd' => sub {
     cmp_deeply( $ret, {
         items => bag(
             {
-                name => 'Регистрация домена в зоне .RU: umci.ru',
+                name => 'Продление домена в зоне .RU: umci.ru',
                 usi => 2949,
                 expire => '2017-07-29 12:39:46',
-                cost => 590,
-                total => 590,
+                cost => 890,
+                total => 890,
                 discount => 0,
                 qnt => 1,
                 months => 12,
             },
         ),
         dept => 21.56,
-        total => 611.56,
+        total => 911.56,
     });
 
 
@@ -114,19 +121,18 @@ subtest 'Check forecast with next already payed wd' => sub {
     cmp_deeply( $ret, {
         items => bag(
             {
-                name => 'Регистрация домена в зоне .RU: umci.ru',
+                name => 'Продление домена в зоне .RU: umci.ru',
                 usi => 2949,
                 expire => '2017-07-29 12:39:46',
-                cost => 590,
-                total => 590,
+                cost => 890,
+                total => 890,
                 discount => 0,
                 qnt => 1,
                 months => 12,
             },
         ),
-        total => 290,
+        total => 590,
     });
-
 };
 
 done_testing();
