@@ -422,6 +422,10 @@ sub list_for_api {
 
     $args{where}{status} //= {'!=', STATUS_REMOVED};
 
+    if ( $args{user_id} && $args{admin} ) {
+        $args{where}{user_id} = delete $args{user_id};
+    }
+
     my @arr = sort { $a->{user_service_id} <=> $b->{user_service_id} }
         $self->all( %args )->with('settings','services','withdraws')->get;
 

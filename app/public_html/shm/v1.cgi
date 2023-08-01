@@ -167,6 +167,10 @@ my $routes = {
     },
 },
 '/admin/service/order' => {
+    GET => {
+        controller => 'Service',
+        method => 'api_price_list',
+    },
     PUT => {
         controller => 'Service',
         method => 'create_for_api',
