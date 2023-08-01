@@ -108,12 +108,6 @@ sub delete {
     return scalar $self->get;
 }
 
-sub switch_to_next {
-    my $self = shift;
-
-    return $self->set( service_id => $self->get_next, next => 0 );
-}
-
 sub user {
     my $self = shift;
     return get_service('user', _id => $self->get_user_id );
