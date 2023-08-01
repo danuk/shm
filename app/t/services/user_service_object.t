@@ -20,7 +20,7 @@ is_deeply( scalar $obj->with_name->get, {
     parent => undef,
     status => 'ACTIVE',
     name => 'Тариф X-MAX (10000 мб)',
-    next => 0,
+    next => undef,
     auto_bill => 1,
     service_id => 110,
     user_service_id => 99,

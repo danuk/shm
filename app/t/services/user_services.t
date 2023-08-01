@@ -18,7 +18,7 @@ is exists $obj->{99}, 1, 'get user_service from id';
 is_deeply( $obj, {
     99 => {
         parent => undef,
-        next => 0,
+        next => undef,
         auto_bill => 1,
         status => STATUS_ACTIVE,
         service_id => 110,
