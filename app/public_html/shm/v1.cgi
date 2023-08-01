@@ -65,14 +65,14 @@ my $routes = {
     },
     DELETE => {
         controller => 'USObject',
-        required => ['user_id','user_service_id'],
+        required => ['user_service_id'],
     },
 },
 '/user/service/stop' => {
     POST => {
         controller => 'USObject',
         method => 'stop',
-        required => ['user_id','user_service_id'],
+        required => ['user_service_id'],
     },
 },
 '/user/withdraw' => {
@@ -514,10 +514,14 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         exit 0;
     }
 
-    if ( $uri =~/^\/admin\// && !$user->is_admin ) {
-        print_header( status => 403 );
-        print_json( { error => "Permission denied"} );
-        exit 0;
+    unless ( $user->is_admin ) {
+        if ( $uri =~/^\/admin\// ) {
+            print_header( status => 403 );
+            print_json( { error => "Permission denied"} );
+            exit 0;
+        }
+
+        delete $in{user_id} if $in{user_id};
     }
 
     my %args = (
