@@ -82,6 +82,8 @@ sub all {
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
                                         calc => 1,
+                                        fields => '*,user_services.next as next',
+                                        join => { table => 'services', using => ['service_id'] },
                                         $args{admin} ? () : ( user_id => $self->user_id),
                                         %where ? ( where => { %where } ) : (),
                                         limit => $args{limit},
@@ -427,14 +429,6 @@ sub list_for_api {
 
     my @arr = sort { $a->{user_service_id} <=> $b->{user_service_id} }
         $self->all( %args )->with('settings','services','withdraws')->get;
-
-    my $service = get_service('service');
-    for ( @arr ) {
-        $_->{name} = $service->convert_name(
-            $_->{services}->{name},
-            $_->{settings},
-        );
-    }
 
     return wantarray ? @arr : \@arr;
 }
