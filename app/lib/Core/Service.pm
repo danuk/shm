@@ -229,7 +229,10 @@ sub price_list {
                 },
                 limit => 1,
             );
-            delete $list->{ $si } if scalar @wd;
+            if ( scalar @wd ) {
+                delete $list->{ $si };
+                next;
+            }
         }
 
         if ( $list->{ $si }->{is_composite} ) {
