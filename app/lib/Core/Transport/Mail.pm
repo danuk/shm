@@ -176,7 +176,7 @@ sub send_mail {
 
         my $transport = Email::Sender::Transport::SMTP->new({
           host => $host,
-          port => $port,
+          port => $port || 25,
           ssl => $args{ssl} || $ssl,
           timeout => $args{timeout} || 30,
           $args{user} ? ( sasl_username => $args{user} ) : (),
