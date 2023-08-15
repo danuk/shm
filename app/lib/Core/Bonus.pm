@@ -30,4 +30,15 @@ sub structure {
     }
 }
 
+sub api_add {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    my $bonus_id = get_service('user')->set_bonus( %args );
+
+    return $self->id( $bonus_id )->get;
+}
+
 1;

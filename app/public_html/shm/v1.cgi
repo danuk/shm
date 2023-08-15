@@ -260,6 +260,14 @@ my $routes = {
         controller => 'Pay',
     },
 },
+'/admin/user/bonus' => {
+    GET => {
+        controller => 'Bonus',
+    },
+    PUT => {
+        controller => 'Bonus',
+    },
+},
 '/admin/user/service' => {
     GET => {
         controller => 'UserService',

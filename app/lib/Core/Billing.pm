@@ -229,6 +229,7 @@ sub is_pay {
 
     my $user = $self->user;
     my $balance = $user->get_balance + $user->get_credit;
+    my $bonus = $user->get_bonus;
     my $total = $wd->get_total;
 
     my $root = $self->top_parent;
@@ -245,14 +246,29 @@ sub is_pay {
     # Not enough money
     return 0 if (
                     $total > 0 &&
-                    $balance < $total &&
+                    $balance + $bonus < $total &&
                     !$user->get_can_overdraft &&
                     !$self->get_pay_in_credit );
 
+    # refresh total after composite services
+    $total = $wd->get_total;
 
-    $user->set_balance( balance => -$wd->get_total );
-    $wd->set( withdraw_date => now );
-    $self->add_bonuses_for_partners( $wd->get_total );
+    if ( $bonus >= $total ) {
+        $total = 0;
+        $bonus = $total;
+    } else {
+        $total -= $bonus;
+    }
+
+    $user->set_bonus( bonus => -$bonus, comment => { withdraw_id => $wd->id } );
+    $user->set_balance( balance => -$total );
+    $self->add_bonuses_for_partners( $total );
+
+    $wd->set(
+        bonus => $bonus,
+        total => $total,
+        withdraw_date => now,
+    );
 
     return 1;
 }

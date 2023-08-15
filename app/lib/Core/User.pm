@@ -395,13 +395,17 @@ sub set_bonus {
     my $self = shift;
     my %args = (
         bonus => 0,
-        comment => {},
+        comment => undef,
         @_,
     );
 
-    $self->bonus->add( %args );
+    return undef if $args{bonus} == 0;
 
-    return $self->set_balance( bonus => $args{bonus} );
+    my $bonus_id = $self->bonus->add( %args );
+
+    $self->set_balance( bonus => $args{bonus} );
+
+    return $bonus_id;
 }
 
 sub payment {
