@@ -66,4 +66,13 @@ subtest 'Check user email by login' => sub {
     is( $new_user->emails, $email );
 };
 
+subtest 'Check refferals count' => sub {
+    is $user->referrals_count, 0;
+
+    $user->id( 1 )->set( partner_id => 40092 );
+    $user->id( 40094 )->set( partner_id => 40092 );
+    is $user->referrals_count, 2;
+};
+
+
 done_testing();

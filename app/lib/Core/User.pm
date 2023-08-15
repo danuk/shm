@@ -500,5 +500,18 @@ sub emails {
     return $email;
 }
 
+sub referrals_count {
+    my $self = shift;
+
+    my @count = $self->_list(
+        where => {
+            partner_id => $self->id,
+        },
+    );
+
+    return scalar @count;
+}
+
+
 1;
 
