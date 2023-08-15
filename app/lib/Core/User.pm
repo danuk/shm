@@ -334,6 +334,7 @@ sub reg {
     my %args = (
         login => undef,
         password => undef,
+        partner_id => undef,
         @_,
     );
 
@@ -344,8 +345,10 @@ sub reg {
         password => $args{password},
     );
 
-    if ( my $partner_id = get_cookies('partner_id') ) {
+    my $partner_id = delete $args{partner_id} || get_cookies('partner_id');
+    if ( $partner_id ) {
         $args{partner_id} = $partner_id if $self->id( $partner_id );
+        delete $args{partner_id} if $partner_id == $self->id;
     }
 
     my $user_id = $self->add( %args, password => $password );

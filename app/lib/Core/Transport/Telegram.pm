@@ -450,6 +450,7 @@ sub shmRegister {
     my %args = (
         callback_data => undef,
         error => undef,
+        partner_id => undef,
         @_,
     );
 
@@ -468,6 +469,7 @@ sub shmRegister {
                 chat_id => $chat_id,
             },
         },
+        $args{partner_id} ? ( partner_id => $args{partner_id} ) : (),
     );
 
     if ( $user ) {
