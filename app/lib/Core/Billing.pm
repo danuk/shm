@@ -262,7 +262,7 @@ sub is_pay {
 
     $user->set_bonus( bonus => -$bonus, comment => { withdraw_id => $wd->id } );
     $user->set_balance( balance => -$total );
-    $self->add_bonuses_for_partners( $total );
+    #$user->add_bonuses_for_partners( $total );
 
     $wd->set(
         bonus => $bonus,
@@ -271,40 +271,6 @@ sub is_pay {
     );
 
     return 1;
-}
-
-sub add_bonuses_for_partners {
-    my $self = shift;
-    my $payment = shift;
-
-    my $percent = get_service('config')->data_by_name('billing')->{partner}->{income_percent};
-    return undef unless $percent;
-
-    my $bonus = $payment * $percent / 100;
-
-    my $user = get_service('user');
-    my $partner_id_1 = $user->get_partner_id;
-    return undef unless $partner_id_1;
-
-    if ( my $partner_1 = $user->id( $partner_id_1 ) ) {
-        $partner_1->set_bonus( bonus => $bonus,
-            comment => {
-                from_user_id => $user->id,
-                percent => $percent,
-            },
-        );
-
-        my $partner_id_2 = $partner_1->get_partner_id;
-        return undef unless $partner_id_2;
-        if ( my $partner_2 = $user->id( $partner_id_2 ) ) {
-            $partner_2->set_bonus( bonus => $bonus / 2,
-                comment => {
-                    from_user_id => $partner_1->id,
-                    percent => $percent / 2,
-                },
-            );
-        }
-    }
 }
 
 sub set_service_expire {

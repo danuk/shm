@@ -44,8 +44,18 @@ subtest 'Try payment' => sub {
           },
     }));
 
-    #$spool->process_one;
     $spool->_delete();
+};
+
+subtest 'Make payment with partner' => sub {
+    $user->set( partner_id => 40094 );
+    my $partner = $user->id( 40094 );
+    is( $partner->get_balance, 153 );
+    is( $partner->get_bonus, 0 );
+
+    $user->payment( money => 100 );
+    is( $partner->get_balance, 153 );
+    is( $partner->get_bonus, 20 );
 };
 
 my %profile = $user->profile;

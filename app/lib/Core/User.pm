@@ -431,9 +431,32 @@ sub payment {
     }
 
     $self->set_balance( balance => $args{money} );
+    $self->add_bonuses_for_partners( $args{money} );
 
     $self->make_event( 'payment' );
     return scalar $pays->id( $pay_id )->get;
+}
+
+sub add_bonuses_for_partners {
+    my $self = shift;
+    my $payment = shift;
+
+    my $partner_id_1 = $self->get_partner_id;
+    return undef unless $partner_id_1;
+
+    my $percent = get_service('config')->data_by_name('billing')->{partner}->{income_percent};
+    return undef unless $percent;
+
+    my $bonus = $payment * $percent / 100;
+
+    if ( my $partner_1 = $self->id( $partner_id_1 ) ) {
+        $partner_1->set_bonus( bonus => $bonus,
+            comment => {
+                from_user_id => $self->id,
+                percent => $percent,
+            },
+        );
+    }
 }
 
 sub pays {
