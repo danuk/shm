@@ -535,7 +535,6 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my %args = (
         %in,
         admin => $user->is_admin,
-        $user->is_admin ? () : ( user_id => $user->id ),
         %{ $p->{args} || {} },
     );
 
@@ -684,7 +683,13 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 sub get_service_id {
     my $service = shift;
     my %args = @_;
-    my $service_id = $args{ $service->get_table_key } || $args{id};
+
+    my $table_key = $service->get_table_key;
+    my $service_id = $args{ $table_key } || $args{id};
+
+    if ( !$service_id && $table_key eq 'user_id' ) {
+        $service_id = get_service('user')->id;
+    }
 
     unless ( $service_id ) {
         print_header( status => 400 );
