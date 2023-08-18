@@ -206,7 +206,8 @@ sub exec {
         logger->error("SSH RET_CODE: $ret_code");
     }
 
-    return ( !defined($ret_code) ||  $ret_code == 0 ) ? SUCCESS : FAIL, {
+    $ret_code //= 0;
+    return ( $ret_code == 0 ) ? SUCCESS : FAIL, {
         server => {
             id => $args{server_id},
             host => $args{host},
