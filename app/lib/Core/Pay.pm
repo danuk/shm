@@ -138,7 +138,11 @@ sub forecast {
 
     }
 
+    my $user = get_service('user');
+
     my %ret = (
+        balance => $user->get_balance,
+        bonus => $user->get_bonus,
         total => 0,
         items => \@forecast_services,
     );
@@ -147,13 +151,13 @@ sub forecast {
         $ret{total} += $_->{total};
     }
 
-    my $balance = get_service('user')->get_balance;
+    my $total = $user->get_balance + $user->get_bonus;
 
-    if ( $balance > 0 ) {
-        $ret{total} -= $balance;
+    if ( $total > 0 ) {
+        $ret{total} -= $total;
         $ret{total} = 0 if $ret{total} < 0;
     } else {
-        $ret{dept} = abs( $balance );
+        $ret{dept} = abs( $total );
         $ret{total} += $ret{dept};
     }
 
