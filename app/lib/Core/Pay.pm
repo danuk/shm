@@ -141,8 +141,6 @@ sub forecast {
     my $user = get_service('user');
 
     my %ret = (
-        balance => $user->get_balance,
-        bonus => $user->get_bonus,
         total => 0,
         items => \@forecast_services,
     );
