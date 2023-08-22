@@ -112,6 +112,7 @@ sub forecast {
             $obj->{withdraws} = \%wd_next;
         } elsif ( $obj->{next} ) {
             if ( my $service_next = get_service('service', _id => $obj->{next} )) {
+                $obj->{withdraws}->{service_id} = $service_next->id;
                 $obj->{withdraws}->{cost} = $service_next->get_cost;
                 $obj->{withdraws}->{months} = $service_next->get_period_cost;
                 $obj->{services}->{name} = $service_next->convert_name( $service_next->get_name, $obj->{settings} );
