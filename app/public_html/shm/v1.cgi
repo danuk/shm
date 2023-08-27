@@ -423,6 +423,7 @@ my $routes = {
         required => ['id'],
         args => {
             format => 'plain',
+            do_not_parse => 1,
         },
     },
     PUT => {

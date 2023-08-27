@@ -86,6 +86,7 @@ sub list_for_api {
     my $self = shift;
     my %args = (
         id => undef,
+        do_not_parse => 0,
         @_,
     );
 
@@ -97,7 +98,11 @@ sub list_for_api {
         return undef;
     }
 
-    return scalar $template->parse( %args );
+    if ( $args{do_not_parse} ) {
+        return $template->get->{data};
+    } else {
+        return scalar $template->parse( %args );
+    }
 }
 
 sub add {
