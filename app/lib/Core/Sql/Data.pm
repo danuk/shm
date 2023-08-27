@@ -296,7 +296,6 @@ sub clean_query_args {
                         delete $args->{ $f } unless $self->table_allow_insert_key;
                     }
                 }
-                next; # ключ обработан, идём дальше
             }
 
             if ( $settings->{is_list} ) {

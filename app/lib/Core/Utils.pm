@@ -144,10 +144,15 @@ sub parse_headers {
 }
 
 sub parse_args {
+    my %args = (
+        auto_parse_json => 1,
+        @_,
+    );
+
     my $cgi = CGI->new;
     %in = $cgi->Vars;
 
-    if ( $ENV{CONTENT_TYPE} =~/application\/json/i ) {
+    if ( $args{auto_parse_json} && $ENV{CONTENT_TYPE} =~/application\/json/i ) {
         my $method = $ENV{REQUEST_METHOD};
         _utf8_on( $in{ "${method}DATA" } );
         my $json = decode_json( $in{ "${method}DATA" } );

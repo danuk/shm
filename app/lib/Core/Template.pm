@@ -51,6 +51,7 @@ sub parse {
         config => get_service('config')->data_by_name,
         tpl => get_service('template'),
         service => get_service('service'),
+        storage => get_service('storage'),
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
         %{ $args{vars} },
         ref => sub {

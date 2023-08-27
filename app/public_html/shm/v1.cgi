@@ -15,9 +15,6 @@ use Core::Utils qw(
 use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
 
-our %in = parse_args();
-$in{filter} = decode_json( $in{filter} ) if $in{filter};
-
 my $routes = {
 '/test' => {
     GET => {
@@ -125,13 +122,14 @@ my $routes = {
 '/storage/manage/:name' => {
     GET => {
         controller => 'Storage',
-        method => 'list_for_api',
+        method => 'read',
         required => ['name'],
     },
     PUT => {
         controller => 'Storage',
         method => 'add',
         required => ['name','PUTDATA'],
+        skip_auto_parse_json => 1,
     },
     DELETE => {
         controller => 'Storage',
@@ -511,8 +509,12 @@ for my $uri ( keys %{ $routes } ) {
 }
 
 my $uri = $ENV{PATH_INFO};
+our %in;
 
 if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
+
+    %in = parse_args( auto_parse_json => $p->{skip_auto_parse_json} ? 0 : 1 );
+    $in{filter} = decode_json( $in{filter} ) if $in{filter};
 
     my $user = SHM->new( skip_check_auth => $p->{skip_check_auth} );
 

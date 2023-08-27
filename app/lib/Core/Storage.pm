@@ -3,6 +3,9 @@ package Core::Storage;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Core::Utils qw(
+    decode_json
+);
 
 use SHM qw(print_header);
 
@@ -38,10 +41,15 @@ sub add {
         @_,
     );
 
-    my $id = $self->SUPER::_add(
-        user_id => $self->user_id,
-        name => $args{name},
-        data => $args{PUTDATA},
+    if ( $ENV{CONTENT_TYPE} =~/application\/json/i ) {
+        if ( decode_json( $args{ PUTDATA } ) ) {
+            $args{settings}->{json} = 1;
+        }
+    }
+
+    my $id = $self->SUPER::add(
+        data => delete $args{PUTDATA},
+        %args,
     );
 
     unless ( $id ) {
@@ -77,14 +85,37 @@ sub delete {
 sub list {
     my $self = shift;
 
-    my @data = $self->_list(
+    my @data = $self->SUPER::list( @_ );
+
+    delete $_->{data} for @data;
+
+    if ( wantarray ) {
+        return @data;
+    } else {
+       return \@data;
+    }
+}
+
+sub read {
+    my $self = shift;
+    my %args = (
+        name => undef,
+        @_,
+    );
+
+    my ( $data ) = $self->SUPER::list(
         where => {
-            user_id => $self->user_id,
+            name => $args{name},
         },
     );
 
-    delete $_->{data} for @data;
-    return \@data;
+    return undef unless $data;
+
+    if ( $data->{settings}->{json} ) {
+        $data->{data} = decode_json( $data->{data} );
+    }
+
+    return $data->{data};
 }
 
 sub list_for_api {
