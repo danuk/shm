@@ -128,6 +128,9 @@ my $routes = {
         controller => 'Storage',
         method => 'read',
         required => ['name'],
+        args => {
+            format => 'plain',
+        },
     },
     PUT => {
         controller => 'Storage',
