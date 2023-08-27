@@ -6,7 +6,7 @@ use Core::Utils qw/shm_test_api/;
 my %ret = shm_test_api(
     login => 'danuk',
     password => 'danuk',
-    url => '/v1/template/forecast',
+    url => '/v1/template/forecast?format=default',
     method => 'GET',
 );
 

@@ -112,6 +112,9 @@ my $routes = {
         controller => 'Template',
         method => 'list_for_api',
         required => ['id'],
+        args => {
+            format => 'plain',
+        },
     },
 },
 '/storage/manage' => {
@@ -537,9 +540,9 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     }
 
     my %args = (
+        %{ $p->{args} || {} },
         %in,
         admin => $user->is_admin,
-        %{ $p->{args} || {} },
     );
 
     if ( $user->is_admin && $args{user_id} ) {
