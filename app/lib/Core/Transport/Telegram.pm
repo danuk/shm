@@ -445,6 +445,26 @@ sub uploadPhotoFromStorage {
     );
 }
 
+sub printQrCode {
+    my $self = shift;
+    my %args = (
+        data => undef,
+        format => 'qr_code_png',
+        @_,
+    );
+
+    my $data = $args{data};
+    return undef unless $data;
+
+    if ( $args{format} eq 'qr_code_png' ) {
+        $data = qx(echo "$data" | qrencode -t PNG -o -);
+    }
+
+    return $self->uploadPhoto(
+        data => $data,
+    );
+}
+
 sub shmRegister {
     my $self = shift;
     my %args = (
