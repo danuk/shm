@@ -8,6 +8,7 @@ use Router::Simple;
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw(
     parse_args
+    encode_json
     decode_json
     switch_user
 );
@@ -647,13 +648,25 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     if ( $args{format} eq 'plain' || $args{format} eq 'html' ) {
         print_header( %headers, type => "text/$args{format}" );
-        print $_ for @data;
+        for ( @data ) {
+            unless ( ref ) {
+                print;
+            } else {
+                print encode_json( $_ );
+            }
+        }
     } elsif ( $args{format} eq 'other' ) {
         print_header( %headers,
             type => 'application/octet-stream',
             $args{filename} ? ('Content-Disposition' => "attachment; filename=$args{filename}") : (),
         );
-        print $_ for @data;
+        for ( @data ) {
+            unless ( ref ) {
+                print;
+            } else {
+                print encode_json( $_ );
+            }
+        }
     } elsif ( $args{format} eq 'qrcode' ) {
         print_header( %headers,
             type => 'image/svg+xml',
