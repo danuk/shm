@@ -149,7 +149,8 @@ sub uploadPhoto {
         'sendPhoto',
         content_type => 'form-data',
         data => {
-            photo => [ undef, $args{filename}, Content => $args{data} ],
+            photo => [ undef, delete $args{filename}, Content => delete $args{data} ],
+            %args,
         }
     );
 }
@@ -450,6 +451,7 @@ sub printQrCode {
     my %args = (
         data => undef,
         format => 'qr_code_png',
+        parameters => {},
         @_,
     );
 
@@ -462,6 +464,7 @@ sub printQrCode {
 
     return $self->uploadPhoto(
         data => $data,
+        %{ $args{parameters} || {} },
     );
 }
 
