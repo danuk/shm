@@ -293,6 +293,9 @@ sub process_message {
     }
 
     my ( $cmd, @callback_args ) = split( /\s+/, $query );
+    if ( $cmd=~s/^\|// ) {
+        $cmd = join(' ', $cmd, @callback_args );
+    }
 
     if ( $cmd ne '/register' ) {
         my $user = $self->auth( $message );
