@@ -317,6 +317,12 @@ sub process_message {
         },
     );
 
+    if ( my @errors = get_service('report') ) {
+        return $self->sendMessage(
+            text => join('<br>', @errors),
+        );
+    }
+
     for my $script ( @{ $obj } ) {
         logger->debug( 'Script:', $script );
         my $method = get_script_method( $script );
