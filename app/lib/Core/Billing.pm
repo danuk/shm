@@ -254,8 +254,8 @@ sub is_pay {
     $total = $wd->get_total;
 
     if ( $bonus >= $total ) {
-        $total = 0;
         $bonus = $total;
+        $total = 0;
     } else {
         $total -= $bonus;
     }
