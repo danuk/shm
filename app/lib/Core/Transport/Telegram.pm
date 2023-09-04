@@ -535,6 +535,10 @@ sub shmServiceOrder {
         %args,
     );
 
+    # Save changes for next telegram actions
+    $self->commit;
+    $self->user->reload;
+
     if ( $us ) {
         my $message = $self->message;
 
