@@ -317,7 +317,7 @@ sub process_message {
         },
     );
 
-    if ( my @errors = get_service('report') ) {
+    if ( my @errors = get_service('report')->errors ) {
         return $self->sendMessage(
             text => join('<br>', @errors),
         );
