@@ -75,7 +75,9 @@ sub parse {
 
     my $result = "";
     unless ($template->process( \$data, $vars, \$result )) {
-        logger->error("Template rander error: ", $template->error() );
+        my $report = get_service('report');
+        $report->add_error( '' . $template->error() );
+        logger->error("Template render error: ", $template->error() );
         return '';
     }
 
