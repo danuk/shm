@@ -9,7 +9,7 @@ sub list_for_api {
     return { test => 'OK' };
 }
 
-sub test_post {
+sub http_echo {
     my $self = shift;
     my %args = @_;
 
@@ -19,4 +19,3 @@ sub test_post {
 }
 
 1;
-
