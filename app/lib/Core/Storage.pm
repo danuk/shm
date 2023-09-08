@@ -84,8 +84,16 @@ sub delete {
 
 sub list {
     my $self = shift;
+    my %args = (
+        user_id => undef,
+        @_,
+    );
 
-    my @data = $self->SUPER::list( @_ );
+    my $method = get_service('user')->authenticated->is_admin ? 'SUPER::_list' : 'SUPER::list';
+
+    my @data = $self->$method(
+        $args{user_id} ? ( user_id => $args{user_id} ) : (),
+    );
 
     delete $_->{data} for @data;
 
