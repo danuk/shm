@@ -10,6 +10,9 @@ use Core::Utils qw(
     decode_json
 );
 use LWP::UserAgent ();
+use URI;
+use URI::QueryParam;
+use CGI;
 
 sub send {
     my $self = shift;
@@ -80,7 +83,7 @@ sub http {
         method => 'post',
         content_type => '',
         headers => {},
-        content => undef,
+        content => '',
         verify_hostname => 1,
         timeout => 10,
         @_,
@@ -98,6 +101,13 @@ sub http {
         },
     );
 
+    if ($method eq 'get') {
+        my $uri = URI->new($args{url});
+        my %q = CGI->new($args{content})->Vars();
+        $uri->query_param_append($_, $q{$_}) for keys %q;
+        $args{url} = $uri->as_string;
+    }
+
     my $response = $ua->$method(
         $args{url},
         Content_Type => $args{content_type},
@@ -106,7 +116,7 @@ sub http {
     );
 
     my $response_content = $response->decoded_content;
-    if ( $response->header('content-type') =~ /application\/json/ ) {
+    if ( $response->header('content-type') =~ m/application\/json/gi ) {
         $response_content = decode_json( $response_content );
     }
 

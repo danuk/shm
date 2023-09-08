@@ -17,14 +17,15 @@ use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
 
 my $routes = {
-'/test' => {
+'/test/http/echo' => {
     GET => {
         controller => 'Test',
+        method => 'http_echo',
         skip_check_auth => 1,
     },
     POST => {
         controller => 'Test',
-        method => 'test_post',
+        method => 'http_echo',
         skip_check_auth => 1,
     },
 },
@@ -722,4 +723,3 @@ sub get_service_id {
 }
 
 exit 0;
-
