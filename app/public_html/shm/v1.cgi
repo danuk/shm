@@ -17,6 +17,12 @@ use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
 
 my $routes = {
+'/test' => {
+    GET => {
+        controller => 'Test',
+        skip_check_auth => 1,
+    },
+},
 '/test/http/echo' => {
     GET => {
         controller => 'Test',
