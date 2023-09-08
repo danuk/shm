@@ -35,4 +35,11 @@ is( $get->{response}->{data}[0]->{payload}->{test}, 'echo_get' );
 is( $get->{response}->{data}[0]->{payload}->{test1}, 'test2' );
 is( $get->{response}->{data}[0]->{payload}->{test3}, 'test4' );
 
+my $get = $http->http(url => 'http://admin/shm/v1/test/http/echo?test3=test4', method => 'GET', content => 'test=echo_get;test1=test2');
+is( $get->{message}, 'successful' );
+is( $get->{error}, undef );
+is( $get->{response}->{data}[0]->{payload}->{test}, 'echo_get' );
+is( $get->{response}->{data}[0]->{payload}->{test1}, 'test2' );
+is( $get->{response}->{data}[0]->{payload}->{test3}, 'test4' );
+
 done_testing();
