@@ -285,16 +285,11 @@ sub process_message {
 
     $self->chat_id( $message->{chat}->{id} );
 
-    my $query;
+    my ( $cmd, @callback_args );
     if ( $args{message} ) {
-        $query = $args{message}->{text};
+        $cmd = $args{message}->{text};
     } elsif ( $args{callback_query} ) {
-        $query = $args{callback_query}->{data};
-    }
-
-    my ( $cmd, @callback_args ) = split( /\s+/, $query );
-    if ( $cmd=~s/^\|// ) {
-        $cmd = join(' ', $cmd, @callback_args );
+        ( $cmd, @callback_args ) = split( /\s+/, $args{callback_query}->{data} );
     }
 
     if ( $cmd ne '/register' ) {
