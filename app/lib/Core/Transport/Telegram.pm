@@ -338,6 +338,11 @@ sub process_message {
             sendDice => 1,
             sendChatAction => 1,
             deleteMessage => 1,
+            editMessageText => 1,
+            editMessageCaption => 1,
+            editMessageMedia => 1,
+            editMessageLiveLocation => 1,
+            editMessageReplyMarkup => 1,
         );
 
         if ( $self->can( $method ) ) {
