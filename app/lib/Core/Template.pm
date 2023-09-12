@@ -62,6 +62,17 @@ sub parse {
             my $data = shift;
             return encode_json( $data );
         },
+        toQueryString => sub {
+            my $data = shift;
+            return '' if ref $data ne 'HASH';
+
+            use URI::Escape;
+            my @ret;
+            for ( keys %{ $data } ) {
+                push @ret, sprintf("%s=%s", $_, uri_escape( $data->{ $_ } ));
+            }
+            return join('&', @ret );
+        },
     };
 
     my $template = Template->new({
