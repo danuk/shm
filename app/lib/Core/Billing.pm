@@ -431,6 +431,7 @@ sub money_back {
     return undef unless $self->get_withdraw_id;
 
     my $service = get_service('service', _id => $self->get_service_id );
+    return undef if $service->settings->{no_money_back};
 
     my $wd = $self->withdraw;
     return undef unless $wd;
