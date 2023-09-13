@@ -129,11 +129,7 @@ sub task_answer {
 sub server_id {
     my $self = shift;
 
-    my $server_id;
-    $server_id = $self->settings->{server_id} if $self->settings && $self->settings->{server_id};
-    $server_id //= $self->event_settings->{server_id} if $self->event_settings;
-
-    return $server_id;
+    return $self->settings->{server_id} || $self->event_settings->{server_id};
 }
 
 sub server {

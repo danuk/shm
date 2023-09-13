@@ -87,7 +87,6 @@ subtest 'Check create service' => sub {
         },
         settings => {
             user_service_id => $ch_by_service->{29}->{user_service_id},
-            server_gid => 1
         },
         delayed => 0,
     }), 'Check spool command' );

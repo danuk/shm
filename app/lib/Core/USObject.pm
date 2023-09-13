@@ -325,9 +325,7 @@ sub make_commands_by_event {
         $self->spool->add(
             event => $_,
             settings => {
-                exists $self->settings->{server_id} ?
-                    ( server_id => $self->settings->{server_id} ) :
-                    ( server_gid => $_->{server_gid} ),
+                exists $self->settings->{server_id} ? ( server_id => $self->settings->{server_id} ) : (),
                 user_service_id => $self->id,
             },
         );
