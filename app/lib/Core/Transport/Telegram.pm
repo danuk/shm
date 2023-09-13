@@ -337,6 +337,7 @@ sub process_message {
             sendPoll => 1,
             sendDice => 1,
             sendChatAction => 1,
+            sendInvoice => 1,
             deleteMessage => 1,
             editMessageText => 1,
             editMessageCaption => 1,
