@@ -33,7 +33,13 @@ sub send {
 
     delete $self->{chat_id};
 
+    my %server;
+    if ( my $server = $task->server('telegram') ) {
+        %server = $server->get;
+    }
+
     my %settings = (
+        %{ $server{settings} || {} },
         %{ $task->event->{settings} || {} },
     );
 
