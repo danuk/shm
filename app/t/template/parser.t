@@ -87,8 +87,20 @@ subtest 'Check EVAL_PERL' => sub {
         ',
     );
 
-    is( $perl, 'My login is: danuk        ' );
+    is( $perl, 'My login is: danuk' );
 };
 
+subtest 'Check template trim' => sub {
+    my $t = get_service('template');
+
+    my $data = $t->parse(
+        data => '
+                Hello world
+
+        ',
+    );
+
+    is( $data, 'Hello world' );
+};
 
 done_testing();

@@ -92,6 +92,9 @@ sub parse {
         return '';
     }
 
+    $result =~s/^(\s+|\n|\r)+//;
+    $result =~s/(\s+|\n|\r)+$//;
+
     return $result;
 }
 
