@@ -294,6 +294,7 @@ sub process_message {
     my ( $cmd, @callback_args );
     if ( $args{message} ) {
         $cmd = $args{message}->{text};
+        @callback_args = split( /\s+/, $cmd );
     } elsif ( $args{callback_query} ) {
         ( $cmd, @callback_args ) = split( /\s+/, $args{callback_query}->{data} );
     }
