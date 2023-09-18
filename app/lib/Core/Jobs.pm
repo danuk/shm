@@ -80,4 +80,34 @@ sub job_make_forecasts {
     return SUCCESS, { msg => 'successful' };
 }
 
+sub job_users {
+    my $self = shift;
+    my $task = shift;
+
+    my %settings = (
+        %{ $task->event_settings },
+        %{ $task->settings },
+    );
+
+    my @users = get_service('user')->_list(
+        where => {
+            block => 0,
+            $settings{user_id} ? ( user_id => $settings{user_id} ) : (),
+        },
+    );
+
+    my $spool = get_service('spool');
+    for ( @users ) {
+        $spool->add(
+            event => {
+                title => $task->event->{title},
+                server_gid => $task->event->{server_gid},
+            },
+            settings => \%settings,
+            user_id => $_->{user_id},
+        );
+    }
+    return SUCCESS, { msg => 'successful' };
+}
+
 1;

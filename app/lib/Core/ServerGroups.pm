@@ -52,7 +52,7 @@ sub get_servers {
     }
 
     unless ( scalar @servers ) {
-        logger->error('No servers found in the group');
+        logger->warning('No servers found in the group');
         return undef;
     }
 

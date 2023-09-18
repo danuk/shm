@@ -40,7 +40,8 @@ sub send {
 
     my %settings = (
         %{ $server{settings} || {} },
-        %{ $task->event->{settings} || {} },
+        %{ $task->event_settings },
+        %{ $task->settings },
     );
 
     my $message;
@@ -61,7 +62,7 @@ sub send {
             task => $task,
         );
     }
-    return undef, { error => "message is empty" } unless $message;
+    return SUCCESS, { msg => "The template is empty, skip it." } unless $message;
 
     unless ( $self->chat_id ) {
         return SUCCESS, {

@@ -315,9 +315,17 @@ sub clean_query_args {
 
             if ( $v->{auto_fill} ) { # получаем автоматически
                 if ( exists $self->{ $f } ) {
-                    $args->{ $f } = $self->{ $f };
+                    if ( get_service('user')->authenticated->is_admin ) {
+                        $args->{ $f } //= $self->{ $f };
+                    } else {
+                        $args->{ $f } = $self->{ $f };
+                    }
                 } elsif ( $self->can( $f ) ) {
-                    $args->{ $f } = $self->$f;
+                    if ( get_service('user')->authenticated->is_admin ) {
+                        $args->{ $f } //= $self->$f;
+                    } else {
+                        $args->{ $f } = $self->$f;
+                    }
                 }
                 logger->fatal( "Can't get `$f` from self" ) unless $args->{ $f };
             } elsif ( $v->{required} ) {

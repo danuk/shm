@@ -48,7 +48,8 @@ sub send {
 
     my %settings = (
         %{ $server{settings} || {} },
-        %{ $task->event->{settings} || {} },
+        %{ $task->event_settings },
+        %{ $task->settings },
     );
 
     my $config = get_service("config", _id => 'mail');
@@ -102,13 +103,10 @@ sub send {
             %settings,
             %{ $template->settings || {} },
         );
-    } else {
-        unless ( $message = $settings{message} ) {
-            return undef, {
-                error => "message undefined",
-            }
-        }
     }
+
+    $message ||= delete $settings{message};
+    return SUCCESS, { msg => "The message is empty, skip it." } unless $message;
 
     return $self->send_mail(
         message => $message,
