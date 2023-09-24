@@ -233,10 +233,15 @@ sub sendMessage {
 
 sub auth {
     my $self = shift;
+    my %args = (
+        id => undef,
+        username => undef,
+        @_,
+    );
     my $message = shift;
 
-    my $chat_id = $message->{chat}->{id};
-    my $username = $message->{chat}->{username};
+    my $chat_id = $args{id};
+    my $username = $args{username};
 
     return undef unless $chat_id;
 
@@ -283,9 +288,24 @@ sub process_message {
         @_,
     );
 
-    return undef unless $self->token;
-
     logger->debug('REQUEST:', \%args );
+
+    if ( my $data = $args{pre_checkout_query} ) {
+        my $user = $self->auth(
+            id => $data->{from}->{id},
+            username => $data->{from}->{username},
+        );
+
+        $self->http( 'answerPreCheckoutQuery',
+            data => {
+                pre_checkout_query_id => $data->{id},
+                ok => $user ? 1 : 0,
+            },
+        );
+        return 1;
+    }
+
+    return undef unless $self->token;
 
     my $message = $args{callback_query} ? $args{callback_query}->{message} : $args{message};
     $self->message( $message );
@@ -301,7 +321,10 @@ sub process_message {
     }
 
     if ( $cmd ne '/register' ) {
-        my $user = $self->auth( $message );
+        my $user = $self->auth(
+            id => $message->{chat}->{id},
+            username => $message->{chat}->{username},
+        );
         if ( !$user ) {
             logger->warning( 'USER_NOT_FOUND. Chat_id', $message->{chat}->{id}, 'username:', $message->{chat}->{username} );
             $cmd = 'USER_NOT_FOUND';
@@ -310,6 +333,15 @@ sub process_message {
                 text => sprintf("You are blocked! (user_id: %s)", $user->{user_id} ),
             );
         }
+    }
+
+    if ( my $payment = $args{message}->{successful_payment} ) {
+        $self->user->payment(
+            money => $payment->{total_amount} / 100,
+            pay_system_id => 'telegram_bot',
+            comment => $payment,
+        );
+        return 1;
     }
 
     my $obj = get_script( $cmd,
