@@ -49,7 +49,7 @@ sub parse {
         $args{task} ? ( task => $args{task} ) : (),
         $args{server_id} ? ( server => get_service('server', _id => $args{server_id}) ) : (),
         config => get_service('config')->data_by_name,
-        tpl => get_service('template'),
+        tpl => $self,
         service => get_service('service'),
         storage => get_service('storage'),
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
