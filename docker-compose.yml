@@ -46,7 +46,7 @@ services:
     environment:
       SHM_URL: http://api
     ports:
-      - "127.0.0.1:8081:80"
+      - "0.0.0.0:8081:80"
     links:
       - api
   client:
@@ -59,7 +59,7 @@ services:
 #      - ./head.html:/app/ssi/head.html
 #      - ./body.html:/app/ssi/body.html
     ports:
-      - "127.0.0.1:8082:80"
+      - "0.0.0.0:8082:80"
     links:
       - api
   mysql:
