@@ -384,6 +384,7 @@ sub process_message {
             editMessageMedia => 1,
             editMessageLiveLocation => 1,
             editMessageReplyMarkup => 1,
+            setMyCommands => 1,
         );
 
         if ( $self->can( $method ) ) {
