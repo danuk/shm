@@ -11,7 +11,16 @@ use Core::Utils qw(
 our %vars = parse_args();
 
 if ( $vars{action} eq 'create' && $vars{amount} ) {
-    my $user = SHM->new();
+    my $user;
+    if ( $vars{user_id} ) {
+        $user = SHM->new( user_id => $vars{user_id} );
+
+        if ( $vars{message_id} ) {
+            get_service('Transport::Telegram')->deleteMessage( message_id => $vars{message_id} );
+        }
+    } else {
+        $user = SHM->new();
+    }
 
     my $config = get_service('config', _id => 'pay_systems');
     my $api_key = $config->get_data->{cryptocloud}->{api_key};
