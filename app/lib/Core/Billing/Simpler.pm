@@ -10,7 +10,15 @@ our @EXPORT_OK = qw(
 );
 
 use Core::Const;
-use Core::Utils qw(string_to_utime utime_to_string start_of_month end_of_month parse_date days_in_months);
+use Core::Utils qw(
+    string_to_utime
+    utime_to_string
+    start_of_month
+    end_of_month
+    parse_date
+    parse_period
+    days_in_months
+);
 use Time::Local 'timelocal_nocheck';
 
 use constant DAYS_IN_MONTH => 30;
@@ -25,12 +33,12 @@ sub calc_end_date_by_months {
     my $date = shift;
     my $period = shift;
 
-    my $days = $period =~/^\d+\.(\d+)$/ ? length($1) > 1 ? int($1) : int($1) * 10 : 0;
-    my $months = int( $period );
+    my ( $months, $days, $hours ) = parse_period( $period );
+
     $days += $months * DAYS_IN_MONTH;
 
     my %stop = parse_date( $date );
-    @stop{ qw/year month day hour min sec/ } = Add_Delta_DHMS( @stop{ qw/year month day hour min sec/ },$days,0,0,-1 );
+    @stop{ qw/year month day hour min sec/ } = Add_Delta_DHMS( @stop{ qw/year month day hour min sec/ },$days,$hours,0,-1 );
 
     return sprintf("%d-%.2d-%.2d %.2d:%.2d:%.2d", @stop{ qw/year month day hour min sec/ } );
 }
@@ -39,6 +47,7 @@ sub calc_end_date_by_months {
 sub calc_total_by_date_range {
     my %wd = (
         cost => undef,
+        period_cost => 1,
         withdraw_date => undef,
         end_date => undef,
         @_,
@@ -54,11 +63,19 @@ sub calc_total_by_date_range {
     my %delta;
     @delta{ qw/day hour min sec/ } = Delta_DHMS( @start{ qw/year month day hour min sec/ }, @stop{ qw/year month day hour min sec/ } );
 
-    if ( $wd{period_cost} != 1 ) {
-        $wd{cost} = $wd{cost} / ( $wd{period_cost} || 1 );
+    my $months_cost;
+    if ( my $pc = $wd{period_cost} ) {
+        if ( int( $pc ) == $pc ) {
+            $months_cost = $wd{cost} / $wd{period_cost};
+        } else {
+            my $months_hours = DAYS_IN_MONTH * 24;
+            my ( $months, $days, $hours ) = parse_period( $pc );
+            my $period_hours = $months * DAYS_IN_MONTH * 24 + $days * 24 + $hours;
+            $months_cost = $months_hours / $period_hours * $wd{cost};
+        }
     }
 
-    my $cost_day = $wd{cost} / DAYS_IN_MONTH;
+    my $cost_day = $months_cost / DAYS_IN_MONTH;
     my $cost_hour = $cost_day / 24;
     my $cost_min = $cost_hour / 60;
 
@@ -82,8 +99,9 @@ sub calc_months_between_dates {
 
     my $months = int( $delta{day} / DAYS_IN_MONTH );
     my $days =  $delta{day} % DAYS_IN_MONTH;
+    my $hours = $delta{hour};
 
-    return sprintf('%d.%02d', $months, $days),
+    return sprintf('%d.%02d%02d', $months, $days, $hours);
 }
 
 1;

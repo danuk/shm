@@ -14,6 +14,7 @@ our @EXPORT = qw(
 our @EXPORT_OK = qw(
     days_in_months
     parse_date
+    parse_period
     start_of_month
     end_of_month
     http_limit
@@ -373,6 +374,21 @@ sub get_cookies {
     } else {
         return %cookies;
     }
+}
+
+sub parse_period {
+    my $period = shift;
+
+    my ( $months, $parts ) = split(/\./, $period );
+
+    my $days =  $parts =~/^(\d{1,2})/ ?      ( length($1) == 1 ? int($1) * 10 : int($1) ) : 0;
+    my $hours = $parts =~/^\d{2}(\d{1,2})/ ? ( length($1) == 1 ? int($1) * 10 : int($1) ) : 0;
+
+    return (
+        $months,
+        $days,
+        $hours,
+    )
 }
 
 1;

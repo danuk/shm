@@ -43,7 +43,7 @@ DROP TABLE IF EXISTS `discounts`;
 CREATE TABLE `discounts` (
   `discount_id` tinyint(4) NOT NULL AUTO_INCREMENT,
   `title` char(64) NOT NULL,
-  `months` tinyint(4) NOT NULL,
+  `months` decimal(10,4) NOT NULL,
   `percent` tinyint(4) NOT NULL,
   `share` tinyint(4) DEFAULT NULL,
   PRIMARY KEY (`discount_id`)
@@ -142,7 +142,7 @@ CREATE TABLE `services` (
   `service_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` char(64) NOT NULL,
   `cost` decimal(10,2) DEFAULT NULL,
-  `period_cost` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `period_cost` decimal(10,4) NOT NULL DEFAULT '1',
   `category` char(16) DEFAULT NULL,
   `children` json DEFAULT NULL,
   `next` int(11) DEFAULT '0',
@@ -264,7 +264,7 @@ CREATE TABLE `withdraw_history` (
   `cost` decimal(10,2) NOT NULL DEFAULT '0.00',
   `discount` tinyint(2) NOT NULL DEFAULT '0',
   `bonus` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `months` double NOT NULL DEFAULT '1',
+  `months` decimal(10,4) NOT NULL DEFAULT '1',
   `total` decimal(10,2) NOT NULL DEFAULT '0.00',
   `service_id` int(11) NOT NULL,
   `qnt` double NOT NULL DEFAULT '1',

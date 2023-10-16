@@ -17,7 +17,15 @@ our @EXPORT_OK = qw(
 );
 
 use Core::Const;
-use Core::Utils qw(string_to_utime utime_to_string start_of_month end_of_month parse_date days_in_months);
+use Core::Utils qw(
+    string_to_utime
+    utime_to_string
+    start_of_month
+    end_of_month
+    parse_date
+    parse_period
+    days_in_months
+);
 use Time::Local 'timelocal_nocheck';
 use Time::DaysInMonth;
 use Data::Dumper;
@@ -64,13 +72,12 @@ sub calc_end_date_by_months {
     my $date = shift;
     my $period = shift;
 
-    my $days = $period =~/^\d+\.(\d+)$/ ? length($1) > 1 ? int($1) : int($1) * 10 : 0;
-    my $months = int( $period );
+    my ( $months, $days, $hours ) = parse_period( $period );
 
     my ( $start_year, $start_mon, $start_day, $start_hour, $start_min, $start_sec ) = split(/\D+/, $date );
 
     my $sec_in_start = days_in_months( $date ) * 86400 - 1;
-    my $unix_stop = timelocal_nocheck( 0, 0, 0, 1 + $days , $start_mon + $months - 1, $start_year + int( ( $start_mon + $months ) / 12 ) );
+    my $unix_stop = timelocal_nocheck( 0, 0, $hours, 1 + $days , $start_mon + $months - 1, $start_year + int( ( $start_mon + $months ) / 12 ) );
     my $sec_in_stop = days_in_months( utime_to_string( $unix_stop ) ) * 86400 - 1;
 
     my $ttt = $sec_in_start - ( ( $start_day - 1 ) * 86400 + $start_hour * 3600 + $start_min * 60 + $start_sec );
@@ -88,6 +95,7 @@ sub calc_end_date_by_months {
 sub calc_total_by_date_range {
     my %wd = (
         cost => undef,
+        period_cost => 1,
         withdraw_date => undef,
         end_date => undef,
         @_,
@@ -99,8 +107,10 @@ sub calc_total_by_date_range {
     my $m_diff = ( $stop{month} + $stop{year} * 12 ) - ( $start{month} + $start{year} * 12 );
     my $total = 0;
 
-    if ( $wd{period_cost} != 1 ) {
-        $wd{cost} = $wd{cost} / ( $wd{period_cost} || 1 );
+    if ( $wd{period_cost} && $wd{period_cost} != 1 ) {
+        my ( $months, $days, $hours ) = parse_period( $wd{period_cost} );
+        # TODO: add support days and hours
+        $wd{cost} = $wd{cost} / $months;
     }
 
     # calc first month
@@ -139,6 +149,7 @@ sub calc_months_between_dates {
 
     @stop{ qw/year month day hour min sec/ } = Add_Delta_DHMS( @stop{ qw/year month day hour min sec/ }, 0,0,0,1 ); # add one second
 
+    # TODO: calc delta hours
     my %delta;
     @delta{ qw/year month day/ } = Delta_YMD(
         @start{ qw/year month day/ },

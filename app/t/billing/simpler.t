@@ -33,7 +33,14 @@ is( calc_end_date_by_months('2017-03-29 18:51:25', 1), '2017-04-28 18:51:24', 'T
 is( calc_end_date_by_months('2017-04-28 20:34:16', 1), '2017-05-28 20:34:15', 'Test calc_end_date_by_months 11');
 
 is( calc_end_date_by_months('2017-01-01 00:00:00', '0.1'), '2017-01-10 23:59:59', 'Test calc_end_date_by_months 12');
+is( calc_end_date_by_months('2017-01-01 00:00:00', '0.10'), '2017-01-10 23:59:59', 'Test calc_end_date_by_months');
+is( calc_end_date_by_months('2017-01-01 00:00:00', '0.1001'), '2017-01-11 00:59:59', 'Test calc_end_date_by_months');
 is( calc_end_date_by_months('2017-01-01 00:00:00', '0.01'), '2017-01-01 23:59:59', 'Test calc_end_date_by_months 13');
+is( calc_end_date_by_months('2017-01-01 00:00:00', '0.0100'), '2017-01-01 23:59:59', 'Test calc_end_date_by_months');
+is( calc_end_date_by_months('2017-01-01 00:00:00', '0.0101'), '2017-01-02 00:59:59', 'Test calc_end_date_by_months');
+
+is( calc_end_date_by_months('2017-01-01 00:00:00', '0.0001'), '2017-01-01 00:59:59', 'Test calc_end_date_by_months');
+is( calc_end_date_by_months('2017-01-01 00:00:00', '0.0010'), '2017-01-01 09:59:59', 'Test calc_end_date_by_months');
 
 cmp_deeply( calc_total_by_date_range(
         withdraw_date   => '2017-01-01 00:00:00',
@@ -42,7 +49,7 @@ cmp_deeply( calc_total_by_date_range(
     ),
     {
         total => '30.00',
-        months => '0.01',
+        months => '0.0100',
     }
 ,'calc_total_by_date_range (one day without one second)');
 
@@ -53,7 +60,7 @@ cmp_deeply( calc_total_by_date_range(
     ),
     {
         total => '30.00',
-        months => '0.01',
+        months => '0.0100',
     }
 ,'calc_total_by_date_range (one day)');
 
@@ -64,7 +71,7 @@ cmp_deeply( calc_total_by_date_range(
     ),
     {
         total => '10.00',
-        months => '0.00',
+        months => '0.0008',
     }
 ,'calc_total_by_date_range (third part of day)');
 
@@ -75,7 +82,7 @@ cmp_deeply( calc_total_by_date_range(
     ),
     {
         total => '1000.00',
-        months => '1.00',
+        months => '1.0000',
     }
 ,'calc_total_by_date_range (30 days)');
 
@@ -86,7 +93,7 @@ cmp_deeply( calc_total_by_date_range(
     ),
     {
         total => '2000.00',
-        months => '2.00',
+        months => '2.0000',
     }
 ,'calc_total_by_date_range (60 days)');
 
@@ -97,7 +104,7 @@ cmp_deeply( calc_total_by_date_range(
     ),
     {
         total => '1000.00',
-        months => '1.00',
+        months => '1.0000',
     }
 ,'calc_total_by_date_range (30 days in other months)');
 
@@ -108,7 +115,7 @@ cmp_deeply( calc_total_by_date_range(
     ),
     {
         total => '1033.33',
-        months => '1.01',
+        months => '1.0100',
     }
 ,'calc_total_by_date_range (31 day)');
 
@@ -119,8 +126,32 @@ cmp_deeply( calc_total_by_date_range(
     ),
     {
         total => '9713.33',
-        months => '3.04',
+        months => '3.0400',
     }
 ,'calc_total_by_date_range (jump to next year)');
+
+cmp_deeply( calc_total_by_date_range(
+        withdraw_date   => '2017-01-01 00:00:00',
+        end_date        => '2017-01-30 23:59:59',
+        cost            => 30,
+        period_cost     => 0.01,
+    ),
+    {
+        total => '900.00',
+        months => '1.0000',
+    }
+,'calc_total_by_date_range (with period_cost)');
+
+cmp_deeply( calc_total_by_date_range(
+        withdraw_date   => '2017-01-01 00:00:00',
+        end_date        => '2017-01-31 01:00:00',
+        cost            => 1,
+        period_cost     => 0.0001,
+    ),
+    {
+        total => '721.00',
+        months => '1.0001',
+    }
+,'calc_total_by_date_range (with period_cost)');
 
 done_testing();

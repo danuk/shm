@@ -36,6 +36,8 @@ is( calc_end_date_by_months('2017-04-28 20:34:16', 1), '2017-05-29 18:51:23', 'T
 is( calc_end_date_by_months('2017-01-01 00:00:00', '0.1'), '2017-01-10 23:59:59', 'Test calc_end_date_by_months 12');
 is( calc_end_date_by_months('2017-01-01 00:00:00', '0.01'), '2017-01-01 23:59:59', 'Test calc_end_date_by_months 13');
 
+is( calc_end_date_by_months('2017-01-01 00:00:00', '0.0101'), '2017-01-02 00:59:59', 'Test calc_end_date_by_months');
+
 is_deeply( calc_month_cost( from_date => '2017-04-01 00:00:00', cost => '3000' ), {
     start => '2017-04-01 00:00:00',
     stop => '2017-04-30 23:59:59',
