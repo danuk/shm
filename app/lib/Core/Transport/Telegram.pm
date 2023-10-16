@@ -81,10 +81,6 @@ sub send {
     );
 }
 
-sub user {
-    return get_service('user');
-}
-
 sub token {
     my $self = shift;
     my $token = shift;

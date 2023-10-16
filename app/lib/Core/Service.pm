@@ -239,6 +239,14 @@ sub price_list {
             my $service = $self->id( $si );
             $list->{ $si }->{cost} = $service->cost_composite();
         }
+
+        my $cost = $list->{ $si }->{cost};
+        my $discount = $list->{ $si }->{no_discount} ? 0 : $self->user->get_discount;
+        my $cost_discount = $cost * $discount / 100;
+
+        $list->{ $si }->{discount} = $discount;
+        $list->{ $si }->{cost_discount} = $cost_discount;
+        $list->{ $si }->{real_cost} = $cost - $cost_discount;
     }
 
     return $list;

@@ -91,6 +91,17 @@ is( $us_child->get_expire, '2019-06-02 23:25:08');
 
 is( get_service('service')->price_list->{ $service->id }->{cost}, 120 );
 
+is( get_service('service')->price_list->{ $service->id }->{discount}, 0 );
+is( get_service('service')->price_list->{ $service->id }->{real_cost}, 120 );
+
+$user->set( discount => 10 );
+is( get_service('service')->price_list->{ $service->id }->{discount}, 0 );
+is( get_service('service')->price_list->{ $service->id }->{real_cost}, 120 );
+
+$service->set( no_discount => 0);
+is( get_service('service')->price_list->{ $service->id }->{discount}, 10 );
+is( get_service('service')->price_list->{ $service->id }->{real_cost}, 108 );
+
 $service->set( is_composite => 0 );
 is( get_service('service')->price_list->{ $service->id }->{cost}, 100 );
 

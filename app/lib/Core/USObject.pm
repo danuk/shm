@@ -108,11 +108,6 @@ sub delete {
     return scalar $self->get;
 }
 
-sub user {
-    my $self = shift;
-    return get_service('user', _id => $self->get_user_id );
-}
-
 sub has_expired {
     my $self = shift;
 

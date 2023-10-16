@@ -93,6 +93,11 @@ sub user_id {
     return exists $self->{user_id} ? $self->{user_id} : get_service('config')->local->{user_id};
 }
 
+sub user {
+    my $self = shift;
+    return get_service('user', _id => $self->user_id );
+}
+
 sub res {
     my $self = shift;
     my $res = shift;
