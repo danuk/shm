@@ -131,7 +131,7 @@ sub process_one {
             return TASK_STUCK, $task, {};
         }
 
-        $task->{settings}->{server_id} = $servers[0]->{server_id};
+        $task->{settings}->{server_id} ||= $servers[0]->{server_id};
 
         if ( scalar @servers > 1 ) {
             # TODO: create new tasks for all servers
