@@ -539,21 +539,23 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         exit 0;
     }
 
-    unless ( $user->is_admin ) {
-        if ( $uri =~/^\/admin\// ) {
+    my $admin_mode;
+    if ( $uri =~/^\/admin\// ) {
+        unless ( $user->is_admin ) {
             print_header( status => 403 );
             print_json( { error => "Permission denied"} );
             exit 0;
         }
-
-        delete $in{user_id} if $in{user_id};
+        $admin_mode = 1;
     }
 
     my %args = (
         %{ $p->{args} || {} },
         %in,
-        admin => $user->is_admin,
+        admin => $admin_mode,
     );
+
+    delete $args{user_id} unless $user->is_admin;
 
     if ( $user->is_admin && $args{user_id} ) {
         switch_user( $args{user_id} );

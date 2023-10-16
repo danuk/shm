@@ -36,7 +36,7 @@ subtest 'Check auth with correct credentials' => sub {
 
     my $json_ret = decode_json( $ret );
 
-    is( $json_ret->{items}, 4, 'Check auth status');
+    is( $json_ret->{items}, 1, 'Check auth status');
 };
 
 my $session_id;
