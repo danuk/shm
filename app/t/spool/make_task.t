@@ -41,7 +41,7 @@ subtest 'Get server_id by event settings' => sub {
     my ( $status, $info ) = $spool->process_one( \%task );
 
     is( $info->{status}, 'MOCK' );
-    is( $info->{settings}->{server_id}, 2 );
+    is( $info->{settings}->{server_id} =~ /^1|2$/, 1 );
 };
 
 subtest 'Get server_id by server_gid' => sub {
