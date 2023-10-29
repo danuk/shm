@@ -280,6 +280,7 @@ sub deleteMessage {
 sub process_message {
     my $self = shift;
     my %args = (
+        template => 'telegram_bot',
         message => undef,
         @_,
     );
@@ -340,7 +341,7 @@ sub process_message {
         return 1;
     }
 
-    my $obj = get_script( $cmd,
+    my $obj = get_script( $args{template}, $cmd,
         vars => {
             cmd => $cmd,
             message => $message,
@@ -404,15 +405,16 @@ sub get_script_method {
 }
 
 sub get_script {
+    my $template_name = shift;
     my $cmd = shift;
     my %args = (
         vars => {},
         @_,
     );
 
-    my $template = get_service('template', _id => 'telegram_bot');
+    my $template = get_service('template', _id => $template_name );
     unless ( $template ) {
-        logger->error("Telegram bot: telegram_bot not exists");
+        logger->error("Telegram bot: '$template_name' not exists");
         return [];
     }
 
@@ -427,7 +429,7 @@ sub get_script {
         },
     );
     unless ( $data ) {
-        logger->warning("Telegram bot: command $cmd not found or empty in telegram_bot");
+        logger->warning("Telegram bot: command $cmd not found or empty in '$template_name'");
         return undef;
     }
 
@@ -436,7 +438,7 @@ sub get_script {
         %args,
     );
     unless ( $ret ) {
-        logger->warning("Telegram bot: data is empty in telegram_bot");
+        logger->warning("Telegram bot: data is empty in '$template_name'");
         return undef;
     }
 

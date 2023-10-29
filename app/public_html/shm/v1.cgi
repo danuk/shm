@@ -513,6 +513,14 @@ my $routes = {
         method => 'process_message',
     },
 },
+'/telegram/bot/:template' => {
+    POST => {
+        skip_check_auth => 1,
+        controller => 'Transport::Telegram',
+        method => 'process_message',
+        required => ['template'],
+    },
+},
 
 };
 
