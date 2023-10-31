@@ -53,7 +53,7 @@ sub send {
         }
 
         if ( my $settings = $template->get_settings ) {
-            $self->chat_id( $settings->{telegram}->{chat_id} );
+            $self->chat_id( $settings->{telegram}->{chat_id} ) if $settings->{telegram}->{chat_id};
             $self->token( $settings->{telegram}->{token} ) if $settings->{telegram}->{token};
         }
 
@@ -285,6 +285,16 @@ sub process_message {
         @_,
     );
 
+    my $template = get_service('template', _id => $args{template} );
+    unless ( $template ) {
+        logger->error("Template: '$args{template}' not exists");
+        return undef;
+    }
+
+    if ( my $settings = $template->get_settings ) {
+        $self->token( $settings->{telegram}->{token} ) if $settings->{telegram}->{token};
+    }
+
     logger->debug('REQUEST:', \%args );
 
     if ( my $data = $args{pre_checkout_query} ) {
@@ -341,7 +351,7 @@ sub process_message {
         return 1;
     }
 
-    my $obj = get_script( $args{template}, $cmd,
+    my $obj = get_script( $template, $cmd,
         vars => {
             cmd => $cmd,
             message => $message,
@@ -405,18 +415,14 @@ sub get_script_method {
 }
 
 sub get_script {
-    my $template_name = shift;
+    my $template = shift;
     my $cmd = shift;
     my %args = (
         vars => {},
         @_,
     );
 
-    my $template = get_service('template', _id => $template_name );
-    unless ( $template ) {
-        logger->error("Telegram bot: '$template_name' not exists");
-        return [];
-    }
+    my $template_name = $template->id;
 
     # Hack for working with Cyrillic commands
     _utf8_off( $cmd );
