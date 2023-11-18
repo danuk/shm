@@ -110,7 +110,7 @@ sub calc_total_by_date_range {
     if ( $wd{period_cost} && $wd{period_cost} != 1 ) {
         my ( $months, $days, $hours ) = parse_period( $wd{period_cost} );
         # TODO: add support days and hours
-        $wd{cost} = $wd{cost} / $months;
+        $wd{cost} = $wd{cost} / $months if $months;
     }
 
     # calc first month
