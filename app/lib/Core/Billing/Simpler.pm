@@ -57,35 +57,36 @@ sub calc_total_by_date_range {
     my %start = parse_date( $wd{withdraw_date} );
     my %stop = parse_date( $wd{end_date} );
 
-    # Add one second for correct counting days
-    @stop{ qw/year month day hour min sec/ } = Add_Delta_DHMS( @stop{ qw/year month day hour min sec/ },0,0,0,1 );
+    my $total = 0;
 
-    my %delta;
-    @delta{ qw/day hour min sec/ } = Delta_DHMS( @start{ qw/year month day hour min sec/ }, @stop{ qw/year month day hour min sec/ } );
+    if ( $wd{cost} ) {
+        # Add one second for correct counting days
+        @stop{ qw/year month day hour min sec/ } = Add_Delta_DHMS( @stop{ qw/year month day hour min sec/ },0,0,0,1 );
 
-    my $months_cost;
-    if ( my $pc = $wd{period_cost} ) {
-        if ( int( $pc ) == $pc ) {
-            $months_cost = $wd{cost} / $wd{period_cost};
-        } else {
-            my $months_hours = DAYS_IN_MONTH * 24;
-            my ( $months, $days, $hours ) = parse_period( $pc );
-            my $period_hours = $months * DAYS_IN_MONTH * 24 + $days * 24 + $hours;
-            $months_cost = $months_hours / $period_hours * $wd{cost};
+        my %delta;
+        @delta{ qw/day hour min sec/ } = Delta_DHMS( @start{ qw/year month day hour min sec/ }, @stop{ qw/year month day hour min sec/ } );
+
+        my $months_cost;
+        if ( my $pc = $wd{period_cost} ) {
+            if ( int( $pc ) == $pc ) {
+                $months_cost = $wd{cost} / $wd{period_cost};
+            } else {
+                my $months_hours = DAYS_IN_MONTH * 24;
+                my ( $months, $days, $hours ) = parse_period( $pc );
+                my $period_hours = $months * DAYS_IN_MONTH * 24 + $days * 24 + $hours;
+                $months_cost = $months_hours / $period_hours * $wd{cost};
+            }
         }
+
+        my $cost_day = $months_cost / DAYS_IN_MONTH;
+        my $cost_hour = $cost_day / 24;
+        my $cost_min = $cost_hour / 60;
+
+        $total = $delta{day} * $cost_day + $delta{hour} * $cost_hour + $delta{min} * $cost_min;
     }
 
-    my $cost_day = $months_cost / DAYS_IN_MONTH;
-    my $cost_hour = $cost_day / 24;
-    my $cost_min = $cost_hour / 60;
-
     return {
-        total =>
-            sprintf("%.2f",
-                $delta{day} * $cost_day +
-                $delta{hour} * $cost_hour +
-                $delta{min} * $cost_min
-            ),
+        total => sprintf("%.2f", $total ),
         months => calc_months_between_dates(\%start, \%stop),
     };
 }

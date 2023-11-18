@@ -154,4 +154,16 @@ cmp_deeply( calc_total_by_date_range(
     }
 ,'calc_total_by_date_range (with period_cost)');
 
+cmp_deeply( calc_total_by_date_range(
+        withdraw_date   => '2017-01-01 00:00:00',
+        end_date        => '2017-01-31 01:00:00',
+        cost            => 0,
+        period_cost     => 1,
+    ),
+    {
+        total => '0.00',
+        months => '1.0001',
+    }
+,'calc_total_by_date_range (calc zero cost)');
+
 done_testing();

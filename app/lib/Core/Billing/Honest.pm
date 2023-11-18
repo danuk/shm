@@ -104,37 +104,40 @@ sub calc_total_by_date_range {
     my %start = parse_date( $wd{withdraw_date} );
     my %stop = parse_date( $wd{end_date} );
 
-    my $m_diff = ( $stop{month} + $stop{year} * 12 ) - ( $start{month} + $start{year} * 12 );
     my $total = 0;
 
-    if ( $wd{period_cost} && $wd{period_cost} != 1 ) {
-        my ( $months, $days, $hours ) = parse_period( $wd{period_cost} );
-        # TODO: add support days and hours
-        $wd{cost} = $wd{cost} / $months if $months;
-    }
+    if ( $wd{cost} ) {
+        my $m_diff = ( $stop{month} + $stop{year} * 12 ) - ( $start{month} + $start{year} * 12 );
 
-    # calc first month
-    if ( $wd{end_date} le end_of_month( $wd{withdraw_date} ) ) {
-        # Услуга начинается и заканчивается в одном месяце
-        my $data = calc_month_cost( cost => $wd{cost}, from_date => $wd{withdraw_date}, to_date => $wd{end_date} );
-        $total = $data->{total};
-    }
-    else {
-        # Услуга начинается в одном месяце, а заканчивается в другом
-        my $data = calc_month_cost( cost => $wd{cost}, from_date => $wd{withdraw_date} );
-        $total = $data->{total};
-    }
+        if ( $wd{period_cost} && $wd{period_cost} != 1 ) {
+            my ( $months, $days, $hours ) = parse_period( $wd{period_cost} );
+            # TODO: add support days and hours
+            $wd{cost} = $wd{cost} / $months if $months;
+        }
 
-    # calc middle
-    if ($m_diff > 1) {
-        my $middle_total = $wd{cost} * ( $m_diff - 1 );
-        $total += $middle_total;
-    }
+        # calc first month
+        if ( $wd{end_date} le end_of_month( $wd{withdraw_date} ) ) {
+            # Услуга начинается и заканчивается в одном месяце
+            my $data = calc_month_cost( cost => $wd{cost}, from_date => $wd{withdraw_date}, to_date => $wd{end_date} );
+            $total = $data->{total};
+        }
+        else {
+            # Услуга начинается в одном месяце, а заканчивается в другом
+            my $data = calc_month_cost( cost => $wd{cost}, from_date => $wd{withdraw_date} );
+            $total = $data->{total};
+        }
 
-    # calc last month
-    if ($m_diff > 0) {
-        my $data = calc_month_cost( cost => $wd{cost}, to_date => $wd{end_date} );
-        $total += $data->{total};
+        # calc middle
+        if ($m_diff > 1) {
+            my $middle_total = $wd{cost} * ( $m_diff - 1 );
+            $total += $middle_total;
+        }
+
+        # calc last month
+        if ($m_diff > 0) {
+            my $data = calc_month_cost( cost => $wd{cost}, to_date => $wd{end_date} );
+            $total += $data->{total};
+        }
     }
 
     return {

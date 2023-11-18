@@ -220,5 +220,15 @@ cmp_deeply( calc_total_by_date_range(
     }
 ,'calc_total_by_date_range (jump to next year)');
 
+cmp_deeply( calc_total_by_date_range(
+        withdraw_date   => '2017-10-31 00:00:00',
+        end_date        => '2018-02-01 23:59:59',
+        cost            => '0',
+    ),
+    {
+        total => '0.00',
+        months => '3.02',
+    }
+,'calc_total_by_date_range (calc zero cost)');
 
 done_testing();
