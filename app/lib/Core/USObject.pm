@@ -178,6 +178,8 @@ sub withdraw {
     return get_service('wd', _id => $self->get_withdraw_id, usi => $self->id );
 }
 
+*withdraws = \&withdraw; # make an alias for api name compatible
+
 sub wd_total_composite {
     my $self = shift;
 
