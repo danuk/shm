@@ -314,7 +314,8 @@ sub process_message {
 
     return undef unless $self->token;
 
-    my $message = $args{callback_query} ? $args{callback_query}->{message} : $args{message};
+    my $callback_query = $args{callback_query};
+    my $message = $callback_query ? delete $callback_query->{message} : $args{message};
     $self->message( $message );
 
     $self->chat_id( $message->{chat}->{id} );
@@ -323,8 +324,8 @@ sub process_message {
     if ( $args{message} ) {
         $cmd = $args{message}->{text};
         @callback_args = split( /\s+/, $cmd );
-    } elsif ( $args{callback_query} ) {
-        ( $cmd, @callback_args ) = split( /\s+/, $args{callback_query}->{data} );
+    } elsif ( $callback_query ) {
+        ( $cmd, @callback_args ) = split( /\s+/, $callback_query->{data} );
     }
 
     if ( $cmd ne '/register' ) {
@@ -355,6 +356,7 @@ sub process_message {
         vars => {
             cmd => $cmd,
             message => $message,
+            callback_query => $callback_query,
             args => \@callback_args,
         },
     );
@@ -392,6 +394,7 @@ sub process_message {
             editMessageLiveLocation => 1,
             editMessageReplyMarkup => 1,
             setMyCommands => 1,
+            answerCallbackQuery => 1,
         );
 
         if ( $self->can( $method ) ) {
