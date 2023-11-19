@@ -163,6 +163,9 @@ sub forecast {
     # Do not send forecast if services not expired or not exists
     $ret{total} = 0 unless scalar @forecast_services;
 
+    $ret{dept} = sprintf("%.2f", $ret{dept} ) + 0 if $ret{dept};
+    $ret{total} = sprintf("%.2f", $ret{total} ) + 0;
+
     return \%ret;
 }
 
