@@ -77,7 +77,7 @@ sub calc_end_date_by_months {
     my ( $start_year, $start_mon, $start_day, $start_hour, $start_min, $start_sec ) = split(/\D+/, $date );
 
     my $sec_in_start = days_in_months( $date ) * 86400 - 1;
-    my $unix_stop = timelocal_nocheck( 0, 0, $hours, 1 + $days , $start_mon + $months - 1, $start_year + int( ( $start_mon + $months ) / 12 ) );
+    my $unix_stop = timelocal_nocheck( 0, 0, $hours, 1 + $days , $start_mon + $months - 1, $start_year + int( ( $start_mon + $months - 1 ) / 12 ) );
     my $sec_in_stop = days_in_months( utime_to_string( $unix_stop ) ) * 86400 - 1;
 
     my $ttt = $sec_in_start - ( ( $start_day - 1 ) * 86400 + $start_hour * 3600 + $start_min * 60 + $start_sec );
