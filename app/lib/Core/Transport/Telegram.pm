@@ -323,7 +323,8 @@ sub process_message {
     my ( $cmd, @callback_args );
     if ( $args{message} ) {
         $cmd = $args{message}->{text};
-        @callback_args = split( /\s+/, $cmd );
+        ( undef, @callback_args ) = split( /\s+/, $cmd );
+        $cmd =~s/^\/(\w+)\s+.*$/\/$1/; # remove args from cmd if it starts from /
     } elsif ( $callback_query ) {
         ( $cmd, @callback_args ) = split( /\s+/, $callback_query->{data} );
     }
