@@ -47,7 +47,7 @@ sub calc_end_date_by_months {
 sub calc_total_by_date_range {
     my %wd = (
         cost => undef,
-        period_cost => 1,
+        period => 1,
         withdraw_date => undef,
         end_date => undef,
         @_,
@@ -67,9 +67,9 @@ sub calc_total_by_date_range {
         @delta{ qw/day hour min sec/ } = Delta_DHMS( @start{ qw/year month day hour min sec/ }, @stop{ qw/year month day hour min sec/ } );
 
         my $months_cost;
-        if ( my $pc = $wd{period_cost} ) {
+        if ( my $pc = $wd{period} ) {
             if ( int( $pc ) == $pc ) {
-                $months_cost = $wd{cost} / $wd{period_cost};
+                $months_cost = $wd{cost} / $wd{period};
             } else {
                 my $months_hours = DAYS_IN_MONTH * 24;
                 my ( $months, $days, $hours ) = parse_period( $pc );

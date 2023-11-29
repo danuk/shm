@@ -19,7 +19,7 @@ sub structure {
             type => 'number',
             required => 1,
         },
-        period_cost => {
+        period => {
             type => 'number',
             default => 1,
         },

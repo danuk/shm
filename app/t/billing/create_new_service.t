@@ -65,8 +65,8 @@ is( $ret->{ $us->id }->{withdraws}->{discount}, 0, 'Check total for domain' );
 is( $ret->{ $us->id }->{withdraws}->{total}, 1000, 'Check total for domain' );
 is( $ret->{ $us->id }->{withdraws}->{months}, 12, 'Check months for domain' );
 
-subtest 'Check create service with period_cost' => sub {
-    my $si = get_service('service')->add( name => 'TEST', cost => 123, category => 'new', period_cost => 3 );
+subtest 'Check create service with period' => sub {
+    my $si = get_service('service')->add( name => 'TEST', cost => 123, category => 'new', period => 3 );
 
     my $us = create_service( service_id => $si->get_service_id );
 

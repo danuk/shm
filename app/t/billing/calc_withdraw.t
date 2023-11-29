@@ -18,7 +18,7 @@ subtest 'Check withdraw domain for one month' => sub {
         'Honest',
         withdraw_date => '2019-01-01 00:00:00',
         service_id => 11,
-        period_cost => 12,
+        period => 12,
         cost => 1200,
         months => 1,
     );
@@ -61,7 +61,7 @@ subtest 'Check withdraw service for month' => sub {
         'Honest',
         withdraw_date => '2019-01-01 00:00:00',
         service_id => 1,
-        period_cost => 1,
+        period => 1,
         cost => 310,
         months => 1,
     );

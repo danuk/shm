@@ -24,7 +24,7 @@ my $cost_service = 100;
 my $sub_service = get_service('service')->add(
     name => 'paid sub service',
     cost => $cost_sub_service,
-    period_cost => 1,
+    period => 1,
     category => 'test',
     no_discount => 1,
 );
@@ -32,7 +32,7 @@ my $sub_service = get_service('service')->add(
 my $service = get_service('service')->add(
     name => 'test service',
     cost => $cost_service,
-    period_cost => '1',
+    period => '1',
     category => 'test',
     no_discount => 1,
     is_composite => 1,

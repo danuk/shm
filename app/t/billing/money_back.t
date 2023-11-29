@@ -84,7 +84,7 @@ subtest 'Moneyback' => sub {
     my $service = get_service('service')->add(
         name => 'test service',
         cost => '900',
-        period_cost => 3,
+        period => 3,
         category => 'test',
         no_discount => 1,
     );

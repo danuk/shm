@@ -19,7 +19,7 @@ tzset;
 my $next_service = get_service('service')->add(
     name => 'next service',
     cost => '100',
-    period_cost => 1,
+    period => 1,
     category => 'test',
     no_discount => 1,
 );
@@ -27,7 +27,7 @@ my $next_service = get_service('service')->add(
 my $test_service = get_service('service')->add(
     name => 'test service',
     cost => '0',
-    period_cost => '0.01',
+    period => '0.01',
     category => 'test',
     no_discount => 1,
     next => $next_service->id,

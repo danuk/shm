@@ -14,14 +14,14 @@ $user->set( balance => 0, bonus => 0, credit => 0, discount => 10 );
 my $service = get_service('service')->add(
     name => 'test service',
     cost => 100,
-    period_cost => 1,
+    period => 1,
     category => 'test',
 );
 
 my $test_service = get_service('service')->add(
     name => 'test period of service',
     cost => 0,
-    period_cost => 0.03,
+    period => 0.03,
     category => 'test',
     next => $service->id,
 );

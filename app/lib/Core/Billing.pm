@@ -60,8 +60,8 @@ sub create_service_recursive {
         logger->fatal( "Service not exists: $args{service_id}" );
     }
 
-    if ( $service->get_period_cost ) {
-        $args{months} ||= $service->get_period_cost;
+    if ( $service->get_period ) {
+        $args{months} ||= $service->get_period;
     }
 
     $args{next} = $service->get_next;
@@ -196,7 +196,7 @@ sub calc_withdraw {
     $wd{withdraw_date}||= now;
     $wd{end_date} = calc_end_date_by_months( $billing, $wd{withdraw_date}, $wd{months} );
 
-    if ( $wd{months} == $wd{period_cost} ) {
+    if ( $wd{months} == $wd{period} ) {
         $wd{total} = $wd{cost};
     } else {
         $wd{total} = calc_total_by_date_range( $billing, %wd )->{total};
@@ -407,12 +407,12 @@ sub get_service_discount {
 
     my $service = $args{service_id} ? get_service( 'service', _id => $args{service_id} )->get : {};
 
-    $args{period_cost} ||= $service->{period_cost} // undef;
-    $args{months} ||= $service->{period_cost} || 1;
+    $args{period} ||= $service->{period} // undef;
+    $args{months} ||= $service->{period} || 1;
 
     my $percent = get_service('user')->get_discount || 0;
 
-    if ( $args{period_cost} < 2 ) {
+    if ( $args{period} < 2 ) {
         # Вычисляем скидку за кол-во месяцев
         my $discount_info = get_service('discounts')->get_by_period( months => $args{months} );
         if ( $discount_info ) {

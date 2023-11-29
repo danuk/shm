@@ -142,7 +142,7 @@ CREATE TABLE `services` (
   `service_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` char(64) NOT NULL,
   `cost` decimal(10,2) DEFAULT NULL,
-  `period_cost` decimal(10,4) NOT NULL DEFAULT '1',
+  `period` decimal(10,4) NOT NULL DEFAULT '1',
   `category` char(16) DEFAULT NULL,
   `children` json DEFAULT NULL,
   `next` int(11) DEFAULT '0',

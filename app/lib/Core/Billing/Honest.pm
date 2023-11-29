@@ -95,7 +95,7 @@ sub calc_end_date_by_months {
 sub calc_total_by_date_range {
     my %wd = (
         cost => undef,
-        period_cost => 1,
+        period => 1,
         withdraw_date => undef,
         end_date => undef,
         @_,
@@ -109,8 +109,8 @@ sub calc_total_by_date_range {
     if ( $wd{cost} ) {
         my $m_diff = ( $stop{month} + $stop{year} * 12 ) - ( $start{month} + $start{year} * 12 );
 
-        if ( $wd{period_cost} && $wd{period_cost} != 1 ) {
-            my ( $months, $days, $hours ) = parse_period( $wd{period_cost} );
+        if ( $wd{period} && $wd{period} != 1 ) {
+            my ( $months, $days, $hours ) = parse_period( $wd{period} );
             # TODO: add support days and hours
             $wd{cost} = $wd{cost} / $months if $months;
         }
