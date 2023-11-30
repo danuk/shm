@@ -75,17 +75,21 @@ sub forecast {
     my $self = shift;
     my %args = (
         days => 3,
+        blocked => 0,
         @_,
     );
+
+    my @statuses = (
+        STATUS_ACTIVE,
+        STATUS_WAIT_FOR_PAY,
+    );
+
+    push @statuses, STATUS_BLOCK if $args{blocked};
 
     my $user_services = get_service('UserService')->list_prepare(
         where => {
             auto_bill => \[ '= 1'],
-            status => { -in => [
-                    STATUS_ACTIVE,
-                    STATUS_WAIT_FOR_PAY,
-                ],
-            },
+            status => { -in => \@statuses },
             withdraw_id => { '!=', undef },
             expire => [
                 { '<', \[ 'NOW() + INTERVAL ? DAY', $args{days} ] },
