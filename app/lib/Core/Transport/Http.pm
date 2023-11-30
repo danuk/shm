@@ -129,7 +129,12 @@ sub http {
             response => $response_content,
         };
     } else {
-        return FAIL, {
+        my $status = SUCCESS;
+        if ( $response->status_line =~ /5\d{2}/ ) {
+            $status = FAIL;
+        }
+
+        return $status, {
             error => $response->status_line,
             request => \%args,
             response => $response_content,
