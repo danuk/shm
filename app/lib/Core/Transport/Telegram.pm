@@ -227,6 +227,10 @@ sub sendMessage {
     );
 }
 
+sub get_shm_login {
+    return sprintf( "@%s", shift );
+}
+
 sub auth {
     my $self = shift;
     my %args = (
@@ -246,6 +250,7 @@ sub auth {
             -OR => [
                 sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $chat_id,
                 $username ? ( sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.login') => lc( $username ) ) : (),
+                $username ? ( login => get_shm_login( $username )) : (),
             ],
         },
         limit => 1,
@@ -542,7 +547,7 @@ sub shmRegister {
     my $chat_id = $self->message->{chat}->{id};
 
     my $user = get_service('user')->reg(
-        login => sprintf( "@%s", $chat_id ),
+        login => get_shm_login( $chat_id ),
         password => passgen(),
         full_name => sprintf("%s %s", $self->message->{chat}->{first_name}, $self->message->{chat}->{last_name} ),
         settings => {
