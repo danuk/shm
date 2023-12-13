@@ -117,6 +117,11 @@ sub services_count_decrease {
     $self->reload() if $ret;
 }
 
+sub groups {
+    my $self = shift;
+    return get_service('ServerGroups');
+}
+
 sub group {
     my $self = shift;
 

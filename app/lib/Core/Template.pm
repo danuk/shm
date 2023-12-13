@@ -48,6 +48,7 @@ sub parse {
         $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : (),
         $args{task} ? ( task => $args{task} ) : (),
         $args{server_id} ? ( server => get_service('server', _id => $args{server_id}) ) : (),
+        servers => get_service('server'),
         config => get_service('config')->data_by_name,
         tpl => $self,
         service => get_service('service'),
