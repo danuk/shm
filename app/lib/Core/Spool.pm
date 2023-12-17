@@ -22,7 +22,7 @@ sub structure {
         user_service_id => {
             type => 'number',
         },
-        event => { type => 'json', value => undef },
+        event => { type => 'json', value => {} },
         prio => {           # приоритет команды
             type => 'number',
             default => 0,
@@ -31,7 +31,7 @@ sub structure {
             type => 'number',
             default => TASK_NEW,
         },
-        response => { type => 'json', value => undef },
+        response => { type => 'json', value => {} },
         created => {        # дата создания задачи
             type => 'now',
         },
@@ -42,7 +42,7 @@ sub structure {
             type => 'date',
             default => 0,
         },
-        settings => { type => 'json', value => undef },
+        settings => { type => 'json', value => {} },
     }
 }
 

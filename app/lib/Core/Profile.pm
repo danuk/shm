@@ -14,7 +14,7 @@ sub structure {
             type => 'number',
             auto_fill => 1,
         },
-        data => { type => 'json', value => undef },
+        data => { type => 'json', value => {} },
         created => {
             type => 'now',
         },

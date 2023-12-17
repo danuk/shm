@@ -45,7 +45,7 @@ sub structure {
         parent => {
             type => 'number',
         },
-        settings => { type => 'json', value => undef },
+        settings => { type => 'json', value => {} },
     };
 }
 

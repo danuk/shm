@@ -41,7 +41,7 @@ sub structure {
         enabled => {
             type => 'number',
         },
-        settings => { type => 'json', value => undef },
+        settings => { type => 'json', value => {} },
     }
 }
 

@@ -104,7 +104,7 @@ sub structure {
         settings => {
             allow_update_by_user => 1,
             type => 'json',
-            value => undef
+            value => {}
         },
     };
 }

@@ -19,7 +19,7 @@ sub structure {
         data => {
             type => 'text',
         },
-        settings => { type => 'json', value => undef },
+        settings => { type => 'json', value => {} },
     }
 }
 

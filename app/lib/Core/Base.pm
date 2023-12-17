@@ -31,16 +31,16 @@ sub AUTOLOAD {
 
         unless ( my %res = $self->res ) {
             # load data if not loaded before
-            $self->get;
+            $self->get if $self->can('structure');
         }
 
-        if ( exists $self->res->{ $method } ) {
-            return $self->res->{ $method };
+        return $self->res->{ $method } if defined $self->res->{ $method };
+
+        if ( $self->can('structure') ) {
+            my $structure = $self->structure;
+            return $structure->{ $method }->{value};
         }
-        else {
-            logger->warning("Field `$method` not exists in structure.");
-            return undef;
-        }
+        return undef;
     } elsif ( $AUTOLOAD=~/::DESTROY$/ ) {
         # Skip
     } else {

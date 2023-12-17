@@ -29,7 +29,7 @@ sub structure {
         },
         settings => {
             type => 'json',
-            value => undef,
+            value => {},
         },
     }
 }
