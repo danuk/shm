@@ -57,7 +57,7 @@ sub parse {
         %{ $args{vars} },
         ref => sub {
             my $data = shift;
-            return ref $data eq 'HASH' ? [ $data ] : $data;
+            return ref $data eq 'HASH' ? [ $data ] : ( $data || [] );
         },
         toJson => sub {
             my $data = shift;
