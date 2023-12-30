@@ -121,7 +121,17 @@ sub process_one {
     }
 
     if ( $task->{event}->{server_gid} ) {
-        my @servers = get_service('ServerGroups', _id => $task->{event}->{server_gid} )->get_servers;
+        my $server_group = get_service('ServerGroups', _id => $task->{event}->{server_gid} );
+        unless ( $server_group ) {
+            logger->warning("The server group does not exist: $task->{event}->{server_gid}");
+            $spool->finish_task(
+                status => TASK_STUCK,
+                response => { error => "The server group does not exist" },
+            );
+            return TASK_STUCK, $task, {};
+        }
+
+        my @servers = $server_group->get_servers;
         unless ( @servers ) {
             logger->warning("Can't found servers for group: $task->{event}->{server_gid}");
             $spool->finish_task(
