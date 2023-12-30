@@ -31,8 +31,6 @@ sub send {
     my $self = shift;
     my $task = shift;
 
-    delete $self->{chat_id};
-
     my %server;
     if ( my $server = $task->server('telegram') ) {
         %server = $server->get;
@@ -45,16 +43,11 @@ sub send {
     );
 
     my $message;
-    if ( my $template = get_service('template', _id => $settings{template_id} ) ) {
+    if ( my $template = $self->template( $settings{template_id} ) ) {
         unless ( $template ) {
             return undef, {
                 error => "template with id `$settings{template_id}` not found",
             }
-        }
-
-        if ( my $settings = $template->get_settings ) {
-            $self->chat_id( $settings->{telegram}->{chat_id} ) if $settings->{telegram}->{chat_id};
-            $self->token( $settings->{telegram}->{token} ) if $settings->{telegram}->{token};
         }
 
         $message = $template->parse(
@@ -72,55 +65,88 @@ sub send {
 
     unless ( $self->token ) {
         return undef, {
-            error => "telegram token not found. Please set it into config.telegram.token",
+            error => "telegram token not found. Please set it into config.telegram.token or template.settings.telegram.token",
         }
     }
 
-    return $self->sendMessage(
+    my $response = $self->sendMessage(
         text => $message,
     );
+
+    if ( $response->is_success ) {
+        logger->info(
+            $response->decoded_content,
+        );
+        return SUCCESS, {
+            message => 'successful',
+        };
+    } else {
+        logger->error(
+            $response->decoded_content,
+        );
+        # Always return SUCCESS. Skip broken messages
+        return SUCCESS, {
+            error => $response->decoded_content,
+        };
+    }
+}
+
+sub template {
+    my $self = shift;
+    my $template_id = shift;
+
+    $self->{template_id} = $template_id if $template_id;
+
+    my $template = get_service('template', _id => $self->{template_id});
+    return $template;
 }
 
 sub token {
     my $self = shift;
-    my $token = shift;
 
-    if ( $token ) {
-        $self->{token} = $token;
-    }
+    my $token = $self->template->get_settings->{telegram}->{token} ||
+        get_service('config')->data_by_name('telegram')->{token};
 
-    $self->{token} ||= get_service('config')->data_by_name('telegram')->{token};
-    logger->error( 'Token not found' ) unless $self->{token};
+    logger->error( 'Token not found' ) unless $token;
 
-    return $self->{token};
+    return $token;
 }
 
 sub chat_id {
     my $self = shift;
-    my $chat_id = shift;
 
-    if ( $chat_id ) {
-        $self->{chat_id} = $chat_id;
-    }
+    my $chat_id = $self->message->{chat}->{id};
+    $chat_id ||= $self->template->get_settings->{telegram}->{chat_id};
+    $chat_id ||= $self->user->get_settings->{telegram}->{chat_id};
 
-    unless ( $self->{chat_id} ) {
-        if ( my $user = $self->user->get ) {
-            $self->{chat_id} = $user->{settings}->{telegram}->{chat_id};
-        }
-    }
+    logger->warning('Chat_id not found') unless $chat_id;
 
-    return $self->{chat_id};
+    return $chat_id;
 }
 
 sub message {
     my $self = shift;
-    my $message = shift;
 
-    if ( $message ) {
-        $self->{message} = $message;
+    if ( my $cb = $self->get_callback_query ) {
+        return $cb->{message};
+    }
+    return $self->get_message || {};
+}
+
+sub cmd {
+    my $self = shift;
+
+    my ( $cmd, @args );
+
+    if ( my $message = $self->get_message ) {
+        $cmd = $message->{text};
+        ( undef, @args ) = split( /\s+/, $cmd );
+        $cmd =~s/^\/(\w+)\s+.*$/\/$1/; # remove args from cmd if it starts from /
+    } elsif ( my $cb = $self->get_callback_query ) {
+        ( $cmd, @args ) = split( /\s+/, $cb->{data} );
     }
 
-    return $self->{message};
+    return $cmd, @args;
 }
 
 sub uploadDocument {
@@ -190,23 +216,7 @@ sub http {
     );
 
     logger->dump( $response->request );
-
-    if ( $response->is_success ) {
-        logger->info(
-            $response->decoded_content,
-        );
-        return SUCCESS, {
-            message => 'successful',
-        };
-    } else {
-        logger->error(
-            $response->decoded_content,
-        );
-        # Always return SUCCESS. Skip broken messages
-        return SUCCESS, {
-            error => $response->decoded_content,
-        };
-    }
+    return $response;
 }
 
 sub sendMessage {
@@ -218,11 +228,27 @@ sub sendMessage {
         @_,
     );
 
+    $args{text} ||= '__no_text__';
+
     if ( length( $args{text} ) > 4096 ) {
         $args{text} = substr( $args{text}, 0, 4093 ) . '...';
     }
 
     return $self->http( 'sendMessage',
+        data => \%args,
+    );
+}
+
+sub deleteMessage {
+    my $self = shift;
+    my %args = (
+        message_id => undef,
+        @_,
+    );
+
+    return undef unless $args{message_id};
+
+    return $self->http( 'deleteMessage',
         data => \%args,
     );
 }
@@ -233,24 +259,19 @@ sub get_shm_login {
 
 sub auth {
     my $self = shift;
-    my %args = (
-        id => undef,
-        username => undef,
-        @_,
-    );
-    my $message = shift;
 
-    my $chat_id = $args{id};
-    my $username = $args{username};
+    my $tg_user = $self->tg_user;
+    return undef unless $tg_user;
 
-    return undef unless $chat_id;
+    my $telegram_user_id = $tg_user->{id};
+    my $username = $tg_user->{username};
 
     my ( $user ) = $self->user->_list(
         where => {
             -OR => [
-                sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $chat_id,
+                login => get_shm_login( $telegram_user_id ),
                 $username ? ( sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.login') => lc( $username ) ) : (),
-                $username ? ( login => get_shm_login( $username )) : (),
+                sprintf('%s->>"$.%s"', 'settings', 'telegram.user_id') => $telegram_user_id,
             ],
         },
         limit => 1,
@@ -263,9 +284,10 @@ sub auth {
         'settings', {
             telegram => {
                 chat_id => $self->chat_id,
+                user_id => $telegram_user_id,
             },
         },
-    ) unless $user->{settings}->{telegram}->{chat_id};
+    ) unless $user->{settings}->{telegram}->{user_id};
 
     return $user;
 }
@@ -277,37 +299,53 @@ sub deleteMessage {
         @_,
     );
 
-    $self->http( 'deleteMessage',
+    return $self->http( 'deleteMessage',
         data => \%args,
     );
+}
+
+sub tg_user {
+    my $self = shift;
+
+    my $user;
+    if ( my $cb = $self->get_callback_query ) {
+        $user = $cb->{from};
+    } else {
+        my $message = $self->get_message || {};
+        if ( $message->{from}->{is_bot} ) {
+            $user = $message->{chat};
+        } else {
+            $user = $message->{from};
+        }
+    }
+    return $user;
 }
 
 sub process_message {
     my $self = shift;
     my %args = (
         template => 'telegram_bot',
-        message => undef,
         @_,
     );
 
-    my $template = get_service('template', _id => $args{template} );
+    logger->debug('REQUEST:', \%args );
+    $self->res( \%args );
+
+    return undef if $self->message->{chat}->{type} ne 'private';
+
+    my $template = $self->template( $args{template} );
     unless ( $template ) {
         logger->error("Template: '$args{template}' not exists");
         return undef;
     }
 
-    if ( my $settings = $template->get_settings ) {
-        $self->token( $settings->{telegram}->{token} ) if $settings->{telegram}->{token};
+    if ( my $token = $template->get_settings->{telegram}->{token} ) {
+        $self->token( $token );
     }
 
-    logger->debug('REQUEST:', \%args );
+    my $user = $self->auth();
 
     if ( my $data = $args{pre_checkout_query} ) {
-        my $user = $self->auth(
-            id => $data->{from}->{id},
-            username => $data->{from}->{username},
-        );
-
         $self->http( 'answerPreCheckoutQuery',
             data => {
                 pre_checkout_query_id => $data->{id},
@@ -319,28 +357,12 @@ sub process_message {
 
     return undef unless $self->token;
 
-    my $callback_query = $args{callback_query};
-    my $message = $callback_query ? delete $callback_query->{message} : $args{message};
-    $self->message( $message );
-
-    $self->chat_id( $message->{chat}->{id} );
-
-    my ( $cmd, @callback_args );
-    if ( $args{message} ) {
-        $cmd = $args{message}->{text};
-        ( undef, @callback_args ) = split( /\s+/, $cmd );
-        $cmd =~s/^\/(\w+)\s+.*$/\/$1/; # remove args from cmd if it starts from /
-    } elsif ( $callback_query ) {
-        ( $cmd, @callback_args ) = split( /\s+/, $callback_query->{data} );
-    }
+    my ( $cmd ) = $self->cmd;
 
     if ( $cmd ne '/register' ) {
-        my $user = $self->auth(
-            id => $message->{chat}->{id},
-            username => $message->{chat}->{username},
-        );
         if ( !$user ) {
-            logger->warning( 'USER_NOT_FOUND. Chat_id', $message->{chat}->{id}, 'username:', $message->{chat}->{username} );
+            logger->warning( 'USER_NOT_FOUND:', $self->tg_user);
+            logger->warning( 'CMD:', $cmd );
             $cmd = 'USER_NOT_FOUND';
         } elsif ( $user->{block} ) {
             return $self->sendMessage(
@@ -349,7 +371,7 @@ sub process_message {
         }
     }
 
-    if ( my $payment = $args{message}->{successful_payment} ) {
+    if ( my $payment = $self->get_successful_payment ) {
         $self->user->payment(
             money => $payment->{total_amount} / 100,
             pay_system_id => 'telegram_bot',
@@ -358,12 +380,31 @@ sub process_message {
         return 1;
     }
 
-    my $obj = get_script( $template, $cmd,
+    $self->exec_template(
+        cmd => $cmd,
+    );
+
+    return 1;
+}
+
+sub exec_template {
+    my $self = shift;
+    my %args = (
+        cmd => undef,
+        args => undef,
+        @_,
+    );
+
+    my ( $cmd, @args ) = $self->cmd;
+    $args{cmd} ||= $cmd;
+    $args{args} ||= \@args;
+
+    my $obj = get_script( $self->template, $args{cmd},
         vars => {
-            cmd => $cmd,
-            message => $message,
-            callback_query => $callback_query,
-            args => \@callback_args,
+            cmd => $args{cmd},
+            message => $self->message,
+            callback_query => $self->get_callback_query || {},
+            args => $args{args},
         },
     );
 
@@ -373,49 +414,86 @@ sub process_message {
         );
     }
 
+    my %allow_telegram_methods = (
+        sendPhoto => 1,
+        sendAudio => 1,
+        sendDocument => 1,
+        sendVideo => 1,
+        sendAnimation => 1,
+        sendVoice => 1,
+        sendVideoNote => 1,
+        sendMediaGroup => 1,
+        sendLocation => 1,
+        sendVenue => 1,
+        sendContact => 1,
+        sendPoll => 1,
+        sendDice => 1,
+        sendChatAction => 1,
+        sendInvoice => 1,
+        deleteMessage => 1,
+        editMessageText => 1,
+        editMessageCaption => 1,
+        editMessageMedia => 1,
+        editMessageLiveLocation => 1,
+        editMessageReplyMarkup => 1,
+        setMyCommands => 1,
+        answerCallbackQuery => 1,
+        createChatInviteLink => 1,
+        revokeChatInviteLink => 1,
+        unbanChatMember => 1,
+    );
+
+    my @ret;
+
     for my $script ( @{ $obj } ) {
         logger->debug( 'Script:', $script );
         my $method = get_script_method( $script );
 
-        my %allow_telegram_methods = (
-            sendPhoto => 1,
-            sendAudio => 1,
-            sendDocument => 1,
-            sendVideo => 1,
-            sendAnimation => 1,
-            sendVoice => 1,
-            sendVideoNote => 1,
-            sendMediaGroup => 1,
-            sendLocation => 1,
-            sendVenue => 1,
-            sendContact => 1,
-            sendPoll => 1,
-            sendDice => 1,
-            sendChatAction => 1,
-            sendInvoice => 1,
-            deleteMessage => 1,
-            editMessageText => 1,
-            editMessageCaption => 1,
-            editMessageMedia => 1,
-            editMessageLiveLocation => 1,
-            editMessageReplyMarkup => 1,
-            setMyCommands => 1,
-            answerCallbackQuery => 1,
-        );
-
+        my $response;
         if ( $self->can( $method ) ) {
-            $self->$method( %{ $script->{ $method } || {} } );
+            $response = $self->$method( %{ $script->{ $method } || {} } );
         } elsif ( $allow_telegram_methods{ $method } ) {
-            $self->http( $method,
+            $response = $self->http( $method,
                 data => $script->{ $method } || {},
             );
         } else {
             logger->error("Method $method not exists");
             next;
         }
+
+        next unless ref $response;
+
+        if ( $response->header('content-type') =~ /application\/json/i ) {
+            push @ret, decode_json( $response->decoded_content );
+        } else {
+            push @ret, $response->decoded_content;
+        }
     }
 
-    return 1;
+    return \@ret;
+}
+
+sub bot {
+    my $self = shift;
+    my $template_id = shift;
+    my $cmd = shift;
+    my $args = shift;
+
+    my $template = $self->template( $template_id );
+    unless ( $template ) {
+        logger->debug('Template not exists: ', $template_id );
+        return undef;
+    }
+
+    unless ( $self->chat_id ) {
+        logger->debug('`telegram.chat_id` not defined' );
+        return undef;
+    }
+
+    return $self->exec_template(
+        cmd => $cmd,
+        args => $args,
+    );
 }
 
 sub get_script_method {
@@ -431,8 +509,6 @@ sub get_script {
         @_,
     );
 
-    my $template_name = $template->id;
-
     # Hack for working with Cyrillic commands
     _utf8_off( $cmd );
 
@@ -444,7 +520,7 @@ sub get_script {
         },
     );
     unless ( $data ) {
-        logger->warning("Telegram bot: command $cmd not found or empty in '$template_name'");
+        logger->warning("Telegram bot: command $cmd not found or empty in ", $template->id );
         return undef;
     }
 
@@ -453,7 +529,7 @@ sub get_script {
         %args,
     );
     unless ( $ret ) {
-        logger->warning("Telegram bot: data is empty in '$template_name'");
+        logger->warning("Telegram bot: data is empty in ", $template->id );
         return undef;
     }
 
@@ -541,19 +617,29 @@ sub shmRegister {
         @_,
     );
 
-    return 1 if $self->auth( $self->message );
+    if ( $self->auth ) {
+        my $message = $self->message;
+        $message->{text} = $args{callback_data};
+        return $self->process_message(
+            message => $message,
+        );
+    }
 
-    my $username = $self->message->{chat}->{username};
-    my $chat_id = $self->message->{chat}->{id};
+    my $tg_user = $self->tg_user;
+    return undef unless $tg_user;
+
+    my $telegram_user_id = $tg_user->{id};
+    my $username = $tg_user->{username};
 
     my $user = get_service('user')->reg(
-        login => get_shm_login( $chat_id ),
+        login => get_shm_login( $telegram_user_id ),
         password => passgen(),
-        full_name => sprintf("%s %s", $self->message->{chat}->{first_name}, $self->message->{chat}->{last_name} ),
+        full_name => sprintf("%s %s", $tg_user->{first_name}, $tg_user->{last_name} ),
         settings => {
             telegram => {
                 $username ? ( login => $username ) : (),
-                chat_id => $chat_id,
+                chat_id => $self->chat_id,
+                user_id => $telegram_user_id,
             },
         },
         $args{partner_id} ? ( partner_id => $args{partner_id} ) : (),
@@ -572,7 +658,6 @@ sub shmRegister {
             );
         }
     }
-
     return 1;
 }
 
