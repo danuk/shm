@@ -288,6 +288,7 @@ sub allow_event_by_status {
     my $status = shift || return undef;
 
     return 1 if $status eq STATUS_PROGRESS;
+    return 1 if $event eq EVENT_CHANGED;
 
     my %event_by_status = (
         (EVENT_CREATE) => [STATUS_WAIT_FOR_PAY, STATUS_INIT],
@@ -430,7 +431,13 @@ sub set_status_by_event {
     my $self = shift;
     my $event = shift;
 
+    return $self->get_status if $event eq EVENT_CHANGED;
+
     my $status = status_by_event( $event );
+
+    if ( $self->get_status ne $status ) {
+        $self->make_commands_by_event( EVENT_CHANGED );
+    }
 
     return $self->status( $status, event => $event );
 }
@@ -442,6 +449,8 @@ sub status {
         event => undef,
         @_,
     );
+
+    return $self->get_status if $args{event} eq EVENT_CHANGED;
 
     if ( defined $status && $self->get_status ne $status ) {
         logger->info( sprintf('Set new status for service: [usi=%d,si=%d,e=%s,status=%d]',
