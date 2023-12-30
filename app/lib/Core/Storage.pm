@@ -63,6 +63,41 @@ sub add {
     };
 }
 
+# method for templates
+sub save {
+    my $self = shift;
+    my $name = shift;
+    my $data = shift;
+
+    $self->delete( name => $name );
+
+    my $id = $self->SUPER::add(
+        name => $name,
+        data => $data,
+        settings => {
+            ref $data ? ( 'json' => 1 ) : (),
+        },
+    );
+
+    return $data;
+}
+
+# method for templates
+sub load {
+    my $self = shift;
+    my $name = shift;
+
+    return $self->read( name => $name );
+}
+
+# method for templates
+sub del {
+    my $self = shift;
+    my $name = shift;
+
+    return $self->delete( name => $name );
+}
+
 sub delete {
     my $self = shift;
     my %args = (
