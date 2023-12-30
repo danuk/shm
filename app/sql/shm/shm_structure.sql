@@ -302,7 +302,6 @@ CREATE TABLE `identities` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
-DROP TABLE IF EXISTS `templates`;
 CREATE TABLE `templates` (
   `id` char(32) NOT NULL,
   `data` MEDIUMTEXT DEFAULT NULL, -- Up to 16 Mb
