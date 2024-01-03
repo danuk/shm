@@ -675,21 +675,14 @@ sub shmServiceOrder {
         %args,
     );
 
-    # Save changes for next telegram actions
-    $self->commit;
-    $self->user->reload;
-
     if ( $us ) {
-        my $message = $self->message;
+        my $cmd = $us->is_paid ? $args{callback_data} : $args{cb_not_enough_money};
 
-        if ( $args{cb_not_enough_money} && !$us->is_paid ) {
-            $args{callback_data} = $args{cb_not_enough_money};
+        if ( $cmd ) {
+            $self->exec_template(
+                cmd => $cmd,
+            );
         }
-
-        $message->{text} = $args{callback_data};
-        return $self->process_message(
-            message => $message,
-        );
     } else {
         if ( $args{error} ) {
             return $self->sendMessage(
