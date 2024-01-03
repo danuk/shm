@@ -414,35 +414,6 @@ sub exec_template {
         );
     }
 
-    my %allow_telegram_methods = (
-        sendPhoto => 1,
-        sendAudio => 1,
-        sendDocument => 1,
-        sendVideo => 1,
-        sendAnimation => 1,
-        sendVoice => 1,
-        sendVideoNote => 1,
-        sendMediaGroup => 1,
-        sendLocation => 1,
-        sendVenue => 1,
-        sendContact => 1,
-        sendPoll => 1,
-        sendDice => 1,
-        sendChatAction => 1,
-        sendInvoice => 1,
-        deleteMessage => 1,
-        editMessageText => 1,
-        editMessageCaption => 1,
-        editMessageMedia => 1,
-        editMessageLiveLocation => 1,
-        editMessageReplyMarkup => 1,
-        setMyCommands => 1,
-        answerCallbackQuery => 1,
-        createChatInviteLink => 1,
-        revokeChatInviteLink => 1,
-        unbanChatMember => 1,
-    );
-
     my @ret;
 
     for my $script ( @{ $obj } ) {
@@ -452,15 +423,11 @@ sub exec_template {
         my $response;
         if ( $self->can( $method ) ) {
             $response = $self->$method( %{ $script->{ $method } || {} } );
-        } elsif ( $allow_telegram_methods{ $method } ) {
+        } else {
             $response = $self->http( $method,
                 data => $script->{ $method } || {},
             );
-        } else {
-            logger->error("Method $method not exists");
-            next;
         }
-
         next unless ref $response;
 
         if ( $response->header('content-type') =~ /application\/json/i ) {
