@@ -96,6 +96,7 @@ sub template {
     my $template_id = shift;
 
     $self->{template_id} = $template_id if $template_id;
+    return undef unless $self->{template_id};
 
     my $template = get_service('template', _id => $self->{template_id});
     return $template;
