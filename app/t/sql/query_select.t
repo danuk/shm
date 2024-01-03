@@ -30,14 +30,6 @@ is query_select(
     undef,
     vars => \@vars,
     table => 'domains',
-    where => { a => 'b', c => 'd' },
-    in => { date => [ qw/1 22 3/ ] } ,
-), "SELECT * FROM domains WHERE ( ( a = ? AND c = ? AND date IN ( ?, ?, ? ) ) )";
-
-is query_select(
-    undef,
-    vars => \@vars,
-    table => 'domains',
 ), "SELECT * FROM domains";
 
 is query_select(
@@ -87,14 +79,6 @@ is query_select(
 is query_select(
     undef,
     vars => \@vars,
-    table => 'domains',
-    in => { web_service_id => [1,"2'"] },
-    user_id => 1234,
-), "SELECT * FROM domains WHERE ( ( user_id = ? AND web_service_id IN ( ?, ? ) ) )";
-
-is query_select(
-    undef,
-    vars => \@vars,
     table => 'user_services',
     join => { table => 'services', using => ['service_id'] },
 ), "SELECT * FROM user_services JOIN services USING(service_id)";
@@ -139,7 +123,7 @@ is query_select(
     vars => \@vars,
     table => 'test',
     user_id => 123,
-    where => { -or => [ { user_service_id => { in => [1,2] } },
+    where => { -or => [ { user_service_id => { -in => [1,2] } },
         { parent => { '!=' => undef } },
     ]},
 ), "SELECT * FROM test WHERE ( ( user_id = ? AND ( user_service_id IN ( ?, ? ) OR parent IS NOT NULL ) ) )";

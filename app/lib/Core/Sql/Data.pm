@@ -552,7 +552,6 @@ sub query_select {
         calc => 0,
         user_id => undef,
         where => undef,
-        in => undef,
         from_utime => [],   # массив полей которые нужно преобразовать в строку
         range => undef,     # start < field < stop
         limit => undef,
