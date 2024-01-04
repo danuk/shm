@@ -52,6 +52,7 @@ sub parse {
         config => get_service('config')->data_by_name,
         tpl => $self,
         service => get_service('service'),
+        services => get_service('service'),
         storage => get_service('storage'),
         telegram => get_service('Transport::Telegram'),
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),

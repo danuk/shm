@@ -187,6 +187,7 @@ sub list_for_api {
         parent => undef,
         service_id => undef,
         deleted => undef,
+        category => undef,
         @_,
     );
 
@@ -202,6 +203,8 @@ sub list_for_api {
     elsif ( $args{service_id} ) {
         $args{where} = { service_id => $args{service_id} };
     }
+
+    $args{where}{category} = $args{category} if $args{category};
 
     my @arr = $self->SUPER::list_for_api( %args );
     return @arr;
