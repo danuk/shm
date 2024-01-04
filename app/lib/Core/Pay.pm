@@ -109,17 +109,20 @@ sub forecast {
         next if $obj->{next} == -1 && $obj->{expire};
 
         my $us =  get_service('us', _id => $usi );
-        # Check next pays
-        if ( my %wd_next = $us->withdraw->next ) {
-            # Skip if already paid for
-            next if $wd_next{withdraw_date};
-            $obj->{withdraws} = \%wd_next;
-        } elsif ( $obj->{next} ) {
-            if ( my $service_next = get_service('service', _id => $obj->{next} )) {
-                $obj->{withdraws}->{service_id} = $service_next->id;
-                $obj->{withdraws}->{cost} = $service_next->get_cost;
-                $obj->{withdraws}->{months} = $service_next->get_period;
-                $obj->{services}->{name} = $service_next->convert_name( $service_next->get_name, $obj->{settings} );
+
+        if ( $obj->{expire} ) {
+            # Check next pays
+            if ( my %wd_next = $us->withdraw->next ) {
+                # Skip if already paid for
+                next if $wd_next{withdraw_date};
+                $obj->{withdraws} = \%wd_next;
+            } elsif ( $obj->{next} ) {
+                if ( my $service_next = get_service('service', _id => $obj->{next} )) {
+                    $obj->{withdraws}->{service_id} = $service_next->id;
+                    $obj->{withdraws}->{cost} = $service_next->get_cost;
+                    $obj->{withdraws}->{months} = $service_next->get_period;
+                    $obj->{services}->{name} = $service_next->convert_name( $service_next->get_name, $obj->{settings} );
+                }
             }
         }
 
