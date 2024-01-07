@@ -36,7 +36,7 @@ if ( $vars{action} eq 'create' && $vars{amount} ) {
         Content_Type => 'form-data',
         Content => [
             'quickpay-form' => 'shop',
-            receiver => $config->get_data->{yoomoney}->{shop_id},
+            receiver => $config->get_data->{yoomoney}->{account},
             label => $user->id,
             sum => $vars{amount},
         ],
