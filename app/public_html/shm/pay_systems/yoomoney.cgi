@@ -10,13 +10,6 @@ use Digest::SHA qw(sha1_hex);
 use SHM qw(:all);
 our %vars = parse_args();
 
-my $config = get_service('config', _id => 'pay_systems');
-
-unless ( $config ) {
-    print_json( { status => 400, msg => 'Error: config pay_systems->yoomoney->secret not exists' } );
-    exit 0;
-}
-
 if ( $vars{action} eq 'create' && $vars{amount} ) {
     my $user;
     if ( $vars{user_id} ) {
@@ -28,6 +21,12 @@ if ( $vars{action} eq 'create' && $vars{amount} ) {
 
     } else {
         $user = SHM->new();
+    }
+
+    my $config = get_service('config', _id => 'pay_systems');
+    unless ( $config ) {
+        print_json( { status => 400, msg => 'Error: config pay_systems->yoomoney not exists' } );
+        exit 0;
     }
 
     my $lwp = LWP::UserAgent->new(timeout => 10);
@@ -58,7 +57,17 @@ if ( $vars{action} eq 'create' && $vars{amount} ) {
 
 my $user = SHM->new( skip_check_auth => 1 );
 
+my $config = get_service('config', _id => 'pay_systems');
+unless ( $config ) {
+    print_json( { status => 400, msg => 'Error: config pay_systems->yoomoney not exists' } );
+    exit 0;
+}
+
 my $secret = $config->get_data->{yoomoney}->{secret};
+unless ( $secret ) {
+    print_json( { status => 400, msg => 'Error: config pay_systems->yoomoney->secret not exists' } );
+    exit 0;
+}
 
 my $digest = sha1_hex( join('&',
 	@vars{ qw/notification_type operation_id amount currency datetime sender codepro/ },
