@@ -3,11 +3,11 @@
 # https://yoomoney.ru/transfer/myservices/http-notification
 
 use v5.14;
-
+use Core::Base;
+use LWP::UserAgent ();
 use Digest::SHA qw(sha1_hex);
-use SHM qw(:all);
-my $user = SHM->new( skip_check_auth => 1 );
 
+use SHM qw(:all);
 our %vars = parse_args();
 
 my $config = get_service('config', _id => 'pay_systems');
@@ -16,6 +16,47 @@ unless ( $config ) {
     print_json( { status => 400, msg => 'Error: config pay_systems->yoomoney->secret not exists' } );
     exit 0;
 }
+
+if ( $vars{action} eq 'create' && $vars{amount} ) {
+    my $user;
+    if ( $vars{user_id} ) {
+        $user = SHM->new( user_id => $vars{user_id} );
+
+        if ( $vars{message_id} ) {
+            get_service('Transport::Telegram')->deleteMessage( message_id => $vars{message_id} );
+        }
+
+    } else {
+        $user = SHM->new();
+    }
+
+    my $lwp = LWP::UserAgent->new(timeout => 10);
+    my $response = $lwp->post(
+        'https://yoomoney.ru/quickpay/confirm',
+        Content_Type => 'form-data',
+        Content => [
+            'quickpay-form' => 'shop',
+            receiver => $config->get_data->{yoomoney}->{shop_id},
+            label => $user->id,
+            sum => $vars{amount},
+        ],
+    );
+
+    my $location = $response->headers->{location};
+
+    if ( $location ) {
+        print_header(
+            location => $response->headers->{location},
+            status => 301,
+        );
+    } else {
+        print_header( status => 503 );
+        print $response->content;
+    }
+    exit 0;
+}
+
+my $user = SHM->new( skip_check_auth => 1 );
 
 my $secret = $config->get_data->{yoomoney}->{secret};
 
