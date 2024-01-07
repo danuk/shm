@@ -586,10 +586,8 @@ sub shmRegister {
     );
 
     if ( $self->auth ) {
-        my $message = $self->message;
-        $message->{text} = $args{callback_data};
-        return $self->process_message(
-            message => $message,
+        return $self->exec_template(
+            cmd => $args{callback_data},
         );
     }
 
@@ -614,10 +612,8 @@ sub shmRegister {
     );
 
     if ( $user ) {
-        my $message = $self->message;
-        $message->{text} = $args{callback_data};
-        return $self->process_message(
-            message => $message,
+        return $self->exec_template(
+            cmd => $args{callback_data},
         );
     } else {
         if ( $args{error} ) {
@@ -675,10 +671,8 @@ sub shmServiceDelete {
 
     if ( $us ) {
         $us->delete();
-        my $message = $self->message;
-        $message->{text} = $args{callback_data};
-        return $self->process_message(
-            message => $message,
+        return $self->exec_template(
+            cmd => $args{callback_data},
         );
     } else {
         if ( $args{error} ) {
