@@ -315,4 +315,14 @@ sub logger {
     return $log;
 }
 
+sub delete_all {
+    my $self = shift;
+
+    return $self->SUPER::_delete(
+        where => {
+            user_id => $self->user_id,
+        },
+    );
+}
+
 1;

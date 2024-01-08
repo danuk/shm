@@ -105,6 +105,16 @@ sub delete_user_sessions {
     );
 }
 
+sub delete_all {
+    my $self = shift;
+
+    return $self->SUPER::_delete(
+        where => {
+            user_id => $self->SUPER::user_id,
+        },
+    );
+}
+
 sub user_id {
     my $self = shift;
 

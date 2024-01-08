@@ -459,6 +459,34 @@ sub add_bonuses_for_partners {
     }
 }
 
+sub delete {
+    my $self = shift;
+
+    my $report = get_service('report');
+
+    my @usi = $self->services->list_for_api();
+    if ( scalar @usi ) {
+        $report->add_error("Can't delete user with services");
+        return undef;
+    }
+
+    my @objects = qw(
+        UserService
+        withdraw
+        bonus
+        pay
+        profile
+        storage
+        spool
+        SpoolHistory
+        sessions
+    );
+
+    get_service( $_, user_id => $self->id )->delete_all for @objects;
+
+    return $self->SUPER::delete();
+}
+
 sub pays {
     my $self = shift;
     return get_service('pay', user_id => $self->id );
