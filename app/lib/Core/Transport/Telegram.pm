@@ -619,6 +619,7 @@ sub shmRegister {
     );
 
     if ( $user ) {
+        $self->auth();
         return $self->exec_template(
             cmd => $args{callback_data},
         );
