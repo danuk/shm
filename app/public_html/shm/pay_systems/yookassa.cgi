@@ -107,7 +107,7 @@ my $account_id = $config->get_data->{yookassa}->{account_id};
 print_json({ status => 400, msg => 'Error: account_id required. Please set it in config' }) unless $account_id;
 
 if ( $vars{event} ne 'payment.succeeded' ) {
-    print_json( { status => 200, msg => 'unknown event' } );
+    print_json( { status => 200, msg => 'unknown event', event => $vars{event} } );
     exit 0;
 }
 
