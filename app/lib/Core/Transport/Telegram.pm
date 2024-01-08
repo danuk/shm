@@ -218,6 +218,12 @@ sub http {
     );
 
     logger->dump( $response->request );
+
+    unless ( $response->is_success ) {
+        logger->error(
+            $response->decoded_content,
+        );
+    }
     return $response;
 }
 
