@@ -429,7 +429,7 @@ sub exec_template {
                 data => $script->{ $method } || {},
             );
         }
-        next unless ref $response;
+        next unless $response;
 
         if ( $response->header('content-type') =~ /application\/json/i ) {
             push @ret, decode_json( $response->decoded_content );
