@@ -13,6 +13,7 @@ use Core::Utils qw(
     decode_json
     passgen
     _utf8_off
+    blessed
 );
 
 sub init {
@@ -429,7 +430,7 @@ sub exec_template {
                 data => $script->{ $method } || {},
             );
         }
-        next unless $response;
+        next unless blessed $response;
 
         if ( $response->header('content-type') =~ /application\/json/i ) {
             push @ret, decode_json( $response->decoded_content );

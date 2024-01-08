@@ -38,12 +38,13 @@ our @EXPORT_OK = qw(
     hash_merge
     _utf8_on
     _utf8_off
+    blessed
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
 use Time::DaysInMonth;
 use JSON qw//;
-use Scalar::Util qw(looks_like_number);
+use Scalar::Util qw(looks_like_number blessed);
 use File::Temp;
 use Data::Validate::Email qw(is_email);
 use Data::Validate::Domain qw(is_domain);
