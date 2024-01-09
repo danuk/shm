@@ -650,6 +650,7 @@ sub shmServiceOrder {
 
     if ( $us ) {
         my $cmd = $us->is_paid ? $args{callback_data} : $args{cb_not_enough_money};
+        $cmd ||= $args{callback_data};
 
         if ( $cmd ) {
             $self->exec_template(
