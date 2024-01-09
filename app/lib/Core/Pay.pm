@@ -80,6 +80,8 @@ sub forecast {
     );
 
     my @statuses = (
+        STATUS_INIT,
+        STATUS_PROGRESS,
         STATUS_ACTIVE,
         STATUS_WAIT_FOR_PAY,
     );
