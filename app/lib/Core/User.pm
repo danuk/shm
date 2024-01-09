@@ -464,6 +464,16 @@ sub delete {
 
     my $report = get_service('report');
 
+    if ( $self->is_admin ) {
+        $report->add_error("Can't delete admin");
+        return undef;
+    }
+
+    if ( $self->get_balance ) {
+        $report->add_error("Can't delete user with non-zero balance");
+        return undef;
+    }
+
     my @usi = $self->services->list_for_api();
     if ( scalar @usi ) {
         $report->add_error("Can't delete user with services");
