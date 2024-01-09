@@ -106,8 +106,9 @@ sub template {
 sub token {
     my $self = shift;
 
-    my $token = $self->template->get_settings->{telegram}->{token} ||
-        get_service('config')->data_by_name('telegram')->{token};
+    my $token;
+    $token = $self->template->get_settings->{telegram}->{token} if $self->template;
+    $token ||= get_service('config')->data_by_name('telegram')->{token};
 
     logger->error( 'Token not found' ) unless $token;
 
@@ -118,10 +119,10 @@ sub chat_id {
     my $self = shift;
 
     my $chat_id = $self->message->{chat}->{id};
-    $chat_id ||= $self->template->get_settings->{telegram}->{chat_id};
+    $chat_id ||= $self->template->get_settings->{telegram}->{chat_id} if $self->template;
     $chat_id ||= $self->user->get_settings->{telegram}->{chat_id};
 
-    logger->warning('Chat_id not found') unless $chat_id;
+    logger->error('Chat_id not found') unless $chat_id;
 
     return $chat_id;
 }
