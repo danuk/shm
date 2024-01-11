@@ -88,6 +88,11 @@ sub exec {
                 %args,
                 event_name => $event_name,
             );
+            unless ( $args{stdin} ) {
+                return SUCCESS, {
+                    msg => "Template `$args{template_id}` is empty. Nothing to do. Skip it.",
+                };
+            }
         }
         else {
             get_service('report')->add_error("Template not found: $args{template_id}");
@@ -107,7 +112,6 @@ sub exec {
                 data => $args{stdin},
                 %args,
             );
-            $args{stdin} ||= '*STDIN_EMPTY*';
         }
     }
 
