@@ -432,6 +432,7 @@ sub set_status_by_event {
     my $event = shift;
 
     return $self->get_status if $event eq EVENT_CHANGED;
+    return $self->get_status if $event eq EVENT_PROLONGATE;
 
     my $status = status_by_event( $event );
 
@@ -451,6 +452,7 @@ sub status {
     );
 
     return $self->get_status if $args{event} eq EVENT_CHANGED;
+    return $self->get_status if $args{event} eq EVENT_PROLONGATE;
 
     if ( defined $status && $self->get_status ne $status ) {
         logger->info( sprintf('Set new status for service: [usi=%d,si=%d,e=%s,status=%d]',
