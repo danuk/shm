@@ -78,6 +78,18 @@ if ( $vars{action} eq 'create' && $vars{amount} ) {
 
 my $user = SHM->new( skip_check_auth => 1 );
 
+if ( $vars{status_check} ) {
+    $user->payment(
+        user_id => 1,
+        money => 0,
+        pay_system_id => 'freekassa-test',
+        comment => \%vars,
+    );
+    $user->commit;
+    print_json( { status => 200,  msg => 'Test OK' } );
+    exit 0;
+}
+
 my $config = get_service('config', _id => 'pay_systems');
 unless ( $config ) {
     print_json( { status => 400, msg => 'Error: config pay_systems not exists' } );
@@ -98,18 +110,6 @@ if ( $settings->{secret_word_2} ) {
         print_json( { status => 400, msg => 'Error: incorrect signature' } );
         exit 0;
     }
-}
-
-if ( $vars{status_check} ) {
-    $user->payment(
-        user_id => 1,
-        money => 0,
-        pay_system_id => 'freekassa-test',
-        comment => \%vars,
-    );
-    $user->commit;
-    print_json( { status => 200,  msg => 'Test OK' } );
-    exit 0;
 }
 
 my $user_id = $vars{us_user_id};
