@@ -12,7 +12,7 @@ my $user = SHM->new( user_id => 40092 );
 cmp_deeply (
     $user->query_for_filtering(
         user_id => 40092,
-        full_name => "hello",
+        full_name => "%hello%",
         alien => 'strange',
     ),
     {

@@ -36,7 +36,7 @@ sub structure {
             type => 'date',
         },
         status => {
-            type => 'number',
+            type => 'text',
             default => STATUS_INIT,
         },
         next => {

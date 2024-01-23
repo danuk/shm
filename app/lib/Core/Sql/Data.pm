@@ -244,9 +244,12 @@ sub query_for_filtering {
     for my $key ( keys %args ) {
         if ( my $field = $structure{ $key } ) {
             if ( $field->{type} eq 'key' || $field->{type} eq 'number' ) {
+                $args{ $key } =~s/%//g;
                 $where{ $key } = $args{ $key };
-            } else {
-                $where{ $key }{'-like'} = '%'.$args{ $key }.'%';
+            } elsif ( $field->{type} eq 'text' ) {
+                $where{ $key }{'-like'} = $args{ $key };
+            } elsif ( $field->{type} eq 'json' ) {
+                # TODO
             }
         }
     }
