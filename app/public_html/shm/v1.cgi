@@ -76,7 +76,7 @@ my $routes = {
 '/user/service/stop' => {
     POST => {
         controller => 'USObject',
-        method => 'stop',
+        method => 'block',
         required => ['user_service_id'],
     },
 },
@@ -317,7 +317,7 @@ my $routes = {
 '/admin/user/service/stop' => {
     POST => {
         controller => 'USObject',
-        method => 'stop',
+        method => 'block',
         required => ['user_id','user_service_id'],
     },
 },

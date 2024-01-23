@@ -498,7 +498,7 @@ sub make_expired {
     $self->set( expire => now ) if $self->get_expire && $self->get_expire gt now;
 }
 
-sub stop {
+sub block {
     my $self = shift;
 
     return scalar $self->get if $self->get_status ne STATUS_ACTIVE;

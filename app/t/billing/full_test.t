@@ -350,7 +350,7 @@ subtest 'Check create service without money' => sub {
 Test::MockTime::set_fixed_time('2018-01-15T00:00:00Z');
 subtest 'Delete user service' => sub {
 
-    $us->stop();
+    $us->block();
     is( $us->get_status, STATUS_PROGRESS );
 
     $spool->process_all();
