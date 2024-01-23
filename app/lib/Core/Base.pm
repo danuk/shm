@@ -172,6 +172,13 @@ sub set_json {
     return undef;
 }
 
+sub set_settings {
+    my $self = shift;
+    my $new_data = shift;
+
+    return $self->set_json('settings', $new_data );
+}
+
 # Пробуем получить уже загруженные данные
 # Проверяем статус операции и обновляем res
 sub _add_or_set {
