@@ -532,12 +532,6 @@ sub gen_store_pass {
     return $self->settings->{password};
 }
 
-sub list_for_api {
-    my $self = shift;
-
-    return scalar $self->get;
-}
-
 sub list_for_delete {
     my $self = shift;
     my %args = (
