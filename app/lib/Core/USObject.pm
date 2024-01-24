@@ -495,7 +495,23 @@ sub service {
 sub make_expired {
     my $self = shift;
 
-    $self->set( expire => now ) if $self->get_expire && $self->get_expire gt now;
+    $self->set( expire => now ) unless $self->has_expired;
+}
+
+sub finish {
+    my $self = shift;
+    my %args = (
+        money_back => 1,
+        @_,
+    );
+
+    return 0 if $self->get_status ne STATUS_ACTIVE;
+    return 0 if $self->has_expired;
+
+    $self->make_expired;
+    $self->money_back if $args{money_back};
+
+    return 1;
 }
 
 sub block {
