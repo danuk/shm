@@ -27,7 +27,12 @@ sub services {
 
 sub id {
     my $self = shift;
-    my $usi = shift || confess("usi required");
+    my $usi = shift;
+
+    unless ( $usi ) {
+        logger->error("usi required");
+        return undef;
+    }
 
     $self->{res}->{ $usi } = get_service('us', _id => $usi )->get;
 
