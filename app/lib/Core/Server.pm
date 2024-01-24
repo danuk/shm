@@ -47,13 +47,18 @@ sub structure {
 
 sub servers_by_group_id {
     my $self = shift;
-    my %args = (
-        gid => undef,
-        @_,
-    );
+    my @args = @_;
+
+    my $gid;
+
+    if ( scalar @args == 1 ) {
+        $gid = $args[0];
+    } else {
+        $gid = $args[1]; # gid => N
+    }
 
     return $self->_list( where => {
-        server_gid => $args{gid},
+        server_gid => $gid,
         enabled => 1,
     });
 }
