@@ -45,10 +45,13 @@ sub parse {
 
     my $vars = {
         user => get_service('user'),
-        $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : ( us => get_service('us') ),
+        $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : ( us => get_service('UserService') ),
         $args{task} ? ( task => $args{task} ) : (),
-        $args{server_id} ? ( server => get_service('server', _id => $args{server_id}) ) : (),
+        $args{server_id} ? ( server => get_service('server', _id => $args{server_id}) ) : ( server => get_service('server') ),
         servers => get_service('server'),
+        sg => get_service('ServerGroups'),
+        pay => get_service('pay'),
+        wd => get_service('withdraw'),
         config => get_service('config')->data_by_name,
         tpl => $self,
         service => get_service('service'),
