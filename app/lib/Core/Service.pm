@@ -213,11 +213,13 @@ sub list_for_api {
 sub price_list {
     my $self = shift;
     my %args = (
+        filter => {},
         @_,
     );
 
     my $list = $self->list(
         where => {
+            %{ $self->query_for_filtering( %{ $args{filter} || {} } ) },
             $args{category} ? ( category => { -like => $args{category} } ) : (),
             allow_to_order => 1,
             deleted => 0,

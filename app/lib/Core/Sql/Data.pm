@@ -470,6 +470,7 @@ sub list_for_api {
         start => undef,
         stop => undef,
         limit => 25,
+        filter => {},
         @_,
     );
 
