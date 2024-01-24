@@ -127,7 +127,6 @@ my $routes = {
 '/storage/manage' => {
     GET => {
         controller => 'Storage',
-        method => 'list',
     },
 },
 '/storage/manage/:name' => {
@@ -451,6 +450,11 @@ my $routes = {
     DELETE => {
         controller => 'Template',
         required => ['id'],
+    },
+},
+'/admin/storage/manage' => {
+    GET => {
+        controller => 'Storage',
     },
 },
 '/admin/config' => {

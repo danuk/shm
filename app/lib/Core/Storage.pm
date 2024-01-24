@@ -117,26 +117,13 @@ sub delete {
     return undef;
 }
 
-sub list {
+sub list_for_api {
     my $self = shift;
-    my %args = (
-        user_id => undef,
-        @_,
-    );
 
-    my $method = get_service('user')->authenticated->is_admin ? 'SUPER::_list' : 'SUPER::list';
-
-    my @data = $self->$method(
-        $args{user_id} ? ( user_id => $args{user_id} ) : (),
-    );
-
+    my @data = $self->SUPER::list_for_api( @_ );
     delete $_->{data} for @data;
 
-    if ( wantarray ) {
-        return @data;
-    } else {
-       return \@data;
-    }
+    return @data;
 }
 
 sub read {
@@ -157,23 +144,6 @@ sub read {
     if ( $data->{settings}->{json} ) {
         $data->{data} = decode_json( $data->{data} );
     }
-
-    return $data->{data};
-}
-
-sub list_for_api {
-    my $self = shift;
-    my %args = (
-        name => undef,
-        @_,
-    );
-
-    my ( $data ) = $self->_list(
-        where => {
-            user_id => $self->user_id,
-            name => $args{name},
-        },
-    );
 
     return $data->{data};
 }
