@@ -45,7 +45,7 @@ sub parse {
 
     my $vars = {
         user => get_service('user'),
-        $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : ( us => get_service('UserService') ),
+        $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : ( us => get_service('us') ),
         $args{task} ? ( task => $args{task} ) : (),
         $args{server_id} ? ( server => get_service('server', _id => $args{server_id}) ) : ( server => get_service('server') ),
         servers => get_service('server'),
