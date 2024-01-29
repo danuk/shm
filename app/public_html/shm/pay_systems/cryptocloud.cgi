@@ -9,6 +9,7 @@ use Core::Utils qw(
 );
 
 our %vars = parse_args();
+$vars{amount} ||= 100;
 
 if ( $vars{action} eq 'create' && $vars{amount} ) {
     my $user;

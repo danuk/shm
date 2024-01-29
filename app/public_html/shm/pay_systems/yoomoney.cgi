@@ -9,6 +9,7 @@ use Digest::SHA qw(sha1_hex);
 
 use SHM qw(:all);
 our %vars = parse_args();
+$vars{amount} ||= 100;
 
 if ( $vars{action} eq 'create' && $vars{amount} ) {
     my $user;

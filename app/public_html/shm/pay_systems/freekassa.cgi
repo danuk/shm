@@ -14,6 +14,7 @@ use Digest::MD5 qw(md5_hex);
 
 use SHM qw(:all);
 our %vars = parse_args();
+$vars{amount} ||= 100;
 
 for ( keys %vars ) {
     $vars{ lc $_ } = delete $vars{ $_ };
