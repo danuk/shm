@@ -7,6 +7,7 @@ use Template;
 
 use Core::Utils qw(
     encode_json
+    parse_args
 );
 
 sub table { return 'templates' };
@@ -44,6 +45,7 @@ sub parse {
     }
 
     my $vars = {
+        params => sub{ my %args = parse_args(); return \%args },
         user => get_service('user'),
         $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : ( us => get_service('us') ),
         $args{task} ? ( task => $args{task} ) : (),
