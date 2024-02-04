@@ -80,12 +80,13 @@ sub id {
     }
 
     my $key_field = $self->get_table_key;
+    my $id = $self->{ $key_field } || $self->res->{ $key_field };
 
-    unless ( $self->{ $key_field } || $self->res->{ $key_field } ) {
+    unless ( $id ) {
         logger->warning('identifier not defined for class ' . ref $self);
         return undef;
     }
-    return $self->{ $key_field } || $self->res->{ $key_field };
+    return $id;
 }
 
 sub user_id {
