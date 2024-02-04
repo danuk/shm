@@ -189,4 +189,52 @@ sub last {
     return $pay;
 }
 
+sub paysystems {
+    my $self = shift;
+    my %args = (
+        user_id => $self->user_id,
+        paysystem => undef,
+        amount => undef,
+        pp => 0,  #use the proposed payment
+        @_,
+    );
+
+    my $config = get_service("config", _id => 'pay_systems');
+    my $list = $config ? $config->get_data : {};
+
+    my $forecast = $self->forecast( blocked => 1 )->{total};
+
+    my $ts = time;
+    my @ret;
+
+    for my $paysystem ( keys %{ $list } ) {
+        my $p = $list->{ $paysystem };
+
+        if ( $args{paysystem} ) {
+            next if $paysystem ne $args{paysystem};
+        }
+
+        next unless $p->{ show_for_client };
+
+        my $proposed_payment = $args{amount} || $forecast;
+
+        push @ret, {
+            paysystem => $paysystem,
+            weight => $p->{weight} || 0,
+            name => $p->{name} || $paysystem,
+            shm_url => sprintf('/shm/pay_systems/%s.cgi?action=create&user_id=%s&ts=%s&amount=%s',
+                $paysystem,
+                $args{user_id},
+                $ts,
+                ( $args{pp} ? $proposed_payment : '' ),
+            ),
+            user_id => $args{user_id},
+            forecast => $forecast,
+            amount => $proposed_payment || '', # client must specify the amount himself if it is empty
+        };
+    }
+
+    return sort { $b->{weight} <=> $a->{weight} } @ret;
+}
+
 1;
