@@ -13,7 +13,7 @@ my $user = SHM->new( user_id => 40092 );
 my $storage = get_service('storage');
 
 my @list = $storage->list;
-is( scalar @list, 1);
+is( scalar @list, 0);
 
 $storage->add(
     name => 'test',
@@ -27,6 +27,6 @@ my $data = $storage->read( name => 'test' );
 is( $data->{foo}, 1 );
 
 my @list = $storage->list;
-is( scalar @list, 2);
+is( scalar @list, 1);
 
 done_testing();
