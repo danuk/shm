@@ -81,7 +81,7 @@ sub add {
     }
 
     my $usi = $self->SUPER::add( %args );
-    return get_service('us', _id => $usi );
+    return get_service('us', user_id => $self->user_id, _id => $usi );
 }
 
 sub can_delete {
@@ -128,7 +128,7 @@ sub parent {
     my $self = shift;
 
     return undef unless $self->get_parent;
-    return get_service('us', _id => $self->get_parent );
+    return get_service('us', user_id => $self->user_id, _id => $self->get_parent );
 }
 
 sub top_parent {
@@ -169,13 +169,13 @@ sub child_by_category {
     );
     return undef unless $child;
 
-    return get_service('us', _id => $child->{user_service_id} );
+    return get_service('us', user_id => $self->user_id, _id => $child->{user_service_id} );
 }
 
 sub withdraw {
     my $self = shift;
     return undef unless $self->get_withdraw_id;
-    return get_service('wd', _id => $self->get_withdraw_id, usi => $self->id );
+    return get_service('wd', user_id => $self->user_id, _id => $self->get_withdraw_id, usi => $self->id );
 }
 
 *withdraws = \&withdraw; # make an alias for api name compatible
@@ -468,7 +468,7 @@ sub status {
                 }
             }
 
-            get_service('storage')->delete( usi => $self->id );
+            get_service('storage', user_id => $self->user_id )->delete( usi => $self->id );
 
             if ( my $server = $self->server ) {
                 $server->services_count_decrease;

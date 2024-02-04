@@ -88,7 +88,7 @@ sub forecast {
 
     push @statuses, STATUS_BLOCK if $args{blocked};
 
-    my $user_services = get_service('UserService')->list_prepare(
+    my $user_services = get_service('UserService', user_id => $self->user_id )->list_prepare(
         where => {
             auto_bill => \[ '= 1'],
             status => { -in => \@statuses },
@@ -110,7 +110,7 @@ sub forecast {
         my $obj = $user_services->{ $usi };
         next if $obj->{next} == -1 && $obj->{expire};
 
-        my $us =  get_service('us', _id => $usi );
+        my $us =  get_service('us', user_id => $self->user_id, _id => $usi );
 
         if ( $obj->{expire} ) {
             # Check next pays

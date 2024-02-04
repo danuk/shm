@@ -103,4 +103,12 @@ subtest 'Check template trim' => sub {
     is( $data, 'Hello world' );
 };
 
+subtest 'Check forecast via template' => sub {
+    my $t = get_service('template');
+
+    is( $t->parse( data => '{{ user.id( 1 ).pays.forecast.total }}' ), 0 );
+    is( $t->parse( data => '{{ user.id( 40092 ).pays.forecast.total }}' ), 1035.01 );
+    is( $t->parse( data => '{{ user.pays.forecast.total }}' ), 1035.01 );
+};
+
 done_testing();
