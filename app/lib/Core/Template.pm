@@ -8,6 +8,7 @@ use Template;
 use Core::Utils qw(
     encode_json
     parse_args
+    parse_headers
 );
 
 sub table { return 'templates' };
@@ -45,7 +46,6 @@ sub parse {
     }
 
     my $vars = {
-        params => sub{ my %args = parse_args(); return \%args },
         user => get_service('user'),
         $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : ( us => get_service('us') ),
         $args{task} ? ( task => $args{task} ) : (),
@@ -62,6 +62,15 @@ sub parse {
         telegram => get_service('Transport::Telegram'),
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
         %{ $args{vars} },
+        request => sub {
+            my %params = parse_args();
+            my %headers = parse_headers();
+
+            return {
+                params => \%params,
+                headers => \%headers,
+            };
+        },
         ref => sub {
             my $data = shift;
             return ref $data eq 'HASH' ? [ $data ] : ( $data || [] );
@@ -106,7 +115,7 @@ sub parse {
     return $result;
 }
 
-sub list_for_api {
+sub show {
     my $self = shift;
     my %args = (
         id => undef,
@@ -127,6 +136,29 @@ sub list_for_api {
     } else {
         return scalar $template->parse( %args );
     }
+}
+
+sub show_public {
+    my $self = shift;
+    my %args = (
+        id => undef,
+        @_,
+    );
+
+    my $template = $self->id( $args{id} );
+    unless ( $template ) {
+        logger->warning("Template not found");
+        get_service('report')->add_error('Template not found');
+        return undef;
+    }
+
+    unless ( $template->get_settings->{allow_public} ) {
+        logger->warning("Template not public");
+        get_service('report')->add_error('Permission denied: template is not public');
+        return undef;
+    }
+
+    return $self->show( %args, do_not_parse => 0 );
 }
 
 sub add {

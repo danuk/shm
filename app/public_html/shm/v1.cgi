@@ -123,7 +123,35 @@ my $routes = {
 '/template/:id' => {
     GET => {
         controller => 'Template',
-        method => 'list_for_api',
+        method => 'show',
+        required => ['id'],
+        args => {
+            format => 'plain',
+        },
+    },
+    POST => {
+        controller => 'Template',
+        method => 'show',
+        required => ['id'],
+        args => {
+            format => 'plain',
+        },
+    },
+},
+'/public/:id' => {
+    GET => {
+        skip_check_auth => 1,
+        controller => 'Template',
+        method => 'show_public',
+        required => ['id'],
+        args => {
+            format => 'plain',
+        },
+    },
+    POST => {
+        skip_check_auth => 1,
+        controller => 'Template',
+        method => 'show_public',
         required => ['id'],
         args => {
             format => 'plain',
@@ -681,6 +709,15 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     if ( $args{format} eq 'plain' || $args{format} eq 'html' ) {
         print_header( %headers, type => "text/$args{format}" );
+        for ( @data ) {
+            unless ( ref ) {
+                print;
+            } else {
+                print encode_json( $_ );
+            }
+        }
+    } elsif ( $args{format} eq 'json' ) {
+        print_header( %headers, type => "application/json" );
         for ( @data ) {
             unless ( ref ) {
                 print;
