@@ -159,7 +159,11 @@ sub parse_args {
         _utf8_on( $in{ "${method}DATA" } );
         my $json = decode_json( $in{ "${method}DATA" } );
         if ( $json ) {
-            %in = %{ $json };
+            if ( ref $json eq 'HASH' ) {
+                %in = %{ $json };
+            } else {
+                $in{DATA} = $json;
+            }
         }
         delete $in{ "${method}DATA" };
         return %in, get_uri_args();
