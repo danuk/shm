@@ -138,6 +138,8 @@ sub forecast {
         push @forecast_services, {
             name => $obj->{services}->{name},
             usi => $obj->{user_service_id},
+            user_service_id => $obj->{user_service_id},
+            status => $obj->{status},
             expire => $obj->{expire} || '',
             cost => $wd_forecast{cost},
             months => $wd_forecast{months},
