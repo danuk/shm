@@ -110,7 +110,10 @@ sub token {
     $token = $self->template->get_settings->{telegram}->{token} if $self->template;
     $token ||= get_service('config')->data_by_name('telegram')->{token};
 
-    logger->error( 'Token not found' ) unless $token;
+    unless ( $token ) {
+        get_service('report')->add_error('Token not found');
+        logger->error( 'Token not found' );
+    }
 
     return $token;
 }
@@ -122,7 +125,10 @@ sub chat_id {
     $chat_id ||= $self->template->get_settings->{telegram}->{chat_id} if $self->template;
     $chat_id ||= $self->user->get_settings->{telegram}->{chat_id};
 
-    logger->error('Chat_id not found') unless $chat_id;
+    unless ( $chat_id ) {
+        get_service('report')->add_error('Chat_id not found');
+        logger->error('Chat_id not found');
+    }
 
     return $chat_id;
 }
