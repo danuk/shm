@@ -467,6 +467,7 @@ my $routes = {
 '/admin/template/:id' => {
     GET => {
         controller => 'Template',
+        method => 'show',
         required => ['id'],
         args => {
             format => 'plain',
