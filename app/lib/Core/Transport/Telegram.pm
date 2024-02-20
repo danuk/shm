@@ -523,7 +523,7 @@ sub get_data_from_storage {
     my $self = shift;
     my $name = shift;
 
-    my $data = get_service('storage')->list_for_api( name => $name );
+    my $data = get_service('storage')->load( $name );
     unless ( $data ) {
         logger->error('Data with name', $name, 'not found');
         return undef;
