@@ -82,7 +82,7 @@ sub all {
         $args{category} ? ( category => { -like => $args{category} } ) : (),
     );
 
-    my $order = $self->query_for_order( %args );
+    my $order = $self->query_for_order( %{ $args{order} || {} } );
 
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
@@ -431,6 +431,11 @@ sub list_for_api {
     if ( $args{user_id} && $args{admin} ) {
         $args{where}{user_id} = delete $args{user_id};
     }
+
+    $args{order} = {
+        sort_field => 'user_service_id',
+        sort_direction => 'asc',
+    };
 
     my @arr = sort { $a->{user_service_id} <=> $b->{user_service_id} }
         $self->all( %args )->with('settings','services','withdraws')->get;
