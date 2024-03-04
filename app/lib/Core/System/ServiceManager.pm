@@ -53,9 +53,16 @@ sub get_service {
     my $class = get_class_name( $name );
     my $service = $SERVICE_MANAGER->{services}->{ $class };
     unless ( $service ) {
-        eval "require $class; 1" or return undef;
+        eval "require $class; 1";
+        if ( $@ ) {
+            print STDERR "ERROR\tCan't load a service: $class\n";
+            return undef;
+        };
         $service = $class->new();
-        return undef unless $service;
+        unless ( $service ) {
+            print STDERR "ERROR\tCan't create a service: $class\n";
+            return undef;
+        }
         $service->register( $class, %args );
     }
 
