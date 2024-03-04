@@ -112,40 +112,53 @@ sub forecast {
 
         my $us =  get_service('us', user_id => $self->user_id, _id => $usi );
 
+        my %wd = %{ $obj->{withdraws} || {} };
+        my $service_next_name = $obj->{services}->{name};
+
         if ( $obj->{expire} ) {
             # Check next pays
             if ( my %wd_next = $us->withdraw->next ) {
                 # Skip if already paid for
                 next if $wd_next{withdraw_date};
-                $obj->{withdraws} = \%wd_next;
+                %wd = %wd_next;
             } elsif ( $obj->{next} ) {
-                if ( my $service_next = get_service('service', _id => $obj->{next} )) {
-                    $obj->{withdraws}->{service_id} = $service_next->id;
-                    $obj->{withdraws}->{cost} = $service_next->get_cost;
-                    $obj->{withdraws}->{months} = $service_next->get_period;
-                    $obj->{services}->{name} = $service_next->convert_name( $service_next->get_name, $obj->{settings} );
+                if ( my $service_next = get_service('service', _id => $obj->{next} ) ) {
+                    $wd{service_id} = $service_next->id;
+                    $wd{cost} = $service_next->get_cost;
+                    $wd{months} = $service_next->get_period;
+                    $service_next_name = $service_next->convert_name( $service_next->get_name, $obj->{settings} );
                 }
             }
         }
 
-        delete $obj->{withdraws}->{bonus};
+        delete $wd{bonus};
 
         my %wd_forecast = Core::Billing::calc_withdraw(
             $us->billing,
-            %{ $obj->{withdraws} },
+            %wd,
         );
 
         push @forecast_services, {
             name => $obj->{services}->{name},
+            service_id => $obj->{service_id},
             usi => $obj->{user_service_id},
             user_service_id => $obj->{user_service_id},
             status => $obj->{status},
             expire => $obj->{expire} || '',
-            cost => $wd_forecast{cost},
-            months => $wd_forecast{months},
-            qnt => $wd_forecast{qnt},
-            discount => $wd_forecast{discount},
-            total => $wd_forecast{total},
+            cost => $obj->{withdraws}->{cost},
+            months => $obj->{withdraws}->{months},
+            qnt => $obj->{withdraws}->{qnt},
+            discount => $obj->{withdraws}->{discount},
+            total => $obj->{withdraws}->{total},
+            next => {
+                name => $service_next_name,
+                service_id => $wd_forecast{service_id},
+                cost => $wd_forecast{cost},
+                months => $wd_forecast{months},
+                qnt => $wd_forecast{qnt},
+                discount => $wd_forecast{discount},
+                total => $wd_forecast{total},
+            },
         } if $wd_forecast{total};
 
     }
@@ -153,12 +166,14 @@ sub forecast {
     my $user = get_service('user');
 
     my %ret = (
+        balance => $user->get_balance,
+        bonuses => $user->get_bonus,
         total => 0,
         items => \@forecast_services,
     );
 
     for ( @forecast_services ) {
-        $ret{total} += $_->{total};
+        $ret{total} += $_->{next}->{total};
     }
 
     my $total = $user->get_balance + $user->get_bonus;

@@ -591,7 +591,7 @@ sub server {
 sub name {
     my $self = shift;
 
-    my $service = get_service('service', _id => $self->service_id);
+    my $service = get_service('service', _id => $self->get_service_id);
 
     return $service->convert_name(
         $service->name,
