@@ -71,7 +71,6 @@ sub all {
         parent => undef,
         category => undef,
         where => undef,
-        order => undef,
         @_,
     );
 
@@ -82,7 +81,7 @@ sub all {
         $args{category} ? ( category => { -like => $args{category} } ) : (),
     );
 
-    my $order = $self->query_for_order( %{ $args{order} || {} } );
+    my $order = $self->query_for_order( %args );
 
     my @vars;
     my $query = $self->query_select(    vars => \@vars,
@@ -432,13 +431,16 @@ sub list_for_api {
         $args{where}{user_id} = delete $args{user_id};
     }
 
-    $args{order} = {
-        sort_field => 'user_service_id',
-        sort_direction => 'asc',
-    };
+    my @ret = $self->all( %args )->with('settings','services','withdraws')->get;
 
-    my @arr = sort { $a->{user_service_id} <=> $b->{user_service_id} }
-        $self->all( %args )->with('settings','services','withdraws')->get;
+    # sorting the results according to the query
+    my ( $field, $dir ) = @{ $self->query_for_order( %args ) };
+    my @arr;
+    if ( $dir eq 'desc' ) {
+        @arr = sort { $b->{ $field } <=> $a->{ $field } } @ret;
+    } else {
+        @arr = sort { $a->{ $field } <=> $b->{ $field } } @ret;
+    }
 
     return wantarray ? @arr : \@arr;
 }
