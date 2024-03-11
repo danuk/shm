@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REPO="cr.yandex/crp53phlntopuut9qqq2"
+REPO="danuk"
 
 function build_and_push {
     TAGS=("$REPO/shm-$1:latest")
