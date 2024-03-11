@@ -48,6 +48,7 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
     my $config = $config->id( '_shm' );
     my $cur_version = $config->get_data->{version};
     say "Current version: $cur_version";
+    $cur_version =~s/-.+$//;
 
     my @migrations = `ls`;
     for ( @migrations ) {
