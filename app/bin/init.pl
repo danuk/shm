@@ -10,10 +10,15 @@ use version;
 my $sql = Core::Sql::Data->new;
 
 my $version;
+my $version_prefix;
 if ( -f "$ENV{SHM_ROOT_DIR}/version" ) {
     $version = read_file( "$ENV{SHM_ROOT_DIR}/version" );
     chomp $version;
     say "SHM version: $version";
+    if ( $version =~/(-.+)$/ ) {
+        $version_prefix = $1;
+        $version =~s/-.+$//;
+    }
 }
 
 my $config = get_service('config');
@@ -34,7 +39,7 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
         print "Loading data... ";
         import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_data.sql" );
     }
-    $config->id( '_shm' )->set( value => { version => $version } ) if $version;
+    $config->id( '_shm' )->set( value => { version => $version . $version_prefix } ) if $version;
     say "done";
 } elsif ( $version ) {
     # Start migrations
@@ -62,12 +67,12 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
         } else {
             eval `cat $nv`;
         }
-        $config->set( value => { version => $nv } );
+        $config->set( value => { version => $nv . $version_prefix } );
         $dbh->commit();
         say "done"
     }
 
-    $config->set( value => { version => $version } );
+    $config->set( value => { version => $version . $version_prefix } );
 }
 
 $dbh->commit();

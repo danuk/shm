@@ -27,6 +27,6 @@ build_and_push api
 
 # Build Core
 [ -z "$VERSION" ] && VERSION=$(git describe --abbrev=0 --tags)
-echo -n "$VERSION" > app/version
+echo -n "${VERSION}-ee" > app/version
 build_and_push core
 
