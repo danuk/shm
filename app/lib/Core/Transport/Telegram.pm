@@ -170,7 +170,8 @@ sub uploadDocument {
         'sendDocument',
         content_type => 'form-data',
         data => {
-            document => [ undef, $args{filename}, Content => $args{data} ],
+            document => [ undef, delete $args{filename}, Content => delete $args{data} ],
+            %args,
         }
     );
 }
@@ -540,12 +541,13 @@ sub uploadDocumentFromStorage {
         @_,
     );
 
-    my $data = $self->get_data_from_storage( $args{name} );
+    my $data = $self->get_data_from_storage( delete $args{name} );
     return undef unless $data;
 
     return $self->uploadDocument(
         data => $data,
-        filename => $args{filename},
+        filename => delete $args{filename},
+        %args,
     );
 }
 
@@ -557,15 +559,16 @@ sub uploadPhotoFromStorage {
         @_,
     );
 
-    my $data = $self->get_data_from_storage( $args{name} );
+    my $data = $self->get_data_from_storage( delete $args{name} );
     return undef unless $data;
 
-    if ( $args{format} eq 'qr_code_png' ) {
+    if ( delete $args{format} eq 'qr_code_png' ) {
         $data = qx(echo "$data" | qrencode -t PNG -o -);
     }
 
     return $self->uploadPhoto(
         data => $data,
+        %args,
     );
 }
 
@@ -578,16 +581,17 @@ sub printQrCode {
         @_,
     );
 
-    my $data = $args{data};
+    my $data = delete $args{data};
     return undef unless $data;
 
-    if ( $args{format} eq 'qr_code_png' ) {
+    if ( delete $args{format} eq 'qr_code_png' ) {
         $data = qx(echo "$data" | qrencode -t PNG -o -);
     }
 
     return $self->uploadPhoto(
         data => $data,
-        %{ $args{parameters} || {} },
+        %{ delete $args{parameters} || {} },
+        %args,
     );
 }
 
