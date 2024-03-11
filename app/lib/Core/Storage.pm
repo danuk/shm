@@ -151,7 +151,7 @@ sub read {
 sub download {
     my $self = shift;
     my %args = (
-        name => undef,
+        name => 'file.bin',
         @_,
     );
 
@@ -160,7 +160,7 @@ sub download {
         'Content-Disposition' => 'attachment; filename=' . $args{name},
     );
 
-    return $self->list_for_api( %args );
+    return $self->read( %args, decode_json => 0 );
 }
 
 1;
