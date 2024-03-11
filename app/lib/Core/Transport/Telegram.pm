@@ -536,7 +536,10 @@ sub get_data_from_storage {
     my $self = shift;
     my $name = shift;
 
-    my $data = get_service('storage')->load( $name );
+    my $data = get_service('storage')->read(
+        name => $name,
+        decode_json => 0,
+    );
     unless ( $data ) {
         logger->error('Data with name', $name, 'not found');
         return undef;
