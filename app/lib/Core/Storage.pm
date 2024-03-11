@@ -130,6 +130,7 @@ sub read {
     my $self = shift;
     my %args = (
         name => undef,
+        decode_json => 1,
         @_,
     );
 
@@ -141,7 +142,7 @@ sub read {
 
     return undef unless $data;
 
-    if ( $data->{settings}->{json} ) {
+    if ( $args{decode_json} && $data->{settings}->{json} ) {
         $data->{data} = decode_json( $data->{data} );
     }
 
