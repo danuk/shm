@@ -142,6 +142,18 @@ sub message {
     return $self->get_message || {};
 }
 
+sub parse_cmd {
+    return split( /\s+/, shift );
+}
+
+sub get_cmd_args {
+    my ( $cmd, @args ) = parse_cmd( shift );
+    return (
+        cmd => $cmd,
+        args => \@args,
+    );
+}
+
 sub cmd {
     my $self = shift;
 
@@ -149,10 +161,10 @@ sub cmd {
 
     if ( my $message = $self->get_message ) {
         $cmd = $message->{text};
-        ( undef, @args ) = split( /\s+/, $cmd );
+        ( undef, @args ) = parse_cmd( $cmd );
         $cmd =~s/^\/(\w+)\s+.*$/\/$1/; # remove args from cmd if it starts from /
     } elsif ( my $cb = $self->get_callback_query ) {
-        ( $cmd, @args ) = split( /\s+/, $cb->{data} );
+        ( $cmd, @args ) = parse_cmd( $cb->{data} );
     }
 
     return $cmd, @args;
@@ -609,7 +621,7 @@ sub shmRegister {
 
     if ( $self->auth ) {
         return $self->exec_template(
-            cmd => $args{callback_data},
+            get_cmd_args( $args{callback_data} ),
         );
     }
 
@@ -636,7 +648,7 @@ sub shmRegister {
     if ( $user ) {
         $self->auth();
         return $self->exec_template(
-            cmd => $args{callback_data},
+            get_cmd_args( $args{callback_data} ),
         );
     } else {
         if ( $args{error} ) {
@@ -668,7 +680,7 @@ sub shmServiceOrder {
 
         if ( $cmd ) {
             $self->exec_template(
-                cmd => $cmd,
+                get_cmd_args( $cmd ),
             );
         }
     } else {
@@ -696,7 +708,7 @@ sub shmServiceDelete {
     if ( $us ) {
         $us->delete();
         return $self->exec_template(
-            cmd => $args{callback_data},
+            get_cmd_args( $args{callback_data} ),
         );
     } else {
         if ( $args{error} ) {
