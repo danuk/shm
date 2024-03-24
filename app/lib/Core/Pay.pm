@@ -216,16 +216,21 @@ sub paysystems {
         @_,
     );
 
+    my @ps;
+
     my $config = get_service("config", _id => 'pay_systems');
-    my $list = $config ? $config->get_data : {};
+    my %list = %{ $config ? $config->get_data : {} };
+    push @ps, { $_ => $list{ $_ } } for keys %list;
 
     my $forecast = $self->forecast( blocked => 1 )->{total};
 
     my $ts = time;
     my @ret;
 
-    for my $paysystem ( keys %{ $list } ) {
-        my $p = $list->{ $paysystem };
+    my $user = get_service('user', _id => $args{user_id} );
+
+    for ( @ps ) {
+        my ( $paysystem, $p ) = each( %$_ );
 
         if ( $args{paysystem} ) {
             next if $paysystem ne $args{paysystem};
@@ -239,13 +244,15 @@ sub paysystems {
             paysystem => $paysystem,
             weight => $p->{weight} || 0,
             name => $p->{name} || $paysystem,
-            shm_url => sprintf('/shm/pay_systems/%s.cgi?action=create&user_id=%s&ts=%s&amount=%s',
+            shm_url => sprintf('/shm/pay_systems/%s.cgi?action=%s&user_id=%s&ts=%s&amount=%s',
                 $paysystem,
-                $args{user_id},
+                $p->{action} ? $p->{action} : 'create',
+                $user->id,
                 $ts,
                 ( $args{pp} ? $proposed_payment : '' ),
             ),
-            user_id => $args{user_id},
+            recurring => $p->{recurring} ? 1 : 0,
+            user_id => $user->id,
             forecast => $forecast,
             amount => $proposed_payment || '', # client must specify the amount himself if it is empty
         };
