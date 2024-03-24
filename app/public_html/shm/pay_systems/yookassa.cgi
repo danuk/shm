@@ -15,7 +15,7 @@ use Core::Utils qw(
 use SHM qw(:all);
 our %vars = parse_args();
 
-if ( $vars{action} eq 'create' ) {
+if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
     my $user;
     if ( $vars{user_id} ) {
         $user = SHM->new( user_id => $vars{user_id} );
@@ -52,6 +52,10 @@ if ( $vars{action} eq 'create' ) {
     $vars{amount} ||= 100;
 
     my $payment_method_id;
+
+    if ( $vars{action} eq 'payment' ) {
+        $payment_method_id = $user->get_settings->{pay_systems}->{yookassa}->{payment_id};
+    }
 
     my $receipt => {
         customer => {
@@ -108,7 +112,26 @@ if ( $vars{action} eq 'create' ) {
                 status => 301,
             );
         } else {
-            print_json( { status => 200, msg => "Payment successful" } );
+            if ( $response_data->{status} eq 'succeeded' ) {
+                print_json( { status => 200, msg => "Payment successful" } );
+            } else {
+                my %i16n_ru = (
+                    insufficient_funds => 'недостаточно средств',
+                    permission_revoked => 'автосписания запрещены',
+                );
+
+                my $reason = $response_data->{cancellation_details}->{reason};
+
+                if ( $reason ) {
+                    print_json({
+                        status => 406,
+                        msg => $reason,
+                        exists $i16n_ru{ $reason } ? ( msg_ru => $i16n_ru{ $reason } ) : (),
+                    });
+                } else {
+                    print_json( { status => 406 } );
+                }
+            }
         }
     } else {
         print_header( status => 402 );
@@ -160,6 +183,17 @@ unless ( $user = $user->id( $user_id ) ) {
 unless ( $user->lock( timeout => 10 )) {
     print_json( { status => 408, msg => "The service is locked. Try again later" } );
     exit 0;
+}
+
+if ( $vars{object}->{payment_method}->{saved} ) {
+    $user->set_settings({
+        pay_systems => {
+            yookassa => {
+                name => $vars{object}->{payment_method}->{title},
+                payment_id => $vars{object}->{payment_method}->{id},
+            },
+        },
+    });
 }
 
 $user->payment(

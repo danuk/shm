@@ -229,6 +229,16 @@ sub paysystems {
 
     my $user = get_service('user', _id => $args{user_id} );
 
+    # Add user pay_systems (recurring payments)
+    my %user_paysystem = %{ $user->get_settings->{pay_systems} || {} };
+    for ( keys %user_paysystem ) {
+        $user_paysystem{ $_ }->{show_for_client} = 1;
+        $user_paysystem{ $_ }->{weight} = 100;
+        $user_paysystem{ $_ }->{action} = 'payment';
+        $user_paysystem{ $_ }->{recurring} = 1;
+        push @ps, { $_ => $user_paysystem{ $_ } };
+    }
+
     for ( @ps ) {
         my ( $paysystem, $p ) = each( %$_ );
 

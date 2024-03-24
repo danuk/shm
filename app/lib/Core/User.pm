@@ -573,6 +573,14 @@ sub referrals_count {
     return scalar @count;
 }
 
+sub autopayment_delete {
+    my $self = shift;
+
+    $self->set_settings({
+        pay_systems => undef,
+    });
+
+}
 
 1;
 

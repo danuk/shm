@@ -85,6 +85,12 @@ my $routes = {
         controller => 'Withdraw',
     },
 },
+'/user/autopayment' => {
+    DELETE => {
+        controller => 'User',
+        method => 'autopayment_delete',
+    },
+},
 '/user/pay' => {
     GET => {
         controller => 'Pay',
