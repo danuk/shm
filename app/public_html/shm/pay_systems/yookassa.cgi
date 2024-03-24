@@ -51,33 +51,38 @@ if ( $vars{action} eq 'create' ) {
 
     $vars{amount} ||= 100;
 
+    my $receipt = {
+        customer => {
+            email => $customer_email,
+        },
+        items => [
+            {
+                description => $description,
+                quantity => 1,
+                amount => {
+                    value => $vars{amount},
+                    currency => "RUB",
+                },
+                vat_code => "1",
+            },
+        ],
+    };
+
     my $content = encode_json({
+        metadata => {
+            user_id => $user->id,
+        },
         amount => {
             value => $vars{amount},
             currency => "RUB",
         },
+        capture => "true",
+        description => sprintf("%s [%d]", $description, $user->id ),
         confirmation => {
             type => "redirect",
             return_url => $return_url || 'https://www.example.com',
         },
-        capture => "true",
-        description => $user->id,
-        receipt => {
-            customer => {
-                email => $customer_email,
-            },
-            items => [
-                {
-                    description => $description,
-                    quantity => 1,
-                    amount => {
-                        value => $vars{amount},
-                        currency => "RUB",
-                    },
-                    vat_code => "1",
-                },
-            ],
-        },
+        receipt => $receipt,
     });
 
     my $browser = LWP::UserAgent->new;
@@ -93,18 +98,27 @@ if ( $vars{action} eq 'create' ) {
 
     if ( $response->is_success ) {
         my $response_data = decode_json( $response->decoded_content );
-        print_header(
-            location => $response_data->{confirmation}->{confirmation_url},
-            status => 301,
-        );
+        if ( my $location = $response_data->{confirmation}->{confirmation_url} ) {
+            print_header(
+                location => $location,
+                status => 301,
+            );
+        } else {
+            print_json( { status => 200, msg => "Payment successful" } );
+        }
     } else {
-        print_header( status => 503 );
+        print_header( status => 402 );
         print $response->content;
     }
     exit 0;
 }
 
 my $user = SHM->new( skip_check_auth => 1 );
+
+unless ( $vars{object} ) {
+    print_json({ status => 400, msg => 'Error: bad request' });
+    exit;
+}
 
 my $config = get_service('config', _id => 'pay_systems');
 my $account_id = $config->get_data->{yookassa}->{account_id};
@@ -126,7 +140,7 @@ if ( $vars{object}->{status} ne 'succeeded' ||
     exit 0;
 }
 
-my $user_id = $vars{object}->{description};
+my $user_id = $vars{object}->{metadata}->{user_id};
 my $amount = $vars{object}->{amount}->{value};
 
 unless ( $user_id ) {
