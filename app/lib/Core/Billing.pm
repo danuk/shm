@@ -205,7 +205,7 @@ sub calc_withdraw {
     $wd{discount}||= get_service_discount( %wd );
     $wd{discount} = 0 if $service{no_discount};
 
-    $wd{total} = ( $wd{total} - $wd{total} * $wd{discount} / 100 ) * $wd{qnt};
+    $wd{total} = sprintf("%.2f", ( $wd{total} - $wd{total} * $wd{discount} / 100 ) * $wd{qnt} );
 
     $wd{total} -= $wd{bonus};
 
