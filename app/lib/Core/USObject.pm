@@ -606,4 +606,24 @@ sub with_name {
     return $self;
 }
 
+sub api_set {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    my %allowed_fields = (
+        admin => 1,
+        auto_bill => 1,
+        next => 1,
+        settings => 1,
+    );
+
+    for ( keys %args ) {
+        delete $args{ $_ } unless $allowed_fields{ $_ };
+    }
+
+    return $self->SUPER::api_set( %args );
+}
+
 1;
