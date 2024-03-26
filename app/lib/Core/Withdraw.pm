@@ -188,4 +188,51 @@ sub delete_unpaid {
     );
 }
 
+sub api_set {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    my $us = get_service('us', _id => $args{user_service_id} );
+    unless ( $us ) {
+        get_service('report')->add_error( "User service not exists" );
+        return \%args;
+    }
+
+    my $service = get_service('service', _id => $args{service_id} );
+    unless ( $service ) {
+        get_service('report')->add_error( "Service not exists" );
+        return \%args;
+    }
+
+    if ( $us->get_withdraw_id != $self->id && $us->get_expire ) {
+        get_service('report')->add_error( "This item cannot be edited because it is from the past" );
+        return \%args;
+    }
+
+    use Core::Billing;
+    my %wd = $self->get;
+    my %new_wd = calc_withdraw( $us->billing, $service->get, %wd, %args );
+
+    if ( $us->get_withdraw_id == $self->id ) {
+        $us->set( expire => $new_wd{end_date} );
+    }
+
+    if ( $wd{total} != $new_wd{total} ) {
+        $self->user->set_balance(
+            balance => $wd{total} - $new_wd{total},
+        );
+    }
+
+    if ( $wd{bonus} != $new_wd{bonus} ) {
+        $self->user->set_bonus(
+            bonus => $wd{bonus} - $new_wd{bonus},
+            comment => { comment => sprintf("changed withdraw %d by admin", $self->id) },
+        );
+    }
+
+    return $self->SUPER::api_set( %new_wd );
+}
+
 1;
