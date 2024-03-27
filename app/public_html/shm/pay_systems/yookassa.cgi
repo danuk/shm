@@ -58,7 +58,7 @@ if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
         $payment_method_id = $user->get_settings->{pay_systems}->{yookassa}->{payment_id};
     }
 
-    my $receipt => {
+    my $receipt = {
         customer => {
             email => $customer_email,
         },
