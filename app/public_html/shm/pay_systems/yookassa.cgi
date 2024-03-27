@@ -38,6 +38,7 @@ if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
     my $return_url =     $config->get_data->{yookassa}->{return_url};
     my $description =    $config->get_data->{yookassa}->{description};
     my $customer_email = $config->get_data->{yookassa}->{customer_email};
+    my $save_payments  = $config->get_data->{yookassa}->{save_payments};
 
     $description ||= $vars{description};
 
@@ -84,7 +85,7 @@ if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
         $payment_method_id ? (
             payment_method_id => $payment_method_id,
         ) : (
-            save_payment_method => "true",
+            $save_payments ? ( save_payment_method => "true" ) : (),
             confirmation => {
                 type => "redirect",
                 return_url => $return_url || 'https://www.example.com',
