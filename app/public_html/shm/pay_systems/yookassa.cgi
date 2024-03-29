@@ -76,12 +76,15 @@ if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
     };
 
     my $content = encode_json({
+        metadata => {
+            user_id => $user->id,
+        },
         amount => {
             value => $vars{amount},
             currency => "RUB",
         },
         capture => "true",
-        description => $user->id,
+        description => $description,
         $payment_method_id ? (
             payment_method_id => $payment_method_id,
         ) : (
@@ -168,7 +171,7 @@ if ( $vars{object}->{status} ne 'succeeded' ||
     exit 0;
 }
 
-my $user_id = $vars{object}->{description};
+my $user_id = $vars{object}->{metadata}->{user_id};
 my $amount = $vars{object}->{amount}->{value};
 
 unless ( $user_id ) {
