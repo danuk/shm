@@ -573,6 +573,17 @@ sub referrals_count {
     return scalar @count;
 }
 
+sub switch {
+    my $self = shift;
+    my $user_id = shift;
+
+    if ( my $user = $self->id( $user_id ) ) {
+        switch_user( $user->id );
+        return $user;
+    }
+    return undef;
+}
+
 sub autopayment_delete {
     my $self = shift;
 
