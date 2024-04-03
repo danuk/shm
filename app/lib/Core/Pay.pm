@@ -163,7 +163,7 @@ sub forecast {
 
     }
 
-    my $user = get_service('user');
+    my $user = $self->user;
 
     my %ret = (
         balance => $user->get_balance,
