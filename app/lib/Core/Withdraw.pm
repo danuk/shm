@@ -3,6 +3,7 @@ package Core::Withdraw;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Core::Const;
 
 sub table { return 'withdraw_history' };
 
@@ -215,8 +216,14 @@ sub api_set {
     my %wd = $self->get;
     my %new_wd = calc_withdraw( $us->billing, $service->get, %wd, %args );
 
-    if ( $us->get_withdraw_id == $self->id ) {
+    # Always forbid set/change withdraw_date because of it makes by spool
+    delete $new_wd{withdraw_date};
+
+    if ( $us->get_withdraw_id == $self->id && $us->get_status eq STATUS_ACTIVE ) {
         $us->set( expire => $new_wd{end_date} );
+    } else {
+        # Forbid set end_date for non active user service
+        delete $new_wd{end_date};
     }
 
     if ( $wd{total} != $new_wd{total} ) {
