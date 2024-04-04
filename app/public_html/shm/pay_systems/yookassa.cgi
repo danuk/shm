@@ -84,7 +84,7 @@ if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
             currency => "RUB",
         },
         capture => "true",
-        description => $description,
+        description => sprintf("%s [%d]", $description, $user->id ),
         $payment_method_id ? (
             payment_method_id => $payment_method_id,
         ) : (
