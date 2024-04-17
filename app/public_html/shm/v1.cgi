@@ -556,6 +556,9 @@ my $routes = {
         skip_check_auth => 1,
         controller => 'Transport::Telegram',
         method => 'process_message',
+        args => {
+            format => 'json',
+        },
     },
 },
 '/telegram/bot/:template' => {
@@ -564,6 +567,9 @@ my $routes = {
         controller => 'Transport::Telegram',
         method => 'process_message',
         required => ['template'],
+        args => {
+            format => 'json',
+        },
     },
 },
 

@@ -216,7 +216,7 @@ sub http {
         @_,
     );
 
-    my $method = $args{method};
+    my $method = delete $args{method};
     my $content;
 
     if ( $args{content_type} eq 'form-data' ) {
@@ -225,10 +225,21 @@ sub http {
             %{ $args{data} },
         ];
     } else {
-        $content = encode_json({
-            chat_id => $self->chat_id,
-            %{ $args{data} },
-        });
+        if ( $self->is_allow_direct_reply ) {
+            # Send answer directly
+            my $response = {
+                method => $url,
+                chat_id => $self->chat_id,
+                %{ $args{data} },
+            };
+            logger->dump('Telegram direct answer:', $response );
+            return $response;
+        } else {
+            $content = encode_json({
+                chat_id => $self->chat_id,
+                %{ $args{data} },
+            });
+        }
     }
 
     my $response = $self->{lwp}->$method(
@@ -350,6 +361,21 @@ sub tg_user {
     return $user;
 }
 
+sub deny_direct_reply {
+    my $self = shift;
+    $self->{deny_direct_reply} = 1;
+}
+
+sub is_allow_direct_reply {
+    my $self = shift;
+
+    unless ( $self->{deny_direct_reply} ) {
+        $self->deny_direct_reply;
+        return 1;
+    }
+    return 0;
+}
+
 sub process_message {
     my $self = shift;
     my %args = (
@@ -409,11 +435,12 @@ sub process_message {
         return 1;
     }
 
-    $self->exec_template(
+    my $response = $self->exec_template(
         cmd => $cmd,
     );
 
-    return 1;
+    # Reply directly for only first response
+    return $response->[0];
 }
 
 sub exec_template {
@@ -457,12 +484,15 @@ sub exec_template {
                 data => $script->{ $method } || {},
             );
         }
-        next unless blessed $response;
 
-        if ( $response->header('content-type') =~ /application\/json/i ) {
-            push @ret, decode_json( $response->decoded_content );
+        if ( blessed $response ) {
+            if ( $response->header('content-type') =~ /application\/json/i ) {
+                push @ret, decode_json( $response->decoded_content );
+            } else {
+                push @ret, $response->decoded_content;
+            }
         } else {
-            push @ret, $response->decoded_content;
+            push @ret, $response;
         }
     }
 
@@ -485,6 +515,8 @@ sub bot {
         logger->debug('`telegram.chat_id` not defined' );
         return undef;
     }
+
+    $self->deny_direct_reply();
 
     return $self->exec_template(
         cmd => $cmd,
