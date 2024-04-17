@@ -439,7 +439,16 @@ sub process_message {
     );
 
     # Reply directly for only first response
-    return $response->[0];
+    return get_first_object( $response );
+}
+
+sub get_first_object {
+    my $obj = shift;
+
+    if ( ref $obj eq 'ARRAY' ) {
+        return get_first_object( $obj->[0] );
+    }
+    return $obj;
 }
 
 sub exec_template {
