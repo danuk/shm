@@ -70,6 +70,8 @@ sub send {
         }
     }
 
+    $self->deny_direct_reply();
+
     my $response = $self->sendMessage(
         text => $message,
     );
