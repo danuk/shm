@@ -401,13 +401,12 @@ sub process_message {
     my $user = $self->auth();
 
     if ( my $data = $args{pre_checkout_query} ) {
-        $self->http( 'answerPreCheckoutQuery',
+        return $self->http( 'answerPreCheckoutQuery',
             data => {
                 pre_checkout_query_id => $data->{id},
                 ok => $user ? 1 : 0,
             },
         );
-        return 1;
     }
 
     return undef unless $self->token;
@@ -432,7 +431,7 @@ sub process_message {
             pay_system_id => 'telegram_bot',
             comment => $payment,
         );
-        return 1;
+        return {};
     }
 
     my $response = $self->exec_template(
@@ -689,7 +688,7 @@ sub shmRegister {
             );
         }
     }
-    return 1;
+    return {};
 }
 
 sub shmServiceOrder {
@@ -706,12 +705,14 @@ sub shmServiceOrder {
         %args,
     );
 
+    my $response;
+
     if ( $us ) {
         my $cmd = $us->is_paid ? $args{callback_data} : $args{cb_not_enough_money};
         $cmd ||= $args{callback_data};
 
         if ( $cmd ) {
-            $self->exec_template(
+            $response = $self->exec_template(
                 get_cmd_args( $cmd ),
             );
         }
@@ -723,7 +724,7 @@ sub shmServiceOrder {
         }
     }
 
-    return 1;
+    return $response;
 }
 
 sub shmServiceDelete {
@@ -750,7 +751,7 @@ sub shmServiceDelete {
         }
     }
 
-    return 1;
+    return {};
 }
 
 1;
