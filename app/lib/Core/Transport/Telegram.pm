@@ -24,6 +24,8 @@ sub init {
 
     $self->{server} = 'https://api.telegram.org';
     $self->{lwp} = LWP::UserAgent->new(timeout => 10);
+    $self->{webhook} = 0;
+    $self->{deny_answer_direct} = 0;
 
     return $self;
 }
@@ -69,8 +71,6 @@ sub send {
             error => "telegram token not found. Please set it into config.telegram.token or template.settings.telegram.token",
         }
     }
-
-    $self->deny_direct_reply();
 
     my $response = $self->sendMessage(
         text => $message,
@@ -227,7 +227,7 @@ sub http {
             %{ $args{data} },
         ];
     } else {
-        if ( $self->is_allow_direct_reply ) {
+        if ( $self->{webhook} && !$self->{deny_answer_direct} ) {
             # Send answer directly
             my $response = {
                 method => $url,
@@ -363,27 +363,14 @@ sub tg_user {
     return $user;
 }
 
-sub deny_direct_reply {
-    my $self = shift;
-    $self->{deny_direct_reply} = 1;
-}
-
-sub is_allow_direct_reply {
-    my $self = shift;
-
-    unless ( $self->{deny_direct_reply} ) {
-        $self->deny_direct_reply;
-        return 1;
-    }
-    return 0;
-}
-
 sub process_message {
     my $self = shift;
     my %args = (
         template => 'telegram_bot',
         @_,
     );
+
+    $self->{webhook} = 1;
 
     logger->debug('REQUEST:', \%args );
     $self->res( \%args );
@@ -441,14 +428,14 @@ sub process_message {
     );
 
     # Reply directly for only first response
-    return get_first_object( $response );
+    return get_last_object( $response );
 }
 
-sub get_first_object {
+sub get_last_object {
     my $obj = shift;
 
     if ( ref $obj eq 'ARRAY' ) {
-        return get_first_object( $obj->[0] );
+        return get_last_object( $obj->[-1] );
     }
     return $obj;
 }
@@ -480,11 +467,14 @@ sub exec_template {
         );
     }
 
-    my @ret;
+    $self->{deny_answer_direct} += scalar @{ $obj };
 
+    my @ret;
     for my $script ( @{ $obj } ) {
         logger->debug( 'Script:', $script );
         my $method = get_script_method( $script );
+
+        $self->{deny_answer_direct}--;
 
         my $response;
         if ( $self->can( $method ) ) {
@@ -525,8 +515,6 @@ sub bot {
         logger->debug('`telegram.chat_id` not defined' );
         return undef;
     }
-
-    $self->deny_direct_reply();
 
     return $self->exec_template(
         cmd => $cmd,
