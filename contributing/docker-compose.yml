@@ -3,7 +3,7 @@ services:
   api:
     image: danuk/shm-api:latest
     build:
-      context: shm
+      context: shm-ee
       dockerfile: ./Dockerfile
       target: api
     restart: always
@@ -12,7 +12,7 @@ services:
   core:
     image: danuk/shm-core:latest
     build:
-      context: shm
+      context: shm-ee
       dockerfile: ./Dockerfile
       target: core
     restart: always
@@ -30,14 +30,14 @@ services:
     links:
       - mysql
     volumes:
-      - ./shm/app:/app
+      - ./shm-ee/app:/app
     depends_on:
       mysql:
         condition: service_healthy
   spool:
     image: danuk/shm-core:latest
     build:
-      context: shm
+      context: shm-ee
       dockerfile: ./Dockerfile
       target: core
     restart: always
@@ -54,21 +54,21 @@ services:
     links:
       - mysql
     volumes:
-      - ./shm/app:/app
+      - ./shm-ee/app:/app
     depends_on:
       mysql:
         condition: service_healthy
   admin:
     image: danuk/shm-admin:latest
     build:
-      context: shm-admin
+      context: shm-admin-ee
       dockerfile: ./Dockerfile
       target: admin
     restart: always
     environment:
       SHM_URL: http://api
     volumes:
-      - ./shm-admin/app:/app
+      - ./shm-admin-ee/app:/app
     ports:
       - "8081:80"
     links:
@@ -76,14 +76,14 @@ services:
   client:
     image: danuk/shm-client:latest
     build:
-      context: shm-client
+      context: shm-client-ee
       dockerfile: ./Dockerfile
       target: client
     restart: always
     environment:
       SHM_URL: http://api
     volumes:
-      - ./shm-client/app:/app
+      - ./shm-client-ee/app:/app
     ports:
       - "8082:80"
     links:
