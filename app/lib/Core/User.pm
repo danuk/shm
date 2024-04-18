@@ -584,7 +584,7 @@ sub switch {
     return undef;
 }
 
-sub autopayment_delete {
+sub delete_autopayment {
     my $self = shift;
 
     $self->set_settings({

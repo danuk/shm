@@ -88,7 +88,7 @@ my $routes = {
 '/user/autopayment' => {
     DELETE => {
         controller => 'User',
-        method => 'autopayment_delete',
+        method => 'delete_autopayment',
     },
 },
 '/user/pay' => {
