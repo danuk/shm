@@ -593,5 +593,42 @@ sub delete_autopayment {
 
 }
 
+sub make_autopayment {
+    my $self = shift;
+    my $amount = shift;
+
+    return undef unless $amount;
+
+    my $pay_systems = $self->get_settings->{pay_systems} || {};
+
+    my $session_id = $self->gen_session->{id};
+    $self->commit;
+
+    for my $paysystem ( keys %{ $pay_systems } ) {
+        my $transport = get_service('Transport::Http');
+
+        my ( $response ) = $transport->http(
+            url => sprintf("%s/shm/pay_systems/%s.cgi",
+                get_service('config')->data_by_name('api')->{url},
+                $paysystem,
+            ),
+            method => 'post',
+            headers => {
+                session_id => $session_id,
+            },
+            content => {
+                action => 'payment',
+                amount => $amount,
+                %{ $pay_systems->{ $paysystem } },
+            },
+        );
+
+        if ( $response->is_success ) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 1;
 
