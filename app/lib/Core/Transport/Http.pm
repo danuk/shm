@@ -7,6 +7,7 @@ use utf8;
 use Core::Base;
 use Core::Const;
 use Core::Utils qw(
+    encode_json
     decode_json
 );
 use LWP::UserAgent ();
@@ -26,7 +27,6 @@ sub send {
             error => 'Server not exists',
         };
     }
-
 
     my $template_id =   $task->event_settings->{template_id} ||
                         $task->settings->{template_id} ||
@@ -68,7 +68,7 @@ sub send {
     my $verify_hostname = $settings{verify_hostname} // 1;
     my $timeout = $settings{timeout} || 10;
 
-    return $self->http(
+    my %request_args = (
         url => $url,
         method => $method,
         content_type => $settings{content_type},
@@ -77,6 +77,27 @@ sub send {
         verify_hostname => $verify_hostname,
         timeout => $timeout,
     );
+
+    my ( $response, $response_content ) = $self->http( %request_args );
+
+    if ( $response->is_success ) {
+        return SUCCESS, {
+            message => "successful",
+            request => \%request_args,
+            response => $response_content,
+        };
+    } else {
+        my $status = SUCCESS;
+        if ( $response->status_line =~ /5\d{2}/ ) {
+            $status = FAIL;
+        }
+
+        return $status, {
+            error => $response->status_line,
+            request => \%request_args,
+            response => $response_content,
+        };
+    }
 }
 
 sub http {
@@ -111,10 +132,15 @@ sub http {
         $args{url} = $uri->as_string;
     }
 
+    my $content = $args{content};
+    if ( ref $content ) {
+        $content = encode_json( $content );
+    }
+
     my $response = $ua->$method(
         $args{url},
         Content_Type => $args{content_type},
-        Content => $args{content},
+        Content => $content,
         %{ $args{headers} || {} },
     );
 
@@ -125,24 +151,7 @@ sub http {
 
     logger->dump( $response->request );
 
-    if ( $response->is_success ) {
-        return SUCCESS, {
-            message => "successful",
-            request => \%args,
-            response => $response_content,
-        };
-    } else {
-        my $status = SUCCESS;
-        if ( $response->status_line =~ /5\d{2}/ ) {
-            $status = FAIL;
-        }
-
-        return $status, {
-            error => $response->status_line,
-            request => \%args,
-            response => $response_content,
-        };
-    }
+    return $response, $response_content;
 }
 
 1;
