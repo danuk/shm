@@ -78,26 +78,39 @@ sub send {
         timeout => $timeout,
     );
 
-    my ( $response, $response_content ) = $self->http( %request_args );
+    my $response = $self->http( %request_args );
+    my %info = (
+        request => \%request_args,
+        response => $response->json_content,
+        status => {
+            code => $response->code,
+            line => $response->status_line,
+        },
+    );
 
     if ( $response->is_success ) {
         return SUCCESS, {
+            %info,
             message => "successful",
-            request => \%request_args,
-            response => $response_content,
         };
     } else {
         my $status = SUCCESS;
-        if ( $response->status_line =~ /5\d{2}/ ) {
+        # TODO: make array of success statuses
+        if ( $response->code >= 500 ) {
             $status = FAIL;
         }
 
         return $status, {
             error => $response->status_line,
-            request => \%request_args,
-            response => $response_content,
+            %info,
         };
     }
+}
+
+sub HTTP::Response::json_content {
+    my $self = shift;
+    return decode_json( $self->decoded_content ) if $self->header('content-type') =~ m/application\/json/gi;
+    return {};
 }
 
 sub http {
@@ -144,14 +157,9 @@ sub http {
         %{ $args{headers} || {} },
     );
 
-    my $response_content = $response->decoded_content;
-    if ( $response->header('content-type') =~ m/application\/json/gi ) {
-        $response_content = decode_json( $response_content );
-    }
-
     logger->dump( $response->request );
 
-    return $response, $response_content;
+    return $response;
 }
 
 1;
