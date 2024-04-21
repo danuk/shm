@@ -607,7 +607,7 @@ sub make_autopayment {
     for my $paysystem ( keys %{ $pay_systems } ) {
         my $transport = get_service('Transport::Http');
 
-        my ( $response ) = $transport->http(
+        my $response = $transport->http(
             url => sprintf("%s/shm/pay_systems/%s.cgi",
                 get_service('config')->data_by_name('api')->{url},
                 $paysystem,
