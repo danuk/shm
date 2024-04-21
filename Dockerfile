@@ -31,6 +31,8 @@ RUN apt-get install -y \
     libdigest-sha-perl \
     libscalar-util-numeric-perl \
     libtemplate-perl \
+    libtemplate-plugin-dbi-perl \
+    libtie-dbi-perl \
     libemail-sender-perl \
     libwww-perl \
     librouter-simple-perl
