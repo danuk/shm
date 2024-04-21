@@ -10,7 +10,7 @@ my $json = JSON->new->canonical( 1 );
 
 $| = 1;
 
-my $user = SHM->new( skip_check_auth => 1 );
+my $user = SHM->new( user_id => 1 );
 
 my $spool = get_service('spool');
 my ($status, $task, $info );
