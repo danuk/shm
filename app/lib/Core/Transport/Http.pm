@@ -81,7 +81,7 @@ sub send {
     my $response = $self->http( %request_args );
     my %info = (
         request => \%request_args,
-        response => $response->json_content,
+        response => $response->json_content || sprintf("*NOT_JSON* Length: %d", length $response->decoded_content ),
         status => {
             code => $response->code,
             line => $response->status_line,
@@ -89,6 +89,13 @@ sub send {
     );
 
     if ( $response->is_success ) {
+        if ( my $name = $settings{storage_save_key} ) {
+            get_service('storage')->save(
+                $name,
+                $response->json_content || $response->decoded_content,
+            );
+        }
+
         return SUCCESS, {
             %info,
             message => "successful",
@@ -110,7 +117,7 @@ sub send {
 sub HTTP::Response::json_content {
     my $self = shift;
     return decode_json( $self->decoded_content ) if $self->header('content-type') =~ m/application\/json/gi;
-    return {};
+    return undef;
 }
 
 sub http {
