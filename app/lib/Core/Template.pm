@@ -60,6 +60,7 @@ sub parse {
         services => get_service('service'),
         storage => get_service('storage'),
         telegram => get_service('Transport::Telegram'),
+        http => get_service('Transport::Http'),
         spool => get_service('Spool'),
         spool_history => get_service('SpoolHistory'),
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),

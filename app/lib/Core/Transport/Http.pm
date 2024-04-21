@@ -169,4 +169,24 @@ sub http {
     return $response;
 }
 
+sub _http {
+    my $self = shift;
+    my $method = shift;
+    my $url = shift;
+    my %args = @_;
+
+    my $response = $self->http(
+        method => $method,
+        url => $url,
+        %args,
+    );
+
+    return $response->json_content || $response->decoded_content;
+}
+
+sub get { return shift->_http( 'get', @_ ) }
+sub put { return shift->_http( 'put', @_ ) }
+sub post { return shift->_http( 'post', @_ ) }
+sub delete { return shift->_http( 'delete', @_ ) }
+
 1;
