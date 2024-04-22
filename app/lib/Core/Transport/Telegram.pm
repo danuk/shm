@@ -461,6 +461,8 @@ sub exec_template {
         },
     );
 
+    return [] unless $obj;
+
     if ( my @errors = get_service('report')->errors ) {
         return $self->sendMessage(
             text => join('<br>', @errors),
