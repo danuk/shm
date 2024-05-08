@@ -96,6 +96,11 @@ if ( $vars{action} eq 'create' ) {
     exit 0;
 }
 
+unless ( $vars{DATA}->[0]->{payload} ) {
+    print_json({ status => 400, msg => 'Error: bad request' });
+    exit 0;
+}
+
 my $user = SHM->new( skip_check_auth => 1 );
 
 my $config = get_service('config', _id => 'pay_systems');
@@ -119,12 +124,9 @@ my $hmac = hmac_sha256_base64($string, $api_key);
 $hmac .= '=' while length( $hmac ) % 4;
 
 if ( $wp_signature ne $hmac ) {
-    print_json( { status => 400, msg => "Error: Signature doesn't match" } );
-}
-
-unless ( $vars{DATA}->[0]->{payload} ) {
     print_json({ status => 400, msg => 'Error: bad request' });
-    exit;
+    logger->error( "Signature doesn't match" );
+    exit 0;
 }
 
 if ( $vars{DATA}->[0]->{type} ne 'ORDER_PAID' ) {
