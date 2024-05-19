@@ -271,16 +271,19 @@ sub create {
     my $self = shift;
     my %args = (
         service_id => undef,
+        check_allow_to_order => 1,
         @_,
     );
 
     unless ( get_service('user')->authenticated->is_admin ) {
         delete $args{cost};
 
-        my $allowed_services_list = $self->price_list;
-        unless ( exists $allowed_services_list->{ $args{service_id} } ) {
-            logger->warning('Attempt to register not allowed service', $args{service_id} );
-            return undef;
+        if ( $args{check_allow_to_order} ) {
+            my $allowed_services_list = $self->price_list;
+            unless ( exists $allowed_services_list->{ $args{service_id} } ) {
+                logger->warning('Attempt to register not allowed service', $args{service_id} );
+                return undef;
+            }
         }
     }
 
