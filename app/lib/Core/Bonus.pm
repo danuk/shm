@@ -30,13 +30,18 @@ sub structure {
     }
 }
 
+sub amount {
+    my $self = shift;
+    return $self->get_bonus;
+}
+
 sub api_add {
     my $self = shift;
     my %args = (
         @_,
     );
 
-    my $bonus_id = get_service('user')->set_bonus( %args );
+    my $bonus_id = $self->user->set_bonus( %args );
 
     return $self->id( $bonus_id )->get;
 }
