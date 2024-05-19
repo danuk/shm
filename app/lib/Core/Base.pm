@@ -300,7 +300,10 @@ sub make_event {
 
     my @commands = $event->get_events( name => $event_name );
     for ( @commands ) {
-        $event->make( event => $_ );
+        $event->make(
+            event => $_,
+            $args{settings} ? ( settings => $args{settings } ) : (),
+        );
     }
 }
 

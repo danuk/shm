@@ -45,6 +45,16 @@ sub parse {
         $args{event_name} //= $args{task}->event->{name};
     }
 
+    my (
+        $pay_id,
+        $bonus_id,
+    );
+
+    if ( $args{task} ) {
+        $pay_id = $args{task}->get_settings->{pay_id};
+        $bonus_id = $args{task}->get_settings->{bonus_id};
+    }
+
     my $vars = {
         user => get_service('user'),
         $args{usi} ? ( us => get_service('us', _id => $args{usi}) ) : ( us => get_service('us') ),
@@ -52,7 +62,8 @@ sub parse {
         $args{server_id} ? ( server => get_service('server', _id => $args{server_id}) ) : ( server => get_service('server') ),
         servers => get_service('server'),
         sg => get_service('ServerGroups'),
-        pay => get_service('pay'),
+        pay => sub { get_service('pay', _id => $pay_id) },
+        bonus => sub { get_service('bonus', _id => $bonus_id) },
         wd => get_service('withdraw'),
         config => get_service('config')->data_by_name,
         tpl => $self,

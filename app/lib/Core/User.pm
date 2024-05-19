@@ -158,6 +158,13 @@ sub events {
                 method => 'activate_services',
             },
         },
+        'bonus' => {
+            event => {
+                title => 'user payment with bonuses',
+                kind => 'UserService',
+                method => 'activate_services',
+            },
+        },
     };
 }
 
@@ -407,8 +414,25 @@ sub set_bonus {
     my $bonus_id = $self->bonus->add( %args );
 
     $self->set_balance( bonus => $args{bonus} );
+    $self->make_event( 'bonus', settings => { bonus_id => $bonus_id } );
 
     return $bonus_id;
+}
+
+# method for api
+sub add_bonus {
+    my $self = shift;
+    my $bonus = shift;
+    my $comment = shift;
+
+    if ( $comment && !ref $comment ) {
+        $comment = { msg => $comment };
+    }
+
+    return $self->set_bonus(
+        bonus => $bonus,
+        comment => $comment,
+    );
 }
 
 sub payment {
@@ -433,7 +457,7 @@ sub payment {
     $self->set_balance( balance => $args{money} );
     $self->add_bonuses_for_partners( $args{money} );
 
-    $self->make_event( 'payment' );
+    $self->make_event( 'payment', settings => { pay_id => $pay_id } );
     return scalar $pays->id( $pay_id )->get;
 }
 
