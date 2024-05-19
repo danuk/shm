@@ -134,8 +134,8 @@ INSERT INTO `invoices` VALUES
 (default,1481294791,40092,578.20,NULL);
 
 INSERT INTO `pays_history` VALUES
-(default,40092,'manual',455.00,'2014-10-02 14:05:39',NULL),
-(default,40092,'manual',455.00,'2016-01-04 20:33:35',NULL);
+(default,40092,'manual',455.00,'2014-10-02 14:05:39',NULL,NULL),
+(default,40092,'manual',455.00,'2016-01-04 20:33:35',NULL,NULL);
 
 INSERT INTO `servers` VALUES
 (1,1,'test server1 (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,25,1,'{\"key_id\": 1, \"host_name\": \"host1.domain.ru\", \"template_id\": \"bash_script_example\"}'),
