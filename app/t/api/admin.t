@@ -29,7 +29,8 @@ cmp_deeply( $ret{json}->{data}->[0], {
     money => 123,
     pay_system_id => 'manual',
     date => ignore(),
-    comment => undef
+    comment => undef,
+    uniq_key => undef,
 }, 'Test /v1/admin/user/payment');
 
 $user->commit;

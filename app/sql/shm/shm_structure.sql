@@ -108,7 +108,7 @@ CREATE TABLE `pays_history` (
   `comment` json DEFAULT NULL,
   `uniq_key` char(255) DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
-  UNIQUE KEY `uniq_key` (`user_id`,`uniq_key`)
+  UNIQUE KEY `uniq_key` (`user_id`,`uniq_key`),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 

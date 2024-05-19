@@ -30,6 +30,7 @@ cmp_deeply( $json_ret->{data}->[0], {
     comment => {
         comment => 'Test payment #4',
     },
+    uniq_key => undef,
 }, 'Test API');
 
 done_testing();
