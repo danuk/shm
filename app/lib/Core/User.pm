@@ -414,7 +414,7 @@ sub set_bonus {
     my $bonus_id = $self->bonus->add( %args );
 
     $self->set_balance( bonus => $args{bonus} );
-    $self->make_event( 'bonus', settings => { bonus_id => $bonus_id } );
+    $self->make_event( 'bonus', settings => { bonus_id => $bonus_id } ) if $args{bonus} > 0;
 
     return $bonus_id;
 }
