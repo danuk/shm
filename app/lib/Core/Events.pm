@@ -57,7 +57,7 @@ sub make {
     my $self = shift;
     my %args = @_;
 
-    get_service('spool')->add(
+    $self->srv('spool')->add(
         %args,
     );
 }
@@ -84,7 +84,7 @@ sub exec {
         @_,
     };
 
-    return get_service('spool')->push(
+    return $self->srv('spool')->push(
         server_id => $args->{server_id},
         cmd => $self->command,
         data => $args->{data},

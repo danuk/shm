@@ -76,7 +76,7 @@ sub id {
     my $id = shift;
 
     if ( defined $id ) {
-        return get_service( ref $self, _id => $id );
+        return $self->srv( ref $self, _id => $id );
     }
 
     my $key_field = $self->get_table_key;
@@ -284,7 +284,7 @@ sub make_event {
         @_,
     );
 
-    my $event = get_service('Events');
+    my $event = $self->srv('Events');
 
     if ( $self->can('events') ) {
         %args = %{ hash_merge(
@@ -334,6 +334,14 @@ sub delete_all {
             user_id => $self->user_id,
         },
     );
+}
+
+sub srv {
+    my $self = shift;
+    my $service_name = shift;
+    my %args = @_;
+
+    return get_service( $service_name, %args, user_id => $self->user_id );
 }
 
 1;
