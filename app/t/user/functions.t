@@ -54,6 +54,14 @@ subtest 'Make payment with partner' => sub {
 
     $user->payment( money => 100 );
     is( $partner->get_bonus, 20 );
+
+    my ( $user_spool ) = $user->srv('spool')->list;
+    is( $user_spool->{user_id}, $user->id );
+    is( $user_spool->{event}->{title}, 'user payment' );
+
+    my ( $partner_spool ) = $partner->srv('spool')->list;
+    is( $partner_spool->{user_id}, $partner->id );
+    is( $partner_spool->{event}->{title}, 'user payment with bonuses' );
 };
 
 my %profile = $user->profile;
