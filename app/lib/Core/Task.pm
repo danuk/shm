@@ -180,8 +180,8 @@ sub transport {
 sub get_service_for_transport {
     my $self = shift;
 
-    my $service = get_service( 'Services::' . ucfirst( $self->event_settings->{category} ), _id => $self->settings->{user_service_id} );
-    $service //= get_service( 'USObject', _id => $self->settings->{user_service_id} ) if $self->settings->{user_service_id};
+    #my $service = $self->srv( 'Services::' . ucfirst( $self->event_settings->{category} ), _id => $self->settings->{user_service_id} );
+    my $service = $self->srv( 'USObject', _id => $self->settings->{user_service_id} ) if $self->settings->{user_service_id};
 
     return $service || $self;
 }
