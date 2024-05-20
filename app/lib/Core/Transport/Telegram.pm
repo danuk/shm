@@ -74,6 +74,7 @@ sub send {
 
     my $response = $self->sendMessage(
         text => $message,
+        parse_mode => $settings{parse_mode} || 'HTML',
     );
 
     if ( $response->is_success ) {
