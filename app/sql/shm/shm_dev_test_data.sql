@@ -90,7 +90,7 @@ INSERT INTO `dns_services` VALUES
 INSERT INTO `domains` VALUES
 (6,40092,'danuk.ru','2017-01-01 00:00:00',0,NULL,NULL,16),
 (7,40092,'ipcalc.net','2017-01-02 00:00:00',0,NULL,NULL,19),
-(33,40094,'xims.ru','2017-01-03 00:00:00',0,NULL,NULL,210),
+(33,40094,'ya.ru','2017-01-03 00:00:00',0,NULL,NULL,210),
 (306,40092,'admin.danuk.ru','2017-01-04 00:00:00',0,6,NULL,16),
 (100,40094,'xiwe.ru','2017-01-05 00:00:00',0,NULL,NULL,836),
 (270,40092,'work.biit.ru','2017-01-06 00:00:00',0,11,NULL,59),
@@ -101,9 +101,9 @@ INSERT INTO `domains` VALUES
 (150,40094,'rctrl.ru','2017-01-11 00:00:00',0,NULL,NULL,1380),
 (151,40094,'r-ctrl.ru','2017-01-12 00:00:00',0,NULL,NULL,1383),
 (304,40092,'shm.danuk.ru','2017-01-13 00:00:00',0,6,NULL,16),
-(208,40094,'gpb.xims.ru','2017-01-14 00:00:00',0,33,NULL,210),
-(210,40094,'gpb1.xims.ru','2017-01-15 00:00:00',0,33,NULL,210),
-(211,40094,'gpb2.xims.ru','2017-01-16 00:00:00',0,33,NULL,210);
+(208,40094,'gpb.ya.ru','2017-01-14 00:00:00',0,33,NULL,210),
+(210,40094,'gpb1.ya.ru','2017-01-15 00:00:00',0,33,NULL,210),
+(211,40094,'gpb2.ya.ru','2017-01-16 00:00:00',0,33,NULL,210);
 
 INSERT INTO `domains_services` VALUES
 (default,6,101,'2017-09-23 23:54:04'),
@@ -194,7 +194,7 @@ INSERT INTO `user_services` VALUES
 (101,40092,111,1,NULL,'2014-10-07 12:56:09',NULL,'ACTIVE',NULL,99,'{\"group\": \"limits0\", \"login\": \"w_101\", \"quota\": \"3391\", \"password\": \"enos1aer\", \"domain_id\": \"306\", \"max_quota\": \"9821\", \"server_id\": 1, \"binder_grp\": \"4\", \"max_domains\": \"3\"}'),
 (102,40092,29,1,NULL,'2014-10-07 12:56:09',NULL,'ACTIVE',NULL,99,'{\"port\": \"4011\", \"login\": \"w_102\", \"quota\": \"133\", \"account\": \"b_102\", \"charset\": \"windows-1251\", \"db_name\": \"db1\", \"db_count\": \"0\", \"password\": \"D4EfbNEB\", \"max_quota\": \"10000\", \"server_id\": 1, \"rootpassword\": \"oobi6aay\"}'),
 (123,40092,50,1,NULL,'2014-10-23 13:41:35',NULL,'ACTIVE',NULL,100,NULL),
-(210,40094,63,1,NULL,'2015-01-26 14:12:40',NULL,'ACTIVE',NULL,NULL,'{\"domain\": \"xims.ru\", \"punycode\": \"\", \"domain_id\": \"33\"}'),
+(210,40094,63,1,NULL,'2015-01-26 14:12:40',NULL,'ACTIVE',NULL,NULL,'{\"domain\": \"ya.ru\", \"punycode\": \"\", \"domain_id\": \"33\"}'),
 (211,40094,30,1,NULL,'2015-01-26 14:12:40',NULL,'ACTIVE',NULL,210,'{\"ns\": \"ns1.viphost.ru\", \"domain_id\": \"33\", \"server_id\": 1}'),
 (212,40094,31,1,NULL,'2015-01-26 14:12:40',NULL,'ACTIVE',NULL,210,'{\"ns\": \"ns2.viphost.ru\", \"master\": \"185.31.160.56\", \"domain_id\": \"33\", \"server_id\": 1}'),
 (242,40092,50,1,NULL,'2015-01-30 11:32:01',NULL,'ACTIVE',NULL,100,NULL),
@@ -219,15 +219,15 @@ INSERT INTO `user_services` VALUES
 (1872,40094,5,1,NULL,'2015-11-04 19:45:25',NULL,'ACTIVE',NULL,1870,'{\"group\": \"limits1\", \"login\": \"w_1872\", \"quota\": \"583\", \"password\": \"fi6eepe5\", \"domain_id\": \"210\", \"max_quota\": \"993\", \"server_id\": 1, \"binder_grp\": \"4\", \"max_domains\": \"10\"}'),
 (1873,40094,29,1,NULL,'2015-11-04 19:45:25',NULL,'ACTIVE',NULL,1870,'{\"port\": \"4260\", \"quota\": \"5\", \"account\": \"b_1873\", \"charset\": \"windows-1251\", \"db_name\": \"db1\", \"db_count\": \"0\", \"password\": \"ra5Cm22T\", \"max_quota\": \"1000\", \"server_id\": \"3\", \"rootpassword\": \"hae6eem1\"}'),
 (1875,40094,50,1,NULL,'2015-11-04 19:45:25',NULL,'ACTIVE',NULL,1872,'{\"domain\": \"moto-season.ru\", \"directory\": \"moto-season.ru\", \"domain_id\": \"142\"}'),
-(1876,40094,50,1,NULL,'2015-11-04 20:56:54',NULL,'ACTIVE',NULL,1872,'{\"domain\": \"xims.ru\", \"directory\": \"xims.ru\", \"domain_id\": \"33\"}'),
+(1876,40094,50,1,NULL,'2015-11-04 20:56:54',NULL,'ACTIVE',NULL,1872,'{\"domain\": \"ya.ru\", \"directory\": \"ya.ru\", \"domain_id\": \"33\"}'),
 (1877,40094,50,1,NULL,'2015-11-04 20:56:58',NULL,'ACTIVE',NULL,1872,'{\"domain\": \"xiwe.ru\", \"directory\": \"xiwe.ru\", \"domain_id\": \"100\"}'),
 (1878,40094,50,1,NULL,'2015-11-04 20:57:04',NULL,'ACTIVE',NULL,1872,'{\"domain\": \"evileye.ru\", \"directory\": \"evileye.ru\", \"domain_id\": \"144\"}'),
 (1880,40094,50,1,NULL,'2015-11-04 20:57:30',NULL,'ACTIVE',NULL,1872,'{\"domain\": \"rctrl.ru\", \"directory\": \"rctrl.ru\", \"domain_id\": \"150\"}'),
 (1881,40094,50,1,NULL,'2015-11-04 23:36:26',NULL,'ACTIVE',NULL,1871,'{\"domain\": \"evileye.ru\", \"domain_id\": \"144\"}'),
 (1882,40094,50,1,NULL,'2015-11-04 23:36:47',NULL,'ACTIVE',NULL,1871,'{\"domain\": \"rctrl.ru\", \"domain_id\": \"150\"}'),
-(2140,40094,50,1,NULL,'2015-12-22 20:48:52',NULL,'ACTIVE',NULL,1872,'{\"domain\": \"gpb.xims.ru\", \"directory\": \"gpb.xims.ru\", \"domain_id\": \"208\"}'),
+(2140,40094,50,1,NULL,'2015-12-22 20:48:52',NULL,'ACTIVE',NULL,1872,'{\"domain\": \"gpb.ya.ru\", \"directory\": \"gpb.ya.ru\", \"domain_id\": \"208\"}'),
 (2150,40094,50,1,NULL,'2015-12-23 11:46:35',NULL,'ACTIVE',NULL,1872,NULL),
-(2151,40094,50,1,NULL,'2015-12-23 15:39:39',NULL,'ACTIVE',NULL,1872,'{\"domain\": \"gpb1.xims.ru\", \"directory\": \"gpb1.xims.ru\", \"domain_id\": \"210\"}'),
+(2151,40094,50,1,NULL,'2015-12-23 15:39:39',NULL,'ACTIVE',NULL,1872,'{\"domain\": \"gpb1.ya.ru\", \"directory\": \"gpb1.ya.ru\", \"domain_id\": \"210\"}'),
 (2801,40094,63,1,3357,'2016-02-15 21:55:29',NULL,'ACTIVE',NULL,NULL,'{\"domain\": \"keram.ru\", \"nic_id\": null, \"punycode\": \"\", \"domain_id\": \"283\"}'),
 (2802,40094,30,1,NULL,'2016-02-15 21:55:29',NULL,'ACTIVE',NULL,2801,'{\"ns\": \"ns1.biit.ru\", \"domain_id\": \"283\", \"server_id\": 1}'),
 (2803,40094,31,1,NULL,'2016-02-15 21:55:29',NULL,'ACTIVE',NULL,2801,'{\"ns\": \"ns2.biit.ru\", \"master\": \"185.31.160.56\", \"domain_id\": \"283\", \"server_id\": 1}'),
@@ -243,7 +243,7 @@ INSERT INTO `users` VALUES
 (1,0,'admin','0df78fa86a30eca0a918fdd21a94e238133ce7ab',0,NOW(),NULL,0,0,0.00,NULL,NULL,0,1,0,'Admin',0,0.00,NULL,NULL,NULL,NULL),
 (108,0,'','',0,'2014-09-30 14:17:37',NULL,0,0,0.00,NULL,NULL,0,0,0,'Платеж',0,0.00,NULL,NULL,NULL,NULL),
 (40092,0,'danuk','d8923baf143645690cc89db46e4611fb1066e1f0',0,'2014-09-30 14:17:37',NULL,0,-21.56,100000.00,NULL,NULL,0,0,0,'Фирсов Даниил Андреевич',0,0.00,NULL,NULL,NULL,NULL),
-(40094,0,'xims','1ad777afc152c9eaa13abb53283f8d47e8d453bb',0,'2014-10-02 14:45:43',NULL,0,30,100.00,NULL,NULL,0,0,NULL,'Смолев Михаил Владимирович',0,0.00,NULL,NULL,NULL,NULL);
+(40094,0,'ya','1ad777afc152c9eaa13abb53283f8d47e8d453bb',0,'2014-10-02 14:45:43',NULL,0,30,100.00,NULL,NULL,0,0,NULL,'Пронин Дмитрий Борисович',0,0.00,NULL,NULL,NULL,NULL);
 
 INSERT INTO `withdraw_history` VALUES
 (3519,40092,'2016-07-29 12:39:08','2016-07-29 12:39:47','2017-07-29 12:39:46',590.00,0,11.80,12,578.20,11,1,2949),
