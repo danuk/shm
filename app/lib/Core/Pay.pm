@@ -88,7 +88,7 @@ sub forecast {
 
     push @statuses, STATUS_BLOCK if $args{blocked};
 
-    my $user_services = get_service('UserService', user_id => $self->user_id )->list_prepare(
+    my $user_services = $self->srv('UserService')->list_prepare(
         where => {
             auto_bill => \[ '= 1'],
             status => { -in => \@statuses },
@@ -110,7 +110,7 @@ sub forecast {
         my $obj = $user_services->{ $usi };
         next if $obj->{next} == -1 && $obj->{expire};
 
-        my $us =  get_service('us', user_id => $self->user_id, _id => $usi );
+        my $us =  $self->srv('us', _id => $usi );
 
         my %wd = %{ $obj->{withdraws} || {} };
         my $service_next_name = $obj->{services}->{name};
@@ -122,7 +122,7 @@ sub forecast {
                 next if $wd_next{withdraw_date};
                 %wd = %wd_next;
             } elsif ( $obj->{next} ) {
-                if ( my $service_next = get_service('service', _id => $obj->{next} ) ) {
+                if ( my $service_next = $self->srv('service', _id => $obj->{next} ) ) {
                     $wd{service_id} = $service_next->id;
                     $wd{cost} = $service_next->get_cost;
                     $wd{months} = $service_next->get_period;
@@ -218,7 +218,7 @@ sub paysystems {
 
     my @ps;
 
-    my $config = get_service("config", _id => 'pay_systems');
+    my $config = $self->srv("config", _id => 'pay_systems');
     my %list = %{ $config ? $config->get_data : {} };
     push @ps, { $_ => $list{ $_ } } for keys %list;
 
@@ -227,7 +227,7 @@ sub paysystems {
     my $ts = time;
     my @ret;
 
-    my $user = get_service('user', _id => $args{user_id} );
+    my $user = $self->srv('user', _id => $args{user_id} );
 
     for ( @ps ) {
         my ( $paysystem, $p ) = each( %$_ );
