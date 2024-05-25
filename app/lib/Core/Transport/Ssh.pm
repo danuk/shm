@@ -73,7 +73,7 @@ sub exec {
 
     my $host = get_ssh_host( $args{host} );
     unless ( $host ) {
-        get_service('report')->add_error("Incorrect ssh host: $host");
+        $self->srv('report')->add_error("Incorrect ssh host: $host");
         return undef, {
             error => "Incorrect ssh host: $args{host}",
         };
@@ -82,7 +82,7 @@ sub exec {
     my $proxy_jump = get_ssh_host( $args{proxy_host} );
 
     if ( $args{template_id} ) {
-        if ( my $template = get_service('template', _id => $args{template_id} ) ) {
+        if ( my $template = $self->srv('template', _id => $args{template_id} ) ) {
             $args{cmd} ||= 'bash';
             $args{stdin} = $template->parse(
                 %args,
@@ -95,13 +95,13 @@ sub exec {
             }
         }
         else {
-            get_service('report')->add_error("Template not found: $args{template_id}");
+            $self->srv('report')->add_error("Template not found: $args{template_id}");
             return undef, {
                 error => "Template not found: $args{template_id}",
             };
         }
     } elsif ( $args{cmd} ) {
-        my $parser = get_service('template');
+        my $parser = $self->srv('template');
         $args{cmd} = $parser->parse(
             data => $args{cmd},
             %args,
@@ -115,9 +115,9 @@ sub exec {
         }
     }
 
-    $args{pipeline_id} //= get_service('console')->new_pipe;
+    $args{pipeline_id} //= $self->srv('console')->new_pipe;
 
-    my $console = get_service('console', _id => $args{pipeline_id} );
+    my $console = $self->srv('console', _id => $args{pipeline_id} );
 
     my $host_msg = "Trying connect to: $host";
     $host_msg .= " port $args{port}";
@@ -127,7 +127,7 @@ sub exec {
     $console->append( "<font color=yellow>$host_msg ... </font>" );
 
     my $key_file;
-    if ( my $ident = get_service( 'Identities', _id => $args{key_id} ) ) {
+    if ( my $ident = $self->srv( 'Identities', _id => $args{key_id} ) ) {
         $key_file = $ident->private_key_file;
     } else {
         return undef, {
@@ -232,7 +232,7 @@ sub ssh_test {
         server_id => undef,
         cmd => 'uname',
         event_name => 'test',
-        pipeline_id => get_service('console')->new_pipe,
+        pipeline_id => $self->srv('console')->new_pipe,
         @_,
     };
 
@@ -257,7 +257,7 @@ sub ssh_init {
         server_id => undef,
         template_id => undef,
         event_name => 'init',
-        pipeline_id => get_service('console')->new_pipe,
+        pipeline_id => $self->srv('console')->new_pipe,
         @_,
     };
 

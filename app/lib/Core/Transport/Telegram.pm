@@ -5,7 +5,7 @@ use parent 'Core::Base';
 use v5.14;
 use Core::Base;
 use Core::Const;
-use Core::System::ServiceManager qw( get_service logger );
+use Core::System::ServiceManager qw( logger );
 use LWP::UserAgent ();
 use Core::Utils qw(
     switch_user
@@ -102,7 +102,7 @@ sub template {
     $self->{template_id} = $template_id if $template_id;
     return undef unless $self->{template_id};
 
-    my $template = get_service('template', _id => $self->{template_id});
+    my $template = $self->srv('template', _id => $self->{template_id});
     return $template;
 }
 
@@ -111,10 +111,10 @@ sub token {
 
     my $token;
     $token = $self->template->get_settings->{telegram}->{token} if $self->template;
-    $token ||= get_service('config')->data_by_name('telegram')->{token};
+    $token ||= $self->srv('config')->data_by_name('telegram')->{token};
 
     unless ( $token ) {
-        get_service('report')->add_error('Token not found');
+        $self->srv('report')->add_error('Token not found');
         logger->error( 'Token not found' );
     }
 
@@ -129,7 +129,7 @@ sub chat_id {
     $chat_id ||= $self->user->get_settings->{telegram}->{chat_id};
 
     unless ( $chat_id ) {
-        get_service('report')->add_error('Chat_id not found');
+        $self->srv('report')->add_error('Chat_id not found');
         logger->error('Chat_id not found');
     }
 
@@ -464,7 +464,7 @@ sub exec_template {
 
     return [] unless $obj;
 
-    if ( my @errors = get_service('report')->errors ) {
+    if ( my @errors = $self->srv('report')->errors ) {
         return $self->sendMessage(
             text => join('<br>', @errors),
         );
@@ -569,7 +569,7 @@ sub get_data_from_storage {
     my $self = shift;
     my $name = shift;
 
-    my $data = get_service('storage')->read(
+    my $data = $self->srv('storage')->read(
         name => $name,
         decode_json => 0,
     );
@@ -664,7 +664,7 @@ sub shmRegister {
     my $telegram_user_id = $tg_user->{id};
     my $username = $tg_user->{username};
 
-    my $user = get_service('user')->reg(
+    my $user = $self->srv('user')->reg(
         login => get_shm_login( $telegram_user_id ),
         password => passgen(),
         full_name => sprintf("%s %s", $tg_user->{first_name}, $tg_user->{last_name} ),
@@ -703,7 +703,7 @@ sub shmServiceOrder {
         @_,
     );
 
-    my $us = get_service('service')->create(
+    my $us = $self->srv('service')->create(
         %args,
     );
 
@@ -738,7 +738,7 @@ sub shmServiceDelete {
         @_,
     );
 
-    my $us = get_service('us')->id( $args{usi} );
+    my $us = $self->srv('us', _id => $args{usi} );
 
     if ( $us ) {
         $us->delete();
