@@ -14,7 +14,7 @@ sub send {
     my $template_id =   $task->event_settings->{template_id} ||
                         $task->settings->{template_id};
 
-    my $template = get_service('template', _id => $template_id );
+    my $template = $self->srv('template', _id => $template_id );
     unless ( $template ) {
         return undef, {
             error => "template with id `$template_id` not found",

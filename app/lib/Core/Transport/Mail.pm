@@ -23,7 +23,7 @@ sub send {
     my %server;
     if ( my $server_gid = $task->event->{server_gid} ) {
 
-        my $sg = get_service('ServerGroups', _id => $server_gid );
+        my $sg = $self->srv('ServerGroups', _id => $server_gid );
         unless ( $sg ) {
             return undef, {
                 error => sprintf( "Can't find server group", $server_gid ),
@@ -52,7 +52,7 @@ sub send {
         %{ $task->settings },
     );
 
-    my $config = get_service("config", _id => 'mail');
+    my $config = $self->srv("config", _id => 'mail');
     $config = $config ? $config->get_data : {};
 
     $settings{from} //= $config->{from};
@@ -66,7 +66,7 @@ sub send {
     $settings{subject} //= $config->{subject};
     $settings{to} //= delete $settings{bcc};
 
-    if ( my $email = get_service('user')->emails ) {
+    if ( my $email = $self->srv('user')->emails ) {
         $settings{to} = $email;
     }
     unless ( $settings{to} ) {
@@ -79,14 +79,14 @@ sub send {
     if ( $settings{template_id} || $settings{template_name} ) {
         my $template;
         if ( $settings{template_id} ) {
-            $template = get_service('template', _id => $settings{template_id} );
+            $template = $self->srv('template', _id => $settings{template_id} );
             unless ( $template ) {
                 return undef, {
                     error => "template with id `$settings{template_id}` not found",
                 }
             }
         } elsif ( $settings{template_name} ) {
-            $template = get_service('template')->id( $settings{template_name} );
+            $template = $self->srv('template')->id( $settings{template_name} );
             unless ( $template ) {
                 return undef, {
                     error => "template with name `$settings{template_name}` not found",
