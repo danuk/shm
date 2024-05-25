@@ -3,6 +3,7 @@ package Core::Service;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Core::Utils qw( switch_user );
 
 sub table { return 'services' };
 
@@ -288,6 +289,7 @@ sub create {
     }
 
     use Core::Billing;
+    switch_user( $self->user_id );
     my $us = create_service( %args );
 
     return $us;

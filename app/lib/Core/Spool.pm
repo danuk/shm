@@ -92,24 +92,15 @@ sub process_one {
     }
     return undef unless $task;
 
-    my $user = get_service('user', _id => $task->{user_id} );
-    switch_user( $task->{user_id } );
+    my $user = $self->user->id( $task->{user_id} );
     if ( $user->id != 1 ) {
         return undef unless $user->lock( timeout => 5 );
     }
 
-    my $spool = get_service('spool', _id => $task->{id} )->res( $task );
-
-    unless ( $user ) {
-        $spool->finish_task(
-            status => TASK_STUCK,
-            response => { error => "User $task->{user_id} not exists" },
-        );
-        return undef;
-    }
+    my $spool = $user->srv('spool', _id => $task->{id} )->res( $task );
 
     if ( my $usi = $task->{settings}->{user_service_id} ) {
-        if ( my $service = get_service('us', _id => $usi ) ) {
+        if ( my $service = $user->srv('us', _id => $usi ) ) {
             return undef unless $service->lock;
         } else {
             $spool->finish_task(
@@ -120,10 +111,10 @@ sub process_one {
         }
     }
 
-    if ( $task->{event}->{server_gid} ) {
-        my $server_group = get_service('ServerGroups', _id => $task->{event}->{server_gid} );
+    if ( my $sgid = $task->{event}->{server_gid} ) {
+        my $server_group = $user->srv('ServerGroups', _id => $sgid );
         unless ( $server_group ) {
-            logger->warning("The server group does not exist: $task->{event}->{server_gid}");
+            logger->warning("The server group does not exist: $sgid");
             $spool->finish_task(
                 status => TASK_STUCK,
                 response => { error => "The server group does not exist" },
@@ -191,7 +182,7 @@ sub finish_task {
 
     if ( $args{status} ne TASK_SUCCESS ) {
         if ( $self->settings->{user_service_id} ) {
-            if ( my $us = get_service('us', _id => $self->settings->{user_service_id} ) ) {
+            if ( my $us = $self->srv('us', _id => $self->settings->{user_service_id} ) ) {
                 $us->set( status => STATUS_ERROR );
             }
         }
@@ -234,7 +225,7 @@ sub api_manual_action {
 
     my $method = sprintf( "api_%s", delete $args{action} );
     unless ( $self->can( $method ) ) {
-        my $report = get_service('report');
+        my $report = $self->srv('report');
         $report->add_error('unknown action');
         return ();
     }
@@ -254,7 +245,7 @@ sub api_success {
     );
 
     if ( $args{settings} && $args{settings}->{user_service_id} && $args{event} && $args{event}->{name} ) {
-        if ( my $us = get_service('us', _id => $args{settings}->{user_service_id} ) ) {
+        if ( my $us = $self->srv('us', _id => $args{settings}->{user_service_id} ) ) {
             $us->set_status_by_event( $args{event}->{name} );
         }
     }
@@ -279,7 +270,7 @@ sub api_retry {
     ) if $args{event};
 
     if ( my $usi = $self->settings->{user_service_id} ) {
-        if ( my $us = get_service('us', _id => $usi ) ) {
+        if ( my $us = $self->srv('us', _id => $usi ) ) {
             $us->set( status => STATUS_PROGRESS );
         }
     }
@@ -309,7 +300,7 @@ sub api_resume {
 sub write_history {
     my $self = shift;
 
-    get_service('SpoolHistory')->add( $self->get );
+    $self->srv('SpoolHistory')->add( $self->get );
 }
 
 1;

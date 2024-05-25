@@ -6,6 +6,7 @@ use Core::Base;
 use Core::Const;
 use Core::Utils qw/ now passgen /;
 use Core::Billing;
+use Core::Utils qw( switch_user );
 
 sub table { return 'user_services' };
 
@@ -73,15 +74,15 @@ sub add {
         @_,
     );
 
-    my $service = get_service( 'service', _id => $args{service_id} );
+    my $service = $self->srv( 'service', _id => $args{service_id} );
     unless ( $service ) {
         logger->warning("Can't create us for a non-existent service: $args{service_id}");
-        get_service('report')->add_error( "Can't create us for a non-existent service" );
+        $self->srv('report')->add_error( "Can't create us for a non-existent service" );
         return undef;
     }
 
     my $usi = $self->SUPER::add( %args );
-    return get_service('us', user_id => $self->user_id, _id => $usi );
+    return $self->srv('us', _id => $usi );
 }
 
 sub can_delete {
@@ -98,7 +99,7 @@ sub delete {
     my %args = @_;
 
     unless ( $self->can_delete ) {
-        get_service('report')->add_error( "Can't delete service with status: " . $self->get_status );
+        $self->srv('report')->add_error( "Can't delete service with status: " . $self->get_status );
         return undef;
     }
 
@@ -128,7 +129,7 @@ sub parent {
     my $self = shift;
 
     return undef unless $self->get_parent;
-    return get_service('us', user_id => $self->user_id, _id => $self->get_parent );
+    return $self->srv('us', _id => $self->get_parent );
 }
 
 sub top_parent {
@@ -161,7 +162,7 @@ sub child_by_category {
     my $self = shift;
     my $category = shift;
 
-    my $ret = get_service('service')->list( where => { category => $category } );
+    my $ret = $self->srv('service')->list( where => { category => $category } );
     return undef unless $ret;
 
     my ( $child ) = $self->children(
@@ -169,13 +170,13 @@ sub child_by_category {
     );
     return undef unless $child;
 
-    return get_service('us', user_id => $self->user_id, _id => $child->{user_service_id} );
+    return $self->srv('us', _id => $child->{user_service_id} );
 }
 
 sub withdraw {
     my $self = shift;
     return undef unless $self->get_withdraw_id;
-    return get_service('wd', user_id => $self->user_id, _id => $self->get_withdraw_id, usi => $self->id );
+    return $self->srv('wd', _id => $self->get_withdraw_id, usi => $self->id );
 }
 
 *withdraws = \&withdraw; # make an alias for api name compatible
@@ -203,7 +204,7 @@ sub data_for_transport {
         @_,
     );
 
-    my ( $ret ) = get_service('UserService', user_id => $self->get_user_id )->
+    my ( $ret ) = $self->srv('UserService')->
         res( { $self->id => scalar $self->get } )->with('settings','services','withdraws')->get;
 
     return SUCCESS, {
@@ -213,7 +214,7 @@ sub data_for_transport {
 
 sub domains {
     my $self = shift;
-    return get_service('domain')->get_domain( user_service_id => $self->id );
+    return $self->srv('domain')->get_domain( user_service_id => $self->id );
 }
 
 sub domain {
@@ -222,7 +223,7 @@ sub domain {
     my $domain_id = $self->settings->{domain_id};
     return undef unless $domain_id;;
 
-    return get_service('domain', _id => $domain_id );
+    return $self->srv('domain', _id => $domain_id );
 }
 
 sub add_domain {
@@ -232,7 +233,7 @@ sub add_domain {
        @_,
     );
 
-    return get_service('domain', _id => $args{domain_id} )->add_to_service( user_service_id => $self->id );
+    return $self->srv('domain', _id => $args{domain_id} )->add_to_service( user_service_id => $self->id );
 }
 
 sub billing {
@@ -247,6 +248,7 @@ sub touch {
     my $self = shift;
     my $e = shift || EVENT_PROLONGATE;
 
+    switch_user( $self->user_id );
     return $self->process_service_recursive( $e );
 }
 
@@ -260,7 +262,7 @@ sub commands_by_event {
     my $self = shift;
     my $e = shift;
 
-    return get_service('Events')->get_events(
+    return $self->srv('Events')->get_events(
         name => $e,
         category => $self->get_category,
     );
@@ -333,7 +335,7 @@ sub make_commands_by_event {
 
 sub spool {
     my $self = shift;
-    return get_service('spool', user_id => $self->get_user_id );
+    return $self->srv('spool');
 }
 
 sub has_children_progress {
@@ -468,7 +470,7 @@ sub status {
                 }
             }
 
-            get_service('storage', user_id => $self->user_id )->delete( usi => $self->id );
+            $self->srv('storage')->delete( usi => $self->id );
 
             if ( my $server = $self->server ) {
                 $server->services_count_decrease;
@@ -489,7 +491,7 @@ sub status {
 
 sub service {
     my $self = shift;
-    return get_service('service', _id => $self->get_service_id);
+    return $self->srv('service', _id => $self->get_service_id);
 }
 
 sub make_expired {
@@ -582,7 +584,7 @@ sub server {
     my $server_id = $self->settings->{server_id};
     return undef unless $server_id;
 
-    my $server = get_service('server', _id => $server_id );
+    my $server = $self->srv('server', _id => $server_id );
     return undef unless $server;
 
     return $server;
@@ -591,7 +593,7 @@ sub server {
 sub name {
     my $self = shift;
 
-    my $service = get_service('service', _id => $self->get_service_id);
+    my $service = $self->srv('service', _id => $self->get_service_id);
 
     return $service->convert_name(
         $service->name,
