@@ -147,7 +147,6 @@ INSERT INTO `servers_groups` VALUES
 (2,'Сервера MySQL хостинга','ssh','random',NULL),
 (3,'Сервера Mail хостинга','ssh','random',NULL),
 (4,'Сервера DNS','ssh','random',NULL),
-(5,'LOCAL','local','random',NULL),
 (default,'Email уведомления','mail','random',NULL),
 (default,'Telegram уведомления','telegram','random',NULL);
 
