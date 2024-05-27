@@ -45,7 +45,7 @@ sub make_task {
     if ( my $method = $self->event->{method} ) {
         my $kind = $self;
         if ( $self->event->{kind} ) {
-            unless ( $kind = $self->srv( $self->event->{kind} ) ) {
+            unless ( $kind = get_service( $self->event->{kind} ) ) {
                 return $self->task_answer( TASK_STUCK, error => 'Kind not found' );
             }
         }
@@ -85,7 +85,7 @@ sub make_task {
         }
 
         if ( my $usi = $self->settings->{user_service_id} ) {
-            my $us = $self->srv('us', _id => $usi );
+            my $us = get_service('us', _id => $usi );
 
             if ( !$us->settings->{server_id} &&
                  $response_data &&
@@ -141,14 +141,14 @@ sub server {
 
     unless ( $self->server_id ) {
         if ( my $transport_name = $args{transport} ) {
-            if ( my @server_ids = $self->srv('Server')->list_by_transport( $transport_name ) ) {
-                return $self->srv('Server', _id => $server_ids[0]->{server_id} );
+            if ( my @server_ids = get_service('Server')->list_by_transport( $transport_name ) ) {
+                return get_service('Server', _id => $server_ids[0]->{server_id} );
             }
         }
         return undef;
     }
 
-    if ( my $server = $self->srv('Server', _id => $self->server_id ) ) {
+    if ( my $server = get_service('Server', _id => $self->server_id ) ) {
         return $server;
     }
     return undef;
@@ -160,7 +160,7 @@ sub transport_name {
     if ( my $transport = $self->event_settings->{transport} ) {
         return $transport;
     } elsif ( my $server_gid = $self->event->{server_gid} ) {
-        my $ServerGroups = $self->srv('ServerGroups', _id => $server_gid );
+        my $ServerGroups = get_service('ServerGroups', _id => $server_gid );
         return undef unless $ServerGroups;
         return $ServerGroups->get->{transport};
     } elsif ( my $server = $self->server ) {
@@ -174,7 +174,7 @@ sub transport {
     my $self = shift;
 
     return undef unless $self->transport_name;
-    return $self->srv( 'Transport::' . ucfirst( $self->transport_name ) );
+    return get_service( 'Transport::' . ucfirst( $self->transport_name ) );
 }
 
 sub get_service_for_transport {
