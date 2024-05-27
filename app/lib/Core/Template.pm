@@ -56,24 +56,24 @@ sub parse {
     }
 
     my $vars = {
-        user => sub { $self->srv('user') },
-        us => sub { $self->srv('us', _id => $args{usi}) },
+        user => sub { get_service('user') },
+        us => sub { get_service('us', _id => $args{usi}) },
         $args{task} ? ( task => $args{task} ) : (),
-        server => sub { $self->srv('server', _id => $args{server_id}) },
-        servers => sub { $self->srv('server') },
-        sg => sub { $self->srv('ServerGroups') },
-        pay => sub { $self->srv('pay', _id => $pay_id) },
-        bonus => sub { $self->srv('bonus', _id => $bonus_id) },
-        wd => sub { $self->srv('withdraw') },
-        config => sub { $self->srv('config')->data_by_name },
+        server => sub { get_service('server', _id => $args{server_id}) },
+        servers => sub { get_service('server') },
+        sg => sub { get_service('ServerGroups') },
+        pay => sub { get_service('pay', _id => $pay_id) },
+        bonus => sub { get_service('bonus', _id => $bonus_id) },
+        wd => sub { get_service('withdraw') },
+        config => sub { get_service('config')->data_by_name },
         tpl => $self,
-        service => sub { $self->srv('service') },
-        services => sub { $self->srv('service') },
-        storage => sub { $self->srv('storage') },
-        telegram => sub { $self->srv('Transport::Telegram') },
-        http => sub { $self->srv('Transport::Http') },
-        spool => sub { $self->srv('Spool') },
-        spool_history => sub { $self->srv('SpoolHistory') },
+        service => sub { get_service('service') },
+        services => sub { get_service('service') },
+        storage => sub { get_service('storage') },
+        telegram => sub { get_service('Transport::Telegram') },
+        http => sub { get_service('Transport::Http') },
+        spool => sub { get_service('Spool') },
+        spool_history => sub { get_service('SpoolHistory') },
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
         %{ $args{vars} },
         request => sub {
@@ -117,7 +117,7 @@ sub parse {
 
     my $result = "";
     unless ($template->process( \$data, $vars, \$result )) {
-        my $report = $self->srv('report');
+        my $report = get_service('report');
         $report->add_error( '' . $template->error() );
         logger->error("Template render error: ", $template->error() );
         return '';
@@ -141,7 +141,7 @@ sub show {
 
     unless ( $template ) {
         logger->warning("Template not found");
-        $self->srv('report')->add_error('Template not found');
+        get_service('report')->add_error('Template not found');
         return undef;
     }
 
@@ -162,13 +162,13 @@ sub show_public {
     my $template = $self->id( $args{id} );
     unless ( $template ) {
         logger->warning("Template not found");
-        $self->srv('report')->add_error('Template not found');
+        get_service('report')->add_error('Template not found');
         return undef;
     }
 
     unless ( $template->get_settings->{allow_public} ) {
         logger->warning("Template not public");
-        $self->srv('report')->add_error('Permission denied: template is not public');
+        get_service('report')->add_error('Permission denied: template is not public');
         return undef;
     }
 

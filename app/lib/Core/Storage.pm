@@ -53,7 +53,7 @@ sub add {
     );
 
     unless ( $id ) {
-        $self->srv('report')->add_error("Can't save the data. Perhaps the record already exists?");
+        get_service('report')->add_error("Can't save the data. Perhaps the record already exists?");
         return undef;
     }
 
