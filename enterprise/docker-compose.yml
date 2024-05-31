@@ -63,7 +63,7 @@ services:
     links:
       - api
   mysql:
-    image: "mysql:8.0"
+    image: "cr.yandex/crp53phlntopuut9qqq2/mysql:8.0"
     restart: always
     environment:
       TZ: ${TZ}
