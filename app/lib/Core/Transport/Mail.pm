@@ -159,7 +159,7 @@ sub send_mail {
         body => $args{message},
     );
 
-    my @err;
+    my $err;
     my $status = SUCCESS;
 
     unless ( $ENV{SHM_TEST} ) {
@@ -184,7 +184,7 @@ sub send_mail {
         try {
             sendmail( $email, { transport => $transport });
         } catch {
-            @err = split(/\n/, $_ );
+            $err = $_;
             $status = FAIL;
         };
     }
@@ -197,7 +197,7 @@ sub send_mail {
         mail => {
             %args,
         },
-        $err[0] ? ( error => $err[0] ) : (),
+        $err ? ( error => $err ) : (),
     };
 }
 
