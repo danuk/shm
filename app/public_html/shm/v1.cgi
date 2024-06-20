@@ -178,6 +178,12 @@ my $routes = {
         required => ['name','PUTDATA'],
         skip_auto_parse_json => 1,
     },
+    POST => {
+        controller => 'Storage',
+        method => 'replace',
+        required => ['name','POSTDATA'],
+        skip_auto_parse_json => 1,
+    },
     DELETE => {
         controller => 'Storage',
         method => 'delete',
@@ -490,6 +496,18 @@ my $routes = {
 '/admin/storage/manage' => {
     GET => {
         controller => 'Storage',
+    },
+},
+'/admin/storage/manage/:name' => {
+    POST => {
+        controller => 'Storage',
+        method => 'replace',
+        required => ['name','user_id'],
+    },
+    DELETE => {
+        controller => 'Storage',
+        method => 'delete',
+        required => ['name','user_id'],
     },
 },
 '/admin/config' => {
