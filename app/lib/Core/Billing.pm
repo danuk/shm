@@ -342,7 +342,12 @@ sub prolongate {
         logger->fatal( "Service not exists: $new_service_id" ) unless $service;
 
         my $wd_id = add_withdraw(
-            calc_withdraw( $self->billing, $service->get, months => $service->get_period ),
+            calc_withdraw(
+                $self->billing,
+                $service->get,
+                months => $service->get_period,
+                discont => 0,
+            ),
             user_service_id => $self->id,
         );
 

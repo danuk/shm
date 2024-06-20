@@ -126,6 +126,7 @@ sub forecast {
                     $wd{service_id} = $service_next->id;
                     $wd{cost} = $service_next->get_cost;
                     $wd{months} = $service_next->get_period;
+                    $wd{discount} = 0;
                     $service_next_name = $service_next->convert_name( $service_next->get_name, $obj->{settings} );
                 }
             }
