@@ -4,6 +4,7 @@ use v5.14;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Utils qw(
+    encode_json
     decode_json
 );
 
@@ -35,31 +36,59 @@ sub structure {
 
 sub add {
     my $self = shift;
+    return $self->_add_or_replace('add', @_);
+}
+
+sub replace {
+    my $self = shift;
+    return $self->_add_or_replace('set', @_);
+}
+
+sub _add_or_replace {
+    my $self = shift;
+    my $method = shift;
     my %args = (
         name => undef,
         PUTDATA => undef,
+        POSTDATA => undef,
         @_,
     );
 
+    my $data = $args{ PUTDATA } || $args{ POSTDATA };
+
+    if ( ref $args{data} ) {
+        $data = encode_json( $args{data} );
+    }
+
     if ( $ENV{CONTENT_TYPE} =~/application\/json/i ) {
-        if ( decode_json( $args{ PUTDATA } ) ) {
+        if ( decode_json( $data ) ) {
             $args{settings}->{json} = 1;
         }
     }
 
-    my $id = $self->SUPER::add(
-        data => delete $args{PUTDATA},
-        %args,
-    );
+    if ( $method eq 'add' ) {
+        my $id = $self->SUPER::add(
+            data => $data,
+            %args,
+        );
 
-    unless ( $id ) {
-        get_service('report')->add_error("Can't save the data. Perhaps the record already exists?");
-        return undef;
+        unless ( $id ) {
+            get_service('report')->add_error("Can't save the data. Perhaps the record already exists?");
+            return undef;
+        }
+    } elsif ( $method eq 'set' ) {
+        $self->_set(
+            data => $data,
+            where => {
+                user_id => $self->user_id,
+                name => $args{name},
+            },
+        );
     }
 
     return {
         result => 'successful',
-        length => length( $args{PUTDATA} ),
+        length => length( $data ),
     };
 }
 
