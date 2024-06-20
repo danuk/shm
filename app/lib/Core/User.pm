@@ -473,16 +473,18 @@ sub add_bonuses_for_partners {
     my $self = shift;
     my $payment = shift;
 
-    my $partner_id_1 = $self->get_partner_id;
-    return undef unless $partner_id_1;
+    my $partner_id = $self->get_partner_id;
+    return undef unless $partner_id;
 
     my $percent = get_service('config')->data_by_name('billing')->{partner}->{income_percent};
     return undef unless $percent;
 
-    my $bonus = $payment * $percent / 100;
-
-    if ( my $partner_1 = $self->id( $partner_id_1 ) ) {
-        $partner_1->set_bonus( bonus => $bonus,
+    if ( my $partner = $self->id( $partner_id ) ) {
+        if ( my $partner_percent = $partner->get_settings->{partner}->{income_percent} ) {
+            $percent = $partner_percent;
+        }
+        my $bonus = $payment * $percent / 100;
+        $partner->set_bonus( bonus => $bonus,
             comment => {
                 from_user_id => $self->id,
                 percent => $percent,
