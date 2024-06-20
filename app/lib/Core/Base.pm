@@ -293,7 +293,7 @@ sub make_event {
         );
     }}
 
-    if ( $args{event} ) {
+    if ( $args{event} && $args{event}->{method} ) {
         $args{event}->{kind}||= $self->kind;
         $event->make( %args );
     }

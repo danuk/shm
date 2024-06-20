@@ -151,6 +151,11 @@ sub authenticated {
 
 sub events {
     return {
+        'registered' => {
+            event => {
+                title => 'new user created',
+            },
+        },
         'payment' => {
             event => {
                 title => 'user payment',
@@ -365,7 +370,10 @@ sub reg {
         return undef;
     }
 
-    return scalar get_service( 'user', _id => $user_id )->get;
+    my $user = $self->id( $user_id );
+    $user->make_event( 'registered' );
+
+    return scalar $user->get;
 }
 
 sub services {
