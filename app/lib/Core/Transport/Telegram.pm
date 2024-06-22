@@ -323,6 +323,7 @@ sub auth {
 
     switch_user( $user->{user_id} );
 
+    $self->user->set( full_name => $username ) if $user->{full_name} ne $username;;
     $self->user->set_json(
         'settings', {
             telegram => {
