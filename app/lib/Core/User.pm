@@ -627,6 +627,11 @@ sub delete_autopayment {
 
 }
 
+sub has_autopayment {
+    my $self = shift;
+    return $self->get_settings->{pay_systems} ? 1 : 0;
+}
+
 sub make_autopayment {
     my $self = shift;
     my $amount = shift;
