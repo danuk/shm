@@ -247,7 +247,13 @@ sub query_for_filtering {
                 $args{ $key } =~s/%//g;
                 $where{ $key } = $args{ $key };
             } elsif ( $field->{type} eq 'json' ) {
-                # TODO
+                if ( ref $args{ $key } eq 'HASH' ) {
+                    # Check value in the key in a json object
+                    $where{ sprintf("%s->'\$.%s'", $key, $_) } = $args{ $key }->{ $_ } for keys %{ $args{ $key } };
+                } else {
+                    # Check exists key in a json object
+                    $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args{ $key }) } = { '!=', undef };
+                }
             } else {  # for type=(`text`, `now`, ``, ...)
                 $where{ $key }{'-like'} = $args{ $key };
             }
