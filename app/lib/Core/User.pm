@@ -476,20 +476,15 @@ sub add_bonuses_for_partners {
     my $partner_id = $self->get_partner_id;
     return undef unless $partner_id;
 
-    my $percent = get_service('config')->data_by_name('billing')->{partner}->{income_percent};
-    return undef unless $percent;
-
     if ( my $partner = $self->id( $partner_id ) ) {
-        if ( my $partner_percent = $partner->get_settings->{partner}->{income_percent} ) {
-            $percent = $partner_percent;
-        }
+        my $percent = $partner->income_percent;
         my $bonus = $payment * $percent / 100;
         $partner->set_bonus( bonus => $bonus,
             comment => {
                 from_user_id => $self->id,
                 percent => $percent,
             },
-        );
+        ) if $bonus;
     }
 }
 
@@ -625,6 +620,19 @@ sub delete_autopayment {
         pay_systems => undef,
     });
 
+}
+
+sub income_percent {
+    my $self = shift;
+
+    my $percent = 0;
+
+    my $p_settings = $self->get_settings->{partner};
+    if ( exists $p_settings->{income_percent} ) {
+        return $p_settings->{income_percent} || 0;
+    }
+
+    return get_service('config')->data_by_name('billing')->{partner}->{income_percent} || 0;
 }
 
 sub has_autopayment {
