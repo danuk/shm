@@ -476,20 +476,15 @@ sub add_bonuses_for_partners {
     my $partner_id = $self->get_partner_id;
     return undef unless $partner_id;
 
-    my $percent = get_service('config')->data_by_name('billing')->{partner}->{income_percent};
-    return undef unless $percent;
-
     if ( my $partner = $self->id( $partner_id ) ) {
-        if ( my $partner_percent = $partner->get_settings->{partner}->{income_percent} ) {
-            $percent = $partner_percent;
-        }
+        my $percent = $partner->income_percent;
         my $bonus = $payment * $percent / 100;
         $partner->set_bonus( bonus => $bonus,
             comment => {
                 from_user_id => $self->id,
                 percent => $percent,
             },
-        );
+        ) if $bonus;
     }
 }
 
