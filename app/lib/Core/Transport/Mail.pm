@@ -184,12 +184,12 @@ sub send_mail {
         try {
             sendmail( $email, { transport => $transport });
         } catch {
-            my @err = split(/\n/, $_ );
+            my @err = split(/\r?\n/, $_ );
             my @ret;
             while ( my $s = shift @err ) {
                 push @ret, $s;
             };
-            $err = join('\n', @ret );
+            $err = join(' ', @ret );
             $status = FAIL;
         };
     }
