@@ -307,7 +307,7 @@ sub auth {
 
     my $telegram_user_id = $tg_user->{id};
     my $username = $tg_user->{username};
-    my $full_name => sprintf("%s %s", $tg_user->{first_name}, $tg_user->{last_name} ),
+    my $full_name = sprintf("%s %s", $tg_user->{first_name}, $tg_user->{last_name} );
 
     my ( $user ) = $self->user->_list(
         where => {
