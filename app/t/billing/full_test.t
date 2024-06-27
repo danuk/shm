@@ -380,6 +380,30 @@ subtest 'Delete user service' => sub {
     }, 'Check withdraw' );
 };
 
+subtest 'Create user service for a long period' => sub {
+
+    get_service('service', _id => 4)->set( period => 3 );
+
+    Test::MockTime::set_fixed_time('2018-01-15T00:00:00Z');
+    $user->set( balance => 6000, credit => 0, discount => 0 );
+    $us = create_service( service_id => 4, cost => 1000 );
+    is( $us->get_expire, '2018-04-14 13:09:39' );
+    is( $us->get_status, STATUS_PROGRESS );
+    $spool->process_all();
+    is( $us->get_status, STATUS_ACTIVE );
+
+    Test::MockTime::set_fixed_time('2018-02-15T00:00:00Z');
+    $us->finish();
+    is( $us->get_expire, '2018-02-15 00:00:00' );
+
+    $us->touch();
+    $spool->process_all();
+
+    is( $us->get_expire, '2018-05-16 11:59:59' );
+    is( $us->get_status, STATUS_ACTIVE );
+};
+
+
 done_testing();
 exit 0;
 
