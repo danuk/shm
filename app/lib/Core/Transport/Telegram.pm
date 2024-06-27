@@ -307,6 +307,7 @@ sub auth {
 
     my $telegram_user_id = $tg_user->{id};
     my $username = $tg_user->{username};
+    my $full_name => sprintf("%s %s", $tg_user->{first_name}, $tg_user->{last_name} ),
 
     my ( $user ) = $self->user->_list(
         where => {
@@ -323,7 +324,7 @@ sub auth {
 
     switch_user( $user->{user_id} );
 
-    $self->user->set( full_name => $username ) if $user->{full_name} ne $username;;
+    $self->user->set( full_name => $full_name ) if $full_name && $user->{full_name} ne $full_name;
     $self->user->set_json(
         'settings', {
             telegram => {
