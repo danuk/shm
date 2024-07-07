@@ -8,10 +8,11 @@ use Data::Dumper;
 use SHM;
 use Core::System::ServiceManager qw( get_service );
 use Core::Const;
+use Core::Billing;
 
 $ENV{SHM_TEST} = 1;
 
-SHM->new( user_id => 40092 );
+my $user = SHM->new( user_id => 40092 );
 my $spool = get_service('spool');
 
 my $t = get_service('Transport::Ssh');
@@ -271,6 +272,26 @@ subtest 'Test4: PARENT have EVENT, CHILD1 have EVENT, CHILD2 have not EVENT' => 
     is( $us->status, 'REMOVED');
     is( $us_sub1->status, 'REMOVED');
     is( $us_sub2->status, 'REMOVED');
+};
+
+subtest 'Remove unpaid user service' => sub {
+    $user->set( balance => 0, credit => 0, discount => 0 );
+
+    my $us = create_service( service_id => 4, cost => 123 );
+    is( $us->get_status, 'NOT PAID' );
+    my $wd_id = $us->get_withdraw_id;
+    is( defined $wd_id, 1 );
+
+    $us->delete;
+    is( defined $us->get_withdraw_id, '' );
+
+    my @list = $user->srv('wd')->_list(
+        where => {
+            withdraw_id => $wd_id,
+        },
+    );
+
+    is( scalar @list, 0 );
 };
 
 done_testing();
