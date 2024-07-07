@@ -464,7 +464,7 @@ sub status {
             if ( my $wd = $self->withdraw ) {
                 if ( $wd->unpaid ) {
                     $self->set( withdraw_id => undef );
-                    $wd->delete;
+                    $wd->delete_unpaid( $self->id );
                 }
             }
 
