@@ -334,7 +334,7 @@ sub auth {
         },
     ) unless $user->{settings}->{telegram}->{user_id};
 
-    return $user;
+    return $self->user;
 }
 
 sub deleteMessage {
@@ -410,15 +410,15 @@ sub process_message {
             logger->warning( 'USER_NOT_FOUND:', $self->tg_user);
             logger->warning( 'CMD:', $cmd );
             $cmd = 'USER_NOT_FOUND';
-        } elsif ( $user->{block} ) {
+        } elsif ( $user->is_blocked ) {
             return $self->sendMessage(
-                text => sprintf("You are blocked! (user_id: %s)", $user->{user_id} ),
+                text => sprintf("You are blocked! (user_id: %s)", $user->id ),
             );
         }
     }
 
-    if ( my $payment = $self->get_successful_payment ) {
-        $self->user->payment(
+    if ( my $payment = $self->message->{successful_payment} ) {
+        $user->payment(
             money => $payment->{total_amount} / 100,
             pay_system_id => 'telegram_bot',
             comment => $payment,
