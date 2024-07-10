@@ -34,6 +34,8 @@ sub send {
     my $self = shift;
     my $task = shift;
 
+    $self->{deny_answer_direct} = 1;
+
     my %server;
     if ( my $server = $task->server('telegram') ) {
         %server = $server->get;
@@ -130,7 +132,7 @@ sub chat_id {
 
     unless ( $chat_id ) {
         get_service('report')->add_error('Chat_id not found');
-        logger->error('Chat_id not found');
+        logger->warning('Chat_id not found');
     }
 
     return $chat_id;
@@ -324,6 +326,8 @@ sub auth {
 
     switch_user( $user->{user_id} );
 
+    return $self->user unless $self->chat_id;
+
     $self->user->set( full_name => $full_name ) if $full_name && $user->{full_name} ne $full_name;
     $self->user->set_json(
         'settings', {
@@ -355,6 +359,8 @@ sub tg_user {
     my $user;
     if ( my $cb = $self->get_callback_query ) {
         $user = $cb->{from};
+    } elsif ( my $message = $self->get_pre_checkout_query ) {
+        $user = $message->{from};
     } else {
         my $message = $self->get_message || {};
         if ( $message->{from}->{is_bot} ) {
@@ -374,11 +380,10 @@ sub process_message {
     );
 
     $self->{webhook} = 1;
+    $self->{deny_answer_direct} = 0;
 
     logger->debug('REQUEST:', \%args );
     $self->res( \%args );
-
-    return undef if $self->message->{chat}->{type} ne 'private';
 
     my $template = $self->template( $args{template} );
     unless ( $template ) {
@@ -392,7 +397,8 @@ sub process_message {
 
     my $user = $self->auth();
 
-    if ( my $data = $args{pre_checkout_query} ) {
+    if ( my $data = $self->get_pre_checkout_query ) {
+        $self->{deny_answer_direct} = 1;
         return $self->http( 'answerPreCheckoutQuery',
             data => {
                 pre_checkout_query_id => $data->{id},
@@ -401,6 +407,18 @@ sub process_message {
         );
     }
 
+    if ( my $payment = $self->message->{successful_payment} ) {
+        $user->payment(
+            money => $payment->{total_amount},
+            currency => $payment->{currency},
+            uniq_key => $payment->{telegram_payment_charge_id},
+            pay_system_id => 'telegram_bot',
+            comment => $payment,
+        );
+        return {};
+    }
+
+    return undef if $self->message->{chat}->{type} ne 'private';
     return undef unless $self->token;
 
     my ( $cmd ) = $self->cmd;
@@ -415,15 +433,6 @@ sub process_message {
                 text => sprintf("You are blocked! (user_id: %s)", $user->id ),
             );
         }
-    }
-
-    if ( my $payment = $self->message->{successful_payment} ) {
-        $user->payment(
-            money => $payment->{total_amount} / 100,
-            pay_system_id => 'telegram_bot',
-            comment => $payment,
-        );
-        return {};
     }
 
     my $response = $self->exec_template(
