@@ -228,7 +228,7 @@ sub api_set {
 
     if ( $wd{total} != $new_wd{total} ) {
         if ( $self->unpaid ) {
-            $self->user->make_event( 'payment' );
+            $us->touch;
         } else {
             $self->user->set_balance(
                 balance => $wd{total} - ( $new_wd{total} - $new_wd{bonus} ),
