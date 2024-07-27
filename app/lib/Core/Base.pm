@@ -322,6 +322,12 @@ sub list_by_settings {
 }
 
 sub logger {
+    my $self = shift;
+
+    if ( $self ) {
+        return $self->srv('logger');
+    }
+
     state $log ||= get_service('logger');
     return $log;
 }
