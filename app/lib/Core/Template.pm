@@ -9,6 +9,7 @@ use Core::Utils qw(
     encode_json
     parse_args
     parse_headers
+    blessed
 );
 
 sub table { return 'templates' };
@@ -41,16 +42,13 @@ sub parse {
 
     my $data = $args{data} || $self->data || return '';
 
-    if ( $args{task} && $args{task}->event ) {
-        $args{event_name} //= $args{task}->event->{name};
-    }
-
     my (
         $pay_id,
         $bonus_id,
     );
 
-    if ( $args{task} ) {
+    if ( $args{task} && blessed( $args{task} ) ) {
+        $args{event_name} //= $args{task}->event->{name};
         $pay_id = $args{task}->get_settings->{pay_id};
         $bonus_id = $args{task}->get_settings->{bonus_id};
     }
@@ -70,7 +68,7 @@ sub parse {
         service => sub { get_service('service') },
         services => sub { get_service('service') },
         storage => sub { get_service('storage') },
-        telegram => sub { get_service('Transport::Telegram') },
+        telegram => sub { get_service('Transport::Telegram', task => $args{task}) },
         http => sub { get_service('Transport::Http') },
         spool => sub { get_service('Spool') },
         spool_history => sub { get_service('SpoolHistory') },

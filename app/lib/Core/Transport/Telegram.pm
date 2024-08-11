@@ -464,7 +464,7 @@ sub exec_template {
     $args{cmd} ||= $cmd;
     $args{args} ||= \@args;
 
-    my $obj = get_script( $self->template, $args{cmd},
+    my $obj = $self->get_script( $self->template, $args{cmd},
         vars => {
             cmd => $args{cmd},
             message => $self->message,
@@ -542,6 +542,7 @@ sub get_script_method {
 }
 
 sub get_script {
+    my $self = shift;
     my $template = shift;
     my $cmd = shift;
     my %args = (
@@ -567,6 +568,7 @@ sub get_script {
     my $ret = $template->parse(
         data => $data,
         %args,
+        task => $self->{task} || undef,
     );
     unless ( $ret ) {
         logger->warning("Telegram bot: data is empty in ", $template->id );
