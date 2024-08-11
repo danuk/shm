@@ -346,7 +346,7 @@ sub clean_query_args {
                     $args->{ $f } = now;
                 }
             } elsif ( exists $v->{default} ) { # set default value
-                $args->{ $f } ||= $v->{default};
+                $args->{ $f } //= $v->{default};
             }
         }
 
