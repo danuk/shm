@@ -45,7 +45,7 @@ sub structure {
         },
         pay_always => {
             type => 'number',
-            default => 1,
+            default => 0,
         },
         no_discount => {
             type => 'number',

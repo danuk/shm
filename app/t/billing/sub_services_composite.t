@@ -27,6 +27,7 @@ my $sub_service = get_service('service')->add(
     period => 1,
     category => 'test',
     no_discount => 1,
+    pay_always => 1,
 );
 
 my $service = get_service('service')->add(

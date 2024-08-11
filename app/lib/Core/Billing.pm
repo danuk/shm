@@ -68,7 +68,7 @@ sub create_service_recursive {
 
     my $us = get_service('us')->add( %args );
 
-    unless ( $args{parent} && !$service->get_cost ) {
+    if ( $service->get_pay_always || !$args{parent} ) {
         my $wd_id = add_withdraw(
             calc_withdraw( $us->billing, $service->get, %args ),
             user_service_id => $us->id,

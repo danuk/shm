@@ -87,5 +87,19 @@ subtest 'Check create service with period' => sub {
     ));
 };
 
+subtest 'Check `pay_always` flag' => sub {
+    my $si = get_service('service')->add( name => 'TEST', cost => 1, category => 'new', period => 1, pay_always => 0 );
+
+    my $parent_us = create_service( service_id => $si->id );
+    is( $parent_us->is_paid, 1 );
+
+    my $sub1_us = create_service( service_id => $si->id, parent => $parent_us->id );
+    is( $sub1_us->is_paid, 0 );
+
+    $si->set( pay_always => 1 );
+    my $sub2_us = create_service( service_id => $si->id, parent => $parent_us->id );
+    is( $sub2_us->is_paid, 1 );
+};
+
 done_testing();
 
