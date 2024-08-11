@@ -447,6 +447,8 @@ sub payment {
     my $self = shift;
     my %args = (
         money => 0,
+        currency => undef,
+        uniq_key => undef,
         @_,
     );
 
@@ -458,7 +460,8 @@ sub payment {
     my $pays = $self->pays;
     my $pay_id;
     unless ( $pay_id = $pays->add( %args ) ) {
-        get_service('report')->add_error("Can't make payment");
+        get_service('report')->add_error("Can't make a payment");
+        $self->logger->debug( %args );
         return undef;
     }
 
