@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# https://docs.freekassa.ru/#section/2.-Vvedenie
+# https://docs.freekassa.com/#section/2.-Vvedenie
 # http://127.0.0.1:8081/shm/pay_systems/freekassa.cgi?action=create&amount=100&t=1
 
 use CGI::Carp qw(fatalsToBrowser);
@@ -61,7 +61,7 @@ if ( $vars{action} eq 'create' && $vars{amount} ) {
 
     my $sign = md5_hex( join(':', $p{merchant_id}, $p{order_amount}, $p{secret_word}, $p{currency}, $p{order_id} ) );
 
-    my $uri = URI->new( 'https://pay.freekassa.ru' );
+    my $uri = URI->new( 'https://pay.freekassa.com' );
     $uri->query_param_append( 'm', $p{merchant_id} );
     $uri->query_param_append( 'oa', $p{order_amount} );
     $uri->query_param_append( 'us_user_id', $user->id );
