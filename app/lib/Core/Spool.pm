@@ -190,7 +190,7 @@ sub finish_task {
     );
 
     if ( $args{status} ne TASK_SUCCESS ) {
-        if ( $self->settings->{user_service_id} ) {
+        if ( $self->event->{name} ne EVENT_CHANGED && $self->settings->{user_service_id} ) {
             if ( my $us = get_service('us', _id => $self->settings->{user_service_id} ) ) {
                 $us->set( status => STATUS_ERROR );
             }
