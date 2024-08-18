@@ -534,6 +534,21 @@ sub activate {
     return scalar $self->get;
 }
 
+sub set_status_manual {
+    my $self = shift;
+    my %args = (
+        status => undef,
+        @_,
+    );
+
+    if ($args{status} eq STATUS_ACTIVE ||
+        $args{status} eq STATUS_BLOCK ) {
+        $self->set( status => $args{status} );
+    }
+
+    return scalar $self->get;
+}
+
 sub gen_store_pass {
     my $self = shift;
     my $len = shift || 10;

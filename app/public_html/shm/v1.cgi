@@ -353,6 +353,13 @@ my $routes = {
         required => ['user_id', 'withdraw_id'],
     },
 },
+'/admin/user/service/status' => {
+    POST => {
+        controller => 'USObject',
+        method => 'set_status_manual',
+        required => ['user_id','user_service_id','status'],
+    },
+},
 '/admin/user/service/stop' => {
     POST => {
         controller => 'USObject',
