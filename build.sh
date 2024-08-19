@@ -6,6 +6,9 @@ function build_and_push {
     [ -z "$VERSION" ] && VERSION=$(git tag --points-at | head -n1)
     if [ "$VERSION" ]; then
         TAGS+=("$REPO/shm-$1:$VERSION")
+
+        VERSION_MINOR=$(echo $VERSION | cut -d '.' -f 1,2)
+        TAGS+=("$REPO/shm-$1:$VERSION_MINOR")
     fi
 
     docker build \
