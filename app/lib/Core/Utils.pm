@@ -3,6 +3,7 @@ package Core::Utils;
 use v5.14;
 use utf8;
 use Encode qw/_utf8_on _utf8_off/;
+use MIME::Base64 ();
 use CGI::Cookie;
 
 use base qw(Exporter);
@@ -27,6 +28,10 @@ our @EXPORT_OK = qw(
     utime_to_string
     decode_json
     encode_json
+    encode_base64
+    encode_base64url
+    decode_base64
+    decode_base64url
     force_numbers
     file_by_string
     read_file
@@ -330,6 +335,22 @@ sub html_escape {
     $data =~s/([$chars])/$map{$1}/g;
 
     return $data;
+}
+
+sub encode_base64 {
+    return MIME::Base64::encode_base64( shift );
+}
+
+sub decode_base64 {
+    return MIME::Base64::decode_base64( shift );
+}
+
+sub encode_base64url {
+    return MIME::Base64::encode_base64url( shift );
+}
+
+sub decode_base64url {
+    return MIME::Base64::decode_base64url( shift );
 }
 
 sub hash_merge {

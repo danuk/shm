@@ -10,6 +10,7 @@ use Core::Utils qw(
     parse_args
     parse_headers
     blessed
+    encode_base64url
 );
 
 sub table { return 'templates' };
@@ -101,6 +102,9 @@ sub parse {
                 push @ret, sprintf("%s=%s", $_, uri_escape( $data->{ $_ } ));
             }
             return join('&', @ret );
+        },
+        toBase64Url => sub {
+            return encode_base64url( shift );
         },
     };
 

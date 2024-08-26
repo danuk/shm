@@ -138,6 +138,19 @@ sub chat_id {
     return $chat_id;
 }
 
+sub start_args {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    if ( %args ) {
+        $self->{start_args} = \%args;
+    }
+
+    return %{ $self->{start_args} || {} };
+}
+
 sub message {
     my $self = shift;
 
@@ -421,7 +434,18 @@ sub process_message {
     return undef if $self->message->{chat}->{type} ne 'private';
     return undef unless $self->token;
 
-    my ( $cmd ) = $self->cmd;
+    my ( $cmd, @args ) = $self->cmd;
+
+    if ( $cmd eq '/start' && $args[0] ) {
+        use MIME::Base64;
+        use URI::Escape;
+        my %start_args;
+        for my $pair ( split /&/, MIME::Base64::decode_base64url( $args[0] ) ) {
+            my ( $key, $value ) = split ( /=/, $pair );
+            $start_args{ $key } = uri_unescape( $value ) if defined $key && defined $value;
+            $self->start_args( %start_args );
+        }
+    }
 
     if ( $cmd ne '/register' ) {
         if ( !$user ) {
@@ -464,12 +488,15 @@ sub exec_template {
     $args{cmd} ||= $cmd;
     $args{args} ||= \@args;
 
+    my %start_args = $self->start_args;
+
     my $obj = $self->get_script( $self->template, $args{cmd},
         vars => {
             cmd => $args{cmd},
             message => $self->message,
             callback_query => $self->get_callback_query || {},
             args => $args{args},
+            start_args => \%start_args,
         },
     );
 
@@ -674,6 +701,9 @@ sub shmRegister {
     my $tg_user = $self->tg_user;
     return undef unless $tg_user;
 
+    my %start_args = $self->start_args;
+    $args{partner_id} //= $start_args{pid};
+
     my $telegram_user_id = $tg_user->{id};
     my $username = $tg_user->{username};
 
@@ -693,6 +723,13 @@ sub shmRegister {
 
     if ( $user ) {
         $self->auth();
+        if ( %start_args ) {
+            my %utm;
+            for ( keys %start_args ) {
+                $utm{ $_ } = $start_args{ $_ } if $_ =~ /^utm_/;
+            }
+            $self->user->set_settings({ utm => \%utm }) if %utm;
+        };
         return $self->exec_template(
             get_cmd_args( $args{callback_data} ),
         );
