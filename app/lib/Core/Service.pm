@@ -309,6 +309,7 @@ sub create_for_api_safe {
     my $self = shift;
     my %args = (
         service_id => undef,
+        @_,
     );
 
     return $self->create_for_api(
