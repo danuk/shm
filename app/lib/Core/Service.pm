@@ -305,6 +305,18 @@ sub create_for_api {
     return $ret;
 }
 
+sub create_for_api_safe {
+    my $self = shift;
+    my %args = (
+        service_id => undef,
+    );
+
+    return $self->create_for_api(
+        service_id => $args{service_id},
+        check_allow_to_order => 1,
+    );
+}
+
 sub categories {
     my $self = shift;
 

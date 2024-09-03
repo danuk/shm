@@ -190,6 +190,8 @@ sub calc_withdraw {
         @_,
     );
 
+    $wd{qnt} = 1 if $wd{qnt} < 1;
+
     my %service = get_service( 'service', _id => $wd{service_id} )->get;
     %wd = ( %service, %wd );
 

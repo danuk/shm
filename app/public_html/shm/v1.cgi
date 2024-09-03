@@ -115,7 +115,7 @@ my $routes = {
     },
     PUT => {
         controller => 'Service',
-        method => 'create_for_api',
+        method => 'create_for_api_safe',
         required => ['service_id'],
     },
 },
