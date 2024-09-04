@@ -616,5 +616,18 @@ sub switch {
     return undef;
 }
 
+sub income_percent {
+    my $self = shift;
+
+    my $percent = 0;
+
+    my $p_settings = $self->get_settings->{partner};
+    if ( exists $p_settings->{income_percent} ) {
+        return $p_settings->{income_percent} || 0;
+    }
+
+    return get_service('config')->data_by_name('billing')->{partner}->{income_percent} || 0;
+}
+
 1;
 
