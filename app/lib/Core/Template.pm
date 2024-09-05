@@ -73,6 +73,7 @@ sub parse {
         http => sub { get_service('Transport::Http') },
         spool => sub { get_service('Spool') },
         spool_history => sub { get_service('SpoolHistory') },
+        promo => sub { get_service('promo') },
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
         %{ $args{vars} },
         request => sub {
