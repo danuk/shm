@@ -11,7 +11,7 @@ function build_and_push {
         TAGS+=("danuk/shm-$1:$VERSION_MINOR")
     fi
 
-    docker build \
+    docker build --platform linux/amd64,linux/arm64 \
         $(printf " -t %s" "${TAGS[@]}") \
         --target $1 .
 

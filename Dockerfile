@@ -6,6 +6,8 @@ COPY nginx/default.conf /etc/nginx/conf.d/
 FROM debian:bullseye-slim AS core
 WORKDIR /app
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && apt-get install -y \
     uwsgi \
     default-libmysqlclient-dev \
@@ -43,14 +45,14 @@ RUN set -x \
 
 COPY nginx/uwsgi.ini /etc/uwsgi/apps-enabled/shm.ini
 
-ENV SHM_ROOT_DIR /app
-ENV SHM_DATA_DIR /var/shm
-ENV PERL5LIB /app/lib:/app/conf
-ENV DB_USER shm
-ENV DB_PASS password
-ENV DB_HOST 127.0.0.1
-ENV DB_PORT 3306
-ENV DB_NAME shm
+ENV SHM_ROOT_DIR=/app
+ENV SHM_DATA_DIR=/var/shm
+ENV PERL5LIB=/app/lib:/app/conf
+ENV DB_USER=shm
+ENV DB_PASS=password
+ENV DB_HOST=127.0.0.1
+ENV DB_PORT=3306
+ENV DB_NAME=shm
 
 COPY entry.sh /entry.sh
 CMD ["/entry.sh"]
