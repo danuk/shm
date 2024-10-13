@@ -36,6 +36,9 @@ services:
         condition: service_healthy
   spool:
     image: danuk/shm-core:latest
+    deploy:
+      mode: replicated
+      replicas: 1
     build:
       context: shm-ee
       dockerfile: ./Dockerfile
