@@ -1,4 +1,3 @@
-version: '2.1'
 services:
   api:
     image: danuk/shm-api:latest
@@ -69,7 +68,8 @@ services:
       target: admin
     restart: always
     environment:
-      SHM_URL: http://api
+      SHM_HOST: http://api
+      BASE_PATH: /admin
     volumes:
       - ./shm-admin-ee/app:/app
     ports:
@@ -84,7 +84,8 @@ services:
       target: client
     restart: always
     environment:
-      SHM_URL: http://api
+      SHM_HOST: http://api
+      BASE_PATH: /client
     volumes:
       - ./shm-client-ee/app:/app
     ports:

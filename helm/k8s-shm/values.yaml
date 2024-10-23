@@ -83,7 +83,7 @@ helm-common:
       - name: nginx
         image: '{{ printf "danuk/shm-admin:%s" .Values.global.shm.version }}'
         env_by_tier:
-          SHM_URL: http://shm-api
+          SHM_HOST: http://shm-api
         ports:
           - containerPort: 80
     client:
@@ -92,7 +92,7 @@ helm-common:
       - name: nginx
         image: '{{ printf "danuk/shm-client:%s" .Values.global.shm.version }}'
         env_by_tier:
-          SHM_URL: http://shm-api
+          SHM_HOST: http://shm-api
         ports:
           - containerPort: 80
 
