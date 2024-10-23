@@ -1,4 +1,4 @@
-FROM nginx:1.23-alpine AS api
+FROM nginx:stable-alpine AS api
 EXPOSE 80
 COPY nginx/default.conf /etc/nginx/conf.d/
 
