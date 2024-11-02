@@ -2,7 +2,7 @@ services:
   api:
     image: danuk/shm-api:latest
     build:
-      context: shm-ee
+      context: shm
       dockerfile: ./Dockerfile
       target: api
     restart: always
@@ -11,7 +11,7 @@ services:
   core:
     image: danuk/shm-core:latest
     build:
-      context: shm-ee
+      context: shm
       dockerfile: ./Dockerfile
       target: core
     restart: always
@@ -29,7 +29,7 @@ services:
     links:
       - mysql
     volumes:
-      - ./shm-ee/app:/app
+      - ./shm/app:/app
     depends_on:
       mysql:
         condition: service_healthy
@@ -39,7 +39,7 @@ services:
       mode: replicated
       replicas: 1
     build:
-      context: shm-ee
+      context: shm
       dockerfile: ./Dockerfile
       target: core
     restart: always
@@ -56,14 +56,14 @@ services:
     links:
       - mysql
     volumes:
-      - ./shm-ee/app:/app
+      - ./shm/app:/app
     depends_on:
       mysql:
         condition: service_healthy
   admin:
     image: danuk/shm-admin:latest
     build:
-      context: shm-admin-ee
+      context: shm-admin
       dockerfile: ./Dockerfile
       target: admin
     restart: always
@@ -71,7 +71,7 @@ services:
       SHM_HOST: http://api
       BASE_PATH: /admin
     volumes:
-      - ./shm-admin-ee/app:/app
+      - ./shm-admin/app:/app
     ports:
       - "8081:80"
     links:
@@ -79,7 +79,7 @@ services:
   client:
     image: danuk/shm-client:latest
     build:
-      context: shm-client-ee
+      context: shm-client
       dockerfile: ./Dockerfile
       target: client
     restart: always
@@ -87,13 +87,13 @@ services:
       SHM_HOST: http://api
       BASE_PATH: /client
     volumes:
-      - ./shm-client-ee/app:/app
+      - ./shm-client/app:/app
     ports:
       - "8082:80"
     links:
       - api
   mysql:
-    image: mysql:8.0
+    image: mysql:lts
     restart: always
     environment:
       TZ: Europe/Moscow
