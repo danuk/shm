@@ -69,7 +69,7 @@ services:
     restart: always
     environment:
       SHM_HOST: http://api
-      BASE_PATH: /admin
+      BASE_PATH: /
     volumes:
       - ./shm-admin/app:/app
     ports:
@@ -85,7 +85,7 @@ services:
     restart: always
     environment:
       SHM_HOST: http://api
-      BASE_PATH: /client
+      BASE_PATH: /
     volumes:
       - ./shm-client/app:/app
     ports:
