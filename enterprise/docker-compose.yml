@@ -43,7 +43,7 @@ services:
       mysql:
         condition: service_healthy
   admin:
-    image: "cr.yandex/crp53phlntopuut9qqq2/shm-admin:latest"
+    image: "danuk/shm-admin:latest"
     restart: always
     environment:
       SHM_HOST: http://api
@@ -52,7 +52,7 @@ services:
     links:
       - api
   client:
-    image: "cr.yandex/crp53phlntopuut9qqq2/shm-client:latest"
+    image: "danuk/shm-client:latest"
     restart: always
     environment:
       SHM_HOST: http://api
