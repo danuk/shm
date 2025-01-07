@@ -12,6 +12,6 @@ curl -X POST \
     -d "
 {
     \"url\": \"https://$URL/shm/v1/telegram/bot/$SHM_TEMPLATE\",
-    \"allowed_updates\": []
+    \"allowed_updates\": [\"message\",\"callback_query\"]
 }"
 
