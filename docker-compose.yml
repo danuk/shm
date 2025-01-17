@@ -49,7 +49,7 @@ services:
       SHM_URL: http://api
     ports:
       - "0.0.0.0:8081:80"
-   depends_on:
+    depends_on:
      - api
   client:
     image: "danuk/shm-client:${CLIENT_VERSION}"
@@ -63,8 +63,8 @@ services:
 #      - ./body.html:/app/ssi/body.html
     ports:
       - "0.0.0.0:8082:80"
-   depends_on:
-     - api
+    depends_on:
+      - api
   mysql:
     image: "mysql:lts"
     restart: always
