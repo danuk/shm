@@ -46,17 +46,17 @@ services:
     pull_policy: always
     restart: always
     environment:
-      SHM_URL: http://api
+      SHM_HOST: http://api
     ports:
       - "0.0.0.0:8081:80"
     depends_on:
-     - api
+      - api
   client:
     image: "danuk/shm-client:${CLIENT_VERSION}"
     pull_policy: always
     restart: always
     environment:
-      SHM_URL: http://api
+      SHM_HOST: http://api
 #    volumes:
 #      - ./styles-alternative.css:/app/assets/css/styles-alternative.css
 #      - ./head.html:/app/ssi/head.html

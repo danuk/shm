@@ -1,11 +1,13 @@
 services:
   api:
     image: "cr.yandex/crp53phlntopuut9qqq2/shm-api:latest"
+    pull_policy: always
     restart: always
-    links:
+    depends_on:
       - core
   core:
     image: "cr.yandex/crp53phlntopuut9qqq2/shm-core:latest"
+    pull_policy: always
     restart: always
     environment:
       #DEBUG: DEBUG
@@ -16,13 +18,12 @@ services:
       DB_PASS: ${MYSQL_PASS}
       DB_HOST: mysql
       DB_PORT: 3306
-    links:
-      - mysql
     depends_on:
       mysql:
         condition: service_healthy
   spool:
     image: "cr.yandex/crp53phlntopuut9qqq2/shm-core:latest"
+    pull_policy: always
     deploy:
       mode: replicated
       replicas: 1
@@ -37,22 +38,22 @@ services:
       DB_PASS: ${MYSQL_PASS}
       DB_HOST: mysql
       DB_PORT: 3306
-    links:
-      - mysql
     depends_on:
       mysql:
         condition: service_healthy
   admin:
     image: "danuk/shm-admin:latest"
+    pull_policy: always
     restart: always
     environment:
       SHM_HOST: http://api
     ports:
       - "0.0.0.0:8081:80"
-    links:
+    depends_on:
       - api
   client:
     image: "danuk/shm-client:latest"
+    pull_policy: always
     restart: always
     environment:
       SHM_HOST: http://api
@@ -62,7 +63,7 @@ services:
 #      - ./body.html:/app/ssi/body.html
     ports:
       - "0.0.0.0:8082:80"
-    links:
+    depends_on:
       - api
   mysql:
     image: "mysql:lts"
