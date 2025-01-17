@@ -1,11 +1,13 @@
 services:
   api:
-    image: "danuk/shm-api:latest"
+    image: "danuk/shm-api:${CORE_VERSION}"
+    pull_policy: always
     restart: always
-    links:
+    depends_on:
       - core
   core:
-    image: "danuk/shm-core:latest"
+    image: "danuk/shm-core:${CORE_VERSION}"
+    pull_policy: always
     restart: always
     environment:
       #DEBUG: DEBUG
@@ -16,13 +18,12 @@ services:
       DB_PASS: ${MYSQL_PASS}
       DB_HOST: mysql
       DB_PORT: 3306
-    links:
-      - mysql
     depends_on:
       mysql:
         condition: service_healthy
   spool:
-    image: "danuk/shm-core:latest"
+    image: "danuk/shm-core:${CORE_VERSION}"
+    pull_policy: always
     deploy:
       mode: replicated
       replicas: 1
@@ -37,33 +38,33 @@ services:
       DB_PASS: ${MYSQL_PASS}
       DB_HOST: mysql
       DB_PORT: 3306
-    links:
-      - mysql
     depends_on:
       mysql:
         condition: service_healthy
   admin:
-    image: "danuk/shm-admin:latest"
+    image: "danuk/shm-admin:${ADMIN_VERSION}"
+    pull_policy: always
     restart: always
     environment:
-      SHM_HOST: http://api
+      SHM_URL: http://api
     ports:
       - "0.0.0.0:8081:80"
-    links:
-      - api
+   depends_on:
+     - api
   client:
-    image: "danuk/shm-client:latest"
+    image: "danuk/shm-client:${CLIENT_VERSION}"
+    pull_policy: always
     restart: always
     environment:
-      SHM_HOST: http://api
+      SHM_URL: http://api
 #    volumes:
 #      - ./styles-alternative.css:/app/assets/css/styles-alternative.css
 #      - ./head.html:/app/ssi/head.html
 #      - ./body.html:/app/ssi/body.html
     ports:
       - "0.0.0.0:8082:80"
-    links:
-      - api
+   depends_on:
+     - api
   mysql:
     image: "mysql:lts"
     restart: always
