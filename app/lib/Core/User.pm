@@ -122,23 +122,6 @@ sub init {
     return $self;
 }
 
-sub _id {
-    my $self = shift;
-    my %args = (
-        _id => undef,
-        @_,
-    );
-
-    my $user_id;
-    if ( $args{_id} ) {
-        $user_id = $args{_id};
-    } elsif ( my $id = $self->get_user_id ) {
-        $user_id = $id;
-    }
-
-    return $user_id || get_service('config')->local->{user_id};
-}
-
 sub authenticated {
     my $self = shift;
     my $config = get_service('config');
@@ -381,9 +364,31 @@ sub services {
     return get_service('UserService', user_id => $self->id );
 }
 
+sub us {
+    my $self = shift;
+    return $self->srv('us');
+}
+
+sub storage {
+    my $self = shift;
+    return $self->srv('storage');
+}
+
+sub spool {
+    my $self = shift;
+    return $self->srv('spool');
+}
+
+sub spool_history {
+    my $self = shift;
+    return $self->srv('SpoolHistory');
+}
+
 sub set {
     my $self = shift;
-    my %args = ( @_ );
+    my %args = (
+        get_smart_args( @_ ),
+    );
 
     if ( $args{block} ) {
         get_service('sessions')->delete_user_sessions( user_id => $self->user_id );
@@ -414,7 +419,7 @@ sub set_bonus {
     my %args = (
         bonus => 0,
         comment => undef,
-        @_,
+        get_smart_args( @_ ),
     );
 
     return undef if $args{bonus} == 0;
@@ -425,6 +430,13 @@ sub set_bonus {
     $self->make_event( 'bonus', settings => { bonus_id => $bonus_id } ) if $args{bonus} > 0;
 
     return $bonus_id;
+}
+
+sub set_credit {
+    my $self = shift;
+    my $credit = shift;
+
+    return $self->set( credit => $credit );
 }
 
 # method for api
@@ -466,10 +478,47 @@ sub payment {
     }
 
     $self->set_balance( balance => $args{money} );
-    $self->add_bonuses_for_partners( $args{money} );
+    $self->add_bonuses_for_partners( $args{money} ) if $args{money} > 0;
 
     $self->make_event( 'payment', settings => { pay_id => $pay_id } );
     return scalar $pays->id( $pay_id )->get;
+}
+
+sub recash {
+    my $self = shift;
+
+    my %before = $self->get;
+
+    my $money_total = $self->pays->sum->{money} // 0;
+    my $bonus_total = $self->bonus->sum->{bonus} // 0;
+
+    my $wd_sum = $self->wd->sum // 0;
+    my $wd_total = $wd_sum->{total};
+    my $wd_bonus = $wd_sum->{bonus};
+
+    my $balance = $money_total - $wd_total;
+    my $bonus = $bonus_total - $wd_bonus;
+
+    $self->set(
+        balance => $balance,
+        #bonus => $bonus,
+        bonus => $bonus_total, # calc bonuses by the bonus table, because it also contains withdraws data
+    );
+
+    return {
+        before => {
+            balance => sprintf("%.2f", $before{balance} ),
+            bonus => sprintf("%.2f", $before{bonus} ),
+        },
+        after => {
+            balance => sprintf("%.2f", $self->balance ),
+            bonus => sprintf("%.2f", $self->get_bonus ),
+        },
+        delta => {
+            balance => sprintf("%.2f", $self->balance - $before{balance}),
+            bonus => sprintf("%.2f", $self->get_bonus - $before{bonus}),
+        }
+    };
 }
 
 sub add_bonuses_for_partners {
@@ -529,15 +578,36 @@ sub delete {
     return $self->SUPER::delete();
 }
 
+*pay = \&pays;
+
 sub pays {
     my $self = shift;
-    return get_service('pay', user_id => $self->id );
+    return $self->srv('pay');
+}
+
+sub has_payments {
+    my $self = shift;
+
+    return $self->pays->last ? 1 : 0;
+}
+
+sub has_withdraws {
+    my $self = shift;
+
+    return $self->wd->sum->{total} ? 1 : 0;
+}
+
+sub has_services {
+    my $self = shift;
+    return $self->us->has_services;
 }
 
 sub bonus {
     my $self = shift;
     return get_service('bonus', user_id => $self->id );
 }
+
+*wd = \&withdraws;
 
 sub withdraws {
     my $self = shift;
@@ -553,16 +623,34 @@ sub list_for_api {
     my $self = shift;
     my %args = (
         admin => 0,
+        filter => {},
+        where => {},
         @_,
     );
 
+    if ( $args{filter}->{settings} ) {
+        $args{where}->{settings} = { '-like' => delete $args{filter}->{settings} };
+    }
+
     if ( $args{admin} ) {
-        $args{where} = { user_id => $args{user_id} } if $args{user_id};
+        $args{where}->{user_id} = $args{user_id} if $args{user_id};
     } else {
-        $args{where} = { user_id => $self->id };
+        $args{where}->{user_id} = $self->id;
     }
 
     return $self->SUPER::list_for_api( %args );
+}
+
+sub items {
+    my $self = shift;
+      my %args = (
+        where => {},
+        get_smart_args( @_ ),
+    );
+
+    $args{where}->{block} ||= {'!=', 1};
+
+    return $self->SUPER::items( %args );
 }
 
 sub profile {
@@ -583,14 +671,9 @@ sub emails {
     my $self = shift;
 
     my %profile = $self->profile;
+    my $email = $profile{email} || $self->get_settings->{email} || $self->get_login;
 
-    my $email = $profile{email};
-    unless ( $email ) {
-        if (is_email( $self->get_login)) {
-            $email = $self->get_login;
-        }
-    }
-    return $email;
+    return is_email($email) ? $email : undef;
 }
 
 sub referrals_count {
@@ -627,6 +710,11 @@ sub income_percent {
     }
 
     return get_service('config')->data_by_name('billing')->{partner}->{income_percent} || 0;
+}
+
+sub has_autopayment {
+    my $self = shift;
+    return keys %{ $self->get_settings->{pay_systems} || {} } ? 1 : 0;
 }
 
 1;

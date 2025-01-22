@@ -8,7 +8,7 @@ use Core::Base;
 use LWP::UserAgent ();
 use Core::Utils qw(
     passgen
-    encode_json
+    encode_json_utf8
     decode_json
 );
 use MIME::Base64;
@@ -23,10 +23,7 @@ if ( $vars{action} eq 'create' ) {
     my $user;
     if ( $vars{user_id} ) {
         $user = SHM->new( user_id => $vars{user_id} );
-        unless ( $user ) {
-            print_json({ status => 400, msg => 'Error: unknown user' });
-            exit 0;
-        }
+
         if ( $vars{message_id} ) {
             get_service('Transport::Telegram')->deleteMessage( message_id => $vars{message_id} );
         }
@@ -58,7 +55,7 @@ if ( $vars{action} eq 'create' ) {
     $req->header('Content-type' => 'application/json');
     $req->header('Wpay-Store-Api-Key' => $api_key );
     $req->header('User-Agent' => 'SHM');
-    $req->content( encode_json(
+    $req->content( encode_json_utf8(
         {
             amount => {
                 currencyCode => $currencyCode,

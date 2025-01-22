@@ -8,21 +8,17 @@ use Core::Base;
 use LWP::UserAgent ();
 use Core::Utils qw(
     passgen
-    encode_json
+    encode_json_utf8
     decode_json
 );
 
 use SHM qw(:all);
 our %vars = parse_args();
 
-if ( $vars{action} eq 'create' ) {
+if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
     my $user;
     if ( $vars{user_id} ) {
         $user = SHM->new( user_id => $vars{user_id} );
-        unless ( $user ) {
-            print_json({ status => 400, msg => 'Error: unknown user' });
-            exit 0;
-        }
 
         if ( $vars{message_id} ) {
             get_service('Transport::Telegram')->deleteMessage( message_id => $vars{message_id} );
@@ -36,10 +32,9 @@ if ( $vars{action} eq 'create' ) {
     my $api_key =        $config->get_data->{yookassa}->{api_key};
     my $account_id =     $config->get_data->{yookassa}->{account_id};
     my $return_url =     $config->get_data->{yookassa}->{return_url};
-    my $description =    $config->get_data->{yookassa}->{description};
-    my $customer_email = $config->get_data->{yookassa}->{customer_email};
-
-    $description ||= $vars{description};
+    my $description =    $vars{description} || $config->get_data->{yookassa}->{description};
+    my $customer_email = $vars{email} || $config->get_data->{yookassa}->{customer_email};
+    my $save_payments  = $config->get_data->{yookassa}->{save_payments};
 
     print_json({ status => 400, msg => 'Error: api_key required. Please set it in config' }) unless $api_key;
     print_json({ status => 400, msg => 'Error: account_id required. Please set it in config' }) unless $account_id;
@@ -50,6 +45,12 @@ if ( $vars{action} eq 'create' ) {
     my $ua = LWP::UserAgent->new( timeout => 10 );
 
     $vars{amount} ||= 100;
+
+    my $payment_method_id;
+
+    if ( $vars{action} eq 'payment' ) {
+        $payment_method_id = $user->get_settings->{pay_systems}->{yookassa}->{payment_id};
+    }
 
     my $receipt = {
         customer => {
@@ -70,7 +71,7 @@ if ( $vars{action} eq 'create' ) {
         ],
     };
 
-    my $content = encode_json({
+    my $content = encode_json_utf8({
         metadata => {
             user_id => $user->id,
         },
@@ -80,10 +81,15 @@ if ( $vars{action} eq 'create' ) {
         },
         capture => "true",
         description => sprintf("%s [%d]", $description, $user->id ),
-        confirmation => {
-            type => "redirect",
-            return_url => $return_url || 'https://www.example.com',
-        },
+        $payment_method_id ? (
+            payment_method_id => $payment_method_id,
+        ) : (
+            $save_payments ? ( save_payment_method => "true" ) : (),
+            confirmation => {
+                type => "redirect",
+                return_url => $return_url || 'https://www.example.com',
+            },
+        ),
         receipt => $receipt,
     });
 
@@ -106,7 +112,26 @@ if ( $vars{action} eq 'create' ) {
                 status => 301,
             );
         } else {
-            print_json( { status => 200, msg => "Payment successful" } );
+            if ( $response_data->{status} eq 'succeeded' ) {
+                print_json( { status => 200, msg => "Payment successful" } );
+            } else {
+                my %i16n_ru = (
+                    insufficient_funds => 'недостаточно средств',
+                    permission_revoked => 'автосписания запрещены',
+                );
+
+                my $reason = $response_data->{cancellation_details}->{reason};
+
+                if ( $reason ) {
+                    print_json({
+                        status => 406,
+                        msg => $reason,
+                        exists $i16n_ru{ $reason } ? ( msg_ru => $i16n_ru{ $reason } ) : (),
+                    });
+                } else {
+                    print_json( { status => 406 } );
+                }
+            }
         }
     } else {
         print_header( status => 402 );
@@ -133,7 +158,7 @@ if ( $vars{event} ne 'payment.succeeded' ) {
 
 if ( $vars{object}->{status} ne 'succeeded' ||
      $vars{object}->{recipient}->{account_id} != $account_id ||
-     $vars{object}->{paid} != 1,
+     $vars{object}->{paid} != 1 ||
     !$vars{object}->{description}
 ) {
     logger->error('Incorrect input data');
@@ -160,11 +185,23 @@ unless ( $user->lock( timeout => 10 )) {
     exit 0;
 }
 
+if ( $vars{object}->{payment_method}->{saved} ) {
+    $user->set_settings({
+        pay_systems => {
+            yookassa => {
+                name => $vars{object}->{payment_method}->{title},
+                payment_id => $vars{object}->{payment_method}->{id},
+            },
+        },
+    });
+}
+
 $user->payment(
     user_id => $user_id,
     money => $amount,
     pay_system_id => $vars{object}->{test} ? 'yookassa-test' : 'yookassa',
     comment => \%vars,
+    uniq_key => $vars{object}->{id},
 );
 
 $user->commit;

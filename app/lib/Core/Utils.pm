@@ -2,7 +2,7 @@ package Core::Utils;
 
 use v5.14;
 use utf8;
-use Encode qw/_utf8_on _utf8_off/;
+use MIME::Base64 ();
 use CGI::Cookie;
 
 use base qw(Exporter);
@@ -26,7 +26,14 @@ our @EXPORT_OK = qw(
     string_to_utime
     utime_to_string
     decode_json
+    decode_json_utf8
     encode_json
+    encode_json_utf8
+    encode_utf8
+    encode_base64
+    encode_base64url
+    decode_base64
+    decode_base64url
     force_numbers
     file_by_string
     read_file
@@ -36,8 +43,6 @@ our @EXPORT_OK = qw(
     is_host
     html_escape
     hash_merge
-    _utf8_on
-    _utf8_off
     blessed
 );
 
@@ -142,6 +147,13 @@ sub parse_headers {
     my $cgi = CGI->new;
     my %headers = map { $_ => $cgi->http($_) } $cgi->http();
 
+    # add lower case headers without prefix
+    for my $key (keys %headers) {
+        my $new_key = $key;
+        $new_key =~s/^HTTP_//;
+        $headers{ lc $new_key } = $headers{ $key };
+    }
+
     return %headers;
 }
 
@@ -154,9 +166,10 @@ sub parse_args {
     my $cgi = CGI->new;
     %in = $cgi->Vars;
 
+    utf8::decode( $in{ $_ } ) for keys %in;
+
     if ( $args{auto_parse_json} && $ENV{CONTENT_TYPE} =~/application\/json/i ) {
         my $method = $ENV{REQUEST_METHOD};
-        _utf8_on( $in{ "${method}DATA" } );
         my $json = decode_json( $in{ "${method}DATA" } );
         if ( $json ) {
             if ( ref $json eq 'HASH' ) {
@@ -168,8 +181,6 @@ sub parse_args {
         delete $in{ "${method}DATA" };
         return %in, get_uri_args();
     }
-
-    _utf8_on( $in{ $_ } ) for keys %in;
 
     my %cmd_opts;
     for ( @ARGV ) {
@@ -211,8 +222,19 @@ sub decode_json {
     my $data = shift || return undef;
 
     my $json;
-    eval{ $json = JSON->new->decode( $data ) } or do {
-        get_service('logger')->error("Incorrect JSON data: " . $data);
+    eval{ $json = JSON->new->utf8(0)->relaxed->decode( $data ) } or do {
+        get_service('logger')->warning("Incorrect JSON data for decode: " . $data);
+    };
+
+    return $json;
+}
+
+sub decode_json_utf8 {
+    my $data = shift || return undef;
+
+    my $json;
+    eval{ $json = JSON->new->utf8(1)->decode( $data ) } or do {
+        get_service('logger')->warning("Incorrect JSON field for decode: " . $data);
     };
 
     return $json;
@@ -222,13 +244,34 @@ sub encode_json {
     my $data = shift || return undef;
 
     my $json;
-    eval{ $json = JSON->new->latin1->canonical(1)->encode( $data ) } or do {
-        get_service('logger')->error("Incorrect JSON data: " . $data);
+    eval{ $json = JSON->new->utf8(0)->canonical->encode( $data ) } or do {
+        get_service('logger')->warning("Incorrect JSON data for encode: " . $data);
     };
 
     return $json;
 }
 
+sub encode_json_utf8 {
+    my $data = shift || return undef;
+
+    my $json;
+    eval{ $json = JSON->new->utf8(1)->canonical->encode( $data ) } or do {
+        get_service('logger')->warning("Incorrect JSON data for encode: " . $data);
+    };
+
+    return $json;
+}
+
+sub encode_utf8 {
+    if ( ref $_[0] eq 'HASH' ) {
+        encode_utf8( $_ ) for values %{$_[0]};
+    } elsif ( ref $_[0] eq 'ARRAY' ){
+        encode_utf8( $_ ) for @{$_[0]};
+    } else {
+        utf8::encode($_[0]);
+    }
+    return $_[0];
+}
 
 sub force_numbers {
     if (ref $_[0] eq ""){
@@ -267,13 +310,11 @@ sub read_file {
 sub switch_user {
     my $user_id = shift;
 
-    get_service('logger')->debug('Switch user to: ', $user_id );
+    get_service('logger')->debug('Switch user to:', $user_id );
 
     my $config = get_service('config');
     $config->local('authenticated_user_id', $user_id ) unless $config->local('authenticated_user_id');
     $config->local('user_id', $user_id );
-
-    delete_service('user');
 }
 
 sub passgen {
@@ -330,6 +371,22 @@ sub html_escape {
     $data =~s/([$chars])/$map{$1}/g;
 
     return $data;
+}
+
+sub encode_base64 {
+    return MIME::Base64::encode_base64( shift );
+}
+
+sub decode_base64 {
+    return MIME::Base64::decode_base64( shift );
+}
+
+sub encode_base64url {
+    return MIME::Base64::encode_base64url( shift );
+}
+
+sub decode_base64url {
+    return MIME::Base64::decode_base64url( shift );
 }
 
 sub hash_merge {

@@ -24,6 +24,7 @@ our @EXPORT = qw(
     EVENT_CHILD_PREFIX
     EVENT_NOT_ENOUGH_MONEY
     EVENT_CHANGED
+    EVENT_CHANGED_TARIFF
 
     TASK_NEW
     TASK_SUCCESS
@@ -63,6 +64,7 @@ use constant {
     EVENT_PROLONGATE => 'prolongate',
     EVENT_ACTIVATE => 'activate',
     EVENT_CHANGED => 'changed',
+    EVENT_CHANGED_TARIFF => 'changed_tariff',
 };
 
 use constant {

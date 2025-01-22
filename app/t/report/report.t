@@ -19,6 +19,7 @@ $report->add_error('first error');
 $report->add_error('second error');
 $report->add_error('last error');
 $report->add_error( { foo => 'bar' } );
+$report->add_error('one','two','free');
 
 is $report->is_success, 0, 'Check report status: fail';
 
@@ -27,6 +28,7 @@ is_deeply scalar $report->errors, [
     'second error',
     'last error',
     { foo => 'bar' },
+    'one two free',
 ], 'Check multiple errors';
 
 is $report->is_success, 1, 'Check report status: success';

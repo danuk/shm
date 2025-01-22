@@ -4,21 +4,21 @@ package SHM;
 # Written by DaNuk (DNk) 22/07/2016
 # mail@danuk.ru
 use v5.14;
+use utf8;
 use Carp qw(confess);
 use CGI::Carp qw(fatalsToBrowser);
 
 use CGI;
-use JSON qw//;
 use MIME::Base64;
 
 use Core::System::ServiceManager qw( get_service );
 use Core::Sql::Data;
 use Scalar::Util qw(blessed);
 use Core::Utils qw(
-    force_numbers
     switch_user
     parse_headers
     get_cookies
+    encode_json
 );
 
 use base qw(Exporter);
@@ -49,6 +49,8 @@ my %in;
 
 sub new {
     my $class = shift;
+
+    binmode(STDOUT, ":utf8");          #treat as if it is UTF-8
 
     # Redirect logs to PIPE
     open STDERR, ">>/tmp/shm_log" if -p "/tmp/shm_log";
@@ -101,7 +103,8 @@ sub new {
         $user_id = $session->user_id;
     }
 
-    unless ( $args->{skip_check_auth} || $user_id ) {
+    my $user = get_service('user', _id => $user_id);
+    unless ( $user ) {
         print_header( status => 400 );
         print_json( { status => 400, msg => 'User not found' } );
         exit 0;
@@ -109,8 +112,6 @@ sub new {
 
     # Store current user_id to local config
     switch_user( $user_id );
-
-    my $user = get_service('user');
 
     if ($ENV{SCRIPT_NAME}=~/\/admin\// && !$user->is_admin ) {
         print_header( status => 403 );
@@ -219,12 +220,7 @@ sub print_json {
         }
     };
 
-    my $json = new JSON;
-    $json->canonical( 1 );
-    $json->latin1( 1 );
-    $json->pretty( 1 ) if $ENV{DEBUG};
-
-    say $json->canonical->encode( force_numbers( $ref ) );
+    say encode_json( $ref );
 }
 
 sub DESTROY {

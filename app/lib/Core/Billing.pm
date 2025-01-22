@@ -52,12 +52,13 @@ sub create_service_recursive {
     );
 
     unless ( $args{ service_id } ) {
-        logger->fatal( "Not exists `$_` in args" );
+        logger->fatal( "Not exists service_id in args" );
     }
 
     my $service = get_service('service', _id => $args{service_id} );
     unless ( $service ) {
-        logger->fatal( "Service not exists: $args{service_id}" );
+        logger->error( "Service not exists: $args{service_id}" );
+        return undef;
     }
 
     if ( $service->get_period ) {
@@ -69,14 +70,15 @@ sub create_service_recursive {
     my $us = get_service('us')->add( %args );
 
     if ( $service->get_pay_always || !$args{parent} ) {
+        my %srv = $service->get;
         my $wd_id = add_withdraw(
-            calc_withdraw( $us->billing, $service->get, %args ),
+            calc_withdraw( $us->billing, %srv, %args ),
             user_service_id => $us->id,
         );
         $us->set( withdraw_id => $wd_id );
     }
 
-    my $ss = get_service('service', _id => $args{service_id} )->subservices;
+    my $ss = $service->subservices;
     for ( @{ $ss } ) {
         create_service_recursive( %{ $_ }, parent => $us->id );
     }
@@ -91,7 +93,7 @@ sub process_service_recursive {
     if ( $event = process_service( $service, $event ) ) {
         for my $child ( $service->children ) {
             process_service_recursive(
-                get_service('us', _id => $child->{user_service_id} ),
+                $service->id( $child->id ),
                 $event,
             );
         }
@@ -343,10 +345,11 @@ sub prolongate {
         my $service = get_service('service', _id => $new_service_id );
         logger->fatal( "Service not exists: $new_service_id" ) unless $service;
 
+        my %srv = $service->get;
         my $wd_id = add_withdraw(
             calc_withdraw(
                 $self->billing,
-                $service->get,
+                %srv,
                 months => $service->get_period,
                 discont => 0,
             ),
@@ -354,10 +357,11 @@ sub prolongate {
         );
 
         $self->set(
-            service_id => $new_service_id,
-            next => undef,
+            service_id => $service->id,
+            next => $service->get_next,
             withdraw_id => $wd_id,
         );
+        $self->make_commands_by_event( EVENT_CHANGED_TARIFF );
     }
 
     # Для существующей услуги используем текущее/следующее/новое списание

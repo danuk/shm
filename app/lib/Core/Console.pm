@@ -1,6 +1,7 @@
 package Core::Console;
 
 use v5.14;
+use utf8;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Utils qw/now/;
@@ -39,18 +40,18 @@ sub append {
     my $self = shift;
     my $log = shift;
 
+    utf8::downgrade( $log );
+
     $self->do("UPDATE ".$self->table." SET log = CONCAT(log, ?) WHERE id=?",
         $log,
         $self->id,
     );
-    $self->commit;
 }
 
 sub set_eof {
     my $self = shift;
 
     $self->set( eof => 1, stop => now );
-    $self->commit;
 }
 
 sub chunk {
@@ -67,6 +68,7 @@ sub chunk {
 
     $self->res( $res );
 
+    utf8::decode($res->{chunk});
     return $res->{chunk};
 }
 

@@ -1,15 +1,19 @@
 package Core::Template;
 
 use v5.14;
+use utf8;
 use parent 'Core::Base';
 use Core::Base;
 use Template;
 
 use Core::Utils qw(
     encode_json
+    decode_json
     parse_args
     parse_headers
     blessed
+    encode_base64url
+    decode_base64url
 );
 
 sub table { return 'templates' };
@@ -37,7 +41,7 @@ sub parse {
         vars => {},
         START_TAG => '{{',
         END_TAG => '}}',
-        @_,
+        get_smart_args( @_ ),
     );
 
     my $data = $args{data} || $self->data || return '';
@@ -72,8 +76,9 @@ sub parse {
         http => sub { get_service('Transport::Http') },
         spool => sub { get_service('Spool') },
         spool_history => sub { get_service('SpoolHistory') },
+        promo => sub { get_service('promo') },
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
-        %{ $args{vars} },
+        %{ $args{vars} }, # do not move it upper. It allows to override promo end others
         request => sub {
             my %params = parse_args();
             my %headers = parse_headers();
@@ -91,6 +96,14 @@ sub parse {
             my $data = shift;
             return encode_json( $data );
         },
+        fromJson => sub {
+            my $data = shift;
+            return decode_json( $data );
+        },
+        dump => sub {
+            use Data::Dumper;
+            return Dumper( @_ );
+        },
         toQueryString => sub {
             my $data = shift;
             return '' if ref $data ne 'HASH';
@@ -102,9 +115,18 @@ sub parse {
             }
             return join('&', @ret );
         },
+        toBase64Url => sub {
+            return encode_base64url( shift );
+        },
+        fromBase64Url => sub {
+            return decode_base64url( shift );
+        },
+        true => \1,
+        false => \0,
     };
 
     my $template = Template->new({
+        ENCODING => 'utf8',
         START_TAG => quotemeta( $args{START_TAG} ),
         END_TAG   => quotemeta( $args{END_TAG} ),
         ANYCASE => 1,

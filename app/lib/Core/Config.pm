@@ -22,6 +22,17 @@ sub structure {
     }
 }
 
+sub _id {
+    my $self = shift;
+    my %args = @_;
+
+    if ( $args{key} ) {
+        $self->{key} = $args{key};
+        return "key=$self->{key}";
+    }
+    return undef;
+}
+
 sub table_allow_insert_key { return 1 };
 
 sub validate_attributes {
@@ -130,6 +141,13 @@ sub list_for_api {
     return $self->SUPER::list_for_api( where => {
             $args{key} ? ( key => $args{key} ) : (),
     });
+}
+
+sub set_value {
+    my $self = shift;
+    my $new_data = shift;
+
+    return $self->set_json('value', $new_data );
 }
 
 1;

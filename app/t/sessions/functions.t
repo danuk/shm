@@ -32,6 +32,7 @@ subtest 'Check session add with custom parameters' => sub {
         user_id => 1,
         settings => {},
     );
+
     my $session = get_service('sessions', _id => $new_session );
     is ( $session->get_user_id, 1, 'Check session user_id' );
 };

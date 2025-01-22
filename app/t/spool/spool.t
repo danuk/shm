@@ -86,9 +86,9 @@ is( $task3->{response}->{ret_code}, 0, 'Check make_task for category `test`' );
 
 $spool->process_all( );
 
-is( ($spool->list)[0]->{response}->{error}, 'Transport not exists');
 is( ($spool->list)[0]->{settings}->{server_id}, 162);
-is( ($spool->list)[0]->{status}, TASK_STUCK, "Server: 162 not exists" );
+is( ($spool->list)[0]->{response}->{error}, 'Server not exists: 162');
+is( ($spool->list)[0]->{status}, TASK_STUCK );
 
 my @ret = get_service('SpoolHistory')->list(
     where => { spool_id => { -in => [ $task1_id, $task2_id ] } },

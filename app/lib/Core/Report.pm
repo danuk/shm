@@ -6,8 +6,13 @@ use Core::Base;
 
 sub add_error {
     my $self = shift;
-    my $msg = shift;
-
+    my @msg = @_;
+    my $msg;
+    if (ref $msg[0]) {
+        $msg = $msg[0];
+    } else {
+        $msg = join(' ', @msg);
+    }
     logger->warning( $msg );
     push @{ $self->{errors}||=[] }, $msg;
 }

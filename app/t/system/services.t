@@ -36,4 +36,16 @@ is ( get_service('service', _id => 1)->get->{service_id},  1 );
 my $pay = get_service('pay', _id => 1, foo => 1, bar => 2 );
 is ( $pay->{foo} == 1 && $pay->{bar} == 2, 1, 'Check set variables to object' );
 
+subtest 'Check us user_id inherit' => sub {
+    my $user1 = $user->id(40092);
+    my $user2 = $user->id(40094);
+
+    my $t1 = $user1->us;
+    my $t2 = $user2->us;
+
+    is( $t1->{user_id}, 40092 );
+    is( $t2->{user_id}, 40094 );
+};
+
+
 done_testing();

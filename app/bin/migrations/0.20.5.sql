@@ -1,0 +1,12 @@
+ALTER TABLE `discounts` ENGINE = MyISAM;
+ALTER TABLE `dns_services` ENGINE = MyISAM;
+ALTER TABLE `domains` ENGINE = MyISAM;
+ALTER TABLE `domains_services` ENGINE = MyISAM;
+ALTER TABLE `servers_groups` ENGINE = MyISAM;
+ALTER TABLE `spool_history` ENGINE = MyISAM;
+ALTER TABLE `zones` ENGINE = MyISAM;
+ALTER TABLE `identities` ENGINE = MyISAM;
+ALTER TABLE `templates` ENGINE = MyISAM;
+ALTER TABLE `console` ENGINE = MyISAM;
+ALTER TABLE `config` ENGINE = MyISAM;
+ALTER TABLE `sessions` ENGINE = MyISAM;

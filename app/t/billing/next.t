@@ -71,7 +71,7 @@ subtest 'check switch test service to next' => sub {
 
     $us->touch();
     is( $us->get_expire, '2019-05-02 01:49:57');
-    is( $us->get_next, undef );
+    is( !$us->get_next, 1 );
 
     my $wd = $us->withdraw;
     cmp_deeply( scalar $wd->get,
@@ -111,7 +111,7 @@ subtest 'Check switch test service to next (6 months)' => sub {
 
     $us->touch();
     is( $us->get_expire, '2019-11-02 00:59:56');
-    is( $us->get_next, undef );
+    is( !$us->get_next, 1 );
 
     my $wd = $us->withdraw;
     cmp_deeply( scalar $wd->get,

@@ -101,5 +101,16 @@ subtest 'Check `pay_always` flag' => sub {
     is( $sub2_us->is_paid, 1 );
 };
 
+subtest 'Check set `end_date` via service.create' => sub {
+    my $si = get_service('service')->add( name => 'TEST', cost => 1, category => 'new', period => 1, pay_always => 0, allow_to_order => 1 );
+    my $manual_end_date = '2024-10-01 00:00:00';
+    my $us = $si->reg(
+        service_id => $si->id,
+        end_date => $manual_end_date,
+    );
+
+    is ($us->expire, $manual_end_date );
+};
+
 done_testing();
 

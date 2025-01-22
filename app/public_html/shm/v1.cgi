@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use v5.14;
-
+use utf8;
 use SHM qw(:all);
 
 use Router::Simple;
@@ -108,7 +108,7 @@ my $routes = {
         method => 'api_price_list',
     },
     PUT => {
-        controller => 'Service',
+        controller => 'USObject',
         method => 'create_for_api_safe',
         required => ['service_id'],
     },
@@ -140,7 +140,7 @@ my $routes = {
 },
 '/public/:id' => {
     GET => {
-        skip_check_auth => 1,
+        user_id => 1,
         controller => 'Template',
         method => 'show_public',
         required => ['id'],
@@ -149,7 +149,7 @@ my $routes = {
         },
     },
     POST => {
-        skip_check_auth => 1,
+        user_id => 1,
         controller => 'Template',
         method => 'show_public',
         required => ['id'],
@@ -223,7 +223,7 @@ my $routes = {
         method => 'api_price_list',
     },
     PUT => {
-        controller => 'Service',
+        controller => 'USObject',
         method => 'create_for_api',
         required => ['service_id'],
     },
@@ -560,7 +560,6 @@ my $routes = {
         required => [
             'host',
             'key_id',
-            'server_id',
             'template_id',
         ],
     },
@@ -591,6 +590,17 @@ my $routes = {
         },
     },
 },
+'/telegram/webapp/auth' => {
+    GET => {
+        skip_check_auth => 1,
+        controller => 'Transport::Telegram',
+        method => 'webapp_auth',
+        required => ['uid'],
+        args => {
+            format => 'json',
+        },
+    },
+},
 
 };
 
@@ -609,7 +619,10 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     %in = parse_args( auto_parse_json => $p->{skip_auto_parse_json} ? 0 : 1 );
     $in{filter} = decode_json( $in{filter} ) if $in{filter};
 
-    my $user = SHM->new( skip_check_auth => $p->{skip_check_auth} );
+    my $user = SHM->new(
+        skip_check_auth => $p->{skip_check_auth},
+        user_id => $p->{user_id},
+    );
 
     if ( $user->is_blocked ) {
         print_header( status => 403 );
@@ -705,7 +718,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
                 }
             } else {
                 $headers{status} = 404;
-                $info{error} = "Can't get service. Check the ID.";
+                $info{error} = "Can't get a service. Check the ID.";
             }
         } elsif ( $service->can( $method ) ) {
             push @data, $service->$method( %args );
@@ -775,6 +788,13 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         );
         my $data = join('', @data);
         my $output = qx(echo "$data" | qrencode -t svg);
+        print $output;
+    } elsif ( $args{format} eq 'qrcode_png' ) {
+        print_header( %headers,
+            type => 'image/png',
+        );
+        my $data = join('', @data);
+        my $output = qx(echo "$data" | qrencode -t PNG -o -);
         print $output;
     } else {
         print_header( %headers );

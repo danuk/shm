@@ -2,15 +2,17 @@ package Core::Base;
 
 use v5.14;
 use utf8;
-use parent qw( Core::Sql::Data Core::System::Service );
+use parent qw(
+    Core::Sql::Data
+    Core::System::Service
+);
 use Core::System::ServiceManager qw( get_service logger );
 use Core::Sql::Data;
 use Carp qw(confess);
 use Data::Dumper;
 use Core::Utils qw(
-    force_numbers
     hash_merge
-    encode_json
+    encode_json_utf8
     hash_merge
 );
 $Data::Dumper::Deepcopy = 1;
@@ -20,6 +22,7 @@ our @EXPORT = qw(
     Dumper
     confess
     logger
+    get_smart_args
 );
 
 use vars qw($AUTOLOAD);
@@ -38,7 +41,7 @@ sub AUTOLOAD {
 
         if ( $self->can('structure') ) {
             my $structure = $self->structure;
-            return $structure->{ $method }->{value};
+            return $structure->{ $method }->{value}; # return default value from struct
         }
         return undef;
     } elsif ( $AUTOLOAD=~/::DESTROY$/ ) {
@@ -46,6 +49,24 @@ sub AUTOLOAD {
     } else {
         confess ("Method not exists: " . $AUTOLOAD );
     }
+}
+
+sub new_obj {
+    my $proto = shift;
+    my $res = shift;
+
+    my $class = ref( $proto ) || $proto;
+    my $ref = {
+        user_id => $res->{user_id} || $proto->user_id,
+        res => $res,
+    };
+
+    my $self = bless $ref, $class;
+
+    if ( $self->can('init') ) {
+        return $self->init();
+    }
+    return $self;
 }
 
 sub new {
@@ -58,11 +79,14 @@ sub new {
     my $self = bless( $args, $class );
 
     # Устанавливаем идентификатор автоматически
-    if ( defined $args->{_id} && $class->can('structure') ) {
-        $args->{ $class->get_table_key } = delete $args->{_id};
+    if ( $class->can('structure') ) {
+        my $key = $class->get_table_key;
+        $args->{ $key } //= delete $args->{_id};
 
         # Выходим если не смогли загрузить данные по идентификатору
-        return undef unless $self->get;
+        if ( defined $args->{ $key } && not exists $args->{res} ) {
+            return undef unless $self->get;
+        }
     }
 
     if ( $self->can('init') ) {
@@ -76,14 +100,14 @@ sub id {
     my $id = shift;
 
     if ( defined $id ) {
-        return $self->srv( ref $self, _id => $id );
+        return $self->srv( ref $self, _id => $id, user_id => $self->user_id );
     }
 
     my $key_field = $self->get_table_key;
     my $id = $self->{ $key_field } || $self->res->{ $key_field };
 
     unless ( $id ) {
-        logger->warning('identifier not defined for class ' . ref $self);
+        logger->debug('identifier not defined for class ' . ref $self);
         return undef;
     }
     return $id;
@@ -91,7 +115,7 @@ sub id {
 
 sub user_id {
     my $self = shift;
-    return exists $self->{user_id} ? $self->{user_id} : get_service('config')->local->{user_id};
+    return $self->{user_id} || $self->res->{user_id} || get_service('config')->local->{user_id};
 }
 
 sub user {
@@ -116,6 +140,42 @@ sub res {
     return $self;
 }
 
+sub filter {
+    my $self = shift;
+    my %args = (
+        get_smart_args( @_ ),
+    );
+
+    unless ( %args ) {
+        $self->{filter}//={};
+        return wantarray ? %{ delete $self->{filter} } : delete $self->{filter};
+    }
+
+    $self->{filter} = \%args;
+    return $self;
+}
+
+sub _sort {
+    my $self = shift;
+    my $dir = shift;
+    my @args = @_;
+
+    unless ( @args ) {
+        return delete $self->{sort};
+    }
+
+    my @sort = @{ $self->{sort} || [] };
+    for ( @args ) {
+        push @sort, $_ => $dir;
+    }
+
+    $self->{sort} = \@sort;
+    return $self;
+}
+
+sub sort  { shift->_sort('asc', @_ ) };
+sub rsort { shift->_sort('desc', @_ ) };
+
 sub reload {
     my $self = shift;
     $self->{res} = {};
@@ -132,9 +192,33 @@ sub get {
     }
     return undef unless $res;
 
-    $self->{res} = $res;
+    $self->res( $res );
 
     return wantarray ? %{ $self->{res} } : $self->{res};
+}
+
+sub items {
+    my $self = shift;
+    my %args = (
+        where => {},
+        get_smart_args( @_ ),
+    );
+
+    $args{where} = {
+        %{$args{where}},
+        %{$self->query_for_filtering( $self->filter )},
+    };
+
+    $args{order} = $self->_sort;
+
+    my @ret = $self->SUPER::list( %args );
+
+    my @list;
+    for ( @ret ) {
+        push @list, $self->new_obj( $_ );
+    }
+
+    return @list;
 }
 
 sub lock {
@@ -153,8 +237,12 @@ sub lock {
         sleep 1;
         $args{timeout}--;
     }
-    $self->reload();
-    return $res ? 1 : 0;
+
+    if ( $res ) {
+        $self->res( $res );
+        return 1;
+    }
+    return 0;
 }
 
 sub set_json {
@@ -196,7 +284,7 @@ sub _add_or_set {
     for my $key ( keys %args ) {
         my $new_value = $args{ $key };
         if ( ref $new_value eq 'HASH' || ref $new_value eq 'ARRAY' ) {
-            $super_args{ $key } = encode_json( force_numbers $args{ $key } );
+            $super_args{ $key } = encode_json_utf8( $args{ $key } );
         }
     }
 
@@ -208,6 +296,15 @@ sub _add_or_set {
         }
     }
     return $ret;
+}
+
+sub create {
+    my $self = shift;
+
+    my $id = $self->_add_or_set('add', get_smart_args(@_) );
+    return undef unless $id;
+
+    return $self->id( $id );
 }
 
 sub api_set {
@@ -266,8 +363,8 @@ sub api_safe_args {
     return %args;
 }
 
-sub add { return shift->_add_or_set( 'add', @_ ) }
-sub set { shift->_add_or_set( 'set', @_ ) }
+sub add { shift->_add_or_set( 'add', get_smart_args( @_ ) ) }
+sub set { shift->_add_or_set( 'set', get_smart_args( @_ ) ) }
 
 sub kind {
     my $self = shift;
@@ -348,6 +445,56 @@ sub srv {
     my %args = @_;
 
     return get_service( $service_name, %args, user_id => $self->user_id );
+}
+
+sub get_smart_args {
+    my @args = @_;
+
+    if ( ref $args[0] eq 'HASH' ) {
+        @args = %{ $args[0] };
+    }
+    return @args;
+}
+
+sub sum {
+    my $self = shift;
+    my %args = (
+        where => {},
+        get_smart_args( @_ ),
+    );
+
+    return undef unless $self->can('structure');
+    return undef unless $self->structure->{user_id};
+
+    my $structure = $self->structure;
+
+    for my $f ( keys %{ $args{where} } ) {
+        delete $args{where}->{$f} unless exists $structure->{$f};
+    }
+
+    if ( $structure->{user_id}->{type} ne 'key') {
+        $args{where}->{user_id} = $self->user_id;
+    }
+
+    my @fields;
+    for my $key (keys %{ $structure }) {
+        next if $key =~ /_id$/;
+        push @fields, $key if $structure->{$key}->{type} eq 'number';
+    }
+
+    my @data = map( sprintf("SUM(%s) AS %s", $_, $_), @fields );
+
+    my $sql = SQL::Abstract->new;
+    my ( $where, @bind ) = $sql->where( delete $args{where} );
+
+    my ( $res ) = $self->query( sprintf("SELECT %s FROM %s $where",
+            join(', ', @data),
+            $self->table,
+        ),
+        @bind,
+    );
+
+    return $res;
 }
 
 1;

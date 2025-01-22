@@ -12,9 +12,6 @@ my $user = SHM->new( user_id => 40092 );
 
 my $storage = $user->srv('storage');
 
-my @list = $storage->list;
-is( scalar @list, 0);
-
 $storage->add(
     name => 'test',
     data => { foo => 1 },
@@ -26,9 +23,6 @@ $storage->add(
 my $data = $storage->read( name => 'test' );
 is( $data->{foo}, 1 );
 
-my @list = $storage->list;
-is( scalar @list, 1);
-
 $storage->replace(
     name => 'test',
     data => { foo => 2 },
@@ -39,5 +33,16 @@ $storage->replace(
 
 my $data = $storage->read( name => 'test' );
 is( $data->{foo}, 2 );
+
+cmp_deeply( scalar $storage->id('test')->get, {
+    'data' => '{"foo":2}',
+    'created' => ignore(),
+    'user_service_id' => undef,
+    'user_id' => 40092,
+    'name' => 'test',
+    'settings' => {
+        'json' => 1
+    }
+});
 
 done_testing();

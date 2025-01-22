@@ -1,11 +1,13 @@
 package Core::Storage;
 
 use v5.14;
+use utf8;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Utils qw(
     encode_json
     decode_json
+    decode_json_utf8
 );
 
 use SHM qw(print_header);
@@ -15,11 +17,11 @@ sub table { return 'storage' };
 sub structure {
     return {
         user_id => {
-            type => 'key',
+            type => 'number',
             auto_fill => 1,
         },
         name => {
-            type => 'text',
+            type => 'key',
         },
         created => {
             type => 'text',
@@ -33,6 +35,8 @@ sub structure {
         settings => { type => 'json', value => {} },
     }
 }
+
+sub table_allow_insert_key { return 1 };
 
 sub add {
     my $self = shift;
@@ -54,14 +58,14 @@ sub _add_or_replace {
         @_,
     );
 
-    my $data = $args{ PUTDATA } || $args{ POSTDATA };
+    my $data;
 
     if ( ref $args{data} ) {
         $data = encode_json( $args{data} );
-    }
-
-    if ( $ENV{CONTENT_TYPE} =~/application\/json/i ) {
-        if ( decode_json( $data ) ) {
+        $args{settings}->{json} = 1;
+    } else {
+        $data = delete $args{ PUTDATA } || delete $args{ POSTDATA };
+        if ( $ENV{CONTENT_TYPE} =~/application\/json/i ) {
             $args{settings}->{json} = 1;
         }
     }
@@ -172,7 +176,11 @@ sub read {
     return undef unless $data;
 
     if ( $args{decode_json} && $data->{settings}->{json} ) {
-        $data->{data} = decode_json( $data->{data} );
+        my $json = decode_json_utf8( $data->{data} );
+        $json //= decode_json( $data->{data} );
+        $data->{data} = $json;
+    } else {
+        utf8::decode( $data->{data} );
     }
 
     return $data->{data};

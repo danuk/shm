@@ -2,13 +2,14 @@ package Core::Transport::Http;
 
 use parent 'Core::Base';
 
-use v5.14;
+use v5.32;
 use utf8;
 use Core::Base;
 use Core::Const;
 use Core::Utils qw(
     encode_json
     decode_json
+    encode_utf8
 );
 use LWP::UserAgent ();
 use URI;
@@ -160,7 +161,7 @@ sub http {
     my $response = $ua->$method(
         $args{url},
         Content_Type => $args{content_type},
-        Content => $content,
+        Content => encode_utf8( $content ),
         %{ $args{headers} || {} },
     );
 

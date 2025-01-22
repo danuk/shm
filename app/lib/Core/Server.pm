@@ -15,7 +15,7 @@ sub structure {
             type => 'number',
         },
         name => {
-            type => 'number',
+            type => 'text',
         },
         transport => {         # ssh,http,etc...
             type => 'text',

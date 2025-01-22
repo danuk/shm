@@ -58,6 +58,7 @@ subtest 'Check create service' => sub {
     is( $user->get_balance, 1000, 'Check user balance after withdraw');
 
     is( $us->get_status, STATUS_PROGRESS, 'Check status of new service' );
+    is( $us->has_children, 1 );
 
     my $ch_by_service = chldrn_by_service( $us );
 
@@ -124,13 +125,15 @@ subtest 'One month later. Prolongate service' => sub {
     is( $user->get_balance, 0, 'Check user balance after withdraw');
 
     my @children = $us->children;
-    my %ch_by_service = map { $_->{service_id} => $_ } @children;
+    my $ch_by_service = chldrn_by_service( $us );
 
-    cmp_deeply( \%ch_by_service , {
+    cmp_deeply( $ch_by_service , {
         5 => superhashof( { status => STATUS_ACTIVE } ),
         8 => superhashof( { status => STATUS_ACTIVE } ),
         29 => superhashof( { status => STATUS_ACTIVE } ),
     }, 'Check children statuses' );
+
+    is( $us->has_services_block, 0 );
 
     my @all_wd = get_service('wd')->list( where => { user_service_id => $us->id } );
 
@@ -178,11 +181,12 @@ subtest 'Try prolongate service without have money' => sub {
     is( $user->get_balance, 0, 'Check user balance');
 
     is( $us->get_status, STATUS_PROGRESS, 'Check status of prolong service' );
+    is( $us->has_services_progress, 1 );
 
     my @children = $us->children;
-    my %ch_by_service = map { $_->{service_id} => $_ } @children;
+    my $ch_by_service = chldrn_by_service( $us );
 
-    cmp_deeply( \%ch_by_service, {
+    cmp_deeply( $ch_by_service, {
         5 => superhashof( { status => STATUS_BLOCK } ),
         8 => superhashof( { status => STATUS_BLOCK } ),
         29 => superhashof( { status => STATUS_PROGRESS } ),
@@ -208,6 +212,8 @@ subtest 'Try prolongate service without have money' => sub {
     $spool->process_all();
 
     is( $us->get_status, STATUS_BLOCK, 'Check status of prolong service' );
+    is( $us->has_services_progress, 0 );
+    is( $us->has_services_block, 1 );
 
     cmp_deeply( chldrn_by_service( $us ), {
         5 => superhashof( { status => STATUS_BLOCK } ),
@@ -216,6 +222,7 @@ subtest 'Try prolongate service without have money' => sub {
     }, 'Check children statuses' );
 
     is( $us->get_status, STATUS_BLOCK, 'Check status of prolong service' );
+    is( $us->has_services_block, 1 );
 };
 
 subtest 'Try prolongate blocked service without have money' => sub {
@@ -281,7 +288,8 @@ subtest 'Try prolongate blocked service' => sub {
         29 => superhashof( { status => STATUS_ACTIVE } ),
     }, 'Check children statuses after spool executes' );
 
-    is( $us->get_status, STATUS_ACTIVE, 'Check status of prolong service after spool executes' )
+    is( $us->get_status, STATUS_ACTIVE, 'Check status of prolong service after spool executes' );
+    is( $us->has_services_block, 0 );
 };
 
 Test::MockTime::set_fixed_time('2018-01-01T00:00:00Z');
@@ -292,6 +300,7 @@ subtest 'Check create service without money' => sub {
     is( $user->get_balance, 0.03, 'Check user balance after withdraw');
 
     is( $us->get_status, STATUS_WAIT_FOR_PAY, 'Check status of new service' );
+    is( $us->has_services_unpaid, 1 );
 
     my $ch_by_service = chldrn_by_service( $us );
 
@@ -339,6 +348,7 @@ subtest 'Check create service without money' => sub {
     $spool->process_all();
 
     is( $us->get_status, STATUS_ACTIVE, 'Check status of non payment service after payment' );
+    is( $us->has_services_unpaid, 0 );
 
     cmp_deeply( chldrn_by_service( $us ), {
         5 => superhashof( { status => STATUS_ACTIVE } ),
@@ -410,6 +420,6 @@ exit 0;
 sub chldrn_by_service {
     my $self = shift;
 
-    my %ret = map { $_->{service_id} => $_ } $self->children;
+    my %ret = map { $_->get_service_id => scalar $_->get } $self->children;
     return \%ret;
 }

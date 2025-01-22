@@ -28,6 +28,7 @@ subtest 'Make new payment and check last' => sub {
         comment => {
             test => 1,
         },
+        uniq_key => '123xxx',
     );
 
     cmp_deeply ( $user->pays->last, superhashof({
@@ -39,6 +40,7 @@ subtest 'Make new payment and check last' => sub {
         comment => {
             test => 1
         },
+        uniq_key => '123xxx',
     }));
 };
 

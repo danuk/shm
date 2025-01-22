@@ -22,6 +22,9 @@ is ( $who->get_user_id, 108 );
 my @who_pays = $who->pays->list;
 is ( scalar @who_pays, 0, 'Check pays for other user');
 
+is( $user->id, 40092 );
+is( $user->pays->user_id, 40092 );
+
 my @pays = $user->pays->list;
 is ( scalar @pays, 2, 'Check pays for main service');
 

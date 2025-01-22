@@ -1,0 +1,1 @@
+ALTER TABLE user_services ADD COLUMN `status_before` char(8) DEFAULT NULL;

@@ -18,6 +18,7 @@ use Core::Utils qw(
     parse_date
     parse_period
     days_in_months
+    now
 );
 use Time::Local 'timelocal_nocheck';
 
@@ -48,7 +49,7 @@ sub calc_total_by_date_range {
     my %wd = (
         cost => undef,
         period => 1,
-        withdraw_date => undef,
+        withdraw_date => now,
         end_date => undef,
         @_,
     );

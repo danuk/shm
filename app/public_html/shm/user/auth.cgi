@@ -7,22 +7,25 @@ my $cgi = CGI->new;
 
 use CGI::Carp qw(fatalsToBrowser);
 
+use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw(
     parse_args
 );
+
+use SHM qw(:all);
+my $user = SHM->new( skip_check_auth => 1 );
 
 my %in = parse_args();
 
 if ( $in{session_id} ) {
     print_header(
         cookie => create_cookie('session_id',$in{session_id}),
-        location => '/',
+        location => get_service('config')->data_by_name('cli')->{url},
         status => 302,
     );
     exit 0;
 }
 
-use Core::System::ServiceManager qw( get_service );
 
 my $session = get_service('sessions');
 if ($session->id( $in{session_id} ) ) {
@@ -34,9 +37,6 @@ unless ( $in{login} && $in{password} ) {
 	print_json( { status => 400, msg => 'login or password not present' } );
 	exit 0;
 }
-
-use SHM qw(:all);
-my $user = SHM->new( skip_check_auth => 1 );
 
 unless ( $user = $user->auth( login => trim($in{login}), password => trim($in{password}) )) {
     print_json( { status => 401, msg => 'Incorrect login or password' } );

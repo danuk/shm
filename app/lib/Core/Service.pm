@@ -3,6 +3,7 @@ package Core::Service;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Core::Const;
 
 sub table { return 'services' };
 
@@ -36,6 +37,7 @@ sub structure {
         },
         allow_to_order => {
             type => 'number',
+            default => 0,
         },
         max_count => {
             type => 'number',
@@ -81,7 +83,7 @@ sub add {
 sub set {
     my $self = shift;
     my %args = (
-        @_,
+        get_smart_args( @_ ),
     );
 
     delete $args{children};
@@ -267,55 +269,12 @@ sub api_price_list {
     return @ret;
 }
 
-sub create {
+# legacy: for backward compatible
+*create_for_api = \&reg;
+
+sub reg {
     my $self = shift;
-    my %args = (
-        service_id => undef,
-        check_allow_to_order => 1,
-        @_,
-    );
-
-    unless ( get_service('user')->authenticated->is_admin ) {
-        delete $args{cost};
-
-        if ( $args{check_allow_to_order} ) {
-            my $allowed_services_list = $self->price_list;
-            unless ( exists $allowed_services_list->{ $args{service_id} } ) {
-                logger->warning('Attempt to register not allowed service', $args{service_id} );
-                return undef;
-            }
-        }
-    }
-
-    use Core::Billing;
-    my $us = create_service( %args );
-
-    return $us;
-}
-
-sub create_for_api {
-    my $self = shift;
-
-    my $us = $self->create( @_ );
-
-    my ( $ret ) = get_service('UserService')->list_for_api(
-        usi => $us->id,
-    );
-
-    return $ret;
-}
-
-sub create_for_api_safe {
-    my $self = shift;
-    my %args = (
-        service_id => undef,
-        @_,
-    );
-
-    return $self->create_for_api(
-        service_id => $args{service_id},
-        check_allow_to_order => 1,
-    );
+    return $self->srv('us')->create( get_smart_args(@_) );
 }
 
 sub categories {

@@ -5,7 +5,7 @@ use parent 'Core::USObject';
 use Core::Base;
 use Core::Const;
 use Core::USObject;
-use Core::Utils qw( decode_json force_numbers now switch_user );
+use Core::Utils qw( decode_json_utf8 now switch_user );
 
 sub withdraws {
     my $self = shift;
@@ -261,8 +261,6 @@ sub tree {
 sub get {
     my $self = shift;
 
-    force_numbers( $self->{res} );
-
     if ( wantarray ) {
         return map { $self->{res}->{ $_ } } keys %{ $self->{res} };
     }
@@ -280,7 +278,7 @@ sub settings {
             $ret->{ $_ } = $ref->{ $_ }->[0]->{settings};
             next;
         }
-        $ret->{ $_ } = decode_json( $ref->{ $_ }->[0]->{settings} );
+        $ret->{ $_ } = decode_json_utf8( $ref->{ $_ }->[0]->{settings} );
     }
 
     $self->{res} = $ret;
@@ -418,20 +416,25 @@ sub list_for_api {
         usi => undef,
         parent => { '=', undef }, # parent IS NULL
         category => undef,
+        status => {'!=', STATUS_REMOVED},
         limit => 25,
         filter => {},
-        @_,
+        get_smart_args( @_ ),
     );
+
+    my $filter_by_settings = delete $args{filter}{settings};
 
     $args{where} = $self->query_for_filtering( %{$args{filter}} );
 
-    $args{where}{status} //= {'!=', STATUS_REMOVED};
+    $args{where}{status} //= delete $args{status};
+    $args{where}{settings} = { '-like' => $filter_by_settings } if $filter_by_settings;
 
     if ( $args{user_id} && $args{admin} ) {
         $args{where}{user_id} = delete $args{user_id};
     }
 
     my @ret = $self->all( %args )->with('settings','services','withdraws')->get;
+    $self->convert_sql_structure_data( \@ret );
 
     # sorting the results according to the query
     my ( $field, $dir ) = @{ $self->query_for_order( %args ) };

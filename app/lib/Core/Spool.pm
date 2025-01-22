@@ -28,7 +28,7 @@ sub structure {
             default => 0,
         },
         status => {         # status выполнения команды: 0-новая, 1-выполнена, 2-ошибка
-            type => 'number',
+            type => 'text',
             default => TASK_NEW,
         },
         response => { type => 'json', value => {} },
@@ -52,6 +52,15 @@ sub push {
     $self->add( @_ );
 }
 
+sub api_add {
+    my $self = shift;
+    my %args = (
+        prio => 100,
+        @_,
+    );
+    return $self->SUPER::api_add( %args );
+}
+
 # формирует и выдает список задач для исполнения
 # список формируется именно в том порядке, в котором должен выполнятся
 sub list_for_all_users {
@@ -70,7 +79,10 @@ sub list_for_all_users {
                 { '<', \[ '? - INTERVAL `delayed` SECOND', now ] },
             ],
         },
-        order => [ id => 'asc' ],
+        order => [
+            prio => 'asc',
+            id => 'asc',
+        ],
         limit => $args{limit},
         extra => 'FOR UPDATE SKIP LOCKED',
     );
@@ -148,6 +160,18 @@ sub process_one {
         }
     }
 
+    if ( my $server_id = $task->{settings}->{server_id} ) {
+        my $server = get_service('server', _id => $server_id );
+        unless ( $server ) {
+            $spool->finish_task(
+                status => TASK_STUCK,
+                response => { error => sprintf( "Server not exists: %d", $server_id ) },
+            );
+            return TASK_STUCK, $task, {};
+        }
+        #return undef unless $server->lock;
+    }
+
     my ( $status, $info ) = $spool->make_task();
 
     logger->warning('Task fail: ' . Dumper $info ) if $status ne TASK_SUCCESS;
@@ -190,12 +214,15 @@ sub finish_task {
     );
 
     if ( $args{status} ne TASK_SUCCESS ) {
-        if ( $self->event->{name} ne EVENT_CHANGED && $self->settings->{user_service_id} ) {
+        if ( $self->event->{name} ne EVENT_CHANGED &&
+             $self->event->{name} ne EVENT_CHANGED_TARIFF &&
+             $self->settings->{user_service_id} ) {
             if ( my $us = get_service('us', _id => $self->settings->{user_service_id} ) ) {
                 $us->set( status => STATUS_ERROR );
             }
         }
     } else {
+        logger->dump("Task deleting:", $self );
         if ( $self->event->{kind} eq 'Jobs' && $self->event->{period} ) {
             $self->write_history if $args{status} ne TASK_SUCCESS;
         }
@@ -262,31 +289,6 @@ sub api_success {
     return scalar $self->get;
 }
 
-sub api_retry {
-    my $self = shift;
-    my %args = (
-        event => undef,
-        settings => undef,
-        @_,
-    );
-
-    $self->set(
-        event => $args{event},
-        settings => $args{settings},
-        status => TASK_NEW,
-        executed => undef,
-        delayed => 0,
-    ) if $args{event};
-
-    if ( my $usi = $self->settings->{user_service_id} ) {
-        if ( my $us = get_service('us', _id => $usi ) ) {
-            $us->set( status => STATUS_PROGRESS );
-        }
-    }
-
-    return scalar $self->get;
-}
-
 sub api_pause {
     my $self = shift;
 
@@ -296,7 +298,9 @@ sub api_pause {
     return scalar $self->get;
 }
 
-sub api_resume {
+*api_resume = \&api_retry;
+
+sub api_retry {
     my $self = shift;
 
     $self->set(

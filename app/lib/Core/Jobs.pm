@@ -19,11 +19,10 @@ sub job_prolongate {
             $_->{expire},
         );
 
-        my $user_id = $_->{user_id};
-        next unless get_service('user', _id => $user_id )->lock( timeout => 1 );
+        my $user = $self->user->id( $_->{user_id} );
+        next unless $user->lock( timeout => 1 );
 
-        switch_user( $user_id );
-        get_service('us',  user_id => $user_id, _id => $_->{user_service_id} )->touch;
+        $user->us->touch;
     }
 
     return SUCCESS, { msg => 'successful' };
@@ -44,11 +43,10 @@ sub job_cleanup {
             $_->{expire},
         );
 
-        my $user_id = $_->{user_id};
-        next unless get_service('user', _id => $user_id )->lock( timeout => 1 );
+        my $user = $self->user->id( $_->{user_id} );
+        next unless $user->lock( timeout => 1 );
 
-        switch_user( $user_id );
-        get_service('us',  user_id => $user_id, _id => $_->{user_service_id} )->delete;
+        $user->us->id( $_->{user_service_id} )->delete;
     }
 
     return SUCCESS, { msg => 'successful' };
@@ -58,26 +56,24 @@ sub job_make_forecasts {
     my $self = shift;
     my $task = shift;
 
-    my @users = get_service('user')->_list(
-        where => {
-            block => 0,
-        },
-    );
+    my %settings;
+    if ( $task ) {
+        $settings{days_before_notification} = $task->settings->{days_before_notification};
+    }
 
-    my $spool = get_service('spool');
-    my $pay = get_service('pay');
+    my @users = $self->user->items;
 
+    my @affected;
     for my $u ( @users ) {
-        switch_user( $u->{user_id} );
-        my $ret = $pay->forecast(
-            $task->settings->{days_before_notification} ? ( days => $task->settings->{days_before_notification} ) : (),
+        my $ret = $u->pays->forecast(
+            $settings{days_before_notification} ? ( days => $settings{days_before_notification} ) : (),
         );
         next unless $ret->{total};
-        next if $ret->{total} <= $u->{balance} + $u->{bonus} + $u->{credit};
 
-        $self->make_event( 'forecast' );
+        $u->make_event( 'forecast' );
+        push @affected, $u->id,
     }
-    return SUCCESS, { msg => 'successful' };
+    return SUCCESS, { msg => 'successful', user_matches => \@affected };
 }
 
 sub job_users {
@@ -89,22 +85,20 @@ sub job_users {
         %{ $task->settings },
     );
 
-    my @users = get_service('user')->_list(
+    my @users = $self->user->items(
         where => {
-            block => 0,
             $settings{user_id} ? ( user_id => $settings{user_id} ) : (),
         },
     );
 
-    my $spool = get_service('spool');
-    for ( @users ) {
-        $spool->add(
+    for my $user ( @users ) {
+        $user->srv('spool')->add(
+            prio => 100,
             event => {
                 title => $task->event->{title},
                 server_gid => $task->event->{server_gid},
             },
             settings => \%settings,
-            user_id => $_->{user_id},
         );
     }
     return SUCCESS, { msg => 'successful' };

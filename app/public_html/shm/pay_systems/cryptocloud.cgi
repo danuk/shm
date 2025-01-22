@@ -5,6 +5,7 @@ use v5.14;
 use Digest::SHA qw(sha1_hex);
 use SHM qw(:all);
 use Core::Utils qw(
+    encode_utf8
     decode_json
 );
 
@@ -15,10 +16,6 @@ if ( $vars{action} eq 'create' && $vars{amount} ) {
     my $user;
     if ( $vars{user_id} ) {
         $user = SHM->new( user_id => $vars{user_id} );
-        unless ( $user ) {
-            print_json({ status => 400, msg => 'Error: unknown user' });
-            exit 0;
-        }
 
         if ( $vars{message_id} ) {
             get_service('Transport::Telegram')->deleteMessage( message_id => $vars{message_id} );
@@ -41,11 +38,11 @@ if ( $vars{action} eq 'create' && $vars{amount} ) {
     $ua->default_header('Authorization' => sprintf("Token %s", $api_key ));
 
     my $response = $ua->post( 'https://api.cryptocloud.plus/v1/invoice/create',
-        Content => {
+        Content => encode_utf8({
             shop_id => $shop_id,
             order_id => $user->id,
             amount => $vars{amount},
-        },
+        }),
     );
 
     if ( $response->is_success ) {

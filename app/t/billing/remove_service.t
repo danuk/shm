@@ -241,7 +241,7 @@ subtest 'Test4: PARENT have EVENT, CHILD1 have EVENT, CHILD2 have not EVENT' => 
         parent => $us->id,
     );
 
-    is( $us->has_children, 2 );
+    is( $us->has_children, 1 );
     is( $us->is_commands_by_event( EVENT_REMOVE ), 1 );
     is( $us_sub1->is_commands_by_event( EVENT_REMOVE ), 1 );
     is( $us_sub2->is_commands_by_event( EVENT_REMOVE ), 0 );

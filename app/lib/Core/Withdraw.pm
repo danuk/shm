@@ -59,11 +59,6 @@ sub structure {
     }
 }
 
-sub _id {
-    my $self = shift;
-    return $self->id;
-}
-
 sub usi {
     my $self = shift;
     return $self->{usi};
@@ -99,6 +94,8 @@ sub add {
         @_,
     );
 
+    delete $args{ $self->get_table_key };
+
     my $service = get_service('service', _id => $args{service_id } );
     unless ( $service ) {
         get_service('report')->add_error( "Can't create for not existed service" );
@@ -108,7 +105,7 @@ sub add {
     # Заполняем стуктуру из данных услуги, если параметр не передан явно
     my $srv = $service->get;
     for ( keys %{ $srv } ) {
-        $args{ $_ }||= $srv->{ $_ };
+        $args{ $_ }//= $srv->{ $_ };
     }
 
     return $self->SUPER::add( %args );
@@ -227,9 +224,7 @@ sub api_set {
     }
 
     if ( $wd{total} != $new_wd{total} ) {
-        if ( $self->unpaid ) {
-            $us->touch;
-        } else {
+        unless ( $self->unpaid ) {
             $self->user->set_balance(
                 balance => $wd{total} - ( $new_wd{total} - $new_wd{bonus} ),
             );
@@ -243,7 +238,21 @@ sub api_set {
         );
     }
 
+    $us->touch;
+
     return $self->SUPER::api_set( %new_wd );
+}
+
+sub sum {
+    my $self = shift;
+    my %args = (
+        where => {},
+        @_,
+    );
+
+    $args{where}{withdraw_date} ||= {'!=' => undef };
+
+    return $self->SUPER::sum( %args );
 }
 
 1;

@@ -1,6 +1,8 @@
 FROM nginx:stable-alpine AS api
 EXPOSE 80
 COPY nginx/default.conf /etc/nginx/conf.d/
+COPY entry-api.sh /entry.sh
+CMD ["/entry.sh"]
 
 
 FROM debian:bullseye-slim AS core
@@ -37,7 +39,10 @@ RUN apt-get install -y \
     libtie-dbi-perl \
     libemail-sender-perl \
     libwww-perl \
-    librouter-simple-perl
+    librouter-simple-perl \
+    libcrypt-jwt-perl
+
+RUN cpan Crypt::Curve25519
 
 RUN set -x \
     && useradd shm -d /var/shm -m \
@@ -54,7 +59,7 @@ ENV DB_HOST=127.0.0.1
 ENV DB_PORT=3306
 ENV DB_NAME=shm
 
-COPY entry.sh /entry.sh
+COPY entry-core.sh /entry.sh
 CMD ["/entry.sh"]
 
 COPY app /app

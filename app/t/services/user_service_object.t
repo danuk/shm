@@ -9,7 +9,7 @@ use v5.14;
 $ENV{SHM_TEST} = 1;
 
 use SHM;
-SHM->new( user_id => 40092 );
+my $user = SHM->new( user_id => 40092 );
 
 use Core::System::ServiceManager qw( get_service );
 
@@ -18,6 +18,7 @@ my $obj = get_service('us', _id => 99);
 
 is_deeply( scalar $obj->with_name->get, {
     parent => undef,
+    status_before => 'INIT',
     status => 'ACTIVE',
     name => 'Тариф X-MAX (10000 мб)',
     next => undef,
@@ -73,6 +74,10 @@ is_deeply( $obj->settings, {
         'biz' => 2
     }
 }, 'Check union settings');
+
+is( $user->us->has_services_active, 1 );
+is( $user->us->has_services_block, 0 );
+is( $user->us->has_services_unpaid, 0 );
 
 done_testing();
 

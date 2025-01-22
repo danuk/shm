@@ -12,6 +12,7 @@ $SIG{__DIE__} = sub { get_service('logger')->warning( @_ ) };
 
 my $LEVEL_TRACE     = 0;
 my $LEVEL_DEBUG     = 1;
+my $LEVEL_DUMP      = 1;
 my $LEVEL_INFO      = 2;
 my $LEVEL_WARNING   = 3;
 my $LEVEL_ERROR     = 4;
@@ -20,6 +21,7 @@ my $LEVEL_FATAL     = 5;
 my %LEVELS = (
     TRACE   => $LEVEL_TRACE,
     DEBUG   => $LEVEL_DEBUG,
+    DUMP    => $LEVEL_DUMP,
     INFO    => $LEVEL_INFO,
     WARNING => $LEVEL_WARNING,
     WARN    => $LEVEL_WARNING,
@@ -97,6 +99,7 @@ sub make_message {
         FATAL => "\033[0;31m$args{tag}\033[0m",
         WARNING => "\033[0;33m$args{tag}\033[0m",
         DEBUG => "\033[0;32m$args{tag}\033[0m",
+        DUMP => "\033[0;33m$args{tag}\033[0m",
     );
 
     my @ret;
@@ -125,6 +128,7 @@ sub make_message {
 
 sub my_warn {
     my $self = shift;
+    binmode(STDERR, ':utf8');
     print STDERR join($, // '', @_, "\n");
     return;
 }
@@ -148,7 +152,7 @@ sub write_log_file {
 }
 
 sub trace   { shift->_log( 'TRACE', @_ ) }
-sub dump    { shift->_log( 'DEBUG', Data::Dumper->new( [@_] )->Indent(1)->Quotekeys(0)->Sortkeys(1)->Dump() ) }
+sub dump    { shift->_log( 'DUMP', Data::Dumper->new( [@_] )->Indent(1)->Quotekeys(0)->Sortkeys(1)->Dump() ) }
 sub debug   { shift->_log( 'DEBUG', @_ ) }
 sub info    { shift->_log( 'INFO', @_ ) }
 sub warning { shift->_log( 'WARNING', @_ ) }

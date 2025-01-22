@@ -1,6 +1,7 @@
 package Core::Pay;
 
 use v5.14;
+use utf8;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
@@ -30,6 +31,9 @@ sub structure {
             type => 'json',
             value => undef,
         },
+        uniq_key => {
+            type => 'text',
+        }
     }
 }
 
@@ -76,7 +80,7 @@ sub forecast {
     my %args = (
         days => 3,
         blocked => 0,
-        @_,
+        get_smart_args(@_),
     );
 
     my @statuses = (
@@ -110,7 +114,7 @@ sub forecast {
         my $obj = $user_services->{ $usi };
         next if $obj->{next} == -1 && $obj->{expire};
 
-        my $us =  get_service('us', user_id => $self->user_id, _id => $usi );
+        my $us = get_service('us', user_id => $self->user_id, _id => $usi );
 
         my %wd = %{ $obj->{withdraws} || {} };
         my $service_next_name = $obj->{services}->{name};
@@ -246,7 +250,7 @@ sub paysystems {
             weight => $p->{weight} || 0,
             name => $p->{name} || $paysystem,
             shm_url => sprintf('%s?action=%s&user_id=%s&ts=%s&amount=%s',
-                $p->{payment_url} || "/shm/pay_systems/$paysystem.cgi",
+                $p->{payment_url} || get_service('config')->data_by_name('api')->{url} . "/shm/pay_systems/$paysystem.cgi",
                 $p->{action} ? $p->{action} : 'create',
                 $user->id,
                 $ts,

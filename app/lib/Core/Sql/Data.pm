@@ -1,11 +1,11 @@
 package Core::Sql::Data;
 
 use v5.14;
+use utf8;
 
 use DBI qw(:sql_types);
 use Scalar::Util qw(looks_like_number);
 use Data::Dumper;
-use utf8;
 
 use base qw(Exporter);
 
@@ -25,7 +25,10 @@ our @EXPORT = qw(
     insert_id
 );
 
-use Core::Utils qw( now decode_json force_numbers );
+use Core::Utils qw(
+    now
+    decode_json_utf8
+);
 use Core::System::ServiceManager qw( get_service logger );
 use SQL::Abstract;
 
@@ -47,12 +50,19 @@ sub db_connect {
         db_host => undef,
         db_user => undef,
         db_pass => undef,
+        attr => {
+            RaiseError => 0,
+            AutoCommit => 0,
+            mysql_auto_reconnect => 1,
+            mysql_enable_utf8mb4 => $ENV{SHM_TEST} ? 0 : 1,
+            InactiveDestroy => 1,
+        },
         @_,
     );
 
     logger->debug("MySQL connect: " . join(':', @args{ qw/db_host db_name db_user/ } ) );
 
-    my $dbh = DBI->connect( "DBI:mysql:database=$args{db_name};host=$args{db_host}", $args{db_user}, $args{db_pass} );
+    my $dbh = DBI->connect( "DBI:mysql:database=$args{db_name};host=$args{db_host}", $args{db_user}, $args{db_pass}, $args{attr} );
     unless ( $dbh ) {
         logger->warning("Can't connect to database");
         return undef;
@@ -66,28 +76,31 @@ sub db_connect {
 sub configure {
     my $dbh = shift;
 
-    $dbh->{RaiseError} = 0;
-    $dbh->{AutoCommit} = 0;
-    $dbh->{mysql_auto_reconnect} = 0;
-    $dbh->{InactiveDestroy} = 1;
-
-    $dbh->do("SET CHARACTER SET utf8mb4");
-    $dbh->do("SET NAMES utf8mb4");
     $dbh->do( sprintf( "SET time_zone = '%s'", $ENV{TZ}) );
 }
 
 sub dbh {
     my $self = shift;
+    my $dbh = shift;
+
+    if ( $dbh ) {
+        get_service('config')->local->{dbh} = $dbh;
+    }
+
     return get_service('config')->local->{dbh} || die "Can't connect to db";
 }
 
 sub dbh_new {
     my $self = shift;
+    my %attr = (
+        @_,
+    );
 
-    my $child_dbh = $self->dbh->clone();
+    # don't use $self->dbh, because of it can be recursive...
+    my $dbh = get_service('config')->local->{dbh};
+
+    my $child_dbh = $dbh->clone( \%attr );
     configure( $child_dbh );
-
-    get_service('config')->local('dbh', $child_dbh );
 
     return $child_dbh;
 }
@@ -127,6 +140,11 @@ sub do {
 sub commit {
     my $self = shift;
     return $self->dbh->commit unless $ENV{SHM_TEST};
+}
+
+sub rollback {
+    my $self = shift;
+    return $self->dbh->rollback;
 }
 
 sub log {
@@ -197,14 +215,13 @@ sub convert_sql_structure_data {
                 $self->convert_sql_structure_data( $v );
                 next;
             }
-            if (    exists $structure->{ $f } &&
-                    $structure->{ $f }->{type} eq 'json' ) {
-                        my $json = decode_json( $data->{ $f } );
-                        next unless $json;
-                        $data->{ $f } = $json;
-            } else {
-                # Hack: convert string to numeric
-                force_numbers( $data->{ $f } );
+            next unless exists $structure->{ $f };
+            if ( $structure->{ $f }->{type} eq 'json' ) {
+                my $json = decode_json_utf8( $data->{ $f } );
+                next unless $json;
+                $data->{ $f } = $json;
+            } elsif ( $structure->{ $f }->{type} eq 'number' ) {
+                $data->{ $f } += 0 if defined $data->{ $f }; # force number
             }
         }
     }
@@ -290,8 +307,8 @@ sub clean_query_args {
                 if ( $settings->{is_update} ) {
                     unless ( $args->{where}{ $f } ) {
                         # Добавляем во WHERE ключевое поле
-                        if ( exists $self->{ $f } ) {
-                            $args->{where}{ $f } = $self->{ $f };
+                        if ( my $id = $self->id ) {
+                            $args->{where}{ $f } = $id;
                         } elsif ( $self->can( $f ) ) {
                             $args->{where}{ $f } = $self->$f;
                         }
@@ -442,7 +459,7 @@ sub _add {
 
 sub _list {
     my $self = shift;
-    my %args = @_,
+    my %args = @_;
     my @vars;
 
     my $query = $self->query_select( vars => \@vars, %args );
@@ -461,7 +478,7 @@ sub _list {
 
 sub list {
     my $self = shift;
-    my %args = @_,
+    my %args = @_;
     my @vars;
 
     clean_query_args( $self, \%args, { is_list => 1 } );
@@ -523,11 +540,12 @@ sub get {
     my $self = shift;
 
     unless ( $self->id ) {
-        logger->warning("Can't get() unless object_id: ". $self->get_table_key );
+        logger->warning( sprintf("Can't get data for %s without id: `%s`", ref $self, $self->get_table_key ));
         return undef;
     }
 
-    my ( $ret ) = $self->list( where => { sprintf("%s.%s", $self->table, $self->get_table_key ) => $self->id }, @_ );
+    # do not use list() because of list might contain default selectors
+    my ( $ret ) = $self->_list( where => { sprintf("%s.%s", $self->table, $self->get_table_key ) => $self->id }, @_ );
     return wantarray ? %{ $ret||={} } : $ret;
 }
 
@@ -539,7 +557,7 @@ sub get_table_key {
     for ( keys %{ $structure } ) {
         return $_ if $structure->{ $_ }->{type} eq 'key';
     }
-    return 'id';
+    return undef;
 }
 
 sub res_by_arr {
@@ -606,7 +624,7 @@ sub query_select {
 
     for my $k ( keys %{ $args{where} } ) {
         if ( $k=~/(\w+)->(\w+)/ ) {
-            $args{where}{ sprintf("%s->'\$.%s'", $1, $2) } = force_numbers( delete $args{where}{$k} );
+            $args{where}{ sprintf("%s->'\$.%s'", $1, $2) } = delete $args{where}{$k};
         }
     }
 

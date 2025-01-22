@@ -6,6 +6,9 @@ use v5.14;
 use Core::Base;
 use LWP::UserAgent ();
 use Digest::SHA qw(sha1_hex);
+use Core::Utils qw(
+    encode_utf8
+);
 
 use SHM qw(:all);
 our %vars = parse_args();
@@ -15,10 +18,6 @@ if ( $vars{action} eq 'create' && $vars{amount} ) {
     my $user;
     if ( $vars{user_id} ) {
         $user = SHM->new( user_id => $vars{user_id} );
-        unless ( $user ) {
-            print_json({ status => 400, msg => 'Error: unknown user' });
-            exit 0;
-        }
 
         if ( $vars{message_id} ) {
             get_service('Transport::Telegram')->deleteMessage( message_id => $vars{message_id} );
@@ -38,12 +37,12 @@ if ( $vars{action} eq 'create' && $vars{amount} ) {
     my $response = $lwp->post(
         'https://yoomoney.ru/quickpay/confirm',
         Content_Type => 'form-data',
-        Content => [
+        Content => encode_utf8([
             'quickpay-form' => 'shop',
             receiver => $config->get_data->{yoomoney}->{account},
             label => $user->id,
             sum => $vars{amount},
-        ],
+        ]),
     );
 
     my $location = $response->headers->{location};

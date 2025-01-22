@@ -47,7 +47,7 @@ CREATE TABLE `discounts` (
   `percent` tinyint(4) NOT NULL,
   `share` tinyint(4) DEFAULT NULL,
   PRIMARY KEY (`discount_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `dns_services`;
 CREATE TABLE `dns_services` (
@@ -60,7 +60,7 @@ CREATE TABLE `dns_services` (
   `ttl` tinyint(4) DEFAULT NULL,
   FOREIGN KEY (domain_id) REFERENCES domains (domain_id),
   PRIMARY KEY (`dns_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `domains`;
 CREATE TABLE `domains` (
@@ -75,7 +75,7 @@ CREATE TABLE `domains` (
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`domain_id`),
   UNIQUE KEY `domain` (`domain`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `domains_services`;
 CREATE TABLE `domains_services` (
@@ -85,7 +85,7 @@ CREATE TABLE `domains_services` (
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `domain_service_id` (`domain_id`,`user_service_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `invoices`;
 CREATE TABLE `invoices` (
@@ -137,7 +137,7 @@ CREATE TABLE `servers_groups` (
   `type` char(16) NOT NULL DEFAULT 'random',
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`group_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `services`;
 CREATE TABLE `services` (
@@ -205,7 +205,7 @@ CREATE TABLE `spool_history` (
   `settings` json DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `user_services`;
 CREATE TABLE `user_services` (
@@ -216,6 +216,7 @@ CREATE TABLE `user_services` (
   `withdraw_id` int(11) DEFAULT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `expire` datetime DEFAULT NULL,
+  `status_before` char(8) NOT NULL,
   `status` char(8) NOT NULL,
   `next` int(11) DEFAULT NULL,
   `parent` int(11) DEFAULT NULL,
@@ -292,7 +293,7 @@ CREATE TABLE `zones` (
   `idn` tinyint(4) DEFAULT '0',
   `punycode_only` tinyint(4) DEFAULT '0',
   PRIMARY KEY (`zone_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `identities`;
 CREATE TABLE `identities` (
@@ -302,24 +303,24 @@ CREATE TABLE `identities` (
   `public_key` text,
   `fingerprint` char(128),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `templates` (
   `id` char(32) NOT NULL,
   `data` MEDIUMTEXT DEFAULT NULL, -- Up to 16 Mb
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `console`;
 CREATE TABLE `console` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `start` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `stop` datetime DEFAULT NULL,
-  `log` text NOT NULL,
+  `log` MEDIUMBLOB NOT NULL,
   `eof` boolean DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `profiles`;
 CREATE TABLE `profiles` (
@@ -335,7 +336,7 @@ CREATE TABLE IF NOT EXISTS `config` (
   `key` char(32) NOT NULL,
   `value` json DEFAULT NULL,
   PRIMARY KEY (`key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `sessions` (
   `id` char(32) NOT NULL,
@@ -344,7 +345,7 @@ CREATE TABLE IF NOT EXISTS `sessions` (
   `updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `storage` (
   `user_id` int(11) NOT NULL,
@@ -367,5 +368,16 @@ CREATE TABLE IF NOT EXISTS `bonus_history` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `promo_codes` (
+  `id` char(32) NOT NULL,
+  `template_id` char(32) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `used` datetime DEFAULT NULL,
+  `used_by` int(11) DEFAULT NULL,
+  `settings` json DEFAULT NULL,
+  FOREIGN KEY (user_id) REFERENCES users (user_id),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 COMMIT;

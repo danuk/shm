@@ -52,7 +52,7 @@ $user->set( balance => 100, credit => 0 );
 my $us = create_service( service_id => $service->id );
 
 my ( $child ) = $us->children;
-my $us_child = get_service('us', _id => $child->{user_service_id} );
+my $us_child = get_service('us', _id => $child->user_service_id );
 
 is( $us->wd_total_composite, 120 );
 

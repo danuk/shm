@@ -8,6 +8,7 @@ use Core::Base;
 use LWP::UserAgent ();
 use Digest::SHA qw(sha256 hmac_sha256_hex);
 use Core::Utils qw(
+    encode_utf8
     decode_json
 );
 
@@ -21,10 +22,7 @@ if ( $vars{action} eq 'create' ) {
     my $user;
     if ( $vars{user_id} ) {
         $user = SHM->new( user_id => $vars{user_id} );
-        unless ( $user ) {
-            print_json({ status => 400, msg => 'Error: unknown user' });
-            exit 0;
-        }
+
         if ( $vars{message_id} ) {
             get_service('Transport::Telegram')->deleteMessage( message_id => $vars{message_id} );
         }
@@ -51,7 +49,7 @@ if ( $vars{action} eq 'create' ) {
     $browser->default_header('Crypto-Pay-API-Token' => $api_key, 'User-Agent' => 'SHM');
 
     my $response = $browser->post('https://pay.crypt.bot/api/createInvoice',
-        Content => {
+        Content => encode_utf8({
             amount =>  $vars{amount},
             currency_type => "fiat",
             fiat => $fiat,
@@ -59,7 +57,7 @@ if ( $vars{action} eq 'create' ) {
             paid_btn_name => $paid_btn_name || "openBot",
             paid_btn_url => $paid_btn_url || 'https://t.me/send',
             allow_comments => "false",
-        },
+        }),
     );
 
     if ( $response->is_success ) {

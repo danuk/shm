@@ -4,7 +4,12 @@ use v5.14;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
-use Core::Utils qw/ now passgen /;
+use Core::Utils qw(
+    now
+    passgen
+    switch_user
+);
+
 use Core::Billing;
 
 sub table { return 'user_services' };
@@ -35,6 +40,10 @@ sub structure {
         expire => {
             type => 'date',
         },
+        status_before => {
+            type => 'text',
+            default => STATUS_INIT,
+        },
         status => {
             type => 'text',
             default => STATUS_INIT,
@@ -45,8 +54,22 @@ sub structure {
         parent => {
             type => 'number',
         },
+        category => { # virtual field (gets from join)
+            type => 'text',
+            allow_update_by_user => 0,
+        },
         settings => { type => 'json', value => {} },
     };
+}
+
+sub list {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    $args{where}{status} //= {'!=', STATUS_REMOVED};
+    return $self->SUPER::list( %args );
 }
 
 sub settings {
@@ -147,15 +170,31 @@ sub children {
         parent => $self->id,
         @_,
     );
-    return $self->list( where => { %args } );
+    return $self->items( where => { %args } );
 }
 
 sub has_children {
     my $self = shift;
-
-    my @children = $self->children();
-    return scalar @children;
+    my @arr = $self->list( where => { parent => $self->id }, limit => 1 );
+    return scalar @arr;
 }
+
+sub has_services {
+    my $self = shift;
+    my %args = (
+        where => {},
+        limit => 1,
+        @_,
+    );
+
+    my @arr = $self->list( %args );
+    return scalar @arr;
+}
+
+sub has_services_active { shift->has_services( where => { status => STATUS_ACTIVE } ) };
+sub has_services_block  { shift->has_services( where => { status => STATUS_BLOCK } ) };
+sub has_services_unpaid { shift->has_services( where => { status => STATUS_WAIT_FOR_PAY } ) };
+sub has_services_progress { shift->has_services( where => { status => STATUS_PROGRESS } ) };
 
 sub child_by_category {
     my $self = shift;
@@ -169,16 +208,17 @@ sub child_by_category {
     );
     return undef unless $child;
 
-    return $self->srv('us', _id => $child->{user_service_id} );
+    return $self->srv('us', _id => $child->id );
 }
+
+*withdraws = \&withdraw;
+*wd = \&withdraw;
 
 sub withdraw {
     my $self = shift;
     return undef unless $self->get_withdraw_id;
     return $self->srv('wd', _id => $self->get_withdraw_id, usi => $self->id );
 }
-
-*withdraws = \&withdraw; # make an alias for api name compatible
 
 sub wd_total_composite {
     my $self = shift;
@@ -190,8 +230,7 @@ sub wd_total_composite {
     }
 
     for ( $self->children ) {
-        my $child = $self->id( $_->{user_service_id} );
-        $total += $child->wd_total_composite;
+        $total += $_->wd_total_composite;
     }
 
     return $total;
@@ -250,10 +289,10 @@ sub touch {
     return $self->process_service_recursive( $e );
 }
 
-sub get_category {
+sub category {
     my $self = shift;
 
-    return $self->service->get->{category};
+    return $self->service->category;
 }
 
 sub commands_by_event {
@@ -262,7 +301,7 @@ sub commands_by_event {
 
     return get_service('Events')->get_events(
         name => $e,
-        category => $self->get_category,
+        category => $self->category,
     );
 }
 
@@ -283,12 +322,16 @@ sub is_paid {
     return 0;
 }
 
+sub is_will_be_changed { shift->get_next > 0 ? 1 : 0 };
+sub is_will_be_deleted { shift->get_next < 0 ? 1 : 0 };
+
 sub allow_event_by_status {
     my $event = shift || return undef;
     my $status = shift || return undef;
 
     return 1 if $status eq STATUS_PROGRESS;
     return 1 if $event eq EVENT_CHANGED;
+    return 1 if $event eq EVENT_CHANGED_TARIFF;
 
     my %event_by_status = (
         (EVENT_CREATE) => [STATUS_WAIT_FOR_PAY, STATUS_INIT],
@@ -311,6 +354,9 @@ sub allow_event_by_status {
 sub make_commands_by_event {
     my $self = shift;
     my $e = shift;
+    my %args = (
+        @_,
+    );
 
     return undef unless allow_event_by_status( $e, $self->status() );
 
@@ -319,13 +365,13 @@ sub make_commands_by_event {
 
     $self->status( STATUS_PROGRESS, event => $e );
 
+    $args{settings}{user_service_id} = $self->id + 0;
+    $args{settings}{server_id} //= $self->settings->{server_id} + 0 if $self->settings->{server_id};
+
     for ( @commands ) {
         $self->spool->add(
+            %args,
             event => $_,
-            settings => {
-                exists $self->settings->{server_id} ? ( server_id => $self->settings->{server_id} ) : (),
-                user_service_id => $self->id,
-            },
         );
     }
     return scalar @commands;
@@ -339,10 +385,10 @@ sub spool {
 sub has_children_progress {
     my $self = shift;
 
-    for ( my @children = $self->children() ) {
-        return 1 if $_->{status} eq STATUS_PROGRESS;
+    for ( $self->children() ) {
+        return 1 if $_->get_status eq STATUS_PROGRESS;
     }
-    return undef;
+    return 0;
 }
 
 sub event {
@@ -359,6 +405,28 @@ sub event {
     }
 
     return SUCCESS;
+}
+
+sub last_event {
+    my $self = shift;
+
+    my $status = $self->get_status;
+    my $status_before = $self->get_status_before;
+
+    if (      $status_before eq STATUS_INIT && $status eq STATUS_ACTIVE ) {
+        return EVENT_CREATE;
+    } elsif ( $status_before eq STATUS_INIT && $status eq STATUS_WAIT_FOR_PAY  ) {
+        return EVENT_NOT_ENOUGH_MONEY;
+    } elsif ( $status_before eq STATUS_ACTIVE && $status eq STATUS_ACTIVE ) {
+        return EVENT_PROLONGATE;
+    } elsif ( $status_before eq STATUS_ACTIVE && $status eq STATUS_BLOCK ) {
+        return EVENT_BLOCK;
+    } elsif ( $status_before eq STATUS_BLOCK && $status eq STATUS_ACTIVE ) {
+        return EVENT_ACTIVATE;
+    } elsif ( $status_before eq STATUS_BLOCK && $status eq STATUS_REMOVED ) {
+        return EVENT_REMOVE;
+    }
+    return undef;
 }
 
 sub api_spool_commands {
@@ -397,7 +465,7 @@ sub child_status_updated {
 
     return $self->get_status if $self->get_status ne STATUS_PROGRESS;
 
-    my %chld_by_statuses = map { $_->{status} => 1 } $self->children;
+    my %chld_by_statuses = map { $_->get_status => 1 } $self->children;
 
     if (( $chld_by_statuses{ $child{status} } && scalar keys %chld_by_statuses == 1 ) ||
         ( scalar keys %chld_by_statuses == 0 && $child{status} eq STATUS_REMOVED )) {
@@ -432,12 +500,20 @@ sub set_status_by_event {
     my $event = shift;
 
     return $self->get_status if $event eq EVENT_CHANGED;
+    return $self->get_status if $event eq EVENT_CHANGED_TARIFF;
     return $self->get_status if $event eq EVENT_PROLONGATE;
 
     my $status = status_by_event( $event );
 
     if ( $self->get_status ne $status ) {
-        $self->make_commands_by_event( EVENT_CHANGED );
+        $self->make_commands_by_event( EVENT_CHANGED,
+            settings => {
+                status => {
+                    before => $self->get_status_before,
+                    after => $status,
+                },
+            },
+        );
     }
 
     return $self->status( $status, event => $event );
@@ -452,13 +528,29 @@ sub status {
     );
 
     return $self->get_status if $args{event} eq EVENT_CHANGED;
-    return $self->get_status if $args{event} eq EVENT_PROLONGATE;
+    return $self->get_status if $args{event} eq EVENT_CHANGED_TARIFF;
+    if ( $args{event} eq EVENT_PROLONGATE ) {
+        $self->set( status_before => $self->get_status );
+        return $self->get_status;
+    }
 
-    if ( defined $status && $self->get_status ne $status ) {
+    if ( defined $status &&
+        $self->get_status ne $status &&
+        $self->get_status ne STATUS_REMOVED
+    ) {
+
         logger->info( sprintf('Set new status for service: [usi=%d,si=%d,e=%s,status=%d]',
                 $self->id, $self->get_service_id, $args{event}, $status ) );
 
-        $self->set( status => $status );
+        my $status_before;
+        if ($self->get_status ne STATUS_PROGRESS && $self->get_status ne STATUS_ERROR ) {
+            $status_before = $self->get_status;
+        };
+
+        $self->set(
+            $status_before ? ( status_before => $status_before ) : (),
+            status => $status
+        );
 
         if ( $status eq STATUS_REMOVED ) {
             if ( my $wd = $self->withdraw ) {
@@ -563,6 +655,20 @@ sub gen_store_pass {
     return $self->settings->{password};
 }
 
+sub items {
+    my $self = shift;
+    my %args = (
+        where => {},
+        get_smart_args( @_ ),
+    );
+
+    $args{fields} = '*,user_services.next as next';
+    $args{join} = { table => 'services', using => ['service_id'] };
+    $args{where}->{status} ||= {'!=', STATUS_REMOVED};
+
+    return $self->SUPER::items( %args );
+}
+
 sub list_for_delete {
     my $self = shift;
     my %args = (
@@ -639,6 +745,155 @@ sub api_set {
     }
 
     return $self->SUPER::api_set( %args );
+}
+
+sub change {
+    my $self = shift;
+    my %args = (
+        service_id => undef,
+        get_smart_args( @_ ),
+    );
+
+    my $service = $self->srv('service', _id => $args{service_id} );
+    unless ( $service ) {
+        logger->error("Can't change us to non exists service: $args{service_id}");
+        return undef;
+    }
+
+    if ( $self->get_status eq STATUS_WAIT_FOR_PAY ||
+         $self->get_status eq STATUS_BLOCK ) {
+
+        if ( my $wd = $self->withdraw ) {
+            my %wd = Core::Billing::calc_withdraw( $self->billing, $service->get );
+            delete @wd{ qw/ withdraw_id create_date end_date withdraw_date / };
+            $wd->set( %wd );
+        }
+
+        $self->set(
+            service_id => $service->id,
+            next => $service->get_next,
+        );
+        $self->make_commands_by_event( EVENT_CHANGED_TARIFF );
+    } elsif ( $self->get_status eq STATUS_ACTIVE ) {
+        $self->set( next => $service->id );
+        $self->finish;
+    } else {
+        return undef;
+    }
+
+    $self->touch;
+    return 1;
+}
+
+sub create {
+    my $self = shift;
+    my %args = (
+        service_id => undef,
+        end_date => undef,
+        check_allow_to_order => 1,
+        check_exists => undef,
+        check_exists_unpaid => undef,
+        check_category => undef,
+        get_smart_args( @_ ),
+    );
+
+    unless( $self->srv('service', _id => $args{service_id} )) {
+        logger->warning('service not exists:', $args{service_id} );
+        $self->srv('report')->add_error('service not exists:', $args{service_id} );
+        return undef;
+    }
+
+    unless ( get_service('user')->authenticated->is_admin ) {
+        if ( $args{check_allow_to_order} ) {
+            my $allowed_services_list = $self->srv('service')->price_list;
+            unless ( exists $allowed_services_list->{ $args{service_id} } ) {
+                logger->warning('Attempt to register not allowed service', $args{service_id} );
+                return undef;
+            }
+        }
+    }
+
+    my $us;
+
+    if ( $args{check_exists} || $args{check_exists_unpaid} || $args{check_category} ) {
+        my ( $list ) = $self->list(
+            where => {
+                $args{check_exists_unpaid} ? ( status => STATUS_WAIT_FOR_PAY ) : (),
+                -OR => [
+                    $args{check_exists} ? ( service_id => $args{service_id} ) : (),
+                    $args{check_category} ? ( category => { -like => $args{check_category} } ) : (),
+                ],
+            },
+            join => { table => 'services', using => ['service_id'] },
+            parent => undef,
+            limit => 1,
+        );
+        if ( $list ) {
+            $us = $self->id( $list->{user_service_id} );
+        }
+    }
+
+    unless ( $us ) {
+        switch_user( $self->user_id );
+        $us = create_service( %args );
+
+        if ( $us->get_expire && $args{end_date} ) {
+            $us->set( expire => $args{end_date} );
+        }
+    }
+
+    return $us;
+}
+
+sub create_for_api {
+    my $self = shift;
+
+    my $us = $self->create( @_ );
+    unless ($us) {
+        return undef;
+    }
+
+    my ( $ret ) = get_service('UserService')->list_for_api(
+        usi => $us->id,
+    );
+
+    return $ret;
+}
+
+sub create_for_api_safe {
+    my $self = shift;
+    my %args = (
+        service_id => undef,
+        @_,
+    );
+
+    return $self->create_for_api(
+        service_id => $args{service_id},
+        check_allow_to_order => 1,
+    );
+}
+
+sub make_custom_event {
+    my $self = shift;
+    my %args = (
+        event => 'custom',
+        title => 'custom event',
+        get_smart_args( @_ ),
+    );
+
+    return undef unless $self->server;
+
+    return $self->srv('spool')->create(
+        prio => 100,
+        event => {
+            name => $args{event},
+            title => $args{title},
+        },
+        settings => {
+            user_service_id => $self->id,
+            server_id => $self->server->id,
+        },
+    );
 }
 
 1;

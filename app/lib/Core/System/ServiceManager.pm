@@ -63,18 +63,33 @@ sub get_service {
             print STDERR "ERROR\tCan't create a service: $class\n";
             return undef;
         }
+        # register base service
         $service->register( $class, %args );
     }
 
-    my $service_name = $class;
-    if ( $args{_id} ) {
-        $service_name .= '_' . $args{_id};
-    } elsif ( %args ) {
-        $service_name .= '_' . join('_', map( $args{ $_ }, sort keys %args ) );
-    } elsif ( $service->can('_id') ) {
-        if ( my $id = $service->_id( %args ) ) {
-            $service_name .= "_" . $id;
+    unless ( $args{user_id} ) {
+        if ( my $config = $SERVICE_MANAGER->{services}->{'Core::Config'} ) {
+            if ( my $local = $config->local ) {
+                $args{user_id} = $local->{user_id} if $local->{user_id};
+            }
         }
+    }
+
+    if ( $service->can('get_table_key')) {
+        my $key = $service->get_table_key;
+        if ( exists $args{_id} ) {
+            $args{$key} = delete $args{_id};
+        }
+    }
+
+    my $service_name = $class;
+
+    if ( $service->can('_id') ) {
+        if ( my $id = $service->_id( %args ) ) {
+            $service_name .= ' ' . $id;
+        }
+    } elsif ( %args ) {
+        $service_name .= ' ' . join ' ', map( "$_=$args{ $_ }", sort keys %args);
     } else {
         write_log('Get service with name: ['. $service_name . ']' );
         return $service;
@@ -138,7 +153,6 @@ sub unregister_all {
 
     my %protected_services = (
         'Core::Config' => 1,
-        'Core::Spool' => 1,
         'Core::System::Logger' => 1,
     );
 

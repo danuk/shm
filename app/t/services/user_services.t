@@ -5,6 +5,9 @@ use Test::Deep;
 use Data::Dumper;
 
 use SHM;
+
+$ENV{SHM_TEST} = 1;
+
 SHM->new( user_id => 40092 );
 
 use Core::Const;
@@ -20,6 +23,7 @@ is_deeply( $obj, {
         parent => undef,
         next => undef,
         auto_bill => 1,
+        status_before => STATUS_INIT,
         status => STATUS_ACTIVE,
         service_id => 110,
         user_service_id => 99,

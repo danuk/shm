@@ -43,10 +43,10 @@ sub add {
     );
 
     my $session_id = $self->SUPER::add( %args );
-    return undef unless $session_id;
 
     $self->_delete_expired;
     $self->res->{id} = $session_id;
+
     return $session_id;
 }
 
@@ -77,7 +77,7 @@ sub _delete_expired {
 
     $self->_delete(
         where => {
-            updated => { '<', \[ 'NOW() - INTERVAL ? DAY', 1 ] },
+            updated => { '<', \[ 'NOW() - INTERVAL ? DAY', 3 ] },
         },
     );
 }

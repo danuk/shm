@@ -59,6 +59,7 @@ subtest 'Check service' => sub {
         {
             'parent' => undef,
             'service_id' => $service->id,
+            'status_before' => 'INIT',
             'status' => 'ACTIVE',
             'next' => 0,
             'created' => '2019-04-01 01:00:00',
@@ -93,13 +94,14 @@ subtest 'Check service' => sub {
 };
 
 my ( $child ) = $us->children;
-my $us_child = get_service('us', _id => $child->{user_service_id} );
+my $us_child = get_service('us', _id => $child->id );
 
 subtest 'Check sub service' => sub {
     cmp_deeply( scalar $us_child->get,
         {
             'parent' => $us->id,
             'service_id' => $sub_service->id,
+            'status_before' => 'INIT',
             'status' => 'ACTIVE',
             'next' => 0,
             'created' => '2019-04-01 01:00:00',
@@ -208,7 +210,7 @@ subtest 'Check `qnt` for api_subservices_list' => sub {
           'pay_in_credit' => 0,
           'config' => undef,
           'next' => 0,
-          'allow_to_order' => undef,
+          'allow_to_order' => 0,
           'question' => undef,
           'category' => 'test',
           'cost' => '10',

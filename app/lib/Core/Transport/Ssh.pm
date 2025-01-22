@@ -37,13 +37,15 @@ sub send {
         %server = $server->get;
     }
 
-    return $self->exec(
+    my @ret = $self->exec(
         %server,
         %{ $server{settings} },
         %{ $task->event_settings },
         task => $task,
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
     );
+
+    return @ret;
 }
 
 sub exec {
@@ -61,7 +63,7 @@ sub exec {
         task => undef,
         event_name => undef,
         pipeline_id => undef,
-        shell => $ENV{SHM_TEST} ? 'echo' : 'bash -c',
+        shell => $ENV{SHM_TEST} ? 'echo' : undef,
         proxy_jump => undef,
         @_,
     );
@@ -83,7 +85,8 @@ sub exec {
 
     if ( $args{template_id} ) {
         if ( my $template = get_service('template', _id => $args{template_id} ) ) {
-            $args{cmd} ||= 'bash';
+            delete $args{cmd};
+            $args{shell} ||= 'bash';
             $args{stdin} = $template->parse(
                 %args,
                 event_name => $event_name,
@@ -101,6 +104,7 @@ sub exec {
             };
         }
     } elsif ( $args{cmd} ) {
+        $args{shell} ||= 'bash -c';
         my $parser = get_service('template');
         $args{cmd} = $parser->parse(
             data => $args{cmd},
@@ -113,6 +117,11 @@ sub exec {
                 %args,
             );
         }
+    } else {
+        get_service('report')->add_error("Nothing to do (no cmd, no template_id)");
+        return undef, {
+            error => "Nothing to do (no cmd, no template_id)",
+        };
     }
 
     $args{pipeline_id} //= get_service('console')->new_pipe;
@@ -135,7 +144,7 @@ sub exec {
         };
     }
 
-    $Net::OpenSSH::debug = ~0 if $ENV{DEBUG};
+    $Net::OpenSSH::debug = ~0 if $ENV{DEBUG} eq 'DEBUG';
 
     my $ret_code;
     my $ssh = Net::OpenSSH->new(
@@ -163,7 +172,7 @@ sub exec {
 
         my @commands;
         push @commands, split('\s+', @args{shell} ) if $args{shell};
-        push @commands, ref $args{cmd} eq 'ARRAY' ? join("\n", @{ $args{cmd} } ) : $args{cmd};
+        push @commands, (ref $args{cmd} eq 'ARRAY' ? join("\n", @{ $args{cmd} } ) : $args{cmd} ) if $args{cmd};
 
         my $out;
         my ($in, $rout, undef, $ssh_pid) = $ssh->open_ex(
@@ -202,11 +211,11 @@ sub exec {
     $console->set_eof();
 
     if ( $ret_code == 0 ) {
-        logger->debug("SSH CMD: $args{cmd}" );
+        logger->debug("SSH CMD: $args{cmd}" ) if $args{cmd};
         logger->debug("SSH RET_CODE: $ret_code");
     }
     elsif ( defined $ret_code ) {
-        logger->error("SSH CMD: $args{cmd}" );
+        logger->error("SSH CMD: $args{cmd}" ) if $args{cmd};
         logger->error("SSH RET_CODE: $ret_code");
     }
 
@@ -218,7 +227,7 @@ sub exec {
             port => $args{port},
             key_id => $args{key_id},
         },
-        cmd => $args{cmd},
+        $args{template_id} ? (template_id => $args{template_id} ) : ( cmd => $args{cmd}),
         ret_code => $ret_code,
         pipeline_id => $args{pipeline_id},
     };
