@@ -401,8 +401,8 @@ sub auth {
         where => {
             -OR => [
                 login => get_shm_login( $telegram_user_id ),
-                $username ? ( sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.login') => lc( $username ) ) : (),
                 sprintf('%s->>"$.%s"', 'settings', 'telegram.user_id') => $telegram_user_id,
+                $username ? ( sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.username') => lc( $username ) ) : (),
                 sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $self->chat_id, # for compatible with old versions of SHM
             ],
         },
