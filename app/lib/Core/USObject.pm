@@ -501,9 +501,12 @@ sub set_status_by_event {
 
     return $self->get_status if $event eq EVENT_CHANGED;
     return $self->get_status if $event eq EVENT_CHANGED_TARIFF;
-    return $self->get_status if $event eq EVENT_PROLONGATE;
 
     my $status = status_by_event( $event );
+
+    if ( $event eq EVENT_PROLONGATE ) {
+        return $self->status( $status, event => $event );
+    }
 
     if ( $self->get_status ne $status ) {
         $self->make_commands_by_event( EVENT_CHANGED,
