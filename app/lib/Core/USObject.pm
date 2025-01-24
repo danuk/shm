@@ -611,6 +611,14 @@ sub finish {
 
 sub block {
     my $self = shift;
+    my %args = (
+        auto_bill => undef,
+        get_smart_args( @_ ),
+    );
+
+    if ( defined $args{auto_bill} ) {
+        $self->set( auto_bill => int $args{auto_bill} );
+    }
 
     return scalar $self->get if $self->get_status ne STATUS_ACTIVE;
 
@@ -621,6 +629,14 @@ sub block {
 
 sub activate {
     my $self = shift;
+    my %args = (
+        auto_bill => undef,
+        get_smart_args( @_ ),
+    );
+
+    if ( defined $args{auto_bill} ) {
+        $self->set( auto_bill => int $args{auto_bill} );
+    }
 
     return scalar $self->get if $self->get_status ne STATUS_BLOCK;
 

@@ -128,11 +128,6 @@ sub process_service {
         return $event;
     }
 
-    unless ( $self->get_auto_bill ) {
-        logger->debug('AUTO_BILL is OFF for service. Skipping...');
-        return undef;
-    }
-
     if ( $event eq EVENT_BLOCK ) {
         return block( $self );
     } elsif ( $event eq EVENT_ACTIVATE ) {
