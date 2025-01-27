@@ -286,6 +286,7 @@ sub touch {
     my $self = shift;
     my $e = shift || EVENT_PROLONGATE;
 
+    switch_user( $self->user_id );
     return $self->process_service_recursive( $e );
 }
 
