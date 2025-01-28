@@ -4,7 +4,6 @@ use v5.14;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
-use Core::Utils qw( switch_user );
 
 sub job_prolongate {
     my $self = shift;
@@ -22,7 +21,7 @@ sub job_prolongate {
         my $user = $self->user->id( $_->{user_id} );
         next unless $user->lock( timeout => 1 );
 
-        $user->us->touch;
+        $user->us->id( $_->{user_service_id} )->touch;
     }
 
     return SUCCESS, { msg => 'successful' };
