@@ -1,12 +1,12 @@
 services:
   api:
-    image: "cr.yandex/crp53phlntopuut9qqq2/shm-api:latest"
+    image: "cr.yandex/crp53phlntopuut9qqq2/shm-api:${CORE_VERSION}"
     pull_policy: always
     restart: always
     depends_on:
       - core
   core:
-    image: "cr.yandex/crp53phlntopuut9qqq2/shm-core:latest"
+    image: "cr.yandex/crp53phlntopuut9qqq2/shm-core:${CORE_VERSION}"
     pull_policy: always
     restart: always
     environment:
@@ -22,7 +22,7 @@ services:
       mysql:
         condition: service_healthy
   spool:
-    image: "cr.yandex/crp53phlntopuut9qqq2/shm-core:latest"
+    image: "cr.yandex/crp53phlntopuut9qqq2/shm-core:${CORE_VERSION}"
     pull_policy: always
     deploy:
       mode: replicated
@@ -42,7 +42,7 @@ services:
       mysql:
         condition: service_healthy
   admin:
-    image: "danuk/shm-admin:latest"
+    image: "danuk/shm-admin:${ADMIN_VERSION}"
     pull_policy: always
     restart: always
     environment:
@@ -52,7 +52,7 @@ services:
     depends_on:
       - api
   client:
-    image: "danuk/shm-client:latest"
+    image: "danuk/shm-client:${CLIENT_VERSION}"
     pull_policy: always
     restart: always
     environment:
