@@ -342,9 +342,18 @@ sub http {
     logger->dump( $response->request );
 
     unless ( $response->is_success ) {
-        logger->error(
-            $response->decoded_content,
-        );
+        my $message = $response->decoded_content;
+        logger->error( $message );
+
+        if ($message =~/bot was blocked by the user/ ) {
+            $self->user->set_settings({
+                telegram => {
+                    $self->profile => {
+                        status => 'kicked',
+                    },
+                }
+            });
+        }
     }
     return $response;
 }
@@ -403,7 +412,7 @@ sub auth {
                 login => get_shm_login( $telegram_user_id ),
                 sprintf('%s->>"$.%s"', 'settings', 'telegram.user_id') => $telegram_user_id,
                 $username ? ( sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.username') => lc( $username ) ) : (),
-                sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $self->chat_id, # for compatible with old versions of SHM
+                sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $self->chat_id, # for backward compatible
             ],
         },
         limit => 1,
@@ -423,6 +432,7 @@ sub auth {
                 last_name => $tg_user->{last_name},
                 language_code => $tg_user->{language_code},
                 is_premium => $tg_user->{is_premium},
+                chat_id => $self->chat_id, # for backward compatible
                 $self->profile => {
                     chat_id => $self->chat_id,
                 },
@@ -643,6 +653,8 @@ sub bot {
         return undef;
     }
 
+    $self->profile( $template_id );
+
     unless ( $self->chat_id ) {
         logger->debug('`telegram.chat_id` not defined' );
         return undef;
@@ -818,6 +830,7 @@ sub shmRegister {
                 last_name => $tg_user->{last_name},
                 language_code => $tg_user->{language_code},
                 is_premium => $tg_user->{is_premium},
+                chat_id => $self->chat_id, # for backward compatible
                 $self->profile => {
                     chat_id => $self->chat_id,
                     status => 'member',
