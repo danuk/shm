@@ -92,8 +92,10 @@ sub send {
 
     $self->profile( $settings{telegram}{profile} );
 
-    if ( $self->user_tg_settings->{status} eq 'kicked' || $self->user_tg_settings->{status} eq 'left' ) {
-        return SUCCESS, { msg => "Telegram user is not member now, skip it." };
+    unless ( $template->settings->{chat_id} ) {
+        if ( $self->user_tg_settings->{status} eq 'kicked' || $self->user_tg_settings->{status} eq 'left' ) {
+            return SUCCESS, { msg => "Telegram user is not member now, skip it." };
+        }
     }
 
     unless ( $self->chat_id ) {
