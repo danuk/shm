@@ -144,6 +144,6 @@ is query_select(
     where => {
         'settings->cmd' => 1,
     },
-), q/SELECT * FROM test WHERE ( ( user_id = ? AND settings->'$.cmd' = ? ) )/;
+), q/SELECT * FROM test WHERE ( ( user_id = ? AND settings->>'$.cmd' = ? ) )/;
 
 done_testing();

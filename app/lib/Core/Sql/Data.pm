@@ -266,7 +266,7 @@ sub query_for_filtering {
             } elsif ( $field->{type} eq 'json' ) {
                 if ( ref $args{ $key } eq 'HASH' ) {
                     # Check value in the key in a json object
-                    $where{ sprintf("%s->'\$.%s'", $key, $_) } = $args{ $key }->{ $_ } for keys %{ $args{ $key } };
+                    $where{ sprintf("%s->>'\$.%s'", $key, $_) } = $args{ $key }->{ $_ } for keys %{ $args{ $key } };
                 } else {
                     # Check exists key in a json object
                     $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args{ $key }) } = { '!=', undef };
@@ -624,7 +624,7 @@ sub query_select {
 
     for my $k ( keys %{ $args{where} } ) {
         if ( $k=~/(\w+)->(\w+)/ ) {
-            $args{where}{ sprintf("%s->'\$.%s'", $1, $2) } = delete $args{where}{$k};
+            $args{where}{ sprintf("%s->>'\$.%s'", $1, $2) } = delete $args{where}{$k};
         }
     }
 
