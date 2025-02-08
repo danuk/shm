@@ -55,6 +55,7 @@ sub profile {
 
     if ($name) {
         $self->{profile} = $name;
+        return $self;
     }
 
     return $self->{profile} || 'telegram_bot';
@@ -429,6 +430,7 @@ sub auth {
     $self->user->set_json(
         'settings', {
             telegram => {
+                login => $tg_user->{username}, # for backward compatible
                 username => $tg_user->{username},
                 first_name => $tg_user->{first_name},
                 last_name => $tg_user->{last_name},
@@ -827,6 +829,7 @@ sub shmRegister {
         settings => {
             telegram => {
                 user_id => $telegram_user_id,
+                login => $tg_user->{username}, # for backward compatible
                 username => $tg_user->{username},
                 first_name => $tg_user->{first_name},
                 last_name => $tg_user->{last_name},
