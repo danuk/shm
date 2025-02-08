@@ -312,7 +312,7 @@ sub clean_query_args {
                         } elsif ( $self->can( $f ) ) {
                             $args->{where}{ $f } = $self->$f;
                         }
-                        logger->fatal( "`$f` required" ) unless $args->{where}{ $f };
+                        logger->fatal( "`$f` required" ) unless length $args->{where}{ $f };
                     }
                     # Запрещаем обновлять ключевое поле
                     delete $args->{ $f } if exists $args->{ $f };
@@ -539,7 +539,7 @@ sub list_for_api {
 sub get {
     my $self = shift;
 
-    unless ( $self->id ) {
+    unless ( length $self->id ) {
         logger->warning( sprintf("Can't get data for %s without id: `%s`", ref $self, $self->get_table_key ));
         return undef;
     }

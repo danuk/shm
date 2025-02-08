@@ -104,9 +104,10 @@ sub id {
     }
 
     my $key_field = $self->get_table_key;
-    my $id = $self->{ $key_field } || $self->res->{ $key_field };
+    my $id = $self->{ $key_field };
+    $id //= $self->res->{ $key_field };
 
-    unless ( $id ) {
+    unless (length $id) {
         logger->debug('identifier not defined for class ' . ref $self);
         return undef;
     }

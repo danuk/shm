@@ -694,7 +694,8 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
             $args{filter} ? (filter => $args{filter}) : (),
         );
     } elsif ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
-        if ( my $ret = $service->$method( %args ) ) {
+        my $ret = $service->$method( %args );
+        if ( length $ret ) {
             if ( ref $ret eq 'HASH' ) {
                 push @data, $ret;
             } elsif ( ref $ret eq 'ARRAY' ) {
@@ -829,7 +830,7 @@ sub get_service_id {
         $service_id = get_service('user')->id;
     }
 
-    unless ( $service_id ) {
+    unless ( length $service_id ) {
         print_header( status => 400 );
         print_json( { error => sprintf("`%s` not present", $service->get_table_key ) } );
         exit 0;
