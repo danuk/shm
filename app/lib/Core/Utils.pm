@@ -34,7 +34,6 @@ our @EXPORT_OK = qw(
     encode_base64url
     decode_base64
     decode_base64url
-    force_numbers
     file_by_string
     read_file
     passgen
@@ -49,7 +48,7 @@ our @EXPORT_OK = qw(
 use Core::System::ServiceManager qw( get_service delete_service );
 use Time::DaysInMonth;
 use JSON qw//;
-use Scalar::Util qw(looks_like_number blessed);
+use Scalar::Util qw(blessed);
 use File::Temp;
 use Data::Validate::Email qw(is_email);
 use Data::Validate::Domain qw(is_domain);
@@ -262,26 +261,14 @@ sub encode_json_utf8 {
     return $json;
 }
 
+# converting an internal Perl string to octets (bytes)
 sub encode_utf8 {
     if ( ref $_[0] eq 'HASH' ) {
         encode_utf8( $_ ) for values %{$_[0]};
     } elsif ( ref $_[0] eq 'ARRAY' ){
         encode_utf8( $_ ) for @{$_[0]};
     } else {
-        utf8::encode($_[0]);
-    }
-    return $_[0];
-}
-
-sub force_numbers {
-    if (ref $_[0] eq ""){
-        if ( looks_like_number($_[0]) ){
-            $_[0] += 0;
-        }
-    } elsif ( ref $_[0] eq 'ARRAY' ){
-        force_numbers($_) for @{$_[0]};
-    } elsif ( ref $_[0] eq 'HASH' ) {
-        force_numbers($_) for values %{$_[0]};
+        utf8::encode($_[0]) if utf8::is_utf8($_[0]);
     }
     return $_[0];
 }

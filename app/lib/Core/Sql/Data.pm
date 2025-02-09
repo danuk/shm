@@ -4,7 +4,6 @@ use v5.14;
 use utf8;
 
 use DBI qw(:sql_types);
-use Scalar::Util qw(looks_like_number);
 use Data::Dumper;
 
 use base qw(Exporter);
@@ -169,9 +168,7 @@ sub query {
     my $sth = $self->dbh->prepare_cached( $query ) or die $self->dbh->errstr;
 
     for ( 0..scalar( @args )-1 ) {
-        $sth->bind_param( $_+1, $args[$_],
-            looks_like_number($args[$_]) ? SQL_INTEGER : ()
-        );
+        $sth->bind_param( $_+1, $args[$_] );
     }
     $sth->execute() or die $self->dbh->errstr;
 
