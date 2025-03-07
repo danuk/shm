@@ -97,9 +97,9 @@ sub children {
         @_,
     );
 
-    if ( $args{ children } ) {
+    if ( my @children = @{$args{ children } || []} ) {
         my @ret;
-        for ( @{ $args{ children } } ) {
+        for ( @children ) {
             next if $_->{service_id} == $self->id;
             push @ret, {
                 service_id => $_->{service_id},
@@ -216,7 +216,7 @@ sub price_list {
     my $self = shift;
     my %args = (
         filter => {},
-        @_,
+        get_smart_args(@_),
     );
 
     my $list = $self->list(

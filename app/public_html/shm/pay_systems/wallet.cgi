@@ -8,7 +8,7 @@ use Core::Base;
 use LWP::UserAgent ();
 use Core::Utils qw(
     passgen
-    encode_json_utf8
+    encode_json
     decode_json
 );
 use MIME::Base64;
@@ -55,7 +55,7 @@ if ( $vars{action} eq 'create' ) {
     $req->header('Content-type' => 'application/json');
     $req->header('Wpay-Store-Api-Key' => $api_key );
     $req->header('User-Agent' => 'SHM');
-    $req->content( encode_json_utf8(
+    $req->content( encode_json(
         {
             amount => {
                 currencyCode => $currencyCode,

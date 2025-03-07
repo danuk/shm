@@ -26,7 +26,7 @@ our @EXPORT = qw(
 
 use Core::Utils qw(
     now
-    decode_json_utf8
+    decode_json
 );
 use Core::System::ServiceManager qw( get_service logger );
 use SQL::Abstract;
@@ -130,7 +130,6 @@ sub do {
 
     my $res = $self->dbh->do( $query, undef, @args ) or do {
         logger->warning( $self->dbh->errstr );
-        get_service('report')->add_error( $self->dbh->errstr );
         return undef;
     };
     return $res eq '0E0' ? 0 : $res;
@@ -214,7 +213,7 @@ sub convert_sql_structure_data {
             }
             next unless exists $structure->{ $f };
             if ( $structure->{ $f }->{type} eq 'json' ) {
-                my $json = decode_json_utf8( $data->{ $f } );
+                my $json = decode_json( $data->{ $f } );
                 next unless $json;
                 $data->{ $f } = $json;
             } elsif ( $structure->{ $f }->{type} eq 'number' ) {
@@ -269,7 +268,11 @@ sub query_for_filtering {
                     $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args{ $key }) } = { '!=', undef };
                 }
             } else {  # for type=(`text`, `now`, ``, ...)
-                $where{ $key }{'-like'} = $args{ $key };
+                if ( ref $args{ $key } ) {
+                    $where{ $key } = $args{ $key };
+                } else {
+                    $where{ $key }{'-like'} = $args{ $key };
+                }
             }
         }
     }
@@ -542,7 +545,7 @@ sub get {
     }
 
     # do not use list() because of list might contain default selectors
-    my ( $ret ) = $self->_list( where => { sprintf("%s.%s", $self->table, $self->get_table_key ) => $self->id }, @_ );
+    my ( $ret ) = $self->_list( where => { sprintf("%s.%s", $self->table, $self->get_table_key ) => $self->id }, limit => 1, @_ );
     return wantarray ? %{ $ret||={} } : $ret;
 }
 

@@ -1,8 +1,12 @@
 package Core::Report;
 
 use v5.14;
+use utf8;
 use parent 'Core::Base';
 use Core::Base;
+
+*error = \&add_error;
+*warning = \&add_error;
 
 sub add_error {
     my $self = shift;
@@ -15,6 +19,7 @@ sub add_error {
     }
     logger->warning( $msg );
     push @{ $self->{errors}||=[] }, $msg;
+    return $msg;
 }
 
 sub errors {

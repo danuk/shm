@@ -9,6 +9,7 @@ use CGI::Carp qw(fatalsToBrowser);
 
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw(
+    now
     parse_args
 );
 
@@ -57,6 +58,7 @@ my $session_id = $session->id;
 print_header( cookie => create_cookie('session_id',$session_id) );
 print_json( { status => 200, msg => 'Successfully', session_id => $session_id, user_id => $user->id() } );
 
+$user->set( last_login => now );
 $user->commit;
 
 exit 0;

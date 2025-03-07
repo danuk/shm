@@ -7,7 +7,6 @@ use Core::Base;
 use Core::Utils qw(
     encode_json
     decode_json
-    decode_json_utf8
 );
 
 use SHM qw(print_header);
@@ -176,7 +175,7 @@ sub read {
     return undef unless $data;
 
     if ( $args{decode_json} && $data->{settings}->{json} ) {
-        my $json = decode_json_utf8( $data->{data} );
+        my $json = decode_json( $data->{data} );
         $json //= decode_json( $data->{data} );
         $data->{data} = $json;
     } else {

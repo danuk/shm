@@ -102,12 +102,11 @@ DROP TABLE IF EXISTS `pays_history`;
 CREATE TABLE `pays_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
-  `pay_system_id` char(16) DEFAULT NULL,
+  `pay_system_id` char(32) DEFAULT NULL,
   `money` decimal(10,2) NOT NULL DEFAULT '0.00',
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `comment` json DEFAULT NULL,
   `uniq_key` char(255) DEFAULT NULL,
-  FOREIGN KEY (user_id) REFERENCES users (user_id),
   UNIQUE KEY `uniq_key` (`user_id`,`uniq_key`),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
@@ -185,7 +184,6 @@ CREATE TABLE `spool` (
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
   `settings` json DEFAULT NULL,
-  FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
@@ -203,7 +201,6 @@ CREATE TABLE `spool_history` (
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
   `settings` json DEFAULT NULL,
-  FOREIGN KEY (user_id) REFERENCES users (user_id),
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
@@ -354,7 +351,6 @@ CREATE TABLE IF NOT EXISTS `storage` (
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `data` MEDIUMBLOB DEFAULT NULL, -- Up to 16 Mb
   `settings` json DEFAULT NULL,
-  FOREIGN KEY (`user_service_id`) REFERENCES `user_services` (`user_service_id`),
   PRIMARY KEY (`user_id`,`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
@@ -376,8 +372,8 @@ CREATE TABLE IF NOT EXISTS `promo_codes` (
   `used` datetime DEFAULT NULL,
   `used_by` int(11) DEFAULT NULL,
   `settings` json DEFAULT NULL,
-  FOREIGN KEY (user_id) REFERENCES users (user_id),
-  PRIMARY KEY (`id`)
+  `expire` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`,`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 COMMIT;

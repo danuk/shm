@@ -124,7 +124,7 @@ subtest 'One month later. Prolongate service' => sub {
     is( $us->get_expire, '2017-02-28 23:59:57', 'Check expire date after prolongate' );
     is( $user->get_balance, 0, 'Check user balance after withdraw');
 
-    my @children = $us->children;
+    my @children = @{$us->children};
     my $ch_by_service = chldrn_by_service( $us );
 
     cmp_deeply( $ch_by_service , {
@@ -183,7 +183,7 @@ subtest 'Try prolongate service without have money' => sub {
     is( $us->get_status, STATUS_PROGRESS, 'Check status of prolong service' );
     is( $us->has_services_progress, 1 );
 
-    my @children = $us->children;
+    my @children = @{$us->children};
     my $ch_by_service = chldrn_by_service( $us );
 
     cmp_deeply( $ch_by_service, {
@@ -420,6 +420,6 @@ exit 0;
 sub chldrn_by_service {
     my $self = shift;
 
-    my %ret = map { $_->get_service_id => scalar $_->get } $self->children;
+    my %ret = map { $_->get_service_id => scalar $_->get } @{$self->children};
     return \%ret;
 }

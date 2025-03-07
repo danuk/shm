@@ -128,7 +128,6 @@ sub make_message {
 
 sub my_warn {
     my $self = shift;
-    binmode(STDERR, ':utf8');
     print STDERR join($, // '', @_, "\n");
     return;
 }

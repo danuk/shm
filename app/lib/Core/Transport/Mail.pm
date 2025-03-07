@@ -13,6 +13,7 @@ use Try::Tiny;
 use MIME::Base64 qw(encode_base64);
 use Core::Utils qw(
     is_email
+    encode_utf8
 );
 
 sub send {
@@ -146,6 +147,8 @@ sub send_mail {
             error => "Incorrect BCc address: $email",
         } unless is_email( $email );
     }
+
+    %args = %{ encode_utf8( \%args ) };
 
     my $email = Email::Simple->create(
         header => [

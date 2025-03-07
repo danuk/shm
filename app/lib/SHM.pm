@@ -50,7 +50,6 @@ my %in;
 sub new {
     my $class = shift;
 
-    binmode(STDOUT, ":utf8");          #treat as if it is UTF-8
 
     # Redirect logs to PIPE
     open STDERR, ">>/tmp/shm_log" if -p "/tmp/shm_log";

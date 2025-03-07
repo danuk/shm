@@ -5,7 +5,7 @@ use parent 'Core::USObject';
 use Core::Base;
 use Core::Const;
 use Core::USObject;
-use Core::Utils qw( decode_json_utf8 now switch_user );
+use Core::Utils qw( decode_json now switch_user );
 
 sub withdraws {
     my $self = shift;
@@ -278,7 +278,7 @@ sub settings {
             $ret->{ $_ } = $ref->{ $_ }->[0]->{settings};
             next;
         }
-        $ret->{ $_ } = decode_json_utf8( $ref->{ $_ }->[0]->{settings} );
+        $ret->{ $_ } = decode_json( $ref->{ $_ }->[0]->{settings} );
     }
 
     $self->{res} = $ret;

@@ -5,6 +5,9 @@ use utf8;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
+use Core::Utils qw(
+    switch_user
+);
 
 sub table { return 'pays_history' };
 
@@ -83,6 +86,8 @@ sub forecast {
         get_smart_args(@_),
     );
 
+    my $user = $self->user;
+
     my @statuses = (
         STATUS_INIT,
         STATUS_PROGRESS,
@@ -138,6 +143,7 @@ sub forecast {
 
         delete $wd{bonus};
 
+        switch_user( $user->id );
         my %wd_forecast = Core::Billing::calc_withdraw(
             $us->billing,
             %wd,
@@ -167,8 +173,6 @@ sub forecast {
         } if $wd_forecast{total};
 
     }
-
-    my $user = $self->user;
 
     my %ret = (
         balance => $user->get_balance,
@@ -203,8 +207,7 @@ sub forecast {
 sub last {
     my $self = shift;
 
-    my ( $pay ) = $self->list(
-        order => [ date => 'desc' ],
+    my $pay = first_item $self->rsort('date')->items(
         limit => 1,
     );
 

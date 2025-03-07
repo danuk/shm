@@ -8,8 +8,9 @@ use Core::Base;
 use LWP::UserAgent ();
 use Core::Utils qw(
     passgen
-    encode_json_utf8
+    encode_json
     decode_json
+    get_random_value
 );
 
 use SHM qw(:all);
@@ -32,7 +33,7 @@ if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
     my $api_key =        $config->get_data->{yookassa}->{api_key};
     my $account_id =     $config->get_data->{yookassa}->{account_id};
     my $return_url =     $config->get_data->{yookassa}->{return_url};
-    my $description =    $vars{description} || $config->get_data->{yookassa}->{description};
+    my $description =    get_random_value( $vars{description} || $config->get_data->{yookassa}->{description} );
     my $customer_email = $vars{email} || $config->get_data->{yookassa}->{customer_email};
     my $save_payments  = $config->get_data->{yookassa}->{save_payments};
 
@@ -71,7 +72,7 @@ if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
         ],
     };
 
-    my $content = encode_json_utf8({
+    my $content = encode_json({
         metadata => {
             user_id => $user->id,
         },
@@ -151,24 +152,38 @@ my $config = get_service('config', _id => 'pay_systems');
 my $account_id = $config->get_data->{yookassa}->{account_id};
 print_json({ status => 400, msg => 'Error: account_id required. Please set it in config' }) unless $account_id;
 
-if ( $vars{event} ne 'payment.succeeded' ) {
+
+my %allowed_events = (
+    'payment.succeeded' => 1,
+    'refund.succeeded' => 1,
+    'payment.canceled' => 1,
+);
+
+unless ( exists $allowed_events{ $vars{event} } ) {
     print_json( { status => 200, msg => 'unknown event', event => $vars{event} } );
     exit 0;
 }
 
-if ( $vars{object}->{status} ne 'succeeded' ||
-     $vars{object}->{recipient}->{account_id} != $account_id ||
-     $vars{object}->{paid} != 1 ||
-    !$vars{object}->{description}
-) {
+if (    $vars{event} ne 'refund.succeeded' &&
+        $vars{object}->{recipient}->{account_id} != $account_id
+    ) {
     logger->error('Incorrect input data');
     logger->dump( \%vars );
-    print_json( { status => 200, msg => 'For more details see logs' } );
+    print_json( { status => 200, msg => 'Error: for more details see logs' } );
     exit 0;
 }
 
 my $user_id = $vars{object}->{metadata}->{user_id};
 my $amount = $vars{object}->{amount}->{value};
+
+if ( $vars{event} eq 'refund.succeeded' ) {
+    # Try to determine the user_id from previous transactions
+    my ($pay) = get_service('pay')->_list( where => {
+        uniq_key => $vars{object}->{payment_id},
+    });
+
+    $user_id = $pay->{user_id} if $pay;
+}
 
 unless ( $user_id ) {
     print_json( { status => 400, msg => 'User (description) required' } );
@@ -196,17 +211,35 @@ if ( $vars{object}->{payment_method}->{saved} ) {
     });
 }
 
+my $uniq_key = $vars{object}->{id};
+
+my $ps_name = 'yookassa';
+
+if ( $vars{event} eq 'payment.canceled' ) {
+    $ps_name .= '-canceled';
+    $uniq_key = sprintf("canceled-%s", $vars{object}->{id} );
+    $amount = 0;
+}
+
+if ( $vars{event} eq 'refund.succeeded' ) {
+    $ps_name .= '-refund';
+    $uniq_key = sprintf("refund-%s", $vars{object}->{payment_id} );
+    $amount = -$amount;
+}
+
+$ps_name .= '-test' if $vars{object}->{test};
+
 $user->payment(
     user_id => $user_id,
     money => $amount,
-    pay_system_id => $vars{object}->{test} ? 'yookassa-test' : 'yookassa',
+    pay_system_id => $ps_name,
     comment => \%vars,
-    uniq_key => $vars{object}->{id},
+    uniq_key => $uniq_key,
 );
 
 $user->commit;
 
-print_json( { status => 200, msg => "Payment successful" } );
+print_json( { status => 200, msg => "operation successful" } );
 
 exit 0;
 

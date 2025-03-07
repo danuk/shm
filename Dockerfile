@@ -1,8 +1,9 @@
 FROM nginx:stable-alpine AS api
 EXPOSE 80
+CMD ["/entry.sh"]
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD curl -f 127.0.0.1/shm/healthcheck.cgi || exit 1
 COPY nginx/default.conf /etc/nginx/conf.d/
 COPY entry-api.sh /entry.sh
-CMD ["/entry.sh"]
 
 
 FROM debian:bullseye-slim AS core

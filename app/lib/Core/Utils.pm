@@ -26,10 +26,9 @@ our @EXPORT_OK = qw(
     string_to_utime
     utime_to_string
     decode_json
-    decode_json_utf8
     encode_json
-    encode_json_utf8
     encode_utf8
+    encode_json_perl
     encode_base64
     encode_base64url
     decode_base64
@@ -43,6 +42,7 @@ our @EXPORT_OK = qw(
     html_escape
     hash_merge
     blessed
+    get_random_value
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -53,6 +53,7 @@ use File::Temp;
 use Data::Validate::Email qw(is_email);
 use Data::Validate::Domain qw(is_domain);
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
+use Clone 'clone';
 
 our %in;
 
@@ -165,8 +166,6 @@ sub parse_args {
     my $cgi = CGI->new;
     %in = $cgi->Vars;
 
-    utf8::decode( $in{ $_ } ) for keys %in;
-
     if ( $args{auto_parse_json} && $ENV{CONTENT_TYPE} =~/application\/json/i ) {
         my $method = $ENV{REQUEST_METHOD};
         my $json = decode_json( $in{ "${method}DATA" } );
@@ -179,6 +178,8 @@ sub parse_args {
         }
         delete $in{ "${method}DATA" };
         return %in, get_uri_args();
+    } elsif ( $ENV{REQUEST_METHOD} eq 'GET' ) {
+        utf8::decode( $in{ $_ } ) for keys %in;
     }
 
     my %cmd_opts;
@@ -220,20 +221,28 @@ sub http_content_range {
 sub decode_json {
     my $data = shift || return undef;
 
+    utf8::decode( $data );
+
     my $json;
-    eval{ $json = JSON->new->utf8(0)->relaxed->decode( $data ) } or do {
-        get_service('logger')->warning("Incorrect JSON data for decode: " . $data);
+    eval{ $json = JSON->new->latin1->relaxed->decode( $data ) } or do {
+        get_service('logger')->warning("Incorrect JSON field for decode: " . $data);
     };
 
     return $json;
 }
 
-sub decode_json_utf8 {
+# convert to JSON as it is (with internal Perl encoding)
+# for compatibility with other Cyrillic texts in the templates
+sub encode_json_perl {
     my $data = shift || return undef;
+    my %args = (
+        pretty => 0,
+        @_,
+    );
 
     my $json;
-    eval{ $json = JSON->new->utf8(1)->decode( $data ) } or do {
-        get_service('logger')->warning("Incorrect JSON field for decode: " . $data);
+    eval{ $json = JSON->new->canonical->pretty( $args{pretty} )->encode( $data ) } or do {
+        get_service('logger')->warning("Incorrect JSON data for encode: " . $data);
     };
 
     return $json;
@@ -241,36 +250,34 @@ sub decode_json_utf8 {
 
 sub encode_json {
     my $data = shift || return undef;
+    my %args = (
+        pretty => 0,
+        @_,
+    );
 
     my $json;
-    eval{ $json = JSON->new->utf8(0)->canonical->encode( $data ) } or do {
+    eval{ $json = JSON->new->latin1->canonical->pretty( $args{pretty} )->encode( encode_utf8($data) ) } or do {
         get_service('logger')->warning("Incorrect JSON data for encode: " . $data);
     };
 
     return $json;
 }
 
-sub encode_json_utf8 {
-    my $data = shift || return undef;
-
-    my $json;
-    eval{ $json = JSON->new->utf8(1)->canonical->encode( $data ) } or do {
-        get_service('logger')->warning("Incorrect JSON data for encode: " . $data);
-    };
-
-    return $json;
-}
-
-# converting an internal Perl string to octets (bytes)
+# converting an internal Perl strings to octets (bytes)
 sub encode_utf8 {
+    my $data = clone( shift );
+    _encode_utf8( $data );
+    return $data;
+}
+
+sub _encode_utf8 {
     if ( ref $_[0] eq 'HASH' ) {
-        encode_utf8( $_ ) for values %{$_[0]};
+        _encode_utf8( $_ ) for values %{$_[0]};
     } elsif ( ref $_[0] eq 'ARRAY' ){
-        encode_utf8( $_ ) for @{$_[0]};
+        _encode_utf8( $_ ) for @{$_[0]};
     } else {
         utf8::encode($_[0]) if utf8::is_utf8($_[0]);
     }
-    return $_[0];
 }
 
 sub file_by_string {
@@ -438,6 +445,16 @@ sub parse_period {
         $days,
         $hours,
     )
+}
+
+sub get_random_value {
+    my $value = shift;
+
+    if ( ref $value eq 'ARRAY' ) {
+        return $value->[ int rand scalar @$value ];
+    } else {
+        return $value;
+    }
 }
 
 1;

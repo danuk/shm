@@ -85,6 +85,12 @@ my $routes = {
         controller => 'Withdraw',
     },
 },
+'/user/autopayment' => {
+    DELETE => {
+        controller => 'User',
+        method => 'delete_autopayment',
+    },
+},
 '/user/pay' => {
     GET => {
         controller => 'Pay',
@@ -160,6 +166,15 @@ my $routes = {
 },
 '/storage/manage' => {
     GET => {
+        controller => 'Storage',
+    },
+    PUT => {
+        controller => 'Storage',
+    },
+    POST => {
+        controller => 'Storage',
+    },
+    DELETE => {
         controller => 'Storage',
     },
 },
@@ -569,6 +584,28 @@ my $routes = {
 
     },
 },
+'/admin/promo' => {
+    GET => {
+        controller => 'Promo',
+    },
+    PUT => {
+        controller => 'Promo',
+        method => 'generate',
+    },
+},
+'/admin/promo/:id' => {
+    POST => {
+        controller => 'Promo',
+        method => 'update',
+        required => ['id','user_id'],
+    },
+    DELETE => {
+        controller => 'Promo',
+        method => 'delete',
+        required => ['id'],
+    },
+},
+
 '/telegram/bot' => {
     POST => {
         skip_check_auth => 1,
@@ -757,6 +794,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         print_header( %headers, type => "text/$args{format}" );
         for ( @data ) {
             unless ( ref ) {
+                utf8::encode($_);
                 print;
             } else {
                 print encode_json( $_ );
@@ -766,6 +804,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         print_header( %headers, type => "application/json" );
         for ( @data ) {
             unless ( ref ) {
+                utf8::encode($_);
                 print;
             } else {
                 print encode_json( $_ );
@@ -778,6 +817,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         );
         for ( @data ) {
             unless ( ref ) {
+                utf8::encode($_);
                 print;
             } else {
                 print encode_json( $_ );

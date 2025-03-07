@@ -152,6 +152,16 @@ sub list_for_api {
     return @arr;
 }
 
+sub last {
+    my $self = shift;
+
+    my $pay = first_item $self->rsort('withdraw_date')->items(
+        limit => 1,
+    );
+
+    return $pay;
+}
+
 sub found_rows {
     my $self = shift;
     my $count = shift;
@@ -238,9 +248,10 @@ sub api_set {
         );
     }
 
+    my $ret = $self->SUPER::api_set( %new_wd );
     $us->touch;
 
-    return $self->SUPER::api_set( %new_wd );
+    return $ret;
 }
 
 sub sum {

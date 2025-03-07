@@ -12,7 +12,7 @@ use Carp qw(confess);
 use Data::Dumper;
 use Core::Utils qw(
     hash_merge
-    encode_json_utf8
+    encode_json
     hash_merge
 );
 $Data::Dumper::Deepcopy = 1;
@@ -22,7 +22,9 @@ our @EXPORT = qw(
     Dumper
     confess
     logger
+    report
     get_smart_args
+    first_item
 );
 
 use vars qw($AUTOLOAD);
@@ -219,7 +221,15 @@ sub items {
         push @list, $self->new_obj( $_ );
     }
 
-    return @list;
+    # always return ref for templates (wantarray is not suitable for templates)
+    return \@list;
+}
+
+sub first_item {
+    my $data = shift;
+
+    return $data->[0] if ref $data eq 'ARRAY';
+    return undef;
 }
 
 sub lock {
@@ -283,9 +293,10 @@ sub _add_or_set {
     # Преобразуем значения в JSON
     my %super_args = %args;
     for my $key ( keys %args ) {
+        next if $key eq 'where';
         my $new_value = $args{ $key };
         if ( ref $new_value eq 'HASH' || ref $new_value eq 'ARRAY' ) {
-            $super_args{ $key } = encode_json_utf8( $args{ $key } );
+            $super_args{ $key } = encode_json( $args{ $key } );
         }
     }
 
@@ -379,7 +390,7 @@ sub make_event {
     my $self = shift;
     my $event_name = shift;
     my %args = (
-        @_,
+        get_smart_args( @_ ),
     );
 
     my $event = $self->srv('Events');
@@ -428,6 +439,17 @@ sub logger {
 
     state $log ||= get_service('logger');
     return $log;
+}
+
+sub report {
+    my $self = shift;
+
+    if ( $self ) {
+        return $self->srv('report');
+    }
+
+    state $report ||= get_service('report');
+    return $report;
 }
 
 sub delete_all {

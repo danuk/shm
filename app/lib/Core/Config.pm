@@ -102,7 +102,7 @@ sub data_by_name {
         delete $ret{ $key };
     }
 
-    return \%ret;
+    return \%ret || {};
 }
 
 sub delete {
@@ -128,7 +128,7 @@ sub get_data {
         }
     );
 
-    return $config->{ $self->id }->{value};
+    return $config->{ $self->id }->{value} || {};
 }
 
 sub list_for_api {

@@ -1,0 +1,1 @@
+ALTER TABLE pays_history MODIFY COLUMN pay_system_id CHAR(32);

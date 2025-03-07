@@ -203,7 +203,7 @@ sub child_by_category {
     my $ret = get_service('service')->list( where => { category => $category } );
     return undef unless $ret;
 
-    my ( $child ) = $self->children(
+    my $child = first_item $self->children(
         service_id => { -in => [ keys %{ $ret } ] },
     );
     return undef unless $child;
@@ -229,7 +229,7 @@ sub wd_total_composite {
         $total += $wd->get_total;
     }
 
-    for ( $self->children ) {
+    for ( @{$self->children} ) {
         $total += $_->wd_total_composite;
     }
 
@@ -386,7 +386,7 @@ sub spool {
 sub has_children_progress {
     my $self = shift;
 
-    for ( $self->children() ) {
+    for ( @{$self->children()} ) {
         return 1 if $_->get_status eq STATUS_PROGRESS;
     }
     return 0;
@@ -397,7 +397,7 @@ sub event {
     my $e = shift;
 
     if ( $self->has_children_progress ) {
-        $self->status( STATUS_PROGRESS, $e );
+        $self->status( STATUS_PROGRESS, event => $e );
         return SUCCESS;
     }
 
@@ -466,7 +466,7 @@ sub child_status_updated {
 
     return $self->get_status if $self->get_status ne STATUS_PROGRESS;
 
-    my %chld_by_statuses = map { $_->get_status => 1 } $self->children;
+    my %chld_by_statuses = map { $_->get_status => 1 } @{$self->children};
 
     if (( $chld_by_statuses{ $child{status} } && scalar keys %chld_by_statuses == 1 ) ||
         ( scalar keys %chld_by_statuses == 0 && $child{status} eq STATUS_REMOVED )) {
@@ -700,6 +700,7 @@ sub list_for_delete {
         where => { -OR => [
                 {
                     parent => undef,
+                    auto_bill => 1,
                     status => STATUS_BLOCK,
                     expire => {
                         '<', \[ 'NOW() - INTERVAL ? DAY', $args{days} ],
@@ -707,6 +708,7 @@ sub list_for_delete {
                 },
                 {
                     parent => undef,
+                    auto_bill => 1,
                     status => STATUS_WAIT_FOR_PAY,
                     created =>{
                         '<', \[ 'NOW() - INTERVAL ? DAY', $args{days} ],
@@ -833,6 +835,8 @@ sub create {
         }
     }
 
+    # order_only_once
+
     my $us;
 
     if ( $args{check_exists} || $args{check_exists_unpaid} || $args{check_category} ) {
@@ -914,6 +918,31 @@ sub make_custom_event {
             server_id => $self->server->id,
         },
     );
+}
+
+sub recalc {
+    my $self = shift;
+    my %args = (
+        get_smart_args( @_ ),
+    );
+
+    unless ( $self->id ) {
+        for ( @{$self->items} ) {
+            $_->recalc( %args );
+        }
+        return;
+    }
+
+    if ( my $wd = $self->withdraw ) {
+        return unless $wd->unpaid;
+        switch_user( $self->user_id );
+        my %new_wd = Core::Billing::calc_withdraw( $self->billing, $self->service->get, %args );
+        delete @new_wd{ qw/ withdraw_id create_date end_date withdraw_date / };
+        $wd->set( %new_wd );
+        $self->touch();
+    }
+
+    return;
 }
 
 1;

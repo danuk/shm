@@ -91,7 +91,7 @@ sub process_service_recursive {
     my $event = shift || EVENT_PROLONGATE;
 
     if ( $event = process_service( $service, $event ) ) {
-        for my $child ( $service->children ) {
+        for my $child ( @{$service->children} ) {
             process_service_recursive(
                 $service->id( $child->id ),
                 $event,

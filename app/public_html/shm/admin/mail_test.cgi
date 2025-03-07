@@ -21,8 +21,8 @@ my %args = (
         kind => 'Transport::Mail',
         method => 'send',
         settings => {
-            subject => 'This is test subject from SHM',
-            message => 'This is test message from SHM',
+            subject => 'Тестовое письмо из SHM',
+            message => 'Это тестовое письмо отправленное из SHM',
             %{ $in{settings} || {} },
         },
     },

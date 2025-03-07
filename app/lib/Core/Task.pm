@@ -68,7 +68,9 @@ sub make_task {
         return $self->task_answer( TASK_STUCK, error => 'Transport not exists' );
     }
 
-    my ( $status, $response_data ) = $transport->send( $self );
+    my $method = 'send';
+    $method = 'task_send' if $transport->can('task_send');
+    my ( $status, $response_data ) = $transport->$method( $self );
     if ( !defined $status ) {
         return $self->task_answer( TASK_STUCK, %{ $response_data//={} } );
     }

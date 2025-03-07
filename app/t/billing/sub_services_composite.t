@@ -12,6 +12,7 @@ $ENV{SHM_TEST} = 1;
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw(now);
 use SHM;
+use Core::Base;
 my $user = SHM->new( user_id => 40092 );
 
 $ENV{TZ} = 'Europe/London'; #UTC+0
@@ -51,7 +52,7 @@ Test::MockTime::set_fixed_time('2019-04-01T00:00:00Z');
 $user->set( balance => 100, credit => 0 );
 my $us = create_service( service_id => $service->id );
 
-my ( $child ) = $us->children;
+my $child = first_item $us->children;
 my $us_child = get_service('us', _id => $child->user_service_id );
 
 is( $us->wd_total_composite, 120 );

@@ -12,6 +12,7 @@ $ENV{SHM_TEST} = 1;
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw(now);
 use SHM;
+use Core::Base;
 my $user = SHM->new( user_id => 40092 );
 
 $ENV{TZ} = 'Europe/London'; #UTC+0
@@ -93,7 +94,7 @@ subtest 'Check service' => sub {
 
 };
 
-my ( $child ) = $us->children;
+my $child = first_item $us->children;
 my $us_child = get_service('us', _id => $child->id );
 
 subtest 'Check sub service' => sub {

@@ -3,12 +3,12 @@
 use v5.14;
 use SHM;
 use Core::System::ServiceManager qw( get_service unregister_all );
-use JSON;
 use Try::Tiny;
 use Core::Const;
+use Core::Utils qw(
+    encode_json
+);
 no warnings;
-
-my $json = JSON->new->canonical( 1 );
 
 $| = 1;
 
@@ -27,7 +27,7 @@ for (;;) {
 
             if ( defined $task ) {
                 $task->{status} //= $status;
-                say $json->encode( $task );
+                say encode_json( $task );
             }
         } catch {
             my $error = $_;

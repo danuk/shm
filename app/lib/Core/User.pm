@@ -195,8 +195,6 @@ sub auth {
     my $user = $self->id( $user_row->{user_id} );
     return undef if $user->is_blocked;
 
-    $user->set( last_login => now );
-
     return $user;
 }
 
@@ -587,13 +585,11 @@ sub pays {
 
 sub has_payments {
     my $self = shift;
-
     return $self->pays->last ? 1 : 0;
 }
 
 sub has_withdraws {
     my $self = shift;
-
     return $self->wd->sum->{total} ? 1 : 0;
 }
 
@@ -712,10 +708,7 @@ sub income_percent {
     return get_service('config')->data_by_name('billing')->{partner}->{income_percent} || 0;
 }
 
-sub has_autopayment {
-    my $self = shift;
-    return keys %{ $self->get_settings->{pay_systems} || {} } ? 1 : 0;
-}
+sub telegram { shift->srv('Transport::Telegram') };
 
 1;
 

@@ -60,10 +60,10 @@ sub job_make_forecasts {
         $settings{days_before_notification} = $task->settings->{days_before_notification};
     }
 
-    my @users = $self->user->items;
+    my $users = $self->user->items;
 
     my @affected;
-    for my $u ( @users ) {
+    for my $u ( @$users ) {
         my $ret = $u->pays->forecast(
             $settings{days_before_notification} ? ( days => $settings{days_before_notification} ) : (),
         );
@@ -84,13 +84,13 @@ sub job_users {
         %{ $task->settings },
     );
 
-    my @users = $self->user->items(
+    my $users = $self->user->items(
         where => {
             $settings{user_id} ? ( user_id => $settings{user_id} ) : (),
         },
     );
 
-    for my $user ( @users ) {
+    for my $user ( @$users ) {
         $user->srv('spool')->add(
             prio => 100,
             event => {

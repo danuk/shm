@@ -7,6 +7,7 @@ use Core::Base;
 use Template;
 
 use Core::Utils qw(
+    encode_json_perl
     encode_json
     decode_json
     parse_args
@@ -73,6 +74,8 @@ sub parse {
         services => sub { get_service('service') },
         storage => sub { get_service('storage') },
         telegram => sub { get_service('Transport::Telegram', task => $args{task}) },
+        tg_api => sub { encode_json_perl( shift, pretty => 1 ) }, # for testing templates
+        response => { test_data => 1 },  # for testing templates
         http => sub { get_service('Transport::Http') },
         spool => sub { get_service('Spool') },
         spool_history => sub { get_service('SpoolHistory') },
@@ -94,7 +97,8 @@ sub parse {
         },
         toJson => sub {
             my $data = shift;
-            return encode_json( $data );
+            # for compatibility with other Cyrillic texts in the templates
+            return encode_json_perl( $data );
         },
         fromJson => sub {
             my $data = shift;
@@ -103,6 +107,9 @@ sub parse {
         dump => sub {
             use Data::Dumper;
             return Dumper( @_ );
+        },
+        log => sub {
+
         },
         toQueryString => sub {
             my $data = shift;
@@ -126,7 +133,6 @@ sub parse {
     };
 
     my $template = Template->new({
-        ENCODING => 'utf8',
         START_TAG => quotemeta( $args{START_TAG} ),
         END_TAG   => quotemeta( $args{END_TAG} ),
         ANYCASE => 1,
