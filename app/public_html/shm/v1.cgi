@@ -703,7 +703,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my $service = get_service( $p->{controller} );
     unless ( $service ) {
         print_header( status => 500 );
-        print_json( { error => 'Controller not exists'} );
+        print_json( { error => 'Недоступно в данной версии'} );
         exit 0;
     }
 
