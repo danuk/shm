@@ -6,12 +6,19 @@ SHM_TEMPLATE="telegram_bot"
 
 curl https://api.telegram.org/bot${TOKEN}/deleteWebhook?drop_pending_updates=True
 
-curl -X POST \
+cat << EOF | curl -X POST \
     -H 'content-type: application/json' \
     https://api.telegram.org/bot${TOKEN}/setWebhook \
-    -d "
+    -d @-
 {
-    \"url\": \"https://$URL/shm/v1/telegram/bot/$SHM_TEMPLATE\",
-    \"allowed_updates\": [\"message\",\"callback_query\",\"my_chat_member\"]
-}"
+    "url": "https://${URL}/shm/v1/telegram/bot/${TEMPLATE}",
+    "allowed_updates": [
+        "message",
+        "inline_query",
+        "callback_query",
+        "my_chat_member",
+        "pre_checkout_query"
+    ]
+}
+EOF
 
