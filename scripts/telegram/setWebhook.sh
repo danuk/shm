@@ -11,7 +11,7 @@ cat << EOF | curl -X POST \
     https://api.telegram.org/bot${TOKEN}/setWebhook \
     -d @-
 {
-    "url": "https://${URL}/shm/v1/telegram/bot/${TEMPLATE}",
+    "url": "https://${URL}/shm/v1/telegram/bot/${SHM_TEMPLATE}",
     "allowed_updates": [
         "message",
         "inline_query",
