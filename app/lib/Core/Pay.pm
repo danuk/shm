@@ -14,7 +14,8 @@ sub table { return 'pays_history' };
 sub structure {
     return {
         id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         user_id => {
             type => 'number',
@@ -228,7 +229,9 @@ sub paysystems {
 
     my $config = get_service("config", _id => 'pay_systems');
     my %list = %{ $config ? $config->get_data : {} };
-    push @ps, { $_ => $list{ $_ } } for keys %list;
+    for ( keys %list ) {
+        push @ps, { $_ => $list{ $_ } };
+    }
 
     my $forecast = $self->forecast( blocked => 1 )->{total};
 
@@ -239,6 +242,9 @@ sub paysystems {
 
     for ( @ps ) {
         my ( $paysystem, $p ) = each( %$_ );
+
+        # allow override paysystem
+        $paysystem = $p->{paysystem} if $p->{paysystem};
 
         if ( $args{paysystem} ) {
             next if $paysystem ne $args{paysystem};
@@ -259,7 +265,8 @@ sub paysystems {
                 $ts,
                 ( $args{pp} ? $proposed_payment : '' ),
             ),
-            recurring => $p->{recurring} ? 1 : 0,
+            recurring => 0,
+            allow_deletion => $p->{allow_deletion} ? 1 : 0,
             user_id => $user->id,
             forecast => $forecast,
             amount => $proposed_payment || '', # client must specify the amount himself if it is empty

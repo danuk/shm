@@ -20,7 +20,8 @@ sub table { return 'users' };
 sub structure {
     return {
         user_id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         partner_id => {
             type => 'number',

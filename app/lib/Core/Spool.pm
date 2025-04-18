@@ -13,7 +13,8 @@ sub table { return 'spool' };
 sub structure {
     return {
         id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         user_id => {
             type => 'number',
@@ -241,11 +242,18 @@ sub retry_task {
         @_,
     );
 
+    my $delayed = $self->res->{delayed}||=1;
+    # не меняем делей, если задан вручную (больше 15 мин)
+    if ( $delayed < 900 ) {
+        $delayed *= 5;  # 5s, 25s, 125(~2m), 625(~10m),... 900(15m)
+        $delayed = 900 if $delayed > 900; # max 15 min
+    }
+
     $self->set(
         %args,
         status => $args{status},
         executed => now,
-        delayed => ( ($self->res->{delayed}||=1) * 5 ),
+        delayed => $delayed,
     );
 
     $self->write_history;
@@ -310,10 +318,14 @@ sub api_retry {
     return scalar $self->get;
 }
 
+sub history {
+    my $self = shift;
+    return $self->srv('SpoolHistory');
+}
+
 sub write_history {
     my $self = shift;
-
-    get_service('SpoolHistory')->add( $self->get );
+    $self->history->add( $self->get );
 }
 
 1;

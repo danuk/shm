@@ -17,7 +17,8 @@ sub table { return 'user_services' };
 sub structure {
     return {
         user_service_id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         user_id => {
             type => 'number',
@@ -364,7 +365,8 @@ sub make_commands_by_event {
     my @commands = $self->commands_by_event( $e );
     return undef unless @commands;
 
-    $self->status( STATUS_PROGRESS, event => $e );
+    # STATUS_PROGRESS не для всех событий
+    $self->status( STATUS_PROGRESS, event => $e ) if status_by_event( $e );
 
     $args{settings}{user_service_id} = $self->id + 0;
     $args{settings}{server_id} //= $self->settings->{server_id} + 0 if $self->settings->{server_id};
@@ -422,6 +424,8 @@ sub last_event {
         return EVENT_PROLONGATE;
     } elsif ( $status_before eq STATUS_ACTIVE && $status eq STATUS_BLOCK ) {
         return EVENT_BLOCK;
+    } elsif ( $status_before eq STATUS_WAIT_FOR_PAY && $status eq STATUS_ACTIVE ) {
+        return EVENT_ACTIVATE;
     } elsif ( $status_before eq STATUS_BLOCK && $status eq STATUS_ACTIVE ) {
         return EVENT_ACTIVATE;
     } elsif ( $status_before eq STATUS_BLOCK && $status eq STATUS_REMOVED ) {
@@ -482,34 +486,27 @@ sub child_status_updated {
 sub status_by_event {
     my $event = shift;
 
-    my $status;
-
     if ( $event eq EVENT_BLOCK ) {
-        $status = STATUS_BLOCK;
+        return STATUS_BLOCK;
     } elsif ( $event eq EVENT_REMOVE ) {
-        $status = STATUS_REMOVED;
+        return STATUS_REMOVED;
     } elsif ( $event eq EVENT_NOT_ENOUGH_MONEY ) {
-        $status = STATUS_WAIT_FOR_PAY;
-    } else {
-        $status = STATUS_ACTIVE;
+        return STATUS_WAIT_FOR_PAY;
+    } elsif ( $event eq EVENT_CREATE || $event eq EVENT_ACTIVATE || $event eq EVENT_PROLONGATE ) {
+        return STATUS_ACTIVE;
     }
-    return $status;
+    return undef;
 }
 
 sub set_status_by_event {
     my $self = shift;
     my $event = shift;
 
-    return $self->get_status if $event eq EVENT_CHANGED;
-    return $self->get_status if $event eq EVENT_CHANGED_TARIFF;
-
+    # не для всех событий меняем статус
     my $status = status_by_event( $event );
+    return $self->get_status unless $status;
 
-    if ( $event eq EVENT_PROLONGATE ) {
-        return $self->status( $status, event => $event );
-    }
-
-    if ( $self->get_status ne $status ) {
+    if ( $self->get_status ne $status && $event ne EVENT_PROLONGATE ) {
         $self->make_commands_by_event( EVENT_CHANGED,
             settings => {
                 status => {
@@ -531,8 +528,6 @@ sub status {
         @_,
     );
 
-    return $self->get_status if $args{event} eq EVENT_CHANGED;
-    return $self->get_status if $args{event} eq EVENT_CHANGED_TARIFF;
     if ( $args{event} eq EVENT_PROLONGATE ) {
         $self->set( status_before => $self->get_status );
         return $self->get_status;
@@ -734,11 +729,11 @@ sub server {
 sub name {
     my $self = shift;
 
-    my $service = get_service('service', _id => $self->get_service_id);
+    my $service = $self->service;
 
     return $service->convert_name(
         $service->name,
-        $self->settings,
+        $self->get_settings, # do not use $self->settings because it exists in user_services
     );
 }
 

@@ -64,6 +64,7 @@ sub exec {
         event_name => undef,
         pipeline_id => undef,
         shell => $ENV{SHM_TEST} ? 'echo' : undef,
+        stderr_to_stdout => 1,
         proxy_jump => undef,
         @_,
     );
@@ -86,7 +87,7 @@ sub exec {
     if ( $args{template_id} ) {
         if ( my $template = get_service('template', _id => $args{template_id} ) ) {
             delete $args{cmd};
-            $args{shell} ||= 'bash';
+            $args{shell} //= 'bash';
             $args{stdin} = $template->parse(
                 %args,
                 event_name => $event_name,
@@ -104,7 +105,7 @@ sub exec {
             };
         }
     } elsif ( $args{cmd} ) {
-        $args{shell} ||= 'bash -c';
+        $args{shell} //= 'bash -c';
         my $parser = get_service('template');
         $args{cmd} = $parser->parse(
             data => $args{cmd},
@@ -179,7 +180,7 @@ sub exec {
             {
                 stdin_pipe => ( $args{stdin} ? 1 : 0 ),
                 stdout_pipe => 1,
-                stderr_to_stdout => 1,
+                stderr_to_stdout => $args{stderr_to_stdout},
                 tty => ( $args{stdin} ? 0 : 1 ),
             },
             @commands,

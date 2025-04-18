@@ -10,7 +10,8 @@ sub table { return 'withdraw_history' };
 sub structure {
     return {
         withdraw_id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         user_id => {
             type => 'number',

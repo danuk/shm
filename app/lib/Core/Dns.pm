@@ -10,7 +10,8 @@ sub table { return 'dns_services' };
 sub structure {
     return {
         dns_id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         domain_id => {
             type => 'number',

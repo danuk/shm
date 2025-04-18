@@ -22,12 +22,20 @@ our @EXPORT = qw(
     quote
     res_by_arr
     insert_id
+    db_func
+    sum
+    avg
+    min
+    max
+    count
 );
 
 use Core::Utils qw(
     now
     decode_json
+    dots_str_to_sql
 );
+use Core::Base;
 use Core::System::ServiceManager qw( get_service logger );
 use SQL::Abstract;
 
@@ -256,7 +264,7 @@ sub query_for_filtering {
 
     for my $key ( keys %args ) {
         if ( my $field = $structure{ $key } ) {
-            if ( $field->{type} eq 'key' || $field->{type} eq 'number' ) {
+            if ( $field->{key} || $field->{type} eq 'number' ) {
                 $args{ $key } =~s/%//g;
                 $where{ $key } = $args{ $key };
             } elsif ( $field->{type} eq 'json' ) {
@@ -312,7 +320,7 @@ sub clean_query_args {
                         } elsif ( $self->can( $f ) ) {
                             $args->{where}{ $f } = $self->$f;
                         }
-                        logger->fatal( "`$f` required" ) unless length $args->{where}{ $f };
+                        report->fatal( "`$f` required" ) unless length $args->{where}{ $f };
                     }
                     # Запрещаем обновлять ключевое поле
                     delete $args->{ $f } if exists $args->{ $f };
@@ -331,7 +339,7 @@ sub clean_query_args {
                     } elsif ( $self->can( $f ) ) {
                         $args->{ $f } = $self->$f;
                     }
-                    logger->fatal( "Can't get `$f` from self" ) unless $args->{ $f };
+                    report->fatal( "Can't get `$f` from self" ) unless $args->{ $f };
                 }
                 next;
             }
@@ -554,8 +562,8 @@ sub get_table_key {
 
     my $structure = $self->structure;
 
-    for ( keys %{ $structure } ) {
-        return $_ if $structure->{ $_ }->{type} eq 'key';
+    for ( keys %$structure ) {
+        return $_ if $structure->{ $_ }->{key};
     }
     return undef;
 }
@@ -688,6 +696,73 @@ sub query_select {
 sub logger {
     state $log ||= get_service('logger');
     return $log;
+}
+
+sub sum {shift->db_func('SUM', @_ )};
+sub avg {shift->db_func('AVG', @_ )};
+sub min {shift->db_func('MIN', @_ )};
+sub max {shift->db_func('MAX', @_ )};
+sub count {shift->db_func('COUNT', @_ )};
+
+sub db_func {
+    my $self = shift;
+    my $func = shift || 'SUM';
+    my %args = (
+        all_users => 0,
+        where => {},
+        fields => [],
+        get_smart_args( @_ ),
+    );
+
+    return undef unless $self->can('structure');
+    my $structure = $self->structure;
+
+    $args{where} = {
+        %{$args{where}},
+        %{$self->query_for_filtering( $self->filter )},
+    };
+
+    for my $f ( keys %{ $args{where} } ) {
+        delete $args{where}->{$f} unless exists $structure->{$f};
+    }
+
+    if ($self->structure->{user_id} && !$structure->{user_id}->{key}) {
+        $args{where}->{user_id} ||= $self->user_id unless $args{all_users};
+    }
+
+    my @data = ("COUNT(1) as rows_count");
+    my @fields;
+
+    if ( my @f = @{ $args{fields} || [] } ) {
+        for ( @f ) {
+            if ( my $q = dots_str_to_sql( $_ ) ) {
+                next unless $structure->{ $q->{field} }->{type} eq 'json';
+                push @data, sprintf("IFNULL($func(%s),0) AS '%s'", $q->{query}, $q->{name});
+            } else {
+                next unless $structure->{ $_ };
+                push @data, sprintf("IFNULL($func(%s),0) AS '%s'", $_, $_);
+            }
+        }
+    } else {
+        for my $key (keys %$structure ) {
+            next if $key =~ /_id$/;
+            next if $structure->{$key}->{key};
+            push @fields, $key if $structure->{$key}->{type} eq 'number';
+        }
+        push @data, map( sprintf("IFNULL($func(%s),0) AS '%s'", $_, $_), @fields );
+    }
+
+    my $sql = SQL::Abstract->new;
+    my ( $where, @bind ) = $sql->where( delete $args{where} );
+
+    my ( $res ) = $self->query( sprintf("SELECT %s FROM %s $where",
+            join(', ', @data),
+            $self->table,
+        ),
+        @bind,
+    );
+
+    return $res;
 }
 
 1;

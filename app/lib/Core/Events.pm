@@ -9,7 +9,8 @@ sub table { return 'events' };
 sub structure {
     return {
         id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         kind => {
             type => 'text',

@@ -15,7 +15,6 @@ is_deeply( scalar Core::Utils::parse_date('2017-02-05 10:12:43'), {
     hour => 10,
     min => 12,
     sec => 43,
-    tz => undef,
 }, 'Test parse_date' );
 
 is( Core::Utils::start_of_month('2017-01-15 15:14:13'),'2017-01-01 00:00:00','Test start start_of_month');

@@ -9,7 +9,8 @@ sub table { return 'acts' };
 sub structure {
     return {
         act_id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         user_id => {
             type => 'number',

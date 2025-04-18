@@ -8,7 +8,8 @@ sub table { return 'profiles' };
 sub structure {
     return {
         id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         user_id => {
             type => 'number',

@@ -10,7 +10,8 @@ sub table { return 'bonus_history' };
 sub structure {
     return {
         id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         user_id => {
             type => 'number',

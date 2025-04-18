@@ -10,7 +10,8 @@ sub table { return 'services' };
 sub structure {
     return {
         service_id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         name => {
             type => 'text',

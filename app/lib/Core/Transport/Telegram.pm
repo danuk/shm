@@ -32,6 +32,10 @@ sub init {
     return $self;
 }
 
+sub config {
+    return get_service('config')->data_by_name('telegram') || {};
+}
+
 sub user_tg_settings {
     my $self = shift;
 
@@ -45,6 +49,11 @@ sub user_tg_settings {
     return $self->{user_tg_settings} = $data || {};
 }
 
+# methods for Templates
+sub settings { shift->user_tg_settings };
+sub login { shift->user_tg_settings->{username} };
+sub username { shift->user_tg_settings->{username} };
+
 # устанавливает указанный профиль: token & chat_id
 # Не устанавливаем chat_id, если он был установлен ранее,
 # это нужно для новых клиентов и возможности переопределения
@@ -54,7 +63,7 @@ sub profile {
 
     return $self->{profile} unless $name;
 
-    my $config = get_service('config')->data_by_name('telegram');
+    my $config = $self->config;
 
     $self->{profile} = $name;
 
@@ -143,7 +152,7 @@ sub task_send {
 
     if ( my $tg_method = $tpl_settings_tg->{raw} ) {
         my $json = decode_json( $message );
-        $message = $json if ref $json eq 'HASH';
+        $message = $json if ref $json eq 'HASH' || ref $json eq 'ARRAY';
     } elsif ( my $tg_method = $tpl_settings_tg->{method} ) {
         my $json = decode_json( $message );
         if ( ref $json eq 'HASH' ) {
@@ -155,8 +164,17 @@ sub task_send {
 
     my @ret = $self->send( $message );
 
-    if ( exists $ret[0]->{error} ) {
-        return undef, $ret[0];
+    if ( my $error = $ret[0]->{error} ) {
+        if ( ref $error eq 'HASH' ) {
+            # http was executed
+            return SUCCESS, $ret[0] if $error->{error_code} == 403; # skip
+            return undef, $ret[0] if $error->{error_code} == 400; # bad request
+            return undef, $ret[0] if $error->{error_code} == 404; # method not found
+            return FAIL, $ret[0]; # retry
+        } else {
+            # chat_id or token not found, etc...
+            return SUCCESS, $ret[0]; # skip
+        }
     } else {
         return SUCCESS, $ret[0];
     }
@@ -191,12 +209,32 @@ sub send {
         }
 
         my $response;
-        if ( ref $data eq 'HASH' ) {
-            my ( $method ) = keys %$data;
-            $response = $self->http( $method,
-                data => $data->{ $method },
-                %settings,
-            );
+        if ( ref $data ) {
+            my @arr;
+            if ( ref $data eq 'HASH' ) {
+                push @arr, $data;
+            } elsif ( ref $data eq 'ARRAY' ) {
+                @arr = @$data;
+            } else {
+                report->error( 'unkonwn type of data:', ref $data );
+                return { error => 'unknown type of data' };
+            }
+
+            for ( @arr ) {
+                unless (ref $_ eq 'HASH') {
+                    report->error( 'unkonwn type of data:', ref $_ );
+                    next;
+                }
+                my ( $method ) = keys %{$_};
+                $response = $self->http( $method,
+                    data => $_->{ $method },
+                    %settings,
+                );
+                unless ( $response->is_success ) {
+                    report->error( decode_json( $response->decoded_content ) );
+                    last;
+                }
+            }
         } else {
             $response = $self->sendMessage(
                 text => $data,
@@ -211,7 +249,11 @@ sub send {
             $self->{response} = $message;
         } else {
             logger->error( $message );
-            push @ret, { error => $message, profile => $profile, request => $response->request };
+            push @ret, {
+                error => $message,
+                profile => $profile,
+                request => decode_json( $response->request->content ),
+            };
         }
     }
     return @ret;
@@ -404,7 +446,7 @@ sub http {
         my $message = $response->decoded_content;
         logger->error( $message );
 
-        if ($message =~/bot was blocked by the user/ ) {
+        if ( $response->code == 403 ) {
             $self->user->set_settings({
                 telegram => {
                     $self->{profile} => {
@@ -552,6 +594,7 @@ sub process_message {
 
     # Set the chat_id from the message because it is unknown to new clients
     my $chat_id = $self->message->{chat}->{id};
+    $chat_id ||= $self->get_pre_checkout_query->{from}->{id} if $self->get_pre_checkout_query;
     $chat_id ||= $self->get_my_chat_member->{chat}->{id} if $self->get_my_chat_member;
     $self->{chat_id} = $chat_id if $chat_id;
 
@@ -559,8 +602,27 @@ sub process_message {
 
     my $template = $self->template( $args{template} );
     unless ( $template ) {
-        logger->error("Template: '$args{template}' not exists");
-        return undef;
+        return {
+            method => 'sendMessage',
+            chat_id => $self->{chat_id},
+            parse_mode => 'MarkdownV2',
+            text => sprintf("Ошибка: шаблон `%s` не найден",
+                $args{template},
+            )
+        }
+    }
+
+    unless ( $self->{token} ) {
+        return {
+            method => 'sendMessage',
+            chat_id => $self->{chat_id},
+            parse_mode => 'MarkdownV2',
+            text => sprintf("Ошибка: [token](%s) не найден\nПрофиль: `%s`\nchat\\_id: `%s`",
+                'https://docs.myshm.ru/docs/setup/servers/transport/telegram/',
+                $self->profile,
+                $chat_id,
+            )
+        }
     }
 
     my $user = $self->auth();
@@ -575,9 +637,18 @@ sub process_message {
         );
     }
 
+    my $exchange_rate;
     if ( my $payment = $self->message->{successful_payment} ) {
+        my $money = $payment->{total_amount};
+        if ( $payment->{currency} eq 'XTR' ) {
+            if ( $exchange_rate = $self->config->{xtr_exchange_rate} ) {
+                $money = $money * $exchange_rate;
+            }
+        }
+
         $user->payment(
-            money => $payment->{total_amount},
+            money => $money,
+            exchange_rate => $exchange_rate,
             currency => $payment->{currency},
             uniq_key => $payment->{telegram_payment_charge_id},
             pay_system_id => 'telegram_bot',
@@ -657,12 +728,6 @@ sub exec_template {
 
     my $obj = $self->get_script( $self->template, %args );
     return [] unless $obj;
-
-    if ( my @errors = get_service('report')->errors ) {
-        return $self->sendMessage(
-            text => join('<br>', @errors),
-        );
-    }
 
     $self->{deny_answer_direct} += scalar @{ $obj };
 

@@ -9,7 +9,8 @@ sub table { return 'servers' };
 sub structure {
     return {
         server_id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         server_gid => {
             type => 'number',

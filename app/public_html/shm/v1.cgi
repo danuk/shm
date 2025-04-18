@@ -126,11 +126,11 @@ my $routes = {
         required => ['service_id'],
     },
 },
-'/template/:id' => {
+'/template/*' => {
     GET => {
         controller => 'Template',
         method => 'show',
-        required => ['id'],
+        required => ['splat'],
         args => {
             format => 'plain',
         },
@@ -138,18 +138,18 @@ my $routes = {
     POST => {
         controller => 'Template',
         method => 'show',
-        required => ['id'],
+        required => ['splat'],
         args => {
             format => 'plain',
         },
     },
 },
-'/public/:id' => {
+'/public/*' => {
     GET => {
         user_id => 1,
         controller => 'Template',
         method => 'show_public',
-        required => ['id'],
+        required => ['splat'],
         args => {
             format => 'plain',
         },
@@ -158,7 +158,7 @@ my $routes = {
         user_id => 1,
         controller => 'Template',
         method => 'show_public',
-        required => ['id'],
+        required => ['splat'],
         args => {
             format => 'plain',
         },
@@ -492,11 +492,11 @@ my $routes = {
         controller => 'Template',
     },
 },
-'/admin/template/:id' => {
+'/admin/template/*' => {
     GET => {
         controller => 'Template',
         method => 'show',
-        required => ['id'],
+        required => ['splat'],
         args => {
             format => 'plain',
             do_not_parse => 1,
@@ -504,15 +504,15 @@ my $routes = {
     },
     PUT => {
         controller => 'Template',
-        required => ['id','PUTDATA'],
+        required => ['splat','PUTDATA'],
     },
     POST => {
         controller => 'Template',
-        required => ['id','POSTDATA'],
+        required => ['splat','POSTDATA'],
     },
     DELETE => {
         controller => 'Template',
-        required => ['id'],
+        required => ['splat'],
     },
 },
 '/admin/storage/manage' => {
@@ -616,12 +616,13 @@ my $routes = {
         },
     },
 },
-'/telegram/bot/:template' => {
+'/telegram/bot/*' => {
     POST => {
         skip_check_auth => 1,
         controller => 'Transport::Telegram',
         method => 'process_message',
-        required => ['template'],
+        required => ['splat'],
+        splat_to => 'template',
         args => {
             format => 'json',
         },
@@ -655,6 +656,10 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     %in = parse_args( auto_parse_json => $p->{skip_auto_parse_json} ? 0 : 1 );
     $in{filter} = decode_json( $in{filter} ) if $in{filter};
+
+    if ( my $splat = $p->{splat} ) {
+        $in{ $p->{splat_to} || 'id' } = $splat->[0];
+    }
 
     my $user = SHM->new(
         skip_check_auth => $p->{skip_check_auth},

@@ -12,7 +12,8 @@ sub table_allow_insert_key { return 1 };
 sub structure {
     return {
         id => {
-            type => 'key',
+            type => 'text',
+            key => 1,
         },
         user_id => {
             type => 'number',

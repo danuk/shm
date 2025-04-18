@@ -9,7 +9,8 @@ sub table { return 'invoices' };
 sub structure {
     return {
         id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         date => {
             type => 'date',

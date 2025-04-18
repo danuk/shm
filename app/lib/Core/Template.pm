@@ -15,6 +15,7 @@ use Core::Utils qw(
     blessed
     encode_base64url
     decode_base64url
+    to_query_string
 );
 
 sub table { return 'templates' };
@@ -22,7 +23,8 @@ sub table { return 'templates' };
 sub structure {
     return {
         id => {
-            type => 'key',
+            type => 'text',
+            key => 1,
         },
         data => {
             type => 'text',
@@ -78,8 +80,8 @@ sub parse {
         response => { test_data => 1 },  # for testing templates
         http => sub { get_service('Transport::Http') },
         spool => sub { get_service('Spool') },
-        spool_history => sub { get_service('SpoolHistory') },
         promo => sub { get_service('promo') },
+        misc => sub { get_service('misc') },
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
         %{ $args{vars} }, # do not move it upper. It allows to override promo end others
         request => sub {
@@ -108,26 +110,9 @@ sub parse {
             use Data::Dumper;
             return Dumper( @_ );
         },
-        log => sub {
-
-        },
-        toQueryString => sub {
-            my $data = shift;
-            return '' if ref $data ne 'HASH';
-
-            use URI::Escape;
-            my @ret;
-            for ( keys %{ $data } ) {
-                push @ret, sprintf("%s=%s", $_, uri_escape( $data->{ $_ } ));
-            }
-            return join('&', @ret );
-        },
-        toBase64Url => sub {
-            return encode_base64url( shift );
-        },
-        fromBase64Url => sub {
-            return decode_base64url( shift );
-        },
+        toQueryString => sub { to_query_string( shift ) },
+        toBase64Url => sub { encode_base64url( shift ) },
+        fromBase64Url => sub { decode_base64url( shift ) },
         true => \1,
         false => \0,
     };
@@ -199,6 +184,18 @@ sub show_public {
     }
 
     return $self->show( %args, do_not_parse => 0 );
+}
+
+sub _list {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    if ( my $id = $args{id} ) {
+        $args{where}->{id} ||= $id;
+    }
+    return $self->SUPER::_list( %args );
 }
 
 sub add {

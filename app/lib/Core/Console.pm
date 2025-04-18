@@ -11,7 +11,8 @@ sub table { return 'console' };
 sub structure {
     return {
         id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         start => {
             type => 'now',
@@ -76,6 +77,18 @@ sub eof {
     my $self = shift;
 
     return $self->get->{eof};
+}
+
+sub clean {
+    my $self = shift;
+    my %args = (
+        days => 30,
+        get_smart_args( @_ ),
+    );
+
+    return $self->_delete( where => {
+        start => { '<', \[ 'NOW() - INTERVAL ? DAY', 30 ] },
+    });
 }
 
 1;

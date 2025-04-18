@@ -84,11 +84,33 @@ subtest 'Check events for new service' => sub {
         service_id => $service_id,
     );
 
+    is( $us->status, STATUS_INIT );
     is( $us->get_service_id, $service_id );
     is( scalar @{ $us->commands_by_event('create') }, 3 );
     is ( $us->has_spool_command, 0 );
     is ( $us->event( 'create' ), SUCCESS );
     is ( $us->has_spool_command, 3 );
+    is( $us->status, STATUS_PROGRESS );
+};
+
+subtest 'Check add event when status is PROGRESS' => sub {
+    my $service_id = get_service('service')->add(
+        name => 'test service',
+        cost => 0,
+        category => 'custom',
+    )->id;
+
+    my $us = get_service('us')->add(
+        service_id => $service_id,
+    );
+
+    $us->set( status => STATUS_PROGRESS );
+    is( $us->status, STATUS_PROGRESS );
+
+    is ( $us->has_spool_command, 0 );
+    is ( $us->event( 'create' ), SUCCESS );
+    is ( $us->has_spool_command, 1 );
+    is( $us->status, STATUS_PROGRESS );
 };
 
 done_testing();

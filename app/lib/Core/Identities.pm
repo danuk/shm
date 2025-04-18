@@ -14,7 +14,8 @@ sub table { return 'identities' };
 sub structure {
     return {
         id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         name => {
             type => 'text',

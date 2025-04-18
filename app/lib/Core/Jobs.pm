@@ -58,6 +58,7 @@ sub job_make_forecasts {
     my %settings;
     if ( $task ) {
         $settings{days_before_notification} = $task->settings->{days_before_notification};
+        $settings{blocked} = $task->settings->{blocked};
     }
 
     my $users = $self->user->items;
@@ -66,6 +67,7 @@ sub job_make_forecasts {
     for my $u ( @$users ) {
         my $ret = $u->pays->forecast(
             $settings{days_before_notification} ? ( days => $settings{days_before_notification} ) : (),
+            $settings{blocked} ? ( blocked => $settings{blocked} ) : (),
         );
         next unless $ret->{total};
 

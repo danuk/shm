@@ -20,7 +20,8 @@ sub structure {
             auto_fill => 1,
         },
         name => {
-            type => 'key',
+            type => 'text',
+            key => 1,
         },
         created => {
             type => 'text',

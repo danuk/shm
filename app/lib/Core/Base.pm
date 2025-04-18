@@ -14,6 +14,7 @@ use Core::Utils qw(
     hash_merge
     encode_json
     hash_merge
+    dots_str_to_sql
 );
 $Data::Dumper::Deepcopy = 1;
 
@@ -113,6 +114,18 @@ sub id {
         logger->debug('identifier not defined for class ' . ref $self);
         return undef;
     }
+
+    if ( $self->can('structure') ) {
+        my $structure = $self->structure;
+        if ( my $type = $structure->{ $key_field }->{type} ) {
+            if ( $type eq 'number' ) {
+                $id = $id + 0;
+            } elsif ( $type eq 'text' ) {
+                $id = "$id";
+            }
+        }
+    }
+
     return $id;
 }
 
@@ -123,7 +136,8 @@ sub user_id {
 
 sub user {
     my $self = shift;
-    return get_service('user', _id => $self->user_id );
+    my $user_id = shift || $self->user_id;
+    return get_service('user', _id => $user_id );
 }
 
 sub res {
@@ -477,47 +491,6 @@ sub get_smart_args {
         @args = %{ $args[0] };
     }
     return @args;
-}
-
-sub sum {
-    my $self = shift;
-    my %args = (
-        where => {},
-        get_smart_args( @_ ),
-    );
-
-    return undef unless $self->can('structure');
-    return undef unless $self->structure->{user_id};
-
-    my $structure = $self->structure;
-
-    for my $f ( keys %{ $args{where} } ) {
-        delete $args{where}->{$f} unless exists $structure->{$f};
-    }
-
-    if ( $structure->{user_id}->{type} ne 'key') {
-        $args{where}->{user_id} = $self->user_id;
-    }
-
-    my @fields;
-    for my $key (keys %{ $structure }) {
-        next if $key =~ /_id$/;
-        push @fields, $key if $structure->{$key}->{type} eq 'number';
-    }
-
-    my @data = map( sprintf("SUM(%s) AS %s", $_, $_), @fields );
-
-    my $sql = SQL::Abstract->new;
-    my ( $where, @bind ) = $sql->where( delete $args{where} );
-
-    my ( $res ) = $self->query( sprintf("SELECT %s FROM %s $where",
-            join(', ', @data),
-            $self->table,
-        ),
-        @bind,
-    );
-
-    return $res;
 }
 
 1;

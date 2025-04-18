@@ -23,7 +23,8 @@ sub table { return 'domains' };
 sub structure {
     return {
         domain_id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         user_id => {
             type => 'number',

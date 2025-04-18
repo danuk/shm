@@ -9,7 +9,8 @@ sub table { return 'domains_services' };
 sub structure {
     return {
         id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         domain_id => {
             type => 'number',

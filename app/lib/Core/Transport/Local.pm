@@ -29,10 +29,18 @@ sub send {
     my $content = $template->parse(
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
         task => $task,
+        vars => {
+            SUCCESS => SUCCESS,
+            FAIL => FAIL,
+        },
     );
 
-    return SUCCESS, {
+    my %answer = $task->answer;
+    my $status = exists $answer{status} ? $answer{status} : SUCCESS;
+
+    return $status, {
         result => $content,
+        %answer,
     };
 }
 

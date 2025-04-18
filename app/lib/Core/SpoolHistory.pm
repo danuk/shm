@@ -30,4 +30,18 @@ sub add {
     return $self->SUPER::add( %args );
 }
 
+sub clean {
+    my $self = shift;
+    my %args = (
+        days => 30,
+        get_smart_args( @_ ),
+    );
+
+    $self->srv('console')->clean( days => $args{days} );
+
+    return $self->_delete( where => {
+        executed => { '<', \[ 'NOW() - INTERVAL ? DAY', 30 ] },
+    });
+}
+
 1;

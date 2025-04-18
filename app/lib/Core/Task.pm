@@ -113,6 +113,21 @@ sub cmd {
     return undef unless $cmd;
 }
 
+# метод для установки пользовательского ответа из шаблонов
+sub answer {
+    my $self = shift;
+    my %args = (
+        get_smart_args( @_ ),
+    );
+
+    if ( %args ) {
+        $self->{answer} = \%args;
+        return undef;
+    }
+
+    return %{$self->{answer} || {}};
+}
+
 sub task_answer {
     my $self = shift;
     my $status = shift;

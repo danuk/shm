@@ -9,7 +9,8 @@ sub table { return 'discounts' };
 sub structure {
     return {
         discount_id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         title => {
             type => 'text',

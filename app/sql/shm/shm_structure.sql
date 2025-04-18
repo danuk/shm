@@ -366,8 +366,8 @@ CREATE TABLE IF NOT EXISTS `bonus_history` (
 
 CREATE TABLE IF NOT EXISTS `promo_codes` (
   `id` char(32) NOT NULL,
+  `user_id` int(11) NOT NULL,
   `template_id` char(32) NOT NULL,
-  `user_id` int(11) DEFAULT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `used` datetime DEFAULT NULL,
   `used_by` int(11) DEFAULT NULL,

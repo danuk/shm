@@ -344,6 +344,8 @@ sub domains {
 sub activate_services {
     my $self = shift;
 
+    return FAIL, { error => 'Некоторые услуги в статусе: "PROGRESS", ждем...' } if $self->has_services_progress;
+
     my @list = $self->list(
         where => {
             status => { -in => [

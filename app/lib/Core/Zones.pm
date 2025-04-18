@@ -9,7 +9,8 @@ sub table { return 'zones' };
 sub structure {
     return {
         zone_id => {
-            type => 'key',
+            type => 'number',
+            key => 1,
         },
         name => {
             type => 'text',

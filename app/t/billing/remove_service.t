@@ -283,6 +283,8 @@ subtest 'Remove unpaid user service' => sub {
     is( defined $wd_id, 1 );
 
     $us->delete;
+    is( $us->has_spool_command, 0 );
+    is( $us->get_status, 'REMOVED');
     is( defined $us->get_withdraw_id, '' );
 
     my @list = $user->srv('wd')->_list(

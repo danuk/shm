@@ -15,6 +15,7 @@ our @EXPORT_OK = qw(
     days_in_months
     parse_date
     parse_period
+    add_date_time
     start_of_month
     end_of_month
     http_limit
@@ -35,6 +36,7 @@ our @EXPORT_OK = qw(
     decode_base64url
     file_by_string
     read_file
+    write_file
     passgen
     shm_test_api
     is_email
@@ -43,6 +45,8 @@ our @EXPORT_OK = qw(
     hash_merge
     blessed
     get_random_value
+    to_query_string
+    dots_str_to_sql
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -54,18 +58,22 @@ use Data::Validate::Email qw(is_email);
 use Data::Validate::Domain qw(is_domain);
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use Clone 'clone';
+use Date::Calc qw(
+    Add_Delta_YMDHMS
+);
 
 our %in;
 
 sub parse_date {
-    my $date = shift;
+    my $date = shift || now();
     my %parse_date;
-    @parse_date{ qw/year month day hour min sec tz/ } = map( int( $_ ), split(/\D+/, $date ) );
+    @parse_date{ qw/year month day hour min sec/ } = map( $_, split(/\D+/, $date ) );
+    %parse_date = map { $_ => int $parse_date{ $_ } } keys %parse_date ; # convert undef to 0
     return wantarray ? %parse_date : \%parse_date;
 }
 
 sub string_to_utime {
-    my $string = shift or confess( "argument required" );
+    my $string = shift || now();
 
     my %d = parse_date( $string );
 
@@ -77,6 +85,8 @@ sub string_to_utime {
     return $s_time;
 }
 
+sub now { utime_to_string( time ) };
+
 sub utime_to_string {
     my $time = shift || time;
     my $format = shift || "%Y-%m-%d %H:%M:%S";
@@ -85,7 +95,27 @@ sub utime_to_string {
     return strftime $format, localtime( $time );
 }
 
-*now = \&utime_to_string;
+sub add_date_time {
+    my $date = shift || now();
+    my %args = (
+        year => 0,
+        month => 0,
+        day => 0,
+        hour => 0,
+        min => 0,
+        sec => 0,
+        @_,
+    );
+
+    my %date = parse_date( $date );
+
+    my @ret = Add_Delta_YMDHMS(
+        @date{ qw/year month day hour min sec/ },
+        @args{ qw/year month day hour min sec/}
+    );
+
+    return sprintf("%d-%.2d-%.2d %.2d:%.2d:%.2d", @ret );
+}
 
 sub start_of_month {
     my $date = shift || now();
@@ -95,15 +125,14 @@ sub start_of_month {
 }
 
 sub end_of_month {
-    my $date = shift || confess( 'date required' );
-
+    my $date = shift || now();
 
     my %data = parse_date( $date );
     return sprintf("%d-%.2d-%.2d 23:59:59", @data{ qw/year month/ }, days_in( @data{ qw/year month/} ) );
 }
 
 sub days_in_months {
-    my $date = shift;
+    my $date = shift || now();
 
     if ( my %date = parse_date( $date ) ) {
         return days_in( @date{ qw/year month/ } );
@@ -112,7 +141,6 @@ sub days_in_months {
         confess("Incorrent date format: `$date`");
     }
 }
-
 
 sub period_to_string {
     my $period = shift;
@@ -140,7 +168,7 @@ sub get_uri_args {
         my $q = CGI->new( $ENV{QUERY_STRING} );
         %in = $q->Vars;
     }
-    return %in;
+    return wantarray ? %in : \%in;
 }
 
 sub parse_headers {
@@ -154,7 +182,7 @@ sub parse_headers {
         $headers{ lc $new_key } = $headers{ $key };
     }
 
-    return %headers;
+    return wantarray ? %headers : \%headers;
 }
 
 sub parse_args {
@@ -189,7 +217,7 @@ sub parse_args {
         $cmd_opts{ $opt } = $value;
     }
 
-    return %in, %cmd_opts;
+    return wantarray ? ( %in, %cmd_opts ) : { %in, %cmd_opts };
 }
 
 sub http_limit {
@@ -231,6 +259,25 @@ sub decode_json {
     return $json;
 }
 
+sub obj_to_json {
+    my $data = shift;
+
+    if (blessed $data) {
+        if ( $data->can('res') ) {
+            $data = $data->res();
+        }
+    }
+
+    if (ref $data eq 'HASH') {
+        for (keys %$data) {
+            if (blessed $data->{$_}) {
+                $data->{$_} = obj_to_json($data->{$_});
+            }
+        }
+    }
+    return $data;
+}
+
 # convert to JSON as it is (with internal Perl encoding)
 # for compatibility with other Cyrillic texts in the templates
 sub encode_json_perl {
@@ -241,7 +288,7 @@ sub encode_json_perl {
     );
 
     my $json;
-    eval{ $json = JSON->new->canonical->pretty( $args{pretty} )->encode( $data ) } or do {
+    eval{ $json = JSON->new->canonical->pretty( $args{pretty} )->encode( obj_to_json $data ) } or do {
         get_service('logger')->warning("Incorrect JSON data for encode: " . $data);
     };
 
@@ -299,6 +346,17 @@ sub read_file {
     close($fh);
 
     return $data;
+}
+
+sub write_file {
+    my $file = shift;
+    my $data = shift;
+
+    open my $fh, '>', $file or return undef;
+    print $fh ref $data ? encode_json( $data ) : $data;
+    close $fh;
+
+    return 1;
 }
 
 sub switch_user {
@@ -428,7 +486,7 @@ sub get_cookies {
         return undef unless $cookies{ $name };
         return $cookies{ $name }->value;
     } else {
-        return %cookies;
+        return wantarray ? %cookies : \%cookies;
     }
 }
 
@@ -440,11 +498,15 @@ sub parse_period {
     my $days =  $parts =~/^(\d{1,2})/ ?      ( length($1) == 1 ? int($1) * 10 : int($1) ) : 0;
     my $hours = $parts =~/^\d{2}(\d{1,2})/ ? ( length($1) == 1 ? int($1) * 10 : int($1) ) : 0;
 
-    return (
+    return wantarray ? (
         $months,
         $days,
         $hours,
-    )
+    ) : {
+        months => $months,
+        days => $days,
+        hours => $hours,
+    };
 }
 
 sub get_random_value {
@@ -456,5 +518,36 @@ sub get_random_value {
         return $value;
     }
 }
+
+sub to_query_string {
+    my $data = shift;
+    return undef unless $data ne 'HASH';
+
+    use URI::Escape;
+    my @ret;
+    for ( keys %$data ) {
+        push @ret, sprintf("%s=%s", $_, uri_escape_utf8( $data->{ $_ } ));
+    }
+    return join('&', @ret );
+}
+
+sub dots_str_to_sql {
+    my $str = shift;
+
+    my @arr = split(/\./, $str);
+    return undef unless @arr;
+
+    my $field = shift @arr;
+    return undef unless @arr;
+
+    return {
+        field => $field,
+        name => join('_', $field, @arr),
+        query => sprintf('%s->>"$.%s"', $field, join('.', @arr)),
+    }
+}
+
+# метод для вычисления разницы дат
+# метод вывода даты в формате: "2 дня, 4 часа, 5 минут"
 
 1;
