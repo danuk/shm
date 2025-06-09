@@ -1,12 +1,12 @@
 services:
   api:
-    image: "danuk/shm-api:${CORE_VERSION}"
+    image: "${SHM_REPO}/shm-api:${CORE_VERSION}"
     pull_policy: always
     restart: always
     depends_on:
       - core
   core:
-    image: "danuk/shm-core:${CORE_VERSION}"
+    image: "${SHM_REPO}/shm-core:${CORE_VERSION}"
     pull_policy: always
     restart: always
     environment:
@@ -16,13 +16,15 @@ services:
       DB_NAME: ${MYSQL_DATABASE}
       DB_USER: ${MYSQL_USER}
       DB_PASS: ${MYSQL_PASS}
-      DB_HOST: mysql
-      DB_PORT: 3306
+      DB_HOST: ${MYSQL_HOST}
+      DB_PORT: ${MYSQL_PORT}
+    volumes:
+      - "shm-data:/app/data"
     depends_on:
       mysql:
         condition: service_healthy
   spool:
-    image: "danuk/shm-core:${CORE_VERSION}"
+    image: "${SHM_REPO}/shm-core:${CORE_VERSION}"
     pull_policy: always
     deploy:
       mode: replicated
@@ -36,8 +38,10 @@ services:
       DB_NAME: ${MYSQL_DATABASE}
       DB_USER: ${MYSQL_USER}
       DB_PASS: ${MYSQL_PASS}
-      DB_HOST: mysql
-      DB_PORT: 3306
+      DB_HOST: ${MYSQL_HOST}
+      DB_PORT: ${MYSQL_PORT}
+    volumes:
+      - "shm-data:/app/data"
     depends_on:
       mysql:
         condition: service_healthy
@@ -48,7 +52,7 @@ services:
     environment:
       SHM_HOST: http://api
     ports:
-      - "0.0.0.0:8081:80"
+      - "${ADMIN_PORT}:80"
     depends_on:
       - api
   client:
@@ -62,7 +66,7 @@ services:
 #      - ./head.html:/app/ssi/head.html
 #      - ./body.html:/app/ssi/body.html
     ports:
-      - "0.0.0.0:8082:80"
+      - "${CLIENT_PORT}:80"
     depends_on:
       - api
   mysql:
@@ -85,5 +89,7 @@ services:
 
 volumes:
   mysql-data:
+    driver: local
+  shm-data:
     driver: local
 
