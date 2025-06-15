@@ -14,6 +14,10 @@
       "url": "/shm/v1"
     }
   ],
+  "schemes": [
+    "https",
+    "http"
+  ],
   "paths": {
     "/user": {
       "get": {
