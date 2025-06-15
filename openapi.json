@@ -10,7 +10,7 @@
   },
   "servers": [
     {
-      "url": "shm/v1"
+      "url": "/shm/v1"
     }
   ],
   "paths": {
