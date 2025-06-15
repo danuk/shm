@@ -8,11 +8,7 @@
     "description": "Документация",
     "url": "https://docs.myshm.ru/docs/api"
   },
-  "servers": [
-    {
-      "url": "shm/v1"
-    }
-  ],
+  "basePath": "/shm/v1",
   "paths": {
     "/user": {
       "get": {
