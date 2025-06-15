@@ -1,0 +1,149 @@
+openapi: 3.0.4
+info:
+  title: SHM API
+  version: 0.34.0
+externalDocs:
+  description: Документация
+  url: https://docs.myshm.ru/docs/api
+servers:
+  - url: http://127.0.0.1:8081/shm/v1
+
+paths:
+  /user:
+    get:
+      tags:
+        - Пользователи
+      summary: Получить пользователя
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserList'
+    post:
+      tags:
+        - Пользователи
+      summary: Изменить пользователя
+      requestBody:
+        description: Изменить пользователя
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserList'
+        '400':
+          description: Ошибка запроса, неверные или недостающие аргументы
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/400"
+        '403':
+          description: Ошибка доступа
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/403"
+        
+          
+  
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        login:
+          type: string
+          example: bob_123
+        full_name:
+          type: string
+          example: "Mr. Bob"
+        dogovor:
+          type: string
+          example: "Num 123 from December"
+        block:
+          type: boolean
+          example: false
+        can_overdraft:
+          type: boolean
+          example: false
+        credit:
+          type: integer
+        discount:
+          type: integer
+        comment:
+          type: string
+        settings:
+          type: object
+          description: User settings
+          example: {}
+
+    UserList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/User'
+        items:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 25
+        offset:
+          type: integer
+          example: 0
+    200:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/User'
+        items:
+          type: integer
+          example: 1            
+
+    400:
+      type: object
+      properties:
+        status:
+          type: integer
+          default: 400
+        error:
+          type: string
+          example: "Field required: <FIELD>"
+    403:
+      type: object
+      properties:
+        status:
+          type: integer
+          default: 403
+        error:
+          type: string
+          example: "Permission denied"
+          
+  
+ 
+  
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session_id 
+
+#Apply cookie auth globally to all operations
+security:
+  - basicAuth: []
+  - cookieAuth: []
+
+  
