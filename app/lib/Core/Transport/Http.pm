@@ -52,7 +52,7 @@ sub send {
     );
 
     my $method = lc( $settings{method} ) || 'post';
-    unless ( $method =~ /^(get|post|put|delete)$/ ) {
+    unless ( $method =~ /^(get|post|put|delete|patch)$/ ) {
         return undef, {error => "unknown method `$method`"};
     }
 
@@ -158,12 +158,26 @@ sub http {
         $content = encode_json( $content );
     }
 
-    my $response = $ua->$method(
-        $args{url},
-        Content_Type => $args{content_type},
-        Content => encode_utf8( $content ),
-        %{ $args{headers} || {} },
-    );
+    my $response;
+    if ($method eq 'patch') {
+        require HTTP::Request::Common;
+        import HTTP::Request::Common ('PATCH');
+        $response = $ua->request(
+            PATCH(
+                $args{url},
+                Content_Type => $args{content_type},
+                Content => encode_utf8( $content ),
+                %{ $args{headers} || {} },
+            )
+        );
+    } else {
+        $response = $ua->$method(
+            $args{url},
+            Content_Type => $args{content_type},
+            Content => encode_utf8( $content ),
+            %{ $args{headers} || {} },
+        );
+    }
 
     logger->dump( $response->request );
 
@@ -189,5 +203,6 @@ sub get { return shift->_http( 'get', @_ ) }
 sub put { return shift->_http( 'put', @_ ) }
 sub post { return shift->_http( 'post', @_ ) }
 sub delete { return shift->_http( 'delete', @_ ) }
+sub patch { return shift->_http( 'patch', @_ ) }
 
 1;
