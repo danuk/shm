@@ -93,6 +93,11 @@ services:
       - "${WEBDAV_PORT}:80"
     volumes:
       - "shm-data:/app/data"
+  redis:
+    image: redis:latest
+    ports:
+      - "127.0.0.1:6379:6379"
+    restart: always
 
 volumes:
   mysql-data:
