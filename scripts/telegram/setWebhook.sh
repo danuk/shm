@@ -17,7 +17,8 @@ cat << EOF | curl -X POST \
         "inline_query",
         "callback_query",
         "my_chat_member",
-        "pre_checkout_query"
+        "pre_checkout_query",
+        "successful_payment"
     ]
 }
 EOF
