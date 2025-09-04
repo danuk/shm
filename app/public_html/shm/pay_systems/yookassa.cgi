@@ -16,26 +16,37 @@ use Core::Utils qw(
 use SHM qw(:all);
 our %vars = parse_args();
 
+my $user = SHM->new( skip_check_auth => 1 );
+my $ps = 'yookassa';
+
+my $config = get_service('config', _id => 'pay_systems')->get_data;
+my $ps_name = $vars{ps} || $ps;
+my %ps_config = (
+    %{$config->{$ps}},
+    $vars{ps} ? %{$config->{$ps_name}} : (),
+);
+
 if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
-    my $user;
     if ( $vars{user_id} ) {
-        $user = SHM->new( user_id => $vars{user_id} );
+        $user = $user->id( $vars{user_id} );
+        unless ( $user ) {
+            print_json({ status => 400, msg => 'Error: unknown user' });
+            exit 0;
+        }
 
         if ( $vars{message_id} ) {
             get_service('Transport::Telegram')->deleteMessage( message_id => $vars{message_id} );
         }
-
     } else {
         $user = SHM->new();
     }
 
-    my $config = get_service('config', _id => 'pay_systems');
-    my $api_key =        $config->get_data->{yookassa}->{api_key};
-    my $account_id =     $config->get_data->{yookassa}->{account_id};
-    my $return_url =     $config->get_data->{yookassa}->{return_url};
-    my $description =    get_random_value( $vars{description} || $config->get_data->{yookassa}->{description} );
-    my $customer_email = $vars{email} || $config->get_data->{yookassa}->{customer_email};
-    my $save_payments  = $config->get_data->{yookassa}->{save_payments};
+    my $api_key =        $ps_config{api_key};
+    my $account_id =     $ps_config{account_id};
+    my $return_url =     $ps_config{return_url};
+    my $description =    get_random_value( $vars{description} || $ps_config{description} );
+    my $customer_email = $vars{email} || $ps_config{customer_email};
+    my $save_payments  = $ps_config{save_payments};
 
     print_json({ status => 400, msg => 'Error: api_key required. Please set it in config' }) unless $api_key;
     print_json({ status => 400, msg => 'Error: account_id required. Please set it in config' }) unless $account_id;
@@ -141,15 +152,12 @@ if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
     exit 0;
 }
 
-my $user = SHM->new( skip_check_auth => 1 );
-
 unless ( $vars{object} ) {
     print_json({ status => 400, msg => 'Error: bad request' });
     exit;
 }
 
-my $config = get_service('config', _id => 'pay_systems');
-my $account_id = $config->get_data->{yookassa}->{account_id};
+my $account_id = $ps_config{account_id};
 print_json({ status => 400, msg => 'Error: account_id required. Please set it in config' }) unless $account_id;
 
 
@@ -212,8 +220,6 @@ if ( $vars{object}->{payment_method}->{saved} ) {
 }
 
 my $uniq_key = $vars{object}->{id};
-
-my $ps_name = 'yookassa';
 
 if ( $vars{event} eq 'payment.canceled' ) {
     $ps_name .= '-canceled';
