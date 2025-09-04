@@ -19,7 +19,7 @@ subtest 'Check auth with incorrect credentials' => sub {
     my $json_ret = decode_json( $ret );
 
     cmp_deeply( $json_ret, {
-        msg => 'Incorrect login or password',
+        error => 'Incorrect login or password',
         status => 401,
     });
 };

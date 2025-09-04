@@ -32,11 +32,15 @@ sub send {
         vars => {
             SUCCESS => SUCCESS,
             FAIL => FAIL,
+            STUCK => '',
         },
     );
 
+    my $status = SUCCESS;
     my %answer = $task->answer;
-    my $status = exists $answer{status} ? $answer{status} : SUCCESS;
+    if ( exists $answer{status} ) {
+        $status = length $answer{status} ? $answer{status} : undef;
+    }
 
     return $status, {
         result => $content,

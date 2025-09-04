@@ -86,9 +86,9 @@ subtest 'Check events for new service' => sub {
 
     is( $us->status, STATUS_INIT );
     is( $us->get_service_id, $service_id );
-    is( scalar @{ $us->commands_by_event('create') }, 3 );
+    is( scalar @{ $us->commands_by_event('CREATE') }, 3 );
     is ( $us->has_spool_command, 0 );
-    is ( $us->event( 'create' ), SUCCESS );
+    is ( $us->event( 'CREATE' ), SUCCESS );
     is ( $us->has_spool_command, 3 );
     is( $us->status, STATUS_PROGRESS );
 };

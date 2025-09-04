@@ -31,7 +31,7 @@ INSERT INTO `config` VALUES
 ("telegram", '{"token":""}'),
 ("api",     '{"url":"https://bill.domain.ru"}'),
 ("cli",     '{"url":"https://bill.domain.ru"}'),
-("pay_systems",'{"manual":{"name":"Платеж","show_for_client":false},"yoomoney":{"name":"ЮMoney","account":"000000000000000","secret":"","show_for_client":true}}'),
+("pay_systems",'{"manual":{"name":"Платеж","show_for_client":false},"yoomoney":{"name":"ЮMoney","account":"000000000000000","secret":"","template_id":"yoomoney_template","show_for_client":true}}'),
 ("mail",    '{"from":"mail@domain.ru"}')
 ;
 

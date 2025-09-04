@@ -24,6 +24,7 @@ our @EXPORT = qw(
     confess
     logger
     report
+    cache
     get_smart_args
     first_item
 );
@@ -81,6 +82,8 @@ sub new {
     my $class = ref($proto) || $proto;
     my $self = bless( $args, $class );
 
+    $self->init( %$args ) if $self->can('init');
+
     # Устанавливаем идентификатор автоматически
     if ( $class->can('structure') ) {
         my $key = $class->get_table_key;
@@ -92,9 +95,6 @@ sub new {
         }
     }
 
-    if ( $self->can('init') ) {
-        return $self->init( %{ $args } );
-    }
     return $self;
 }
 
@@ -131,7 +131,7 @@ sub id {
 
 sub user_id {
     my $self = shift;
-    return $self->{user_id} || $self->res->{user_id} || get_service('config')->local->{user_id};
+    return $self->get_user_id || $self->{user_id} || get_service('config')->local->{user_id};
 }
 
 sub user {
@@ -169,6 +169,21 @@ sub filter {
     }
 
     $self->{filter} = \%args;
+    return $self;
+}
+
+sub limit {
+    my $self = shift;
+    my $limit = shift;
+    my $offset = shift;
+
+    unless ( $limit ) {
+        return delete $self->{limit}, delete $self->{offset};
+    }
+
+    $self->{limit} = $limit;
+    $self->{offset} = $offset;
+
     return $self;
 }
 
@@ -218,6 +233,7 @@ sub items {
     my $self = shift;
     my %args = (
         where => {},
+        admin => 0,
         get_smart_args( @_ ),
     );
 
@@ -226,9 +242,13 @@ sub items {
         %{$self->query_for_filtering( $self->filter )},
     };
 
+    my @limit = $self->limit();
+    $args{limit} //= $limit[0];
+    $args{offset} //= $limit[1];
+
     $args{order} = $self->_sort;
 
-    my @ret = $self->SUPER::list( %args );
+    my @ret = $args{admin} ? $self->_list( %args ) : $self->list( %args );
 
     my @list;
     for ( @ret ) {
@@ -301,7 +321,10 @@ sub _add_or_set {
     my %args = @_;
 
     if ( $self->can('validate_attributes') ) {
-        return undef unless $self->validate_attributes( $method, %args );
+        unless ( $self->validate_attributes( $method, %args ) ) {
+            logger->warning('validate attribute error:', $method, \%args );
+            return undef;
+        }
     }
 
     # Преобразуем значения в JSON
@@ -326,8 +349,11 @@ sub _add_or_set {
 
 sub create {
     my $self = shift;
+    my %args = (
+        get_smart_args( @_ ),
+    );
 
-    my $id = $self->_add_or_set('add', get_smart_args(@_) );
+    my $id = $self->add( %args );
     return undef unless $id;
 
     return $self->id( $id );
@@ -377,12 +403,17 @@ sub api_safe_args {
     my %args = @_;
 
     return %args unless $self->can('structure');
-
     my %struct = %{ $self->structure };
 
     for my $key ( keys %args ) {
         unless ( exists $struct{ $key} && $struct{ $key }->{'allow_update_by_user'} ) {
             delete $args{ $key };
+            next;
+        }
+
+        if ( $struct{ $key }->{'hide_for_user'} ) {
+            delete $args{ $key };
+            next;
         }
     }
 
@@ -436,7 +467,7 @@ sub list_by_settings {
         @_,
     );
 
-    $args{ "settings->$_" } = delete $args{ $_ } for keys %args;
+    $args{ "settings.$_" } = delete $args{ $_ } for keys %args;
 
     return $self->list(
         where => \%args,
@@ -464,6 +495,12 @@ sub report {
 
     state $report ||= get_service('report');
     return $report;
+}
+
+sub cache {
+    my $self = shift;
+    state $cache ||= get_service('Core::System::Cache');
+    return $cache;
 }
 
 sub delete_all {

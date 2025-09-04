@@ -184,6 +184,8 @@ CREATE TABLE `spool` (
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
   `settings` json DEFAULT NULL,
+  KEY idx_spool_prio (prio),
+  KEY idx_spool_status (status),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
@@ -219,11 +221,8 @@ CREATE TABLE `user_services` (
   `parent` int(11) DEFAULT NULL,
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`user_service_id`),
-  FOREIGN KEY (user_id) REFERENCES users (user_id),
-  FOREIGN KEY (service_id) REFERENCES services (service_id),
   FOREIGN KEY (parent) REFERENCES user_services (user_service_id) ON DELETE SET NULL,
-  FOREIGN KEY (withdraw_id) REFERENCES withdraw_history (withdraw_id),
-  UNIQUE KEY `user_services_idx` (`user_service_id`,`user_id`,`service_id`)
+  KEY idx_user_id (user_id)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `users`;
@@ -268,10 +267,9 @@ CREATE TABLE `withdraw_history` (
   `total` decimal(10,2) NOT NULL DEFAULT '0.00',
   `service_id` int(11) NOT NULL,
   `qnt` double NOT NULL DEFAULT '1',
-  `user_service_id` int(11) DEFAULT NULL,
-  FOREIGN KEY (user_id) REFERENCES users (user_id),
-  FOREIGN KEY (service_id) REFERENCES services (service_id),
-  PRIMARY KEY (`withdraw_id`)
+  `user_service_id` int(11) NOT NULL,
+  PRIMARY KEY (`withdraw_id`),
+  KEY idx_user_id (user_id)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `zones`;
@@ -360,7 +358,7 @@ CREATE TABLE IF NOT EXISTS `bonus_history` (
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `bonus` decimal(10,2) NOT NULL,
   `comment` json DEFAULT NULL,
-  FOREIGN KEY (user_id) REFERENCES users (user_id),
+  KEY idx_user_id (user_id),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 

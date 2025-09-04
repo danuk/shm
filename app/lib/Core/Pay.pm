@@ -7,6 +7,8 @@ use Core::Base;
 use Core::Const;
 use Core::Utils qw(
     switch_user
+    add_date_time
+    start_of_day
 );
 
 sub table { return 'pays_history' };
@@ -16,27 +18,36 @@ sub structure {
         id => {
             type => 'number',
             key => 1,
+            title => 'id платежа',
         },
         user_id => {
             type => 'number',
             auto_fill => 1,
+            title => 'id пользователя',
         },
         pay_system_id => {
             type => 'text',
+            title => 'id платежной системы',
         },
         money => {
             type => 'number',
             required => 1,
+            title => 'сумма платежа',
         },
         date => {
             type => 'now',
+            title => 'дата платежа',
         },
         comment => {
             type => 'json',
             value => undef,
+            hide_for_user => 1,
+            title => 'комментарии',
         },
         uniq_key => {
             type => 'text',
+            hide_for_user => 1,
+            title => 'уникальный ключ платежа',
         }
     }
 }
@@ -83,6 +94,7 @@ sub forecast {
     my $self = shift;
     my %args = (
         days => 3,
+        consider_today => 0,
         blocked => 0,
         get_smart_args(@_),
     );
@@ -98,13 +110,15 @@ sub forecast {
 
     push @statuses, STATUS_BLOCK if $args{blocked};
 
+    my $start_date = add_date_time( start_of_day(), day => $args{consider_today} ? 0 : 1 );
+
     my $user_services = get_service('UserService', user_id => $self->user_id )->list_prepare(
         where => {
             auto_bill => \[ '= 1'],
             status => { -in => \@statuses },
             withdraw_id => { '!=', undef },
             expire => [
-                { '<', \[ 'NOW() + INTERVAL ? DAY', $args{days} ] },
+                { '<', \[ '? + INTERVAL ? DAY', $start_date, $args{days} ] },
                 undef,
             ],
         },
@@ -122,10 +136,10 @@ sub forecast {
 
         my $us = get_service('us', user_id => $self->user_id, _id => $usi );
 
-        my %wd = %{ $obj->{withdraws} || {} };
+        my %wd = $us->withdraw->get;
         my $service_next_name = $obj->{services}->{name};
 
-        if ( $obj->{expire} ) {
+        if ( $us->wd->paid ) {
             # Check next pays
             if ( my %wd_next = $us->withdraw->next ) {
                 # Skip if already paid for
@@ -226,11 +240,13 @@ sub paysystems {
     );
 
     my @ps;
+    my %recurring;
 
     my $config = get_service("config", _id => 'pay_systems');
     my %list = %{ $config ? $config->get_data : {} };
     for ( keys %list ) {
         push @ps, { $_ => $list{ $_ } };
+        $recurring{ $_ } = 1 if $list{ $_ }->{allow_recurring};
     }
 
     my $forecast = $self->forecast( blocked => 1 )->{total};
@@ -240,11 +256,22 @@ sub paysystems {
 
     my $user = get_service('user', _id => $args{user_id} );
 
+    # Add user pay_systems (recurring payments)
+    my %user_paysystem = %{ $user->get_settings->{pay_systems} || {} };
+    for ( keys %user_paysystem ) {
+        $user_paysystem{ $_ }->{show_for_client} = 1;
+        $user_paysystem{ $_ }->{weight} = 100;
+        $user_paysystem{ $_ }->{action} = $recurring{ $_ } ? 'payment' : '';
+        $user_paysystem{ $_ }->{recurring} = $recurring{ $_ } ? 1 : 0;
+        $user_paysystem{ $_ }->{allow_deletion} = 1;
+        push @ps, { $_ => $user_paysystem{ $_ } };
+    }
+
     for ( @ps ) {
-        my ( $paysystem, $p ) = each( %$_ );
+        my ( $ps, $p ) = each( %$_ );
 
         # allow override paysystem
-        $paysystem = $p->{paysystem} if $p->{paysystem};
+        my $paysystem = $p->{paysystem} || $ps;
 
         if ( $args{paysystem} ) {
             next if $paysystem ne $args{paysystem};
@@ -258,14 +285,15 @@ sub paysystems {
             paysystem => $paysystem,
             weight => $p->{weight} || 0,
             name => $p->{name} || $paysystem,
-            shm_url => sprintf('%s?action=%s&user_id=%s&ts=%s&amount=%s',
+            shm_url => sprintf('%s?action=%s&user_id=%s&ts=%s&ps=%s&amount=%s',
                 $p->{payment_url} || get_service('config')->data_by_name('api')->{url} . "/shm/pay_systems/$paysystem.cgi",
                 $p->{action} ? $p->{action} : 'create',
                 $user->id,
                 $ts,
+                $ps,
                 ( $args{pp} ? $proposed_payment : '' ),
             ),
-            recurring => 0,
+            recurring => $p->{recurring} ? 1 : 0,
             allow_deletion => $p->{allow_deletion} ? 1 : 0,
             user_id => $user->id,
             forecast => $forecast,

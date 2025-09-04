@@ -37,3 +37,5 @@ echo -n "${GIT_TAG}-${REV}" > app/version
 
 build_and_push api
 build_and_push core
+#build_and_push webdav
+

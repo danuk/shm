@@ -11,7 +11,14 @@ use Core::Utils qw(
     decode_json
     encode_utf8
 );
-use LWP::UserAgent ();
+use HTTP::Request::Common qw(
+    GET
+    POST
+    PUT
+    DELETE
+    PATCH
+    OPTIONS
+);
 use URI;
 use URI::QueryParam;
 use CGI;
@@ -52,7 +59,7 @@ sub send {
     );
 
     my $method = lc( $settings{method} ) || 'post';
-    unless ( $method =~ /^(get|post|put|delete)$/ ) {
+    unless ( $method =~ /^(get|post|put|delete|patch|options)$/ ) {
         return undef, {error => "unknown method `$method`"};
     }
 
@@ -136,7 +143,7 @@ sub http {
 
     $args{content_type} ||= 'application/json; charset=utf-8';
 
-    my $method = lc( $args{method} );
+    my $method = uc $args{method};
 
     my $ua = LWP::UserAgent->new(
         agent => 'SHM',
@@ -146,7 +153,7 @@ sub http {
         },
     );
 
-    if ($method eq 'get') {
+    if ($method eq 'GET') {
         my $uri = URI->new($args{url});
         my %q = CGI->new($args{content})->Vars();
         $uri->query_param_append($_, $q{$_}) for keys %q;
@@ -158,12 +165,13 @@ sub http {
         $content = encode_json( $content );
     }
 
-    my $response = $ua->$method(
+    no strict 'refs';
+    my $response = $ua->request( &{$method}(
         $args{url},
         Content_Type => $args{content_type},
         Content => encode_utf8( $content ),
         %{ $args{headers} || {} },
-    );
+    ));
 
     logger->dump( $response->request );
 
@@ -189,5 +197,7 @@ sub get { return shift->_http( 'get', @_ ) }
 sub put { return shift->_http( 'put', @_ ) }
 sub post { return shift->_http( 'post', @_ ) }
 sub delete { return shift->_http( 'delete', @_ ) }
+sub patch { return shift->_http( 'patch', @_ ) }
+sub options { return shift->_http( 'options', @_ ) }
 
 1;

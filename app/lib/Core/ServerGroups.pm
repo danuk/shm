@@ -11,17 +11,23 @@ sub structure {
         group_id => {
             type => 'number',
             key => 1,
+            title => 'id группы'
         },
         name => {
             type => 'text',
+            title => 'произвольное название группы',
         },
-        type => {          # способ выборки серверов из группы
+        type => {
             type => 'text',
             default => 'random',
+            enum => ['random','by-one','evenly'],
+            title => 'способ выборки сервера',
         },
         transport => {
             type => 'text',
             default => 'ssh',
+            enum => ['ssh','http','telegram','mail','local'],
+            title => 'транспорт',
         },
         settings => {
             type => 'text',

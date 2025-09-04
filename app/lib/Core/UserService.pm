@@ -148,7 +148,7 @@ sub with {
         next unless ( $self->can( $method ) );
 
         if ( not exists $binds{ $method } or not exists $keys->{ $binds{ $method } } ) {
-            logger->warning("Key field not exist for `$method`. May be forgot load settings?");
+            logger->debug("Key field not exist for `$method`. May be forgot load settings?");
             next;
         }
 
@@ -360,17 +360,22 @@ sub activate_services {
 
     for ( @list ) {
         my $us = get_service('USObject', _id => $_->{user_service_id});
-        unless ( $us->lock( timeout => 5 ) ) {
+        unless ( $us->lock() ) {
             push @locked_services, $_->{user_service_id};
             next;
         }
         $us->touch;
     }
 
-    return @locked_services ? FAIL: SUCCESS, {
-        msg => sprintf("affected services: [%s]", (join ",", map $_->{user_service_id}, @list)),
-         @locked_services ? ( error =>  sprintf("locked services: [%s]", (join ",", @locked_services )) ) : (),
-    };
+    if ( scalar @locked_services ) {
+        return FAIL, {
+            error =>  sprintf("locked services: [%s]", (join ",", @locked_services )),
+        }
+    } else {
+        return SUCCESS, {
+            msg => sprintf("affected services: [%s]", (join ",", map $_->{user_service_id}, @list)),
+        }
+    }
 }
 
 sub list_expired_services {
@@ -416,9 +421,7 @@ sub list_for_api {
     my %args = (
         admin => 0,
         usi => undef,
-        parent => { '=', undef }, # parent IS NULL
         category => undef,
-        status => {'!=', STATUS_REMOVED},
         limit => 25,
         filter => {},
         get_smart_args( @_ ),
@@ -428,7 +431,13 @@ sub list_for_api {
 
     $args{where} = $self->query_for_filtering( %{$args{filter}} );
 
-    $args{where}{status} //= delete $args{status};
+    unless ( exists $args{where}{ sprintf("%s.%s", $self->table, $self->get_table_key ) } ||
+             exists $args{where}{ $self->get_table_key }
+    ) {
+        $args{where}{parent} //= { '=', undef };
+        $args{where}{status} //= {'!=', STATUS_REMOVED};
+    }
+
     $args{where}{settings} = { '-like' => $filter_by_settings } if $filter_by_settings;
 
     if ( $args{user_id} && $args{admin} ) {

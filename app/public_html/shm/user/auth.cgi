@@ -11,9 +11,18 @@ use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw(
     now
     parse_args
+    get_user_ip
 );
 
 use SHM qw(:all);
+
+my $cache = get_service('Core::System::Cache');
+if ( $cache->get( get_user_ip() ) > 5 ) {
+    print_header( status => 429 );
+    print_json( { status => 429, error => '429 Too Many Requests'} );
+    exit 0;
+}
+
 my $user = SHM->new( skip_check_auth => 1 );
 
 my %in = parse_args();

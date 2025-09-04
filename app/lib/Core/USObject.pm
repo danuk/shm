@@ -19,58 +19,124 @@ sub structure {
         user_service_id => {
             type => 'number',
             key => 1,
+            title => 'id услуги пользоватея',
         },
         user_id => {
             type => 'number',
             auto_fill => 1,
+            hide_for_user => 1,
+            title => 'id пользователя услуги',
         },
         service_id => {
             type => 'number',
             required => 1,
+            title => 'id услуги',
+        },
+        service => {
+            type => 'json',
+            virtual => 1,
         },
         auto_bill => {
             type => 'number',
             default => 1,
+            hide_for_user => 1,
+            enum => [0,1],
+            title => 'флаг работы биллинг',
+            description => '0 - биллинг выключен для услуги, 1 - включен',
         },
         withdraw_id => {
             type => 'number',
+            hide_for_user => 1,
+            title => 'id списания',
         },
         created => {
             type => 'now',
+            title => 'дата создания услуги пользователя',
+            readOnly => 1,
         },
         expire => {
             type => 'date',
+            title => 'дата истечения услуги пользователя',
         },
         status_before => {
             type => 'text',
             default => STATUS_INIT,
+            hide_for_user => 1,
+            title => 'предыдущий статус услуги',
+            readOnly => 1,
         },
         status => {
             type => 'text',
             default => STATUS_INIT,
+            enum => [
+                STATUS_INIT,
+                STATUS_WAIT_FOR_PAY,
+                STATUS_PROGRESS,
+                STATUS_ACTIVE,
+                STATUS_BLOCK,
+                STATUS_REMOVED,
+                STATUS_ERROR,
+            ],
+            title => 'статус услуги',
+            readOnly => 1,
         },
         next => {
             type => 'number',
+            title => 'id следующей услуги',
+            description => '-1 - услуга будет удалена',
         },
         parent => {
             type => 'number',
+            title => 'id родительской услуги',
         },
         category => { # virtual field (gets from join)
             type => 'text',
             allow_update_by_user => 0,
+            hide_for_user => 1,
+            title => 'категория услуги',
         },
-        settings => { type => 'json', value => {} },
+        settings => {
+            type => 'json',
+            value => {},
+            hide_for_user => 1,
+            title => 'произвольные настройки услуги',
+        },
     };
 }
 
-sub list {
+sub _list {
     my $self = shift;
     my %args = (
         @_,
     );
 
-    $args{where}{status} //= {'!=', STATUS_REMOVED};
-    return $self->SUPER::list( %args );
+    unless ( exists $args{where}{ sprintf("%s.%s", $self->table, $self->get_table_key ) } ||
+             exists $args{where}{ $self->get_table_key }
+    ) {
+        $args{where}{status} //= {'!=', STATUS_REMOVED};
+    }
+    return $self->SUPER::_list( %args );
+}
+
+sub list_for_api {
+    my $self = shift;
+    my %args = (
+        @_,
+    );
+
+    $args{fields} = q(
+        user_services.*,
+            JSON_OBJECT(
+                'name', services.name,
+                'cost', services.cost,
+                'category', services.category
+            ) AS service
+    );
+    $args{join} = { table => 'services', using => ['service_id'] };
+    $args{where}{category} = $args{category} if $args{category};
+
+    my @arr = $self->SUPER::list_for_api( %args );
+    return @arr;
 }
 
 sub settings {
@@ -110,18 +176,25 @@ sub add {
 
 sub can_delete {
     my $self = shift;
+    my %args = (
+        allow_delete_active => 0,
+        @_,
+    );
 
-    return 1 if $self->get_status eq STATUS_ACTIVE ||
-                $self->get_status eq STATUS_BLOCK ||
+    return 1 if $self->get_status eq STATUS_ACTIVE && $args{allow_delete_active};
+    return 1 if $self->get_status eq STATUS_BLOCK ||
                 $self->get_status eq STATUS_WAIT_FOR_PAY;
     return 0;
 }
 
 sub delete {
     my $self = shift;
-    my %args = @_;
+    my %args = (
+        force => 0,
+        @_,
+    );
 
-    unless ( $self->can_delete ) {
+    unless ( $self->can_delete( allow_delete_active => $args{force} ) ) {
         $self->srv('report')->add_error( "Can't delete service with status: " . $self->get_status );
         return undef;
     }
@@ -196,6 +269,7 @@ sub has_services_active { shift->has_services( where => { status => STATUS_ACTIV
 sub has_services_block  { shift->has_services( where => { status => STATUS_BLOCK } ) };
 sub has_services_unpaid { shift->has_services( where => { status => STATUS_WAIT_FOR_PAY } ) };
 sub has_services_progress { shift->has_services( where => { status => STATUS_PROGRESS } ) };
+sub has_services_removed { shift->has_services( where => { status => STATUS_REMOVED } ) };
 
 sub child_by_category {
     my $self = shift;
@@ -287,7 +361,7 @@ sub touch {
     my $self = shift;
     my $e = shift || EVENT_PROLONGATE;
 
-    switch_user( $self->user_id );
+    switch_user( $self->get_user_id );
     return $self->process_service_recursive( $e );
 }
 
@@ -331,6 +405,8 @@ sub allow_event_by_status {
     my $event = shift || return undef;
     my $status = shift || return undef;
 
+    return undef if $status eq STATUS_REMOVED;
+
     return 1 if $status eq STATUS_PROGRESS;
     return 1 if $event eq EVENT_CHANGED;
     return 1 if $event eq EVENT_CHANGED_TARIFF;
@@ -355,7 +431,7 @@ sub allow_event_by_status {
 
 sub make_commands_by_event {
     my $self = shift;
-    my $e = shift;
+    my $e = uc shift;
     my %args = (
         @_,
     );
@@ -506,7 +582,10 @@ sub set_status_by_event {
     my $status = status_by_event( $event );
     return $self->get_status unless $status;
 
-    if ( $self->get_status ne $status && $event ne EVENT_PROLONGATE ) {
+    if (    $self->get_status ne $status &&
+            $self->get_status ne STATUS_ERROR &&
+            $event ne EVENT_PROLONGATE
+        ) {
         $self->make_commands_by_event( EVENT_CHANGED,
             settings => {
                 status => {
@@ -586,7 +665,10 @@ sub service {
 sub make_expired {
     my $self = shift;
 
-    $self->set( expire => now ) unless $self->has_expired;
+    return 0 if $self->get_status eq STATUS_REMOVED;
+    return 0 if $self->has_expired;
+
+    $self->set( expire => now );
 }
 
 sub finish {
@@ -599,44 +681,40 @@ sub finish {
     return 0 if $self->get_status ne STATUS_ACTIVE;
     return 0 if $self->has_expired;
 
-    $self->make_expired;
-    $self->money_back if $args{money_back};
+    if ( $self->make_expired ) {
+        $self->money_back if $args{money_back};
+        return 1;
+    }
 
-    return 1;
+    return 0;
 }
 
-sub block {
+sub block_force {
     my $self = shift;
     my %args = (
         auto_bill => undef,
         get_smart_args( @_ ),
     );
 
-    if ( defined $args{auto_bill} ) {
-        $self->set( auto_bill => int $args{auto_bill} );
+    if ( $self->get_status eq STATUS_ACTIVE ) {
+        $self->set( auto_bill => int $args{auto_bill} ) if defined $args{auto_bill};
+        $self->touch( EVENT_BLOCK_FORCE );
     }
-
-    return scalar $self->get if $self->get_status ne STATUS_ACTIVE;
-
-    $self->touch( EVENT_BLOCK );
 
     return scalar $self->get;
 }
 
-sub activate {
+sub activate_force {
     my $self = shift;
     my %args = (
         auto_bill => undef,
         get_smart_args( @_ ),
     );
 
-    if ( defined $args{auto_bill} ) {
-        $self->set( auto_bill => int $args{auto_bill} );
+    if ($self->get_status eq STATUS_BLOCK) {
+        $self->set( auto_bill => int $args{auto_bill} ) if defined $args{auto_bill};
+        $self->touch( EVENT_ACTIVATE_FORCE );
     }
-
-    return scalar $self->get if $self->get_status ne STATUS_BLOCK;
-
-    $self->touch( EVENT_ACTIVATE );
 
     return scalar $self->get;
 }
@@ -679,7 +757,6 @@ sub items {
 
     $args{fields} = '*,user_services.next as next';
     $args{join} = { table => 'services', using => ['service_id'] };
-    $args{where}->{status} ||= {'!=', STATUS_REMOVED};
 
     return $self->SUPER::items( %args );
 }
@@ -768,6 +845,7 @@ sub change {
     my $self = shift;
     my %args = (
         service_id => undef,
+        finish_active => 1,
         get_smart_args( @_ ),
     );
 
@@ -777,23 +855,12 @@ sub change {
         return undef;
     }
 
-    if ( $self->get_status eq STATUS_WAIT_FOR_PAY ||
-         $self->get_status eq STATUS_BLOCK ) {
+    $self->set( next => $service->id );
 
-        if ( my $wd = $self->withdraw ) {
-            my %wd = Core::Billing::calc_withdraw( $self->billing, $service->get );
-            delete @wd{ qw/ withdraw_id create_date end_date withdraw_date / };
-            $wd->set( %wd );
-        }
-
-        $self->set(
-            service_id => $service->id,
-            next => $service->get_next,
-        );
-        $self->make_commands_by_event( EVENT_CHANGED_TARIFF );
+    if ( $self->get_status eq STATUS_WAIT_FOR_PAY || $self->get_status eq STATUS_BLOCK ) {
+        Core::Billing::switch_to_next_service( $self );
     } elsif ( $self->get_status eq STATUS_ACTIVE ) {
-        $self->set( next => $service->id );
-        $self->finish;
+        $self->finish if $args{finish_active};
     } else {
         return undef;
     }
@@ -815,8 +882,7 @@ sub create {
     );
 
     unless( $self->srv('service', _id => $args{service_id} )) {
-        logger->warning('service not exists:', $args{service_id} );
-        $self->srv('report')->add_error('service not exists:', $args{service_id} );
+        report->add_error('service not exists:', $args{service_id} );
         return undef;
     }
 
@@ -824,7 +890,8 @@ sub create {
         if ( $args{check_allow_to_order} ) {
             my $allowed_services_list = $self->srv('service')->price_list;
             unless ( exists $allowed_services_list->{ $args{service_id} } ) {
-                logger->warning('Attempt to register not allowed service', $args{service_id} );
+                report->status( 403 );
+                report->add_error('The service is prohibited for registration' );
                 return undef;
             }
         }
@@ -886,31 +953,49 @@ sub create_for_api_safe {
         @_,
     );
 
-    return $self->create_for_api(
+    my $us = $self->create_for_api(
         service_id => $args{service_id},
         check_allow_to_order => 1,
     );
+
+    $self = $self->id( $us->{user_service_id} );
+
+    return $self ? {
+        name => $self->name,
+        $self->get,
+    } : undef;
 }
 
 sub make_custom_event {
     my $self = shift;
     my %args = (
         event => 'custom',
+        name => 'custom',
         title => 'custom event',
+        prio => 100,
+        delay => 0,
+        template_id => undef,
+        transport => undef,
         get_smart_args( @_ ),
     );
 
-    return undef unless $self->server;
+    my $server = $self->server;
+    unless ($args{transport} && $args{template_id}) {
+        return undef unless $server;
+    }
 
     return $self->srv('spool')->create(
-        prio => 100,
+        prio => $args{prio} || 100,
+        $args{delay} ? ( delayed => $args{delay} ) : (),
         event => {
-            name => $args{event},
+            name => $args{name} || $args{event},
             title => $args{title},
         },
         settings => {
+            $args{transport} ? (transport => lc $args{transport}) : (),
+            $args{template_id} ? (template_id => $args{template_id}) : (),
+            $server ? (server_id => $self->server->id) : (),
             user_service_id => $self->id,
-            server_id => $self->server->id,
         },
     );
 }
@@ -928,11 +1013,13 @@ sub recalc {
         return;
     }
 
+    return if $self->get_status eq STATUS_REMOVED;
+
     if ( my $wd = $self->withdraw ) {
         return unless $wd->unpaid;
-        switch_user( $self->user_id );
+        switch_user( $self->get_user_id );
         my %new_wd = Core::Billing::calc_withdraw( $self->billing, $self->service->get, %args );
-        delete @new_wd{ qw/ withdraw_id create_date end_date withdraw_date / };
+        delete @new_wd{ qw/ withdraw_id create_date end_date withdraw_date user_id service_id user_service_id/ };
         $wd->set( %new_wd );
         $self->touch();
     }

@@ -16,12 +16,14 @@ RUN apt-get update && apt-get install -y \
     default-libmysqlclient-dev \
     openssh-client \
     curl \
+    apache2-utils \
     qrencode
 
 RUN apt-get install -y \
     perl \
     libdbi-perl \
     libdbd-mysql-perl \
+    libredis-perl \
     libcgi-pm-perl \
     libtime-parsedate-perl \
     libdate-calc-perl \
@@ -41,11 +43,14 @@ RUN apt-get install -y \
     libemail-sender-perl \
     libwww-perl \
     librouter-simple-perl \
+    libcryptx-perl \
+    libbytes-random-secure-perl \
     libcrypt-jwt-perl
 
 RUN cpan Crypt::Curve25519
 
 RUN set -x \
+    && mkdir /var/www && chown www-data: /var/www \
     && useradd shm -d /var/shm -m \
     && rm -rf /var/lib/apt/lists/*
 
@@ -64,4 +69,11 @@ COPY entry-core.sh /entry.sh
 CMD ["/entry.sh"]
 
 COPY app /app
+
+
+FROM httpd:2.4 AS webdav
+EXPOSE 80
+RUN mkdir -p /app/data && \
+    ln -s /app/data /usr/local/apache2/webdav
+COPY build/webdav/httpd.conf /usr/local/apache2/conf/httpd.conf
 

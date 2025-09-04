@@ -6,36 +6,41 @@ use Core::System::ServiceManager qw( get_service unregister_all );
 use Try::Tiny;
 use Core::Const;
 use Core::Utils qw(
-    encode_json
+    encode_json_perl
 );
 no warnings;
+
+POSIX::setgid(33); # www-data
+POSIX::setuid(33); # www-data
 
 $| = 1;
 
 my $user = SHM->new( user_id => 1 );
 $user->dbh->{RaiseError} = 1;
 
-my ( $status, $task, $info );
+my $task;
 
 say "SHM spool started at: " . localtime;
 
+my $spool = get_service('spool');
+
 for (;;) {
+    my $task_exists = 0;
     do {
         try {
-            my $spool = get_service('spool');
-            ( $status, $task, $info ) = $spool->process_one();
+            ( $task ) = $spool->process_one();
 
-            if ( defined $task ) {
-                $task->{status} //= $status;
-                say encode_json( $task );
+            if ( ref $task ) {
+                $task_exists = 1;
+                say encode_json_perl( $task );
             }
         } catch {
             my $error = $_;
             warn $error;
 
-            if ( defined $task ) {
-                $task->finish_task(
-                    status => TASK_STUCK,
+            if ( ref $task ) {
+                $task->retry_task(
+                    status => TASK_FAIL,
                     response => { error => $error },
                 );
             }
@@ -44,7 +49,7 @@ for (;;) {
         unregister_all();
     } while defined $task;
 
-    sleep 1;
+    sleep 1 unless $task_exists;
 }
 
 exit 0;

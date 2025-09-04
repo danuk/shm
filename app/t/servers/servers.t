@@ -5,6 +5,7 @@ use Test::More;
 
 use Data::Dumper;
 use v5.14;
+use utf8;
 
 use Core::System::ServiceManager qw( get_service );
 

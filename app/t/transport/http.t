@@ -58,4 +58,16 @@ subtest '' => sub {
     is( $response->json_content->{data}[0]->{payload}->{POSTDATA}, 'hello world' );
 };
 
+subtest '' => sub {
+    my $response = $http->post('http://admin/shm/v1/test/http/echo', content_type => 'text/plain', content => 'hello world');
+    is( $response->{data}[0]->{payload}->{POSTDATA}, 'hello world' );
+    is( $response->{data}[0]->{method}, 'POST' );
+};
+
+subtest '' => sub {
+    my $response = $http->delete('http://admin/shm/v1/test/http/echo');
+    is( $response->{status}, 200 );
+    is( $response->{data}[0]->{method}, 'DELETE' );
+};
+
 done_testing();

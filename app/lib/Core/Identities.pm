@@ -16,21 +16,26 @@ sub structure {
         id => {
             type => 'number',
             key => 1,
+            title => 'id ключа',
         },
         name => {
             type => 'text',
             required => 1,
+            title => 'имя ключа',
         },
         private_key => {
             type => 'text',
             required => 1,
+            title => 'приватный ключ',
         },
         public_key => {
             type => 'text',
+            title => 'публичный ключ',
         },
         fingerprint => {
             type => 'text',
             required => 1,
+            title => 'отпечаток ключа',
         },
     }
 }

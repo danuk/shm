@@ -6,6 +6,7 @@ use Data::Dumper;
 use Core::System::ServiceManager qw( get_service );
 use Core::Utils qw( now );
 use SHM ();
+use utf8;
 
 $ENV{SHM_TEST} = 1;
 my $user = SHM->new( user_id => 40092 );

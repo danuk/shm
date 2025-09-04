@@ -12,74 +12,90 @@ sub structure {
         withdraw_id => {
             type => 'number',
             key => 1,
+            title => 'id списания',
         },
         user_id => {
             type => 'number',
             auto_fill => 1,
+            title => 'id пользователя',
         },
         create_date => {
             type => 'now',
+            title => 'дата создания списания',
+            readOnly => 1,
         },
         withdraw_date => {
             type => 'date',
+            title => 'дата списания',
+            readOnly => 1,
         },
         end_date => {
             type => 'date',
+            title => 'дата окончания',
+            readOnly => 1,
         },
         cost => {
             type => 'number',
             required => 1,
+            title => 'стоимость',
         },
         discount => {
             type => 'number',
             default => 0,
+            title => 'скидка',
         },
         bonus => {
             type => 'number',
             default => 0,
+            title => 'кол-во бонусов',
         },
         months => {
             type => 'number',
             default => 1,
+            title => 'период',
         },
         total => {
             type => 'number',
+            title => 'итоговая стоимость',
         },
         service_id => {
             type => 'number',
             required => 1,
+            title => 'id услуги',
         },
         qnt => {
             type => 'number',
             default => 1,
+            title => 'кол-во',
         },
         user_service_id => {
             type => 'number',
             required => 1,
+            title => 'id услуги пользователя',
         },
     }
 }
 
 sub usi {
     my $self = shift;
-    return $self->{usi};
+    return $self->{usi} || $self->get_user_service_id;
 }
 
 # Получаем предоплаченные списания (будущие периоды)
 sub next {
     my $self = shift;
 
-    unless ( $self->res->{user_service_id} ) {
-        logger->fatal("Can't get next services for unknown service");
-    }
+    my @list;
 
-    my @list = $self->list(
-        where => {
-            user_service_id => $self->res->{user_service_id},
-            withdraw_id => { '>' => $self->id },
-        },
-        order => [ 'withdraw_id' => 'asc' ],
-    );
+    if ( my $usi = $self->usi ) {
+        @list = $self->list(
+            where => {
+                user_service_id => $usi,
+                withdraw_id => { '>' => $self->id },
+            },
+            order => [ 'withdraw_id' => 'asc' ],
+        );
+    }
 
     if ( wantarray ) {
         return %{ $list[0] || {} }; # Возвращаем следующий объект в виде хеша
@@ -91,19 +107,24 @@ sub next {
 sub add {
     my $self = shift;
     my %args = (
-        user_service_id => $self->res->{user_service_id},
+        user_service_id => $self->usi,
         @_,
     );
 
+    unless ( $args{user_service_id} ) {
+        get_service('report')->add_error( "Can't create withdraw without user_service_id" );
+        return undef;
+    }
+
     delete $args{ $self->get_table_key };
 
-    my $service = get_service('service', _id => $args{service_id } );
+    my $service = $self->srv('service', _id => $args{service_id} );
     unless ( $service ) {
         get_service('report')->add_error( "Can't create for not existed service" );
         return undef;
     }
 
-    # Заполняем стуктуру из данных услуги, если параметр не передан явно
+    # Заполняем структуру из данных услуги, если параметр не передан явно
     my $srv = $service->get;
     for ( keys %{ $srv } ) {
         $args{ $_ }//= $srv->{ $_ };
@@ -128,27 +149,12 @@ sub list_for_api {
     my @arr = $self->SUPER::list_for_api( field => 'withdraw_date', @_ );
     $self->found_rows( $self->SUPER::found_rows() );
 
-    # deduplicate user_service_id
-    my %usi;
     for ( @arr ) {
-        $usi{ $_->{user_service_id} } = 1 if $_->{user_service_id};
-    }
-
-    my $user_service = get_service('UserService');
-    my $us = $user_service->ids(
-        user_service_id => [ keys %usi ]
-    )->with('settings','services')->get;
-
-    for ( @arr ) {
-        if ( exists $us->{ $_->{user_service_id} } ) {
-            my $service = $us->{ $_->{user_service_id} };
-
-            $_->{name} = get_service('service')->convert_name(
-                $service->{services}->{name},
-                $service->{settings},
-            );
+        if ( my $service = get_service('service', _id => $_->{service_id} ) ) {
+            $_->{name} = $service->get_name;
+        } else {
+            $_->{name} = '';
         }
-        else { $_->{name} = '' };
     }
     return @arr;
 }
@@ -174,11 +180,11 @@ sub found_rows {
     return $self->{found_rows};
 }
 
-sub unpaid {
+sub paid {
     my $self = shift;
-
-    return $self->res->{withdraw_date} ? 0 : 1;
+    return $self->get_withdraw_date ? 1 : 0;
 }
+sub unpaid { $_[0]->paid ? 0 : 1 };
 
 *delete = \&delete_unpaid;
 
@@ -203,13 +209,13 @@ sub api_set {
         @_,
     );
 
-    my $us = get_service('us', _id => $args{user_service_id} );
+    my $us = $self->srv('us', _id => $args{user_service_id} );
     unless ( $us ) {
         get_service('report')->add_error( "User service not exists" );
         return \%args;
     }
 
-    my $service = get_service('service', _id => $args{service_id} );
+    my $service = $self->srv('service', _id => $args{service_id} );
     unless ( $service ) {
         get_service('report')->add_error( "Service not exists" );
         return \%args;

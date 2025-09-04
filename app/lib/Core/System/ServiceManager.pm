@@ -152,6 +152,7 @@ sub unregister_all {
     my $self = $SERVICE_MANAGER;
 
     my %protected_services = (
+        'Core::Sql::Data' => 1,
         'Core::Config' => 1,
         'Core::System::Logger' => 1,
     );

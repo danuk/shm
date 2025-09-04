@@ -3,6 +3,9 @@ use utf8;
 
 use Test::More;
 use Core::Sql::Data qw/query_select/;
+use Core::System::ServiceManager qw( get_service );
+use SHM;
+my $user = SHM->new( user_id => 40092 );
 
 my @vars;
 
@@ -136,14 +139,20 @@ is query_select(
     where => { 'table.field' => 1 },
 ), "SELECT * FROM test WHERE ( ( user_id = ? AND table.field = ? ) )";
 
-is query_select(
-    undef,
+is $user->query_select(
     vars => \@vars,
-    table => 'test',
     user_id => 123,
     where => {
-        'settings->cmd' => 1,
+        'settings.cmd' => 1,
     },
-), q/SELECT * FROM test WHERE ( ( user_id = ? AND settings->>'$.cmd' = ? ) )/;
+), q/SELECT * FROM users WHERE ( ( user_id = ? AND settings->>"$.cmd" = ? ) )/;
+
+is $user->query_select(
+    vars => \@vars,
+    user_id => 123,
+    where => {
+        'settings.cmd.test' => 1,
+    },
+), q/SELECT * FROM users WHERE ( ( user_id = ? AND settings->>"$.cmd.test" = ? ) )/;
 
 done_testing();

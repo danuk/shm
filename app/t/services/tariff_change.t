@@ -24,6 +24,7 @@ my $service_next = get_service('service')->add(
     category => 'test-category-1',
     cost => 100,
     allow_to_order => 1,
+    next => 1,
 );
 
 subtest 'Check WAIT_FOR_PAY -> WAIT_FOR_PAY' => sub {
@@ -36,12 +37,14 @@ subtest 'Check WAIT_FOR_PAY -> WAIT_FOR_PAY' => sub {
     is ( $us->service_id, $service->id );
     is ( $us->status, STATUS_WAIT_FOR_PAY);
     is( $us->withdraw->total, $service->cost );
+    is ( $us->get_next, 0 );
 
     $us->change( service_id => $service_next->id );
 
     is ( $us->service_id, $service_next->id );
     is ( $us->status, STATUS_WAIT_FOR_PAY);
     is( $us->withdraw->total, $service_next->cost );
+    is ( $us->get_next, 1 );
 };
 
 subtest 'Check WAIT_FOR_PAY -> ACTIVE' => sub {

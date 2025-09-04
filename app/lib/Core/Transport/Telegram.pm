@@ -440,7 +440,8 @@ sub http {
         Content => encode_utf8( $content ),
     );
 
-    logger->dump( $response->request );
+    logger->dump('Send to TG API', $response->request );
+    logger->dump('Answer from TG API', $response->decoded_content );
 
     unless ( $response->is_success ) {
         my $message = $response->decoded_content;
@@ -589,7 +590,7 @@ sub process_message {
     $self->{webhook} = 1;
     $self->{deny_answer_direct} = 1;
 
-    logger->debug('REQUEST:', \%args );
+    logger->debug('REQUEST from Telegram:', \%args );
     $self->res( \%args );
 
     # Set the chat_id from the message because it is unknown to new clients
@@ -701,6 +702,7 @@ sub process_message {
         cmd => $cmd,
     );
 
+    return {};
     # Reply directly for only first response
     return get_last_object( $response );
 }
@@ -1063,17 +1065,16 @@ sub shmServiceDelete {
 
     my $us = get_service('us')->id( $args{usi} );
 
-    if ( $us ) {
-        $us->delete();
+    if ( $us && $us->delete( force => 1 ) ) {
         return $self->exec_template(
             get_cmd_args( $args{callback_data} ),
         );
-    } else {
-        if ( $args{error} ) {
-            return $self->sendMessage(
-                text => $args{error},
-            );
-        }
+    }
+
+    if ( $args{error} ) {
+        return $self->sendMessage(
+            text => $args{error},
+        );
     }
 
     return {};
@@ -1088,27 +1089,37 @@ sub webapp_auth {
         @_,
     );
 
-    unless ( $args{initData} && $args{uid} ) {
+    unless ( $args{initData} ) {
         report->error("bad request");
         return undef;
     }
 
-    if ( $self->user->id($args{uid})) {
+    my %in = CGI->new( $args{initData} )->Vars();
+    my $tg_user = decode_json( $in{user} );
+
+    if ( $args{uid} && $self->user->id($args{uid}) ) {
         switch_user( $args{uid} );
+
+        if ( $tg_user->{id} ne $self->user_tg_settings->{user_id} ) {
+            report->error("Telegram WebApp auth error: user_id doesn't match");
+            return undef;
+        }
     } else {
-        logger->error("Telegram WebApp auth error: user not found");
-        return undef;
+        my ( $user ) = $self->user->_list(
+            where => {
+                sprintf('%s->>"$.%s"', 'settings', 'telegram.user_id') => $tg_user->{id},
+            },
+            limit => 1,
+        );
+        unless ( $user ) {
+            logger->error("Telegram WebApp auth error: user not found");
+            return undef;
+        }
+
+        switch_user( $user->{user_id} );
     }
 
     $self->profile( $args{profile} );
-
-    my %in = CGI->new( $args{initData} )->Vars();
-
-    my $user = decode_json( $in{user} );
-    if ( $user->{id} ne $self->user_tg_settings->{user_id} ) {
-        report->error("Telegram WebApp auth error: user_id doesn't match");
-        return undef;
-    }
 
     my $hash = delete $in{hash};
     my @arr = map( "$_=$in{$_}", sort { $a cmp $b } keys %in );
@@ -1126,6 +1137,84 @@ sub webapp_auth {
     return {
         session_id => $self->srv('sessions')->add(),
     };
+}
+
+sub web_auth {
+    my $self = shift;
+    my %args = (
+        profile   => 'telegram_bot',
+        register_if_not_exists => 0,
+        @_,
+    );
+
+    my $profile = $args{profile};
+
+    my %in = CGI->new( $args{query} )->Vars();
+
+    my $hash = delete $in{hash};
+
+    my @arr = map { "$_=$in{$_}" } sort keys %in;
+    my $data_check_string = join("\n", @arr);
+
+    my $token = $self->config->{ $args{profile} }->{token} // $self->config->{token};
+    use Digest::SHA qw(sha256 hmac_sha256_hex);
+    my $secret_key = sha256( $token );
+
+    my $hex = hmac_sha256_hex($data_check_string, $secret_key);
+
+    unless ($hex eq $hash) {
+        report->error('Telegram WebApp auth error');
+        return undef;
+    }
+
+    my $chat_id = $in{id};
+
+    my ($user) = $self->user->_list(
+        where => {
+            -OR => [
+                sprintf('%s->>"$.%s"', 'settings', 'telegram.user_id') => $chat_id,
+                login => get_shm_login($chat_id),
+                sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $chat_id,
+            ],
+        },
+        limit => 1,
+    );
+
+    if ( !$user && $args{register_if_not_exists} ) {
+        $user = $self->user->reg(
+            login     => sprintf("@%s", $in{id}),
+            password  => passgen(),
+            full_name => sprintf("%s %s", $in{first_name} || '', $in{last_name} || ''),
+            settings  => {
+                %{ $args{settings} || {} },
+                telegram => {
+                    user_id         => $chat_id,
+                    username        => $in{username},
+                    login           => $in{username},
+                    first_name      => $in{first_name} || '',
+                    last_name       => $in{last_name} || '',
+                    chat_id         => $chat_id,
+                    $profile => {
+                        chat_id => $chat_id,
+                        status  => 'member',
+                    },
+                },
+            },
+            $args{partner_id} ? ( partner_id => $args{partner_id} ) : (),
+        );
+    }
+
+    if ( !$args{register_if_not_exists} && !$user ) {
+        logger->error("Telegram WebApp auth error: user not found");
+        return undef;
+    }
+
+    switch_user( $user->{user_id} );
+
+    return {
+        session_id => $self->srv('sessions')->add(),
+    };
+
 }
 
 1;

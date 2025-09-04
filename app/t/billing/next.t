@@ -16,12 +16,21 @@ my $user = SHM->new( user_id => 40092 );
 $ENV{TZ} = 'Europe/London'; #UTC+0
 tzset;
 
+my $next_next_service = get_service('service')->add(
+    name => 'next next service',
+    cost => '200',
+    period => 1,
+    category => 'test',
+    no_discount => 1,
+);
+
 my $next_service = get_service('service')->add(
     name => 'next service',
     cost => '100',
     period => 1,
     category => 'test',
     no_discount => 1,
+    next => $next_next_service->id,
 );
 
 my $test_service = get_service('service')->add(
@@ -71,7 +80,8 @@ subtest 'check switch test service to next' => sub {
 
     $us->touch();
     is( $us->get_expire, '2019-05-02 01:49:57');
-    is( !$us->get_next, 1 );
+    is( $us->get_service_id, $next_service->id );
+    is( $us->get_next, $next_next_service->id );
 
     my $wd = $us->withdraw;
     cmp_deeply( scalar $wd->get,
@@ -107,11 +117,15 @@ subtest 'Check switch test service to next (6 months)' => sub {
         no_discount => 1,
     );
 
+    is( $us->wd->months, 1 );
+    is( $us->wd->cost, 100 );
+    is( $us->wd->total, 100 );
+
     $us->set( next => $next_service->id );
 
     $us->touch();
     is( $us->get_expire, '2019-11-02 00:59:56');
-    is( !$us->get_next, 1 );
+    is( $us->get_next, 0 );
 
     my $wd = $us->withdraw;
     cmp_deeply( scalar $wd->get,
@@ -131,6 +145,30 @@ subtest 'Check switch test service to next (6 months)' => sub {
               'withdraw_id' => $wd->id,
           }
     , 'Check withdraw for next service');
+};
+
+subtest 'create test service with next (without payment)' => sub {
+    Test::MockTime::set_fixed_time('2019-04-01T00:00:00Z');
+    $user->set( balance => 0, credit => 0 );
+    my $us = create_service( service_id => $test_service->id );
+
+    is( $us->get_status, 'ACTIVE' );
+    is( $us->get_expire, '2019-04-02 00:59:59');
+    is( $us->get_next, $next_service->id );
+
+    Test::MockTime::set_fixed_time('2019-04-03T00:00:00Z');
+    $us->touch();
+    is( $us->get_status, 'BLOCK' );
+    is( $us->get_expire, '2019-04-02 00:59:59');
+    is( $us->get_service_id, $next_service->id );
+    is( $us->get_next, $next_next_service->id );
+
+    $user->payment( money => 200 );
+    $us->touch();
+    is( $us->get_status, 'ACTIVE' );
+    is( $us->get_expire, '2019-05-03 02:37:59');
+    is( $us->get_service_id, $next_service->id );
+    is( $us->get_next, $next_next_service->id );
 };
 
 done_testing();

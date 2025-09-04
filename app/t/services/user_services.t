@@ -5,6 +5,7 @@ use Test::Deep;
 use Data::Dumper;
 
 use SHM;
+use utf8;
 
 $ENV{SHM_TEST} = 1;
 

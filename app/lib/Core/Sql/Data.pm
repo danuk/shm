@@ -28,6 +28,7 @@ our @EXPORT = qw(
     min
     max
     count
+    remove_protected_fields
 );
 
 use Core::Utils qw(
@@ -61,7 +62,7 @@ sub db_connect {
             RaiseError => 0,
             AutoCommit => 0,
             mysql_auto_reconnect => 1,
-            mysql_enable_utf8mb4 => $ENV{SHM_TEST} ? 0 : 1,
+            mysql_enable_utf8mb4 => 1,
             InactiveDestroy => 1,
         },
         @_,
@@ -137,7 +138,11 @@ sub do {
     $self->log( $query, \@args );
 
     my $res = $self->dbh->do( $query, undef, @args ) or do {
-        logger->warning( $self->dbh->errstr );
+        logger->error( sprintf "SQL QUERY: %s [%s], ERROR: %s",
+            $query,
+            join(',', @args ),
+            $self->dbh->errstr,
+        );
         return undef;
     };
     return $res eq '0E0' ? 0 : $res;
@@ -282,6 +287,8 @@ sub query_for_filtering {
                     $where{ $key }{'-like'} = $args{ $key };
                 }
             }
+        } elsif ( $key eq '-or' ) {
+            $where{ $key } = $args{ $key };
         }
     }
 
@@ -303,7 +310,6 @@ sub clean_query_args {
             for my $k ( keys %{ $args } ) {
                 next if $k eq 'where';
                 unless ( exists $structure{ $k } ) {
-                    logger->debug( "Unknown field `$k` in table. Deleting");
                     delete $args->{ $k };
                 }
             }
@@ -326,7 +332,7 @@ sub clean_query_args {
                     delete $args->{ $f } if exists $args->{ $f };
                 } elsif ( exists $args->{ $f } ) {
                     # Не используем ключи в insert-ах (админам можно)
-                    unless ( get_service('user')->authenticated->is_admin ) {
+                    unless ( $self->user->authenticated->is_admin ) {
                         delete $args->{ $f } unless $self->table_allow_insert_key;
                     }
                 }
@@ -339,7 +345,7 @@ sub clean_query_args {
                     } elsif ( $self->can( $f ) ) {
                         $args->{ $f } = $self->$f;
                     }
-                    report->fatal( "Can't get `$f` from self" ) unless $args->{ $f };
+                    report->fatal( "Can't get `$f` from self" ) unless length $args->{ $f };
                 }
                 next;
             }
@@ -349,23 +355,23 @@ sub clean_query_args {
 
             if ( $v->{auto_fill} ) { # получаем автоматически
                 if ( exists $self->{ $f } ) {
-                    if ( get_service('user')->authenticated->is_admin ) {
+                    if ( $self->user->authenticated->is_admin ) {
                         $args->{ $f } //= $self->{ $f };
                     } else {
                         $args->{ $f } = $self->{ $f };
                     }
                 } elsif ( $self->can( $f ) ) {
-                    if ( get_service('user')->authenticated->is_admin ) {
+                    if ( $self->user->authenticated->is_admin ) {
                         $args->{ $f } //= $self->$f;
                     } else {
                         $args->{ $f } = $self->$f;
                     }
                 }
-                logger->fatal( "Can't get `$f` from self" ) unless $args->{ $f };
+                logger->fatal( "Can't get `$f` from self" ) unless length $args->{ $f };
             } elsif ( $v->{required} ) {
-                logger->fatal( "`$f` required" ) if not exists $args->{$f};
+                logger->fatal( "`$f` required" ) unless length $args->{$f};
             } elsif ( $v->{type} eq 'now' ) {
-                if ( get_service('user')->authenticated->is_admin ) {
+                if ( $self->user->authenticated->is_admin ) {
                     $args->{ $f } //= now;
                 } else {
                     $args->{ $f } = now;
@@ -373,11 +379,6 @@ sub clean_query_args {
             } elsif ( exists $v->{default} ) { # set default value
                 $args->{ $f } //= $v->{default};
             }
-        }
-
-        # Quote where keys
-        for ( keys %{ $args->{where} || {} } ) {
-            $args->{where}{ "`$_`" } = delete $args->{where}{ $_ } if /^[a-z]+$/;
         }
     }
 }
@@ -400,6 +401,7 @@ sub _set {
     my $table = delete $args{table};
 
     my $sql = SQL::Abstract->new;
+    quote_where_keys( $args{where} );
     my ( $where, @bind ) = $sql->where( delete $args{where} );
 
     my $data = join(',', map( "`$_`=?", keys %args ) );
@@ -465,10 +467,20 @@ sub _add {
     return $self->insert_id;
 }
 
+sub quote_where_keys {
+    my $where = shift;
+
+    for ( keys %{ $where || {} } ) {
+        $where->{ "`$_`" } = delete $where->{ $_ } if /^[a-z]+$/;
+    }
+}
+
 sub _list {
     my $self = shift;
     my %args = @_;
     my @vars;
+
+    quote_where_keys( $args{where} );
 
     my $query = $self->query_select( vars => \@vars, %args );
 
@@ -505,6 +517,19 @@ sub list_for_api {
         @_,
     );
 
+    delete $args{user_id} unless $args{admin};
+
+    if ( $args{admin} && $args{user_id} ) {
+        $args{where} = {
+            user_id => delete $args{user_id},
+        }
+    }
+
+    my $table_key = $self->get_table_key;
+    if ( $args{ $table_key } ) {
+        $args{where}->{ $table_key } = $args{ $table_key };
+    }
+
     my $method = $args{admin} ? '_list' : 'list';
 
     my $where = {
@@ -520,6 +545,7 @@ sub list_for_api {
     }
 
     my @ret = $self->$method(
+        $args{fields} ? ( fields => $args{fields} ) : (),
         $range ? ( $range ) : (),
         limit => $args{limit},
         offset => $args{offset},
@@ -529,26 +555,43 @@ sub list_for_api {
         join => $args{join},
     );
 
-    # Remove protected fields
-    unless ( $args{admin} ) {
-        my $structure = $self->structure;
+    return @ret;
+}
 
-        for my $item ( @ret ) {
-            for ( keys %{ $item } ) {
-                delete $item->{ $_ } if exists $structure->{ $_ }->{ hide_for_user } &&
-                    $structure->{ $_ }->{ hide_for_user };
+sub remove_protected_fields {
+    my $self = shift;
+    my $data = shift;
+    my %args = (
+        admin => 0,
+        @_,
+    );
+
+    return $data if $args{admin};
+
+    return undef unless $self->can('structure');
+    my $structure = $self->structure;
+
+    if ( ref $data eq 'ARRAY' ) {
+        for my $item ( @$data ) {
+            last if ref $item ne 'HASH';
+            for ( keys %$item ) {
+                delete $item->{ $_ } if $structure->{ $_ }->{ hide_for_user };
             }
+        }
+    } elsif ( ref $data eq 'HASH' ) {
+        for ( keys %$data ) {
+            delete $data->{ $_ } if $structure->{ $_ }->{ hide_for_user };
         }
     }
 
-    return @ret;
+    return $data;
 }
 
 sub get {
     my $self = shift;
 
     unless ( length $self->id ) {
-        logger->warning( sprintf("Can't get data for %s without id: `%s`", ref $self, $self->get_table_key ));
+        logger->debug( sprintf("Can't get data for %s without id: `%s`", ref $self, $self->get_table_key ));
         return undef;
     }
 
@@ -603,6 +646,8 @@ sub query_select {
         $args{table} = $self->can( 'table' ) ? $self->table : die 'Table required';
     }
 
+    my $structure = ($self && $self->can('structure')) ? $self->structure : {};
+
     if ( $args{where} && ref $args{where} ) {
         if ( ref $args{where} ne 'HASH' ) {
             logger->fatal('WHERE not HASH!');
@@ -631,8 +676,12 @@ sub query_select {
     }
 
     for my $k ( keys %{ $args{where} } ) {
-        if ( $k=~/(\w+)->(\w+)/ ) {
-            $args{where}{ sprintf("%s->>'\$.%s'", $1, $2) } = delete $args{where}{$k};
+        if ( $k=~/\./ ) {
+            my $q = dots_str_to_sql( $k );
+            next unless $q;
+            next unless exists $structure->{ $q->{field} };
+            next unless $structure->{ $q->{field} }->{type} eq 'json';
+            $args{where}{ $q->{query} } = delete $args{where}{$k};
         }
     }
 
