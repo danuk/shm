@@ -67,18 +67,23 @@ $user->set( balance => 120, credit => 0 );
 $us->touch();
 
 is( $user->get_balance, 0 );
+is( $us->wd->unpaid, 0 );
 is( $us->status, 'ACTIVE' );
+is( $us_child->wd->unpaid, 0 );
 is( $us_child->status, 'ACTIVE' );
 is( $us->get_expire, '2019-05-01 01:01:59');
 is( $us_child->get_expire, '2019-05-01 01:01:59');
-
 
 Test::MockTime::set_fixed_time('2019-05-03T00:00:00Z');
 $us->touch();
 
 is( $user->get_balance, 0 );
 is( $us->get_expire, '2019-05-01 01:01:59');
+is( $us->has_expired, 1 );
+is( $us->wd->unpaid, 1 );
 is( $us_child->get_expire, '2019-05-01 01:01:59');
+is( $us_child->has_expired, 1 );
+is( $us_child->wd->unpaid, 0 ); # service is still paid but blocked due to parent
 is( $us->status, 'BLOCK' );
 is( $us_child->status, 'BLOCK' );
 
@@ -86,7 +91,11 @@ $user->set( balance => 120, credit => 0 );
 $us->touch();
 
 is( $user->get_balance, 0 );
+is( $us->wd->total, $cost_service );
+is( $us->wd->unpaid, 0 );
 is( $us->status, 'ACTIVE' );
+is( $us_child->wd->total, $cost_sub_service * 2 );
+is( $us_child->wd->unpaid, 0 );
 is( $us_child->status, 'ACTIVE' );
 is( $us->get_expire, '2019-06-02 23:25:08');
 is( $us_child->get_expire, '2019-06-02 23:25:08');

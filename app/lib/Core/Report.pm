@@ -23,6 +23,17 @@ sub add_error {
     return $msg;
 }
 
+sub status {
+    my $self = shift;
+    my $status = shift;
+
+    if ( $status ) {
+        $self->{status} = $status;
+    }
+
+    return $self->{status};
+}
+
 sub errors {
     my $self = shift;
     my $ret = $self->{errors} ? delete $self->{errors} : [];

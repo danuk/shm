@@ -14,6 +14,7 @@ our @EXPORT = qw(
     process_service_recursive
     money_back
     calc_withdraw
+    switch_to_next_service
 );
 
 use Core::Const;
@@ -72,9 +73,13 @@ sub create_service_recursive {
     if ( $service->get_pay_always || !$args{parent} ) {
         my %srv = $service->get;
         my $wd_id = add_withdraw(
+            $us,
             calc_withdraw( $us->billing, %srv, %args ),
-            user_service_id => $us->id,
         );
+        unless ( $wd_id ) {
+            logger->error( "Failed to add withdraw for user service: " . $us->id );
+            return undef;
+        }
         $us->set( withdraw_id => $wd_id );
     }
 
@@ -90,15 +95,15 @@ sub process_service_recursive {
     my $service = shift;
     my $event = shift || EVENT_PROLONGATE;
 
+    return undef unless ref $service;
+
     if ( $event = process_service( $service, $event ) ) {
+        logger->info('Process service: '. $service->id . ", Result: [$event]" );
         for my $child ( @{$service->children} ) {
             process_service_recursive(
                 $service->id( $child->id ),
                 $event,
             );
-        }
-        if ( $event eq EVENT_PROLONGATE ) {
-            $event = $service->get_status eq STATUS_BLOCK ? EVENT_ACTIVATE : EVENT_PROLONGATE;
         }
         $service->event( $event );
     }
@@ -116,10 +121,15 @@ sub process_service {
     my $self = shift;
     my $event = shift;
 
-    logger->info('Process service: '. $self->id . " Event: [$event]" );
+    logger->info('Process service: '. $self->id . ", Event: [$event]" );
 
     if ( $self->get_status eq STATUS_PROGRESS ) {
-        logger->debug('Service in progress. Skipping...');
+        logger->info('Service in progress. Skipping...');
+        return undef;
+    }
+
+    if ( $self->get_status eq STATUS_REMOVED ) {
+        logger->warning('Service is removed. Skipping...');
         return undef;
     }
 
@@ -128,9 +138,9 @@ sub process_service {
         return $event;
     }
 
-    if ( $event eq EVENT_BLOCK ) {
+    if ( $event eq EVENT_BLOCK_FORCE ) {
         return block( $self );
-    } elsif ( $event eq EVENT_ACTIVATE ) {
+    } elsif ( $event eq EVENT_ACTIVATE_FORCE ) {
         return activate( $self );
     } elsif ( $event eq EVENT_REMOVE ) {
         return remove( $self );
@@ -138,25 +148,26 @@ sub process_service {
 
     unless ( $self->get_expire ) {
         # Новая услуга
-        logger->debug('New service');
+        logger->info('New service');
         return create( $self );
     }
 
     unless ( $self->has_expired ) {
         # Услуга не истекла
         # Ничего не делаем с этой услугой
+        logger->info('Service is not expired. Skipping...');
         return undef;
     }
 
-    # Продляем услугу
     return prolongate( $self );
 }
 
 sub add_withdraw {
+    my $us = shift;
     my %wd = @_;
 
-    delete @wd{ qw/ withdraw_id create_date end_date withdraw_date / };
-    return get_service('withdraw')->add( %wd );
+    delete @wd{ qw/ withdraw_id create_date end_date withdraw_date user_service_id / };
+    return $us->srv('wd', usi => $us->id )->add( %wd );
 }
 
 # Создание следущего платежа на основе текущего
@@ -172,7 +183,7 @@ sub add_withdraw_next {
         bonus => 0,
     );
 
-    return add_withdraw( %wd );
+    return add_withdraw( $self, %wd );
 }
 
 # Вычисляет итоговую стоимость услуги
@@ -181,7 +192,7 @@ sub calc_withdraw {
     my $billing = shift;
     my %wd = (
         cost => undef,
-        months => 1,
+        months => undef,
         discount => 0,
         qnt => 1,
         @_,
@@ -190,6 +201,7 @@ sub calc_withdraw {
     $wd{qnt} = 1 if $wd{qnt} < 1;
 
     my %service = get_service( 'service', _id => $wd{service_id} )->get;
+    $wd{months} ||= $wd{period};
     %wd = ( %service, %wd );
 
     $wd{withdraw_date}||= now;
@@ -322,54 +334,48 @@ sub prolongate {
 
     logger->info('Trying to prolong the service: ' . $self->id );
 
+    unless (    $self->get_status eq STATUS_ACTIVE ||
+                $self->get_status eq STATUS_WAIT_FOR_PAY ||
+                $self->get_status eq STATUS_BLOCK
+    ) {
+        logger->warning( sprintf "Can't prolongate service %d with status: %s . Skipped", $self->id, $self->get_status );
+        return undef;
+    }
+
+    unless ( $self->has_expired ) {
+        logger->info("Service has not expired. Skipped");
+        return undef;
+    }
+
     if ( $self->parent_has_expired ) {
         # Не продлеваем услугу если родитель истек
-        logger->debug('Parent has expired. Skipped');
+        logger->info('Parent has expired. Skipped');
         return block( $self );
     }
 
-    # TODO: make_service_act
-    # TODO: backup service
-
-    if ( $self->get_next == -1 ) {
-        # Удаляем услугу
+    if ( $self->withdraw->paid && $self->get_next == -1 ) {
         return remove( $self );
-    }
-    elsif ( my $new_service_id = $self->get_next ) {
-        # Change service to new
-        my $service = get_service('service', _id => $new_service_id );
-        logger->fatal( "Service not exists: $new_service_id" ) unless $service;
-
-        my %srv = $service->get;
-        my $wd_id = add_withdraw(
-            calc_withdraw(
-                $self->billing,
-                %srv,
-                months => $service->get_period,
-                discont => 0,
-            ),
-            user_service_id => $self->id,
-        );
-
-        $self->set(
-            service_id => $service->id,
-            next => $service->get_next,
-            withdraw_id => $wd_id,
-        );
-        $self->make_commands_by_event( EVENT_CHANGED_TARIFF );
-    }
-
-    # Для существующей услуги используем текущее/следующее/новое списание
-    my $wd_id = $self->get_withdraw_id;
-    my $wd = $wd_id ? get_service('wd', _id => $wd_id ) : undef;
-
-    if ( $wd && $wd->get_withdraw_date ) {
-        if ( my %next = $self->withdraw->next ) {
-            $wd_id = $next{withdraw_id};
-        } else {
-            $wd_id = add_withdraw_next( $self );
+    } elsif ( $self->withdraw->paid && $self->get_next ) {
+        unless (switch_to_next_service( $self)) {
+            logger->error( "Failed to switch to next service for user service: " . $self->id );
+            return undef;
         }
-        $self->set( withdraw_id => $wd_id );
+    } elsif ( $self->withdraw->paid ) {
+        # Для существующей услуги используем текущее/следующее/новое списание
+        my $wd = $self->withdraw;
+        if ( $wd && $wd->get_withdraw_date ) {
+            my $wd_id;
+            if ( my %next = $self->withdraw->next ) {
+                $wd_id = $next{withdraw_id};
+            } else {
+                $wd_id = add_withdraw_next( $self );
+                unless ( $wd_id ) {
+                    logger->error( "Failed to add withdraw for user service: " . $self->id );
+                    return undef;
+                }
+            }
+            $self->set( withdraw_id => $wd_id );
+        }
     }
 
     unless ( is_pay( $self ) ) {
@@ -378,12 +384,57 @@ sub prolongate {
     }
 
     set_service_expire( $self );
-    return EVENT_PROLONGATE;
+
+    return EVENT_ACTIVATE if $self->get_status eq STATUS_WAIT_FOR_PAY || $self->get_status eq STATUS_BLOCK;
+    return EVENT_PROLONGATE if $self->get_status eq STATUS_ACTIVE;
+    return undef;
+}
+
+sub switch_to_next_service {
+        my $us = shift;
+
+        my $new_service_id = $us->get_next;
+        unless ( $new_service_id ) {
+            logger->warning( "Next service not exists for user service: " . $us->id );
+            return;
+        }
+
+        my $service = get_service('service', _id => $new_service_id );
+        unless ( $service ) {
+            logger->warning( "Service not exists: $new_service_id" );
+            return;
+        }
+
+        my %wd = calc_withdraw( $us->billing, $service->get );
+        delete @wd{ qw/ create_date end_date withdraw_date user_service_id / };
+
+        my $wd_id;
+        my $wd = $us->withdraw;
+        if ( $wd->unpaid ) {
+            $wd->set( %wd );
+        } else {
+            $wd_id = add_withdraw(
+                $us,
+                %wd,
+            );
+            unless ($wd_id) {
+                logger->error( "Failed to add withdraw for user service: " . $us->id );
+                return;
+            }
+        }
+
+        $us->set(
+            service_id => $service->id,
+            next => $service->get_next,
+            $wd_id ? ( withdraw_id => $wd_id ) : (),
+        );
+        $us->make_commands_by_event( EVENT_CHANGED_TARIFF );
+        return 1;
 }
 
 sub block {
     my $self = shift;
-    return 0 unless $self->get_status eq STATUS_ACTIVE;
+    return 0 if $self->get_status ne STATUS_ACTIVE;
 
     return EVENT_BLOCK;
 }
@@ -397,6 +448,7 @@ sub activate {
 
 sub remove {
     my $self = shift;
+    return 0 if $self->get_status eq STATUS_REMOVED;
 
     money_back( $self );
 

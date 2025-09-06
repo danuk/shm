@@ -96,7 +96,7 @@ subtest 'PUT /v1/admin/service' => sub {
         },
         %user,
     );
-    is $ret{json}->{error}, "Can't add new object. Perhaps it already exists?";
+    is $ret{json}->{error}, "Can't add a new object. Perhaps it already exists?";
 };
 
 subtest 'DELETE /v1/admin/service' => sub {

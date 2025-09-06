@@ -13,10 +13,6 @@ INSERT INTO `acts_data` VALUES
 (default,195,40092,16,19,2662,455.00,'19# Продление домена в зоне .NET: ipcalc.net','2015-10-12 00:00:01','2016-10-12 00:00:00'),
 (default,435,40092,11,2946,3518,590.00,'2946# Регистрация домена в зоне .RU: umci.ru','2016-07-29 12:36:06','2017-07-29 12:36:05');
 
-INSERT INTO `apps` VALUES
-(default,40092,101,'phpBB',270,'{\"db_name\":\"phpBB\",\"password\":\"OOgWCha2\",\"db_user\":\"phpBB\",\"domain\":\"work.biit.ru\",\"domain_dir\":\"utf8\",\"login\":\"Admin\",\"dir\":\"\"}'),
-(default,40092,101,'WordPress',7,'{\"db_name\":\"WordPress\",\"db_user\":\"WordPress\",\"domain\":\"ipcalc.net\",\"domain_dir\":\"ipcalc.net\",\"dir\":\"wp\"}');
-
 INSERT INTO `discounts` VALUES
 (default,'1 месяц',1,0,NULL),
 (default,'3 месяца',3,10,NULL),
@@ -128,11 +124,6 @@ INSERT INTO `domains_services` VALUES
 (default,6,2951,'2017-11-05 17:40:33'),
 (default,150,1871,'2017-09-23 23:54:23');
 
-INSERT INTO `invoices` VALUES
-(default,1414222040,40092,100.00,NULL),
-(default,1414228287,40092,1000.00,NULL),
-(default,1481294791,40092,578.20,NULL);
-
 INSERT INTO `pays_history` VALUES
 (default,40092,'manual',455.00,'2014-10-02 14:05:39',NULL,NULL),
 (default,40092,'manual',455.00,'2016-01-04 20:33:35',NULL,NULL);
@@ -235,6 +226,7 @@ INSERT INTO `user_services` VALUES
 (2942,40092,50,1,NULL,'2016-07-22 12:01:24',NULL,'INIT','ACTIVE',NULL,101,'{\"domain\": \"shm.danuk.ru\", \"directory\": \"shm.danuk.ru\", \"domain_id\": \"304\"}'),
 (2943,40092,50,1,NULL,'2016-07-23 18:12:26',NULL,'INIT','ACTIVE',NULL,101,'{\"domain\": \"cli.danuk.ru\", \"directory\": \"cli.danuk.ru\", \"domain_id\": \"305\"}'),
 (2944,40092,50,1,NULL,'2016-07-24 18:49:14',NULL,'INIT','ACTIVE',NULL,101,'{\"domain\": \"admin.danuk.ru\", \"directory\": \"admin.danuk.ru\", \"domain_id\": \"306\"}'),
+(2945,40092,50,1,NULL,'2016-07-24 18:49:14',NULL,'BLOCK','REMOVED',NULL,101,NULL),
 (2949,40092,11,1,3519,'2016-07-29 12:39:47','2017-07-29 12:39:46','INIT','ACTIVE',12,NULL,'{\"quota\": \"0\", \"domain\": \"umci.ru\", \"nic_id\": \"2628443\", \"punycode\": \"\", \"domain_id\": \"308\", \"max_quota\": \"1000\"}'),
 (2950,40092,30,1,NULL,'2016-07-29 12:39:08',NULL,'INIT','ACTIVE',NULL,2949,'{\"ns\": \"ns1.biit.ru\", \"domain_id\": \"308\", \"server_id\": 1}'),
 (2951,40092,31,1,NULL,'2016-07-29 12:39:08',NULL,'INIT','ACTIVE',NULL,2949,'{\"ns\": \"ns2.biit.ru\", \"master\": \"185.31.160.56\", \"domain_id\": \"308\", \"server_id\": 1}');
@@ -244,6 +236,7 @@ INSERT INTO `users` VALUES
 (1,0,'admin','0df78fa86a30eca0a918fdd21a94e238133ce7ab',0,NOW(),NULL,0,0,0.00,NULL,NULL,0,1,0,'Admin',0,0.00,NULL,NULL,NULL,NULL),
 (108,0,'','',0,'2014-09-30 14:17:37',NULL,0,0,0.00,NULL,NULL,0,0,0,'Платеж',0,0.00,NULL,NULL,NULL,NULL),
 (40092,0,'danuk','d8923baf143645690cc89db46e4611fb1066e1f0',0,'2014-09-30 14:17:37',NULL,0,-21.56,100000.00,NULL,NULL,0,0,0,'Фирсов Даниил Андреевич',0,0.00,NULL,NULL,NULL,'{\"telegram\": {\"chat_id\": 298002190}}'),
+(40093,0,'blocked','',0,'2025-08-19 12:47:37',NULL,0,0,0,NULL,NULL,1,0,0,'Заблокированный',0,0.00,NULL,NULL,NULL,NULL),
 (40094,0,'ya','1ad777afc152c9eaa13abb53283f8d47e8d453bb',0,'2014-10-02 14:45:43',NULL,0,30,100.00,NULL,NULL,0,0,NULL,'Пронин Дмитрий Борисович',0,0.00,NULL,NULL,NULL,NULL);
 
 INSERT INTO `withdraw_history` VALUES

@@ -17,13 +17,13 @@ subtest 'GET /v1/user/service' => sub {
         method => 'GET',
         %user,
     );
-    is $ret{json}->{items}, 4, 'Check items field';
-    is scalar @{ $ret{json}->{data} }, 4, 'Check count items in data';
+    is $ret{json}->{items}, 19, 'Check items field';
+    is scalar @{ $ret{json}->{data} }, 19, 'Check count items in data';
 };
 
 subtest 'GET /v1/user/service' => sub {
     my %ret = shm_test_api(
-        url => 'v1/user/service?usi=99',
+        url => 'v1/user/service?user_service_id=99',
         method => 'GET',
         %user,
     );

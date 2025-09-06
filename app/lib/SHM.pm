@@ -19,6 +19,8 @@ use Core::Utils qw(
     parse_headers
     get_cookies
     encode_json
+    print_header
+    print_json
 );
 
 use base qw(Exporter);
@@ -131,7 +133,7 @@ sub ext_user_auth {
         password => $password,
     );
     unless ( $user ) {
-        print_json( { status => 401, msg => 'Incorrect login or password' } );
+        print_json( { status => 401, error => 'Incorrect login or password' } );
         exit 0;
     }
     return $user->id;
@@ -179,48 +181,12 @@ sub print_not_authorized {
     exit 0;
 }
 
-sub print_header {
-    my %args = (
-        status => 200,
-        type => 'application/json',
-        charset => 'utf8',
-        'Access-Control-Allow-Origin' => "$ENV{HTTP_ORIGIN}",
-        'Access-Control-Allow-Credentials' => 'true',
-        @_,
-    );
-
-    return undef if $is_header;
-
-    print $cgi->header( map +( "-$_" => $args{$_} ), keys %args );
-    $is_header = 1;
-}
-
 sub parse_args {
     use Core::Utils;
     return Core::Utils::parse_args();
 }
 
 sub trim { my $str = shift; $str=~s/^\s+|\s+$//g; $str };
-
-sub print_json {
-    my $ref = shift || [];
-    my %args = (
-        @_,
-    );
-
-    die 'WTF? blessed object' if blessed $ref;
-
-    # if $ref contained 'status' set to header
-    print_header( ref $ref eq 'HASH' ? %{ $ref } : () ) unless $is_header;
-
-    if ( ref $ref eq 'HASH' && $ref->{status} && $ref->{status}!~/^2/ ) {
-        if ( my @errors = get_service('report')->errors ) {
-            $ref->{errors} = \@errors;
-        }
-    };
-
-    say encode_json( $ref );
-}
 
 sub DESTROY {
     my $dbh = get_service('config')->local->{dbh};

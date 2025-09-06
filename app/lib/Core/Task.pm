@@ -52,10 +52,12 @@ sub make_task {
 
         if ( $kind->can( $method ) ) {
             my ( $status, $response_data ) = $kind->$method( $self );
-            unless ( $status ) {
-                return $self->task_answer( TASK_STUCK, error => "Method error", %{ $response_data//={} } );
-            } else {
+            if ( !defined $status ) {
+               return $self->task_answer( TASK_STUCK, %{ $response_data//={} } );
+            } elsif ( $status == SUCCESS  ) {
                 return $self->task_answer( TASK_SUCCESS, %{ $response_data//={} } );
+            } else {
+                return $self->task_answer( TASK_FAIL, error => 'Transport error', %{ $response_data//={} } );
             }
         }
         else {
@@ -73,10 +75,6 @@ sub make_task {
     my ( $status, $response_data ) = $transport->$method( $self );
     if ( !defined $status ) {
         return $self->task_answer( TASK_STUCK, %{ $response_data//={} } );
-    }
-
-    if ( $status == FAIL ) {
-        return $self->task_answer( TASK_FAIL, error => 'Transport error', %{ $response_data//={} } );
     } elsif ( $status == SUCCESS ) {
         my $service = $self->get_service_for_transport;
         if ( $service->can('transport_response_data') ) {
@@ -102,9 +100,11 @@ sub make_task {
 
             $us->set_status_by_event( $self->event->{name} );
         }
+    } else {
+        return $self->task_answer( TASK_FAIL, error => 'Transport error', %{ $response_data//={} } );
     }
 
-    return $self->task_answer( $status ? TASK_SUCCESS : TASK_FAIL, %{ $response_data || {} } );
+    return $self->task_answer( TASK_SUCCESS, %{ $response_data || {} } );
 }
 
 sub cmd {
@@ -133,7 +133,7 @@ sub task_answer {
     my $status = shift;
     my %args = @_;
 
-    my $logger_level = $status eq TASK_SUCCESS ? 'debug' : 'error';
+    my $logger_level = $status eq TASK_SUCCESS ? 'info' : 'warning';
     logger->$logger_level( 'TASK ANSWER:', $status,  %args );
 
     return $status, {
@@ -174,7 +174,7 @@ sub server {
 sub transport_name {
     my $self = shift;
 
-    if ( my $transport = $self->event_settings->{transport} ) {
+    if ( my $transport = $self->settings->{transport} || $self->event_settings->{transport} ) {
         return $transport;
     } elsif ( my $server_gid = $self->event->{server_gid} ) {
         my $ServerGroups = get_service('ServerGroups', _id => $server_gid );

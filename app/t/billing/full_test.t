@@ -82,7 +82,7 @@ subtest 'Check create service' => sub {
                 category => 'mysql',
                 cmd => 'mysql create -a b_{{ us.id }} -b {{ us.settings.db.0.name }} -u {{ us.settings.db.0.login }} -p {{ us.settings.db.0.password }}'
             },
-            name => 'create',
+            name => 'CREATE',
             title => 'Create mysql',
             kind => 'UserService'
         },
@@ -360,7 +360,7 @@ subtest 'Check create service without money' => sub {
 Test::MockTime::set_fixed_time('2018-01-15T00:00:00Z');
 subtest 'Delete user service' => sub {
 
-    $us->block();
+    $us->block_force();
     is( $us->get_status, STATUS_PROGRESS );
 
     $spool->process_all();

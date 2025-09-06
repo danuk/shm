@@ -7,9 +7,10 @@ use Data::Dumper;
 $ENV{SHM_TEST} = 1;
 
 use SHM;
+use utf8;
 use Core::System::ServiceManager qw( get_service );
 
-SHM->new( user_id => 40092 );
+my $user = SHM->new( user_id => 40092 );
 
 subtest 'Check template 1' => sub {
     my $t = get_service('template', _id => 'web_tariff_create');

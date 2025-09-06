@@ -28,6 +28,7 @@ subtest 'Get server_id by event settings' => sub {
             kind => 'user_service',
             name => 'update',
             server_gid => 1,
+            info => 't/spool/make_task.t',
         },
         settings => {
             user_service_id => 16,
@@ -38,10 +39,10 @@ subtest 'Get server_id by event settings' => sub {
     my %task = $spool->id( $task_id )->get;
     is ( $task{id}, $task_id );
 
-    my ( $status, $info ) = $spool->process_one( \%task );
+    my ( $info ) = $spool->process_one( \%task );
 
-    is( $info->{status}, 'MOCK' );
-    is( $info->{settings}->{server_id} =~ /^1|2$/, 1 );
+    is( $info->get_status, 'MOCK' );
+    is( $info->get_settings->{server_id} =~ /^1|2$/, 1 );
 };
 
 subtest 'Get server_id by server_gid' => sub {
@@ -50,6 +51,7 @@ subtest 'Get server_id by server_gid' => sub {
             kind => 'user_service',
             name => 'update',
             server_gid => 5,
+            info => 't/spool/make_task.t',
         },
         settings => {
             user_service_id => 16,
@@ -59,10 +61,10 @@ subtest 'Get server_id by server_gid' => sub {
     my %task = $spool->id( $task_id )->get;
     is ( $task{id}, $task_id );
 
-    my ( $status, $info ) = $spool->process_one( \%task );
+    my ( $info ) = $spool->process_one( \%task );
 
-    is( $info->{status}, 'MOCK' );
-    is( $info->{settings}->{server_id}, 25 );
+    is( $info->get_status, 'MOCK' );
+    is( $info->get_settings->{server_id}, 25 );
 };
 
 done_testing();

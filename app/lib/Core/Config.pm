@@ -15,10 +15,12 @@ sub structure {
         key => {
             type => 'text',
             key => 1,
+            title => 'ключ',
         },
         value => {
             type => 'json',
             required => 1,
+            title => 'значение',
         },
     }
 }

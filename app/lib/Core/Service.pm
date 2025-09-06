@@ -12,63 +12,101 @@ sub structure {
         service_id => {
             type => 'number',
             key => 1,
+            title => 'id услуги',
         },
         name => {
             type => 'text',
             required => 1,
+            title => 'название услуги',
         },
         cost => {
             type => 'number',
             required => 1,
+            title => 'стоимость',
         },
         period => {
             type => 'number',
             default => 1,
+            title => 'период',
         },
         category => {
             type => 'text',
             required => 1,
+            title => 'категория',
         },
         children => {
             type => 'json',
             value => undef,
+            hide_for_user => 1,
+            title => 'дочерние услуги',
         },
         next => {
             type => 'number',
+            hide_for_user => 1,
+            title => 'id сделующей услуги',
         },
         allow_to_order => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
+            enum => [0,1],
+            title => 'флаг разрешения регистрации',
         },
         max_count => {
             type => 'number',
+            hide_for_user => 1,
+            title => 'не используется',
         },
         question => {
             type => 'number',
+            hide_for_user => 1,
+            title => 'не используется',
         },
         pay_always => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
+            title => 'флаг платности',
+            enum => [0,1],
+            description => '1 - платная всегда, даже в качестве дочерней',
         },
         no_discount => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
+            enum => [0,1],
+            title => 'флаг неприменяемости скидок',
         },
         descr => {
             type => 'text',
+            title => 'описание',
         },
         pay_in_credit => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
+            enum => [0,1],
+            title => 'флаг разрешения списания в минус',
         },
-        config => { type => 'json', value => undef },
+        config => {
+            type => 'json',
+            value => undef,
+            hide_for_user => 1,
+            title => 'конфиг',
+        },
         is_composite => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
+            enum => [0,1],
+            title => 'флаг составной услуги',
         },
         deleted => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
+            enum => [0,1],
+            title => 'флаг удаленной услуги',
         },
     };
 }

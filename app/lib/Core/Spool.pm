@@ -15,33 +15,54 @@ sub structure {
         id => {
             type => 'number',
             key => 1,
+            title => 'id задачи',
         },
         user_id => {
             type => 'number',
             auto_fill => 1,
+            title => 'id пользователя',
         },
         user_service_id => {
             type => 'number',
+            title => 'id услуги пользователя',
         },
-        event => { type => 'json', value => {} },
+        event => {
+            type => 'json',
+            value => {},
+            title => 'событие в формате JSON',
+        },
         prio => {           # приоритет команды
             type => 'number',
             default => 0,
+            title => 'приоритет команды',
+            description => 'чем выше приоритет, тем раньше выполнится задача',
         },
         status => {         # status выполнения команды: 0-новая, 1-выполнена, 2-ошибка
             type => 'text',
             default => TASK_NEW,
+            enum => [TASK_NEW,TASK_SUCCESS,TASK_FAIL,TASK_DELAYED,TASK_STUCK,TASK_PAUSED],
+            title => 'статус задачи',
         },
-        response => { type => 'json', value => {} },
+        response => {
+            type => 'json',
+            value => {},
+            title => 'результат выполнения задачи',
+            readOnly => 1,
+        },
         created => {        # дата создания задачи
             type => 'now',
+            title => 'дата создания задачи',
+            readOnly => 1,
         },
         executed => {       # дата и время последнего выполнения
             type => 'date',
+            title => 'дата выполнения задачи',
+            readOnly => 1,
         },
         delayed => {        # задерка в секундах
             type => 'date',
             default => 0,
+            title => 'время задержки выполнения в секундах',
         },
         settings => { type => 'json', value => {} },
     }
@@ -60,6 +81,16 @@ sub api_add {
         @_,
     );
     return $self->SUPER::api_add( %args );
+}
+
+sub add {
+    my $self = shift;
+    my %args = (
+        get_smart_args( @_ ),
+    );
+
+    $args{status} = TASK_DELAYED if $args{delayed};
+    return $self->SUPER::add( %args );
 }
 
 # формирует и выдает список задач для исполнения
@@ -89,14 +120,14 @@ sub list_for_all_users {
     );
 }
 
-sub process_all {
+sub process_all { # for unit tests
     my $self = shift;
 
     my @list = $self->list_for_all_users( limit => 10 );
     $self->process_one( $_ ) for @list;
 }
 
-sub process_one {
+sub process_one { # for spool.pl
     my $self = shift;
     my $task = shift;
 
@@ -105,31 +136,35 @@ sub process_one {
     }
     return undef unless $task;
 
-    my $user = get_service('user', _id => $task->{user_id} );
-    switch_user( $task->{user_id } );
-    if ( $user->id != 1 ) {
-        return undef unless $user->lock( timeout => 5 );
-    }
-
     my $spool = get_service('spool', _id => $task->{id} )->res( $task );
+    # Запись факта запуска задачи в историю ДО выполнения
+    $spool->write_history_start;
 
+    my $user = get_service('user', _id => $task->{user_id} );
     unless ( $user ) {
         $spool->finish_task(
             status => TASK_STUCK,
             response => { error => "User $task->{user_id} not exists" },
         );
-        return undef;
+        return $spool;
     }
+    switch_user( $task->{user_id } );
 
     if ( my $usi = $task->{settings}->{user_service_id} ) {
-        if ( my $service = get_service('us', _id => $usi ) ) {
-            return undef unless $service->lock;
+        if ( my $us = get_service('us', _id => $usi ) ) {
+            unless ( $us->lock ) {
+                $spool->retry_task(
+                    status => TASK_DELAYED,
+                    response => { error => "User service is locked" },
+                );
+                return $spool;
+            }
         } else {
             $spool->finish_task(
-                status => TASK_STUCK,
-                response => { error => "User service $usi not exists" },
+                status => TASK_SUCCESS,
+                response => { error => "User service is not exists" },
             );
-            return undef;
+            return $spool;
         }
     }
 
@@ -141,7 +176,7 @@ sub process_one {
                 status => TASK_STUCK,
                 response => { error => "The server group does not exist" },
             );
-            return TASK_STUCK, $task, {};
+            return $spool, {};
         }
 
         my @servers = $server_group->get_servers;
@@ -151,7 +186,7 @@ sub process_one {
                 status => TASK_STUCK,
                 response => { error => "Can't found servers for group" },
             );
-            return TASK_STUCK, $task, {};
+            return $spool, {};
         }
 
         $task->{settings}->{server_id} = $servers[0]->{server_id};
@@ -168,9 +203,8 @@ sub process_one {
                 status => TASK_STUCK,
                 response => { error => sprintf( "Server not exists: %d", $server_id ) },
             );
-            return TASK_STUCK, $task, {};
+            return $spool, {};
         }
-        #return undef unless $server->lock;
     }
 
     my ( $status, $info ) = $spool->make_task();
@@ -183,22 +217,22 @@ sub process_one {
             %{ $info },
         );
     }
-    elsif ( $status eq TASK_FAIL ) {
+    elsif ( $status eq TASK_FAIL || $status eq TASK_DELAYED ) {
         $spool->retry_task(
-            status => TASK_FAIL,
+            status => $status,
             %{ $info },
         )
     }
     elsif ( $status eq TASK_STUCK ) {
         $spool->finish_task(
-            status => TASK_STUCK,
+            status => $status,
             %{ $info },
         );
-    } else {
+    } else { # for tests (MOCK)
         $spool->set( status => $status );
     }
 
-    return $status, $task, $info;
+    return $spool, $info;
 }
 
 sub finish_task {
@@ -214,23 +248,13 @@ sub finish_task {
         %args,
     );
 
-    if ( $args{status} ne TASK_SUCCESS ) {
-        if ( $self->event->{name} ne EVENT_CHANGED &&
-             $self->event->{name} ne EVENT_CHANGED_TARIFF &&
-             $self->settings->{user_service_id} ) {
-            if ( my $us = get_service('us', _id => $self->settings->{user_service_id} ) ) {
-                $us->set( status => STATUS_ERROR );
-            }
-        }
-    } else {
-        logger->dump("Task deleting:", $self );
-        if ( $self->event->{kind} eq 'Jobs' && $self->event->{period} ) {
-            $self->write_history if $args{status} ne TASK_SUCCESS;
-        }
-        else {
-            $self->write_history;
-            $self->delete;
-        }
+    $self->write_history;
+
+    if ( $self->event->{kind} eq 'Jobs' && $self->event->{period} ) {
+        return;
+    }
+    elsif ( $args{status} eq TASK_SUCCESS ) {
+        $self->delete;
     }
 }
 
@@ -245,7 +269,7 @@ sub retry_task {
     my $delayed = $self->res->{delayed}||=1;
     # не меняем делей, если задан вручную (больше 15 мин)
     if ( $delayed < 900 ) {
-        $delayed *= 5;  # 5s, 25s, 125(~2m), 625(~10m),... 900(15m)
+        $delayed *= 3;  # 3s, 9s, 27s, 81s,...
         $delayed = 900 if $delayed > 900; # max 15 min
     }
 
@@ -320,12 +344,33 @@ sub api_retry {
 
 sub history {
     my $self = shift;
-    return $self->srv('SpoolHistory');
+    state $history ||= $self->srv('SpoolHistory');
+    return $history;
+}
+
+sub write_history_start {
+    my $self = shift;
+    my %task_data = $self->get;
+
+    my $history_id = $self->history->add(
+        %task_data,
+        created => now,
+    );
+
+    $self->{history_id} = $history_id;
 }
 
 sub write_history {
     my $self = shift;
-    $self->history->add( $self->get );
+    my %task_data = $self->get;
+
+    if ( my $history = $self->history->id( $self->{history_id} ) ) {
+        # Обновляем существующую запись
+        $history->set( %task_data );
+    } else {
+        # Старое поведение — если по каким-то причинам history_id нет
+        $self->history->add( %task_data );
+    }
 }
 
 1;

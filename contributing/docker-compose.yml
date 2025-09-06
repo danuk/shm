@@ -8,6 +8,8 @@ services:
     restart: always
     links:
       - core
+   # environment:
+   #   RESOLVER: 8.8.8.8
   core:
     image: danuk/shm-core:latest
     build:
@@ -69,7 +71,6 @@ services:
     restart: always
     environment:
       SHM_HOST: http://api
-      BASE_PATH: /
     volumes:
       - ./shm-admin/app:/app
     ports:
@@ -85,7 +86,6 @@ services:
     restart: always
     environment:
       SHM_HOST: http://api
-      BASE_PATH: /
     volumes:
       - ./shm-client/app:/app
     ports:

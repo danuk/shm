@@ -18,19 +18,25 @@ sub structure {
         user_id => {
             type => 'number',
             auto_fill => 1,
+            title => 'id пользователя',
         },
         name => {
             type => 'text',
             key => 1,
+            title => 'имя ключа',
         },
         created => {
             type => 'text',
+            title => 'дата создания',
+            readOnly => 1,
         },
         user_service_id => {
             type => 'number',
+            title => 'id услуги пользователя',
         },
         data => {
             type => 'text',
+            title => 'данные',
         },
         settings => { type => 'json', value => {} },
     }

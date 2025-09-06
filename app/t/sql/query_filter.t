@@ -39,6 +39,31 @@ cmp_deeply (
 
 cmp_deeply (
     $user->query_for_filtering(
+        user_id => 40092,
+        settings => 'a.b',
+    ),
+    {
+        user_id => 40092,
+        q/JSON_EXTRACT(settings, '$.a.b')/ => { '!=', undef },
+    },
+    'Check exits a->b in settings'
+);
+
+cmp_deeply (
+    $user->query_for_filtering(
+        user_id => 40092,
+        settings => { 'a.b' => 1, 'c' => { '>', 2 } },
+    ),
+    {
+        user_id => 40092,
+        q/settings->>'$.a.b'/ => 1,
+        q/settings->>'$.c'/ => { '>', 2 },
+    },
+    'Check values for a->b and c in settings'
+);
+
+cmp_deeply (
+    $user->query_for_filtering(
         alien => 'strange',
     ),
     {},

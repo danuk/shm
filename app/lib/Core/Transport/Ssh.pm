@@ -13,6 +13,7 @@ use POSIX 'setsid';
 use Core::Utils qw(
     html_escape
     is_host
+    encode_utf8
 );
 
 sub events {
@@ -41,6 +42,7 @@ sub send {
         %server,
         %{ $server{settings} },
         %{ $task->event_settings },
+        %{ $task->settings },
         task => $task,
         $task->settings->{user_service_id} ? ( usi => $task->settings->{user_service_id} ) : (),
     );
@@ -128,8 +130,14 @@ sub exec {
     $args{pipeline_id} //= get_service('console')->new_pipe;
 
     my $console = get_service('console', _id => $args{pipeline_id} );
+    unless ( $console ) {
+        get_service('report')->add_error("Console not found: $args{pipeline_id}");
+        return undef, {
+            error => "Console not found: $args{pipeline_id}",
+        };
+    }
 
-    my $host_msg = "Trying connect to: $host";
+    my $host_msg = "Trying connect to: $host (timeout: $args{timeout}s)";
     $host_msg .= " port $args{port}";
     $host_msg .= " through $proxy_jump" if $proxy_jump;
 
@@ -187,13 +195,22 @@ sub exec {
         ) or die "pipe_out method failed: " . $ssh->error;
 
         if ( $args{stdin} ) {
-            print $in $args{stdin};
+            print $in encode_utf8( $args{stdin} );
             close $in;
         }
 
-        while (<$rout>) {
-            $out .= $_;
-            $console->append( html_escape($_) );
+        eval {
+            local $SIG{ALRM} = sub { die "timeout\n" };
+            alarm($args{timeout} || 10);
+            while (<$rout>) {
+                $out .= $_;
+                $console->append( html_escape($_) );
+            }
+            alarm(0);
+        };
+        if ($@ && $@ eq "timeout\n") {
+            kill 'TERM', $ssh_pid if $ssh_pid;
+            $console->append('<font color="red">TIMEOUT</font><br/>');
         }
         close $rout;
 

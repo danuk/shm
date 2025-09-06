@@ -10,6 +10,7 @@ use Core::Utils qw(
     passgen
     now
     get_cookies
+    get_user_ip
 );
 use Core::Const;
 
@@ -22,90 +23,131 @@ sub structure {
         user_id => {
             type => 'number',
             key => 1,
+            title => 'id пользователя',
         },
         partner_id => {
             type => 'number',
             hide_for_user => 1,
+            title => 'id партнера',
         },
         login => {
             type => 'text',
             required => 1,
+            title => 'логин',
         },
         password => {
             type => 'text',
             required => 1,
             hide_for_user => 1,
+            title => 'пароль',
+            description => 'пароль в зашифровнном виде',
         },
         type => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
+            enum => [0,1,2],
+            title => 'тип пользователя',
+            description => '0 - физ, 1 - юр, 2 - ип',
         },
         created => {
             type => 'now',
+            title => 'дата создания',
         },
         last_login => {
             type => 'date',
+            title => 'дата последнего входа',
         },
         discount => {
             type => 'number',
             default => 0,
+            title => 'персональная скидка',
         },
         balance => {
             type => 'number',
             default => 0,
+            title => 'баланс',
         },
         credit => {
             type => 'number',
             default => 0,
+            title => 'сумма кредита',
         },
         comment => {
             type => 'text',
             hide_for_user => 1,
+            title => 'комментарии',
         },
         dogovor => {
             type => 'text',
+            title => 'договор',
         },
         block => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
+            enum => [0,1],
+            title => 'флаг блокировки',
+            description => '0 - активен, 1 - заблокирован',
         },
         gid => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
+            enum => [0,1],
+            title => 'группа',
+            description => '0 - пользователи, 1 - админы',
         },
         perm_credit => {
             type => 'number',
             default => 0,
             hide_for_user => 1,
+            enum => [0,1],
+            title => 'флаг постоянного кредита',
         },
         full_name => {
             type => 'text',
             allow_update_by_user => 1,
+            title => 'наименование клиента',
+            description => 'произвольное значение',
         },
         can_overdraft => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
+            enum => [0,1],
+            title => 'флаг разрешения ухода в минус',
+            description => '1 - разрешено уходить в минус',
         },
         bonus => {
             type => 'number',
-            default => 0
+            default => 0,
+            title => 'бонусы',
         },
         phone => {
             type => 'text',
             allow_update_by_user => 1,
+            title => 'номер телефона',
         },
         verified => {
             type => 'number',
             default => 0,
+            hide_for_user => 1,
+            enum => [0,1],
+            title => 'флаг проверки клиента',
         },
         create_act => {
             type => 'number',
             default => 1,
+            hide_for_user => 1,
+            enum => [0,1],
+            title => 'создавать акты',
         },
         settings => {
-            allow_update_by_user => 1,
             type => 'json',
-            value => {}
+            value => {},
+            hide_for_user => 1,
+            title => 'настройки клиента',
         },
     };
 }
@@ -154,6 +196,13 @@ sub events {
                 method => 'activate_services',
             },
         },
+        'credit' => {
+            event => {
+                title => 'user payment by credit',
+                kind => 'UserService',
+                method => 'activate_services',
+            },
+        },
     };
 }
 
@@ -166,6 +215,28 @@ sub crypt_password {
     );
 
     return sha1_hex( join '--', $args{salt}, $args{password} );
+}
+
+sub api_auth {
+    my $self = shift;
+    my %args = (
+        login => undef,
+        password => undef,
+        @_,
+    );
+
+    my $user = $self->auth( %args );
+    unless ( $user ) {
+        report->status( 401 );
+        report->add_error('Incorrect login or password' );
+        return;
+    }
+
+    my $session_id = $user->gen_session->{id};
+
+    return {
+        id => $session_id,
+    };
 }
 
 sub auth {
@@ -191,7 +262,10 @@ sub auth {
             password => $password,
         }
     );
-    return undef unless $user_row;
+    unless ( $user_row ) {
+        cache->increment( get_user_ip(), 180 );
+        return undef;
+    }
 
     my $user = $self->id( $user_row->{user_id} );
     return undef if $user->is_blocked;
@@ -304,7 +378,7 @@ sub validate_attributes {
     my %args = @_;
 
     my $report = get_service('report');
-    return $report->is_success if $method eq 'set';
+    return 1 if $method eq 'set';
 
     unless ( $args{login} ) {
         $report->add_error('Login is empty');
@@ -329,7 +403,7 @@ sub reg {
         login => undef,
         password => undef,
         partner_id => undef,
-        @_,
+        get_smart_args( @_ ),
     );
 
     $args{login} = lc( $args{login} );
@@ -345,6 +419,7 @@ sub reg {
         delete $args{partner_id} if $partner_id == $self->id;
     }
 
+    delete $args{gid}; # deny create admins
     my $user_id = $self->add( %args, password => $password );
 
     unless ( $user_id ) {
@@ -365,7 +440,8 @@ sub services {
 
 sub us {
     my $self = shift;
-    return $self->srv('us');
+    my $usi = shift;
+    return $self->srv('us', $usi ? ( _id => $usi ) : () );
 }
 
 sub storage {
@@ -400,7 +476,6 @@ sub set_balance {
     my $self = shift;
     my %args = (
         balance => 0,
-        credit => 0,
         bonus => 0,
         @_,
     );
@@ -435,6 +510,7 @@ sub set_credit {
     my $self = shift;
     my $credit = shift;
 
+    $self->make_event( 'credit', settings => { credit => $credit } ) if $credit > 0;
     return $self->set( credit => $credit );
 }
 
@@ -524,15 +600,13 @@ sub add_bonuses_for_partners {
     my $self = shift;
     my $payment = shift;
 
-    my $partner_id = $self->get_partner_id;
-    return undef unless $partner_id;
-
-    if ( my $partner = $self->id( $partner_id ) ) {
+    if ( my $partner = $self->partner ) {
         my $percent = $partner->income_percent;
         my $bonus = $payment * $percent / 100;
         $partner->set_bonus( bonus => $bonus,
             comment => {
                 from_user_id => $self->id,
+                payment => $payment,
                 percent => $percent,
             },
         ) if $bonus;
@@ -541,6 +615,10 @@ sub add_bonuses_for_partners {
 
 sub delete {
     my $self = shift;
+    my %args = (
+        force => 0,
+        get_smart_args( @_ ),
+    );
 
     my $report = get_service('report');
 
@@ -549,15 +627,17 @@ sub delete {
         return undef;
     }
 
-    if ( $self->get_balance ) {
-        $report->add_error("Can't delete user with non-zero balance");
-        return undef;
-    }
+    unless ( $args{force} ) {
+        if ( $self->get_balance ) {
+            $report->add_error("Can't delete user with non-zero balance");
+            return undef;
+        }
 
-    my @usi = $self->services->list_for_api();
-    if ( scalar @usi ) {
-        $report->add_error("Can't delete user with services");
-        return undef;
+        my @usi = $self->services->list_for_api();
+        if ( scalar @usi ) {
+            $report->add_error("Can't delete user with services");
+            return undef;
+        }
     }
 
     my @objects = qw(
@@ -570,6 +650,8 @@ sub delete {
         spool
         SpoolHistory
         sessions
+        Acts
+        ActsData
     );
 
     get_service( $_, user_id => $self->id )->delete_all for @objects;
@@ -591,7 +673,7 @@ sub has_payments {
 
 sub has_withdraws {
     my $self = shift;
-    return $self->wd->sum->{total} ? 1 : 0;
+    return $self->wd->last ? 1 : 0;
 }
 
 sub has_services {
@@ -609,6 +691,11 @@ sub bonus {
 sub withdraws {
     my $self = shift;
     return get_service('withdraw', user_id => $self->id );
+}
+
+sub promo {
+    my $self = shift;
+    return get_service('promo', user_id => $self->id );
 }
 
 sub is_admin {
@@ -638,16 +725,20 @@ sub list_for_api {
     return $self->SUPER::list_for_api( %args );
 }
 
-sub items {
+sub _list {
     my $self = shift;
-      my %args = (
+    my %args = (
         where => {},
         get_smart_args( @_ ),
     );
 
-    $args{where}->{block} ||= {'!=', 1};
+    unless ( exists $args{where}{ sprintf("%s.%s", $self->table, $self->get_table_key ) } ||
+             exists $args{where}{ $self->get_table_key }
+    ) {
+        $args{where}->{block} //= 0;
+    }
 
-    return $self->SUPER::items( %args );
+    return $self->SUPER::_list( %args );
 }
 
 sub profile {
@@ -673,6 +764,16 @@ sub emails {
     return is_email($email) ? $email : undef;
 }
 
+sub referrals {
+    my $self = shift;
+
+    return $self->items(
+        where => {
+            partner_id => $self->id,
+        },
+    );
+}
+
 sub referrals_count {
     my $self = shift;
 
@@ -696,6 +797,29 @@ sub switch {
     return undef;
 }
 
+sub delete_autopayment {
+    my $self = shift;
+    my %args = (
+        pay_system => undef,
+        @_,
+    );
+
+    my $pay_system = $args{pay_system};
+
+    my $settings = $self->get_settings;
+
+    if ($pay_system) {
+        delete $settings->{pay_systems}->{$pay_system};
+    } else {
+        delete $settings->{pay_systems};
+    }
+
+    $self->set( settings => $settings );
+    return {
+        success => 1,
+    }
+}
+
 sub income_percent {
     my $self = shift;
 
@@ -709,7 +833,71 @@ sub income_percent {
     return get_service('config')->data_by_name('billing')->{partner}->{income_percent} || 0;
 }
 
+sub list_autopayments {
+    my $self = shift;
+
+    my $config = get_service('config', _id => 'pay_systems') or return {};
+    my $ps = $config->get_data || {};
+    my $pay_systems = $self->get_settings->{pay_systems} || {};
+
+    for ( keys %$pay_systems ) {
+        delete $pay_systems->{ $_ } unless $ps->{ $_ }->{allow_recurring};
+    }
+    return $pay_systems || {};
+}
+
+sub has_autopayment {
+    my $self = shift;
+    return keys %{ $self->list_autopayments };
+}
+
+sub make_autopayment {
+    my $self = shift;
+    my $amount = shift;
+
+    return undef unless $amount;
+    return undef if $self->get_settings->{deny_auto_payments};
+
+    my $session_id = $self->gen_session->{id};
+    my $transport = get_service('Transport::Http');
+
+    my %pay_systems = %{ $self->list_autopayments };
+    return undef unless %pay_systems;
+
+    for my $name ( keys %pay_systems ) {
+        my $response = $transport->http(
+            url => sprintf("%s/shm/pay_systems/%s.cgi",
+                get_service('config')->data_by_name('api')->{url},
+                $name,
+            ),
+            method => 'post',
+            headers => {
+                session_id => $session_id,
+            },
+            content => {
+                action => 'payment',
+                amount => $amount,
+                $pay_systems{ $name },
+            },
+        );
+
+        if ( $response->is_success ) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 sub telegram { shift->srv('Transport::Telegram') };
+
+sub partner {
+    my $self = shift;
+
+    my $partner_id = $self->get_partner_id;
+    return undef unless $partner_id;
+
+    return $self->id( $partner_id );
+}
 
 1;
 

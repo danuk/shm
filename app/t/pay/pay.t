@@ -11,6 +11,8 @@ $ENV{SHM_TEST} = 1;
 
 my $user = SHM->new( user_id => 40092 );
 
+my $spool = get_service('spool');
+
 subtest 'Check existed last payment' => sub {
     cmp_deeply ( scalar $user->pays->last->res, superhashof({
         id => ignore(),
@@ -40,7 +42,59 @@ subtest 'Make new payment and check last' => sub {
         comment => $payment->{comment},
         uniq_key => $payment->{uniq_key},
     }));
+
+    cmp_deeply( ($spool->list)[0], superhashof({
+          user_id => 40092,
+          status => 'NEW',
+          event => {
+              method => 'activate_services',
+              kind => 'UserService',
+              title => 'user payment'
+          },
+    }));
+
+    $spool->process_all();
+
+    my @spool = $spool->list;
+    is( scalar @spool, 0 );
+};
+
+subtest 'Make new payment when us is locked' => sub {
+    $spool->_delete();
+
+    my $payment = $user->payment(
+        money => 1,
+        pay_system_id => 'test',
+    );
+
+    my $us = $user->us->id(99)->set('status', 'PROGRESS');
+
+    cmp_deeply( ($spool->list)[0], superhashof({
+          user_id => 40092,
+          status => 'NEW',
+          event => {
+              method => 'activate_services',
+              kind => 'UserService',
+              title => 'user payment'
+          },
+    }));
+
+    $spool->process_all();
+
+    cmp_deeply( ($spool->list)[0], superhashof({
+          user_id => 40092,
+          status => 'FAIL',
+          event => {
+              method => 'activate_services',
+              kind => 'UserService',
+              title => 'user payment'
+          },
+    }));
+
+
+    $spool->_delete();
 };
 
 
 done_testing();
+

@@ -15,6 +15,7 @@ sub http_echo {
 
     return {
         payload => \%args,
+        method => $ENV{REQUEST_METHOD},
     };
 }
 

@@ -32,6 +32,7 @@ subtest 'Check allow_to_order' => sub {
     );
 
     is( defined $us, 1 );
+    $us->block_force;
     $us->delete;
 };
 
@@ -48,6 +49,7 @@ subtest 'Check check_exists' => sub {
     is( defined $us2, 1 );
 
     is( $us1->id, $us2->id );
+    $us1->block_force;
     $us1->delete;
 };
 
@@ -79,8 +81,11 @@ subtest 'Check check_exists_unpaid' => sub {
     );
     is( $us3->id == $us4->id, 1 );
 
+    $us1->block_force;
     $us1->delete;
+    $us2->block_force;
     $us2->delete;
+    $us3->block_force;
     $us3->delete;
 };
 
@@ -104,7 +109,9 @@ subtest 'Check check_category' => sub {
     );
     is( $us1->id != $us3->id, 1 );
 
+    $us1->block_force;
     $us1->delete;
+    $us3->block_force;
     $us3->delete;
 };
 

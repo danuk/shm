@@ -3,6 +3,7 @@ package Core::Utils;
 use v5.14;
 use utf8;
 use MIME::Base64 ();
+use CGI;
 use CGI::Cookie;
 
 use base qw(Exporter);
@@ -17,6 +18,7 @@ our @EXPORT_OK = qw(
     parse_period
     add_date_time
     start_of_month
+    start_of_day
     end_of_month
     http_limit
     http_content_range
@@ -47,6 +49,10 @@ our @EXPORT_OK = qw(
     get_random_value
     to_query_string
     dots_str_to_sql
+    uuid_gen
+    print_header
+    print_json
+    get_user_ip
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -63,6 +69,8 @@ use Date::Calc qw(
 );
 
 our %in;
+our $is_header = 0;
+my $cgi = CGI->new;
 
 sub parse_date {
     my $date = shift || now();
@@ -114,13 +122,20 @@ sub add_date_time {
         @args{ qw/year month day hour min sec/}
     );
 
-    return sprintf("%d-%.2d-%.2d %.2d:%.2d:%.2d", @ret );
+    return sprintf("%d-%.2d-%.2d %.2d:%.2d:%.2d", @ret[0..5] );
 }
 
 sub start_of_month {
     my $date = shift || now();
 
     substr ($date, 8) = '01 00:00:00';
+    return $date;
+}
+
+sub start_of_day {
+    my $date = shift || now();
+
+    substr ($date, 11) = '00:00:00';
     return $date;
 }
 
@@ -340,7 +355,7 @@ sub file_by_string {
 sub read_file {
     my $file = shift;
 
-    open my $fh, $file or return undef;
+    open my $fh, $file or return { error => $! };
     local $/;
     my $data = <$fh>;
     close($fh);
@@ -352,8 +367,8 @@ sub write_file {
     my $file = shift;
     my $data = shift;
 
-    open my $fh, '>', $file or return undef;
-    print $fh ref $data ? encode_json( $data ) : $data;
+    open my $fh, '>', $file or return { error => $! };
+    print $fh ref $data ? encode_json( $data ) : encode_utf8( $data );
     close $fh;
 
     return 1;
@@ -545,6 +560,46 @@ sub dots_str_to_sql {
         name => join('_', $field, @arr),
         query => sprintf('%s->>"$.%s"', $field, join('.', @arr)),
     }
+}
+
+sub uuid_gen {
+    my $uuid = `cat /proc/sys/kernel/random/uuid`;
+    chomp $uuid;
+    return $uuid;
+}
+
+sub print_header {
+    my %args = (
+        status => 200,
+        type => 'application/json',
+        charset => 'utf8',
+        'Access-Control-Allow-Origin' => "$ENV{HTTP_ORIGIN}",
+        'Access-Control-Allow-Credentials' => 'true',
+        @_,
+    );
+
+    return undef if $is_header;
+
+    print $cgi->header( map +( "-$_" => $args{$_} ), keys %args );
+    $is_header = 1;
+}
+
+sub print_json {
+    my $ref = shift || [];
+    my %args = (
+        @_,
+    );
+
+    die 'WTF? blessed object' if blessed $ref;
+
+    # if $ref contained 'status' set to header
+    print_header( ref $ref eq 'HASH' ? %{ $ref } : () ) unless $is_header;
+
+    say encode_json( $ref );
+}
+
+sub get_user_ip {
+    return $ENV{HTTP_X_REAL_IP} || $ENV{REMOTE_ADDR};
 }
 
 # метод для вычисления разницы дат
