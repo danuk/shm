@@ -486,6 +486,27 @@ sub event {
     return SUCCESS;
 }
 
+sub cur_event {
+    my $self = shift;
+
+    my $status = $self->get_status;
+    my $status_before = $self->get_status_before;
+
+    return undef if $status ne STATUS_PROGRESS;
+
+    if ( $status_before eq STATUS_INIT ) {
+        return EVENT_CREATE;
+    } elsif ( $status_before eq STATUS_WAIT_FOR_PAY ) {
+        return EVENT_ACTIVATE;
+    } elsif ( $status_before eq STATUS_ACTIVE ) {
+        return EVENT_PROLONGATE if $self->wd->paid;
+        return EVENT_BLOCK;
+    } elsif ( $status_before eq STATUS_BLOCK ) {
+        return EVENT_ACTIVATE;
+    }
+    return undef;
+}
+
 sub last_event {
     my $self = shift;
 
@@ -689,6 +710,8 @@ sub finish {
     return 0;
 }
 
+*block = \&block_force;
+
 sub block_force {
     my $self = shift;
     my %args = (
@@ -703,6 +726,8 @@ sub block_force {
 
     return scalar $self->get;
 }
+
+*activate = \&activate_force;
 
 sub activate_force {
     my $self = shift;
@@ -970,7 +995,7 @@ sub make_custom_event {
     my $self = shift;
     my %args = (
         event => 'custom',
-        name => 'custom',
+        name => '',
         title => 'custom event',
         prio => 100,
         delay => 0,

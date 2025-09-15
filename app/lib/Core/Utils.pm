@@ -268,7 +268,7 @@ sub decode_json {
 
     my $json;
     eval{ $json = JSON->new->latin1->relaxed->decode( $data ) } or do {
-        get_service('logger')->warning("Incorrect JSON field for decode: " . $data);
+        get_service('logger')->error("Incorrect JSON field for decode: " . $data);
     };
 
     return $json;
@@ -304,7 +304,7 @@ sub encode_json_perl {
 
     my $json;
     eval{ $json = JSON->new->canonical->pretty( $args{pretty} )->encode( obj_to_json $data ) } or do {
-        get_service('logger')->warning("Incorrect JSON data for encode: " . $data);
+        get_service('logger')->error("Incorrect JSON data for encode: " . $data);
     };
 
     return $json;
@@ -319,7 +319,7 @@ sub encode_json {
 
     my $json;
     eval{ $json = JSON->new->latin1->canonical->pretty( $args{pretty} )->encode( encode_utf8($data) ) } or do {
-        get_service('logger')->warning("Incorrect JSON data for encode: " . $data);
+        get_service('logger')->error("Incorrect JSON data for encode: " . $data);
     };
 
     return $json;
@@ -457,29 +457,20 @@ sub decode_base64url {
 }
 
 sub hash_merge {
-    shift unless ref $_[0];
     my ($left, @right) = @_;
+    return {} unless ref $left eq 'HASH';
 
-    return $left unless @right;
-
-    return hash_merge($left, hash_merge(@right)) if @right > 1;
-
-    my ($right) = @right;
-
-    my %merge = %$left;
-
-    for my $key (keys %$right) {
-
-        my ($hr, $hl) = map { ref $_->{$key} eq 'HASH' } $right, $left;
-
-        if ($hr and $hl) {
-            $merge{$key} = hash_merge($left->{$key}, $right->{$key});
-        }
-        else {
-            $merge{$key} = $right->{$key};
+    for my $right (@right) {
+        return {} unless ref $right eq 'HASH';
+        for my $key (keys %$right) {
+            if (ref($right->{$key}) eq 'HASH' && ref($left->{$key}) eq 'HASH') {
+                $left->{$key} = hash_merge($left->{$key}, $right->{$key});
+            } else {
+                $left->{$key} = $right->{$key};
+            }
         }
     }
-    return \%merge;
+    return $left;
 }
 
 sub is_host {
@@ -602,7 +593,74 @@ sub get_user_ip {
     return $ENV{HTTP_X_REAL_IP} || $ENV{REMOTE_ADDR};
 }
 
-# метод для вычисления разницы дат
-# метод вывода даты в формате: "2 дня, 4 часа, 5 минут"
+sub format_time_diff {
+    my $target_date = shift || return '';
+    my $base_date = shift || now();
+
+    # Преобразуем даты в unix timestamp
+    my $target_time = string_to_utime($target_date);
+    my $base_time = string_to_utime($base_date);
+
+    # Вычисляем разность в секундах
+    my $diff = $target_time - $base_time;
+    my $is_future = $diff > 0;
+    $diff = abs($diff);
+
+    # Если разность меньше минуты, возвращаем "менее минуты"
+    return 'менее минуты' if $diff < 60;
+
+    # Вычисляем компоненты времени
+    my $years = int($diff / (365.25 * 24 * 3600));
+    $diff %= (365.25 * 24 * 3600);
+
+    my $months = int($diff / (30.44 * 24 * 3600));
+    $diff %= (30.44 * 24 * 3600);
+
+    my $days = int($diff / (24 * 3600));
+    $diff %= (24 * 3600);
+
+    my $hours = int($diff / 3600);
+    $diff %= 3600;
+
+    my $minutes = int($diff / 60);
+
+    # Формируем строку результата
+    my @parts;
+
+    if ($years > 0) {
+        my $year_word = $years == 1 ? 'год' :
+                       ($years >= 2 && $years <= 4) ? 'года' : 'лет';
+        push @parts, "$years $year_word";
+    }
+
+    if ($months > 0) {
+        my $month_word = $months == 1 ? 'месяц' :
+                        ($months >= 2 && $months <= 4) ? 'месяца' : 'месяцев';
+        push @parts, "$months $month_word";
+    }
+
+    if ($days > 0) {
+        my $day_word = ($days % 10 == 1 && $days % 100 != 11) ? 'день' :
+                      (($days % 10 >= 2 && $days % 10 <= 4) && ($days % 100 < 10 || $days % 100 >= 20)) ? 'дня' : 'дней';
+        push @parts, "$days $day_word";
+    }
+
+    if ($hours > 0) {
+        my $hour_word = ($hours % 10 == 1 && $hours % 100 != 11) ? 'час' :
+                       (($hours % 10 >= 2 && $hours % 10 <= 4) && ($hours % 100 < 10 || $hours % 100 >= 20)) ? 'часа' : 'часов';
+        push @parts, "$hours $hour_word";
+    }
+
+    if ($minutes > 0) {
+        my $minute_word = ($minutes % 10 == 1 && $minutes % 100 != 11) ? 'минута' :
+                         (($minutes % 10 >= 2 && $minutes % 10 <= 4) && ($minutes % 100 < 10 || $minutes % 100 >= 20)) ? 'минуты' : 'минут';
+        push @parts, "$minutes $minute_word";
+    }
+
+    # Ограничиваем вывод максимум 3 компонентами для читаемости
+    @parts = splice(@parts, 0, 3) if @parts > 3;
+
+    return join(', ', @parts);
+}
 
 1;

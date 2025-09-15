@@ -49,7 +49,7 @@ sub validate_attributes {
         $report->add_error('KeyOrValueNotPresent');
     }
 
-    if ( $args{key} =~/^_/ ) {
+    if ( $args{key} =~/^_/ && not $self->user->authenticated->is_admin ) {
         $report->add_error('KeyProhibited');
     }
 

@@ -149,6 +149,7 @@ sub job_users {
             user_id => $user->{user_id},
             prio => $settings{prio} || $task->get_prio || 100,
             event => {
+                name => 'TASK',
                 title => $task->event->{title},
                 server_gid => $task->event->{server_gid},
             },

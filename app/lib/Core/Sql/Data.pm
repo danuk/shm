@@ -278,7 +278,11 @@ sub query_for_filtering {
                     $where{ sprintf("%s->>'\$.%s'", $key, $_) } = $args{ $key }->{ $_ } for keys %{ $args{ $key } };
                 } else {
                     # Check exists key in a json object
-                    $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args{ $key }) } = { '!=', undef };
+                    if ( $args{ $key }=~s/^\!// ) {
+                        $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args{ $key }) } = { '=', undef };
+                    } else {
+                        $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args{ $key }) } = { '!=', undef };
+                    }
                 }
             } else {  # for type=(`text`, `now`, ``, ...)
                 if ( ref $args{ $key } ) {

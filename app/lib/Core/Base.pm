@@ -13,7 +13,6 @@ use Data::Dumper;
 use Core::Utils qw(
     hash_merge
     encode_json
-    hash_merge
     dots_str_to_sql
 );
 $Data::Dumper::Deepcopy = 1;
@@ -448,7 +447,8 @@ sub make_event {
     }}
 
     if ( $args{event} && $args{event}->{method} ) {
-        $args{event}->{kind}||= $self->kind;
+        $args{event}->{name} ||= uc $event_name;
+        $args{event}->{kind} ||= $self->kind;
         $event->make( %args );
     }
 

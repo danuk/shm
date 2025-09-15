@@ -407,6 +407,7 @@ sub reg {
     );
 
     $args{login} = lc( $args{login} );
+    $args{settings}{ip} = get_user_ip();
 
     my $password = $self->crypt_password(
         salt => $args{login},
@@ -548,7 +549,7 @@ sub payment {
     my $pay_id;
     unless ( $pay_id = $pays->add( %args ) ) {
         get_service('report')->add_error("Can't make a payment");
-        $self->logger->debug( %args );
+        $self->logger->error( %args );
         return undef;
     }
 

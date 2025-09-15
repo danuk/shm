@@ -285,6 +285,7 @@ sub ssh_init {
         template_id => undef,
         event_name => 'init',
         pipeline_id => get_service('console')->new_pipe,
+        timeout => 600, # long time for init
         @_,
     };
 

@@ -271,6 +271,9 @@ sub retry_task {
     if ( $delayed < 900 ) {
         $delayed *= 3;  # 3s, 9s, 27s, 81s,...
         $delayed = 900 if $delayed > 900; # max 15 min
+    } else {
+        # set minimal delay for retry tasks with custom delay
+        $delayed = 3;
     }
 
     $self->set(

@@ -52,6 +52,18 @@ cmp_deeply (
 cmp_deeply (
     $user->query_for_filtering(
         user_id => 40092,
+        settings => '!a.b',
+    ),
+    {
+        user_id => 40092,
+        q/JSON_EXTRACT(settings, '$.a.b')/ => { '=', undef },
+    },
+    'Check non exits a->b in settings'
+);
+
+cmp_deeply (
+    $user->query_for_filtering(
+        user_id => 40092,
         settings => { 'a.b' => 1, 'c' => { '>', 2 } },
     ),
     {
