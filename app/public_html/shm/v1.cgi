@@ -843,6 +843,14 @@ my $routes = {
 
     },
 },
+'/admin/stats' => {
+    swagger => { tags => 'Статистика' },
+    GET => {
+        controller => 'Stats',
+        method => 'dashboard',
+        swagger => { summary => 'Панель статистики' },
+    },
+},
 '/telegram/bot' => {
     POST => {
         skip_check_auth => 1,
