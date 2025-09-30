@@ -250,6 +250,7 @@ my $routes = {
         swagger => { summary => 'Выполнить публичный шаблон с аргументами' },
     },
 },
+# метод для случаев, когда нужно сохранить ещё и settings
 '/storage/manage' => {
     swagger => { tags => 'Хранилище' },
     GET => {
@@ -354,7 +355,7 @@ my $routes = {
     PUT => {
         controller => 'USObject',
         method => 'create_for_api',
-        required => ['user_id','service_id','cost','months','settings'],
+        required => ['user_id','service_id'],
         swagger => { summary => 'Зарегистрировать услугу клиенту' },
     },
 },
@@ -1084,7 +1085,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
             $info{error} = "Can't add a new object. Perhaps it already exists?";
         }
     } elsif ( $ENV{REQUEST_METHOD} eq 'POST' || $ENV{REQUEST_METHOD} eq 'DELETE' ) {
-        if ( $user->id ) {
+        if ( $user->id && $service->can('structure') ) {
             if ( $service = $service->id( get_service_id( $service, %args ) ) ) {
                 if ( $service->lock( timeout => 3 )) {
                     push @data, $service->$method( %args );

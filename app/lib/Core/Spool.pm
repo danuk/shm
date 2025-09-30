@@ -33,7 +33,7 @@ sub structure {
         },
         prio => {           # приоритет команды
             type => 'number',
-            default => 0,
+            default => 100,
             title => 'приоритет команды',
             description => 'чем выше приоритет, тем раньше выполнится задача',
         },

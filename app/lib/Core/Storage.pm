@@ -72,8 +72,17 @@ sub _add_or_replace {
     } else {
         $data = delete $args{ PUTDATA } || delete $args{ POSTDATA };
         if ( $ENV{CONTENT_TYPE} =~/application\/json/i ) {
+            unless ( decode_json( $data ) ) {
+                get_service('report')->add_error("Incorrect JSON data");
+                return undef;
+            }
             $args{settings}->{json} = 1;
         }
+    }
+
+    unless ( $args{name} ) {
+        get_service('report')->add_error("Name is required");
+        return undef;
     }
 
     if ( $method eq 'add' ) {

@@ -21,15 +21,21 @@ use SHM;
 my $srv = SHM->new( user_id => 40092 )->services;
 
 use Core::Billing;
+use Core::Utils qw/days_in_months/;
 
 my $us = create_service( service_id => 4, cost => 1004.129, months => 0.01 );
 my $ret = $srv->id( $us->id )->with('withdraws')->get;
 
+my $days_in_months = days_in_months('2017-01-01');
+my $one_day_cost = sprintf("%.2f", 1004.129 / $days_in_months);
+
+is( $days_in_months, 31 );
+is( $one_day_cost, 32.39 );
+
 is( $ret->{ $us->id }->{expire}, '2017-01-01 23:59:59', 'Check expire service for months = 0.01 (one day)' );
 is( $ret->{ $us->id }->{service_id}, 4, 'Check service_id for new service' );
 is( $ret->{ $us->id }->{withdraws}->{months}, 0.01, 'Check months for one day' );
-is( $ret->{ $us->id }->{withdraws}->{total}, 32.39, 'Check total for one day' );
-
+is( $ret->{ $us->id }->{withdraws}->{total}, $one_day_cost, 'Check total for one day' );
 
 my $us = create_service( service_id => 1, cost => 1000, months => 1 );
 my $ret = $srv->id( $us->id )->with('withdraws')->get;

@@ -906,14 +906,15 @@ sub create {
         get_smart_args( @_ ),
     );
 
-    unless( $self->srv('service', _id => $args{service_id} )) {
+    my $service = get_service('service', _id => $args{service_id} );
+    unless( $service ) {
         report->add_error('service not exists:', $args{service_id} );
         return undef;
     }
 
     unless ( get_service('user')->authenticated->is_admin ) {
         if ( $args{check_allow_to_order} ) {
-            my $allowed_services_list = $self->srv('service')->price_list;
+            my $allowed_services_list = $service->price_list;
             unless ( exists $allowed_services_list->{ $args{service_id} } ) {
                 report->status( 403 );
                 report->add_error('The service is prohibited for registration' );
@@ -1001,6 +1002,7 @@ sub make_custom_event {
         delay => 0,
         template_id => undef,
         transport => undef,
+        settings => {},
         get_smart_args( @_ ),
     );
 
@@ -1011,12 +1013,13 @@ sub make_custom_event {
 
     return $self->srv('spool')->create(
         prio => $args{prio} || 100,
-        $args{delay} ? ( delayed => $args{delay} ) : (),
+        $args{delay} ? ( delayed => $args{delay}, executed => now ) : (), # set executed for calculating next run
         event => {
             name => $args{name} || $args{event},
             title => $args{title},
         },
         settings => {
+            %{ $args{settings} || {} },
             $args{transport} ? (transport => lc $args{transport}) : (),
             $args{template_id} ? (template_id => $args{template_id}) : (),
             $server ? (server_id => $self->server->id) : (),

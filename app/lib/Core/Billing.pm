@@ -273,7 +273,6 @@ sub is_pay {
 
     $user->set_bonus( bonus => -$bonus, comment => { withdraw_id => $wd->id } );
     $user->set_balance( balance => -$total );
-    #$user->add_bonuses_for_partners( $total );
 
     $wd->set(
         bonus => $bonus,
@@ -489,35 +488,56 @@ sub money_back {
     return undef unless $self->get_withdraw_id;
 
     my $service = get_service('service', _id => $self->get_service_id );
+    return undef unless $service;
     return undef if $service->settings->{no_money_back};
 
     my $wd = $self->withdraw;
     return undef unless $wd;
 
-    my %wd = ( $service->get, $wd->get );
+    my %wd = $wd->get;
     return undef unless $wd{end_date};
     return undef if $wd{end_date} le $date;
     return undef if $wd{create_date} gt $date;
 
-    my $ret = calc_total_by_date_range(
+    my $calc = calc_total_by_date_range(
         $self->billing,
+        %{ $service->get },
         %wd,
         end_date => $date,
     );
 
-    my $delta = $wd{total} - $ret->{total};
+    my ($delta_money, $delta_bonus) = (0, 0);
 
-    return undef if $delta < 0;
+    if ($calc->{total} > $wd{total}) {
+        $delta_money = $wd{total};
+        $wd{total} = 0;
+
+        $delta_bonus = $calc->{total} > $wd{bonus} ? $wd{bonus} : $calc->{total};
+        $wd{bonus} -= $delta_bonus;
+        $wd{bonus} = 0 if $wd{bonus} < 0;
+    } else {
+        $delta_money = $wd{total} - $calc->{total};
+        $wd{total} = $calc->{total};
+    }
+
+    $wd{months}   = $calc->{months};
+    $wd{end_date} = $date;
 
     $wd->set(
-        months => $ret->{months},
-        total => $ret->{total},
-        end_date => $date,
+        months   => $wd{months},
+        end_date => $wd{end_date},
+        total    => $wd{total},
+        bonus    => $wd{bonus},
     );
 
-    $self->user->set_balance( balance => $delta );
+    $self->user->set_balance(
+        balance => $delta_money,
+        bonus   => $delta_bonus,
+    );
 
-    return $delta;
+    $self->user->bonus->add( bonus => $delta_bonus, comment => { withdraw_id => $wd->id } ) if $delta_bonus;
+
+    return $delta_money, $delta_bonus;
 }
 
 sub calc_end_date_by_months {

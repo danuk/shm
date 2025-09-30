@@ -5,6 +5,14 @@ use utf8;
 use MIME::Base64 ();
 use CGI;
 use CGI::Cookie;
+use List::Util qw(
+    first
+    any
+    all
+    notall
+    none
+    uniq
+);
 
 use base qw(Exporter);
 
@@ -53,6 +61,15 @@ our @EXPORT_OK = qw(
     print_header
     print_json
     get_user_ip
+
+    first
+    any
+    all
+    notall
+    none
+    uniq
+
+    uniq_by_key
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -661,6 +678,14 @@ sub format_time_diff {
     @parts = splice(@parts, 0, 3) if @parts > 3;
 
     return join(', ', @parts);
+}
+
+sub uniq_by_key {
+    my ($array_ref, $key) = @_;
+    my %seen;
+    return grep {
+        !$seen{ $_->{$key} }++
+    } @$array_ref;
 }
 
 1;

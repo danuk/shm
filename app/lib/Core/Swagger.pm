@@ -3,6 +3,9 @@ package Core::Swagger;
 use v5.14;
 use parent 'Core::Base';
 use Core::System::ServiceManager qw( get_service );
+use Core::Utils qw(
+    uniq_by_key
+);
 
 sub gen_swagger_json {
     my $self = shift;
@@ -105,7 +108,7 @@ sub gen_swagger_json {
             my @required = @{ $info->{$method}->{required} || [] };
 
             # Request section
-            if ( $method eq 'GET' ) {
+            if ( $method eq 'GET' || $method eq 'DELETE' ) {
                 for ( @required ) {
                     push @request_params, get_request_params( $_, $structure, required => 1 );
                 };
@@ -121,10 +124,10 @@ sub gen_swagger_json {
                     }
                 }
 
-                push @request_params, get_pagination_params();
+                push @request_params, get_pagination_params() if $method ne 'DELETE';
 
-            } elsif ( $info->{$method}->{required} &&
-                ( $info->{$method}->{method} || $method eq 'DELETE' ) &&
+            } elsif ( exists $info->{$method}->{required} && # required может быть и пустым
+                $info->{$method}->{method} &&
                 !$info->{$method}->{only_text_plain}
             ) {
                 # add required fields to requestBody
@@ -143,7 +146,7 @@ sub gen_swagger_json {
                             }
                         },
                     }
-                } if ( $method ne 'DELETE' || @required );
+                };
             } else {
                 # add standart JSON fields from controller schema
                 $json{paths}{$route}{ lc $method}{requestBody} = {
@@ -163,10 +166,11 @@ sub gen_swagger_json {
                     schema => {
                         type => 'string',
                     },
-                };
+                } if $method ne 'DELETE';
             }
 
-            $json{paths}{$route}{ lc $method}{parameters} = \@request_params;
+            my @uniq_request_params = uniq_by_key( \@request_params, 'name' );
+            $json{paths}{$route}{ lc $method}{parameters} = \@uniq_request_params;
         }
     }
     return \%json;

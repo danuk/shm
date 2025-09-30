@@ -145,4 +145,74 @@ subtest 'Moneyback' => sub {
     is ( $balance_after_money_back, -381.56, 'Check balance after money back');
 };
 
+subtest 'Moneyback with bonuses' => sub {
+    $user->set( balance => 100, bonus => 800 );
+
+    is($user->get_balance, 100);
+    is($user->get_bonus, 800);
+
+    my $service = get_service('service')->add(
+        name => 'test service',
+        cost => 900,
+        period => 3,
+        category => 'test',
+        no_discount => 1,
+    );
+
+    Test::MockTime::set_fixed_time('2022-01-01T00:00:00Z');
+
+    my $us = create_service(
+        service_id => $service->id,
+        months => 3,
+    );
+
+    my $wd = $us->withdraw;
+    cmp_deeply( scalar $wd->get,
+        {
+              user_id => 40092,
+              bonus => 800,
+              months => 3,
+              qnt => 1,
+              discount => 0,
+              create_date => '2022-01-01 00:00:00',
+              withdraw_date => '2022-01-01 00:00:00',
+              end_date => '2022-03-31 23:59:59',
+              cost => 900,
+              total => 100,
+              user_service_id => $us->id,
+              service_id => $service->id,
+              withdraw_id => $wd->id,
+          }
+    , 'Check withdraw');
+
+    Test::MockTime::set_fixed_time('2022-02-01T00:00:00Z');
+    $us->set( expire => now );
+
+    money_back( $us );
+
+    cmp_deeply( scalar $wd->get,
+        {
+              user_id => 40092,
+              bonus => 500,
+              months => '1.00',
+              qnt => 1,
+              discount => 0,
+              create_date => '2022-01-01 00:00:00',
+              withdraw_date => '2022-01-01 00:00:00',
+              end_date => '2022-02-01 00:00:00',
+              cost => 900,
+              total => 0,
+              user_service_id => $us->id,
+              service_id => $service->id,
+              withdraw_id => $wd->id,
+        }
+    , 'Check withdraw after money back');
+
+    is($user->get_balance, 100, 'Check balance after money back');
+    is($user->get_bonus, 300, 'Check bonuses after money back');
+
+    #use Data::Dumper;
+    #say Dumper( $user->bonus->list );
+};
+
 done_testing();

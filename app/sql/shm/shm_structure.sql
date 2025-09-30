@@ -184,8 +184,7 @@ CREATE TABLE `spool` (
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
   `settings` json DEFAULT NULL,
-  KEY idx_spool_prio (prio),
-  KEY idx_spool_status (status),
+  KEY idx_spool_select (`prio`,`status`,`delayed`,`executed`),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
@@ -331,7 +330,7 @@ CREATE TABLE IF NOT EXISTS `config` (
   `key` char(32) NOT NULL,
   `value` json DEFAULT NULL,
   PRIMARY KEY (`key`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `sessions` (
   `id` char(32) NOT NULL,

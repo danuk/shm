@@ -80,6 +80,12 @@ sub profile {
     return $self;
 }
 
+# for templates (always return array ref)
+sub profiles {
+    my $self = shift;
+    return [ $self->user_profiles() ];
+}
+
 sub user_profiles {
     my $self = shift;
 
