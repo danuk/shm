@@ -66,6 +66,8 @@ use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use Clone 'clone';
 use Date::Calc qw(
     Add_Delta_YMDHMS
+    N_Delta_YMDHMS
+    Today_and_Now
 );
 
 our %in;
@@ -594,73 +596,24 @@ sub get_user_ip {
 }
 
 sub format_time_diff {
-    my $target_date = shift || return '';
-    my $base_date = shift || now();
+    my $target_date = shift or return '';
+    my ($y1, $m1, $d1, $H1, $M1, $S1) = $target_date =~ /^(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)$/;
+    my ($y2, $m2, $d2, $H2, $M2, $S2) = Today_and_Now();
 
-    # Преобразуем даты в unix timestamp
-    my $target_time = string_to_utime($target_date);
-    my $base_time = string_to_utime($base_date);
+    my ($Dy,$Dm,$Dd,$Dh,$Dmin,$Ds) = N_Delta_YMDHMS($y2,$m2,$d2,$H2,$M2,$S2, $y1,$m1,$d1,$H1,$M1,$S1);
 
-    # Вычисляем разность в секундах
-    my $diff = $target_time - $base_time;
-    my $is_future = $diff > 0;
-    $diff = abs($diff);
-
-    # Если разность меньше минуты, возвращаем "менее минуты"
-    return 'менее минуты' if $diff < 60;
-
-    # Вычисляем компоненты времени
-    my $years = int($diff / (365.25 * 24 * 3600));
-    $diff %= (365.25 * 24 * 3600);
-
-    my $months = int($diff / (30.44 * 24 * 3600));
-    $diff %= (30.44 * 24 * 3600);
-
-    my $days = int($diff / (24 * 3600));
-    $diff %= (24 * 3600);
-
-    my $hours = int($diff / 3600);
-    $diff %= 3600;
-
-    my $minutes = int($diff / 60);
-
-    # Формируем строку результата
     my @parts;
 
-    if ($years > 0) {
-        my $year_word = $years == 1 ? 'год' :
-                       ($years >= 2 && $years <= 4) ? 'года' : 'лет';
-        push @parts, "$years $year_word";
-    }
+    push @parts, "$Dy " . ($Dy == 1 ? 'год' : $Dy >= 2 && $Dy <= 4 ? 'года' : 'лет') if $Dy;
+    push @parts, "$Dm " . ($Dm == 1 ? 'месяц' : $Dm >= 2 && $Dm <= 4 ? 'месяца' : 'месяцев') if $Dm;
+    push @parts, "$Dd " . (($Dd % 10 == 1 && $Dd % 100 != 11) ? 'день'
+                     : ($Dd % 10 >= 2 && $Dd % 10 <= 4 && ($Dd % 100 < 10 || $Dd % 100 >= 20)) ? 'дня' : 'дней') if $Dd;
+    push @parts, "$Dh " . (($Dh % 10 == 1 && $Dh % 100 != 11) ? 'час'
+                     : ($Dh % 10 >= 2 && $Dh % 10 <= 4 && ($Dh % 100 < 10 || $Dh % 100 >= 20)) ? 'часа' : 'часов') if $Dh;
+    push @parts, "$Dmin " . (($Dmin % 10 == 1 && $Dmin % 100 != 11) ? 'минута'
+                     : ($Dmin % 10 >= 2 && $Dmin % 10 <= 4 && ($Dmin % 100 < 10 || $Dmin % 100 >= 20)) ? 'минуты' : 'минут') if $Dmin;
 
-    if ($months > 0) {
-        my $month_word = $months == 1 ? 'месяц' :
-                        ($months >= 2 && $months <= 4) ? 'месяца' : 'месяцев';
-        push @parts, "$months $month_word";
-    }
-
-    if ($days > 0) {
-        my $day_word = ($days % 10 == 1 && $days % 100 != 11) ? 'день' :
-                      (($days % 10 >= 2 && $days % 10 <= 4) && ($days % 100 < 10 || $days % 100 >= 20)) ? 'дня' : 'дней';
-        push @parts, "$days $day_word";
-    }
-
-    if ($hours > 0) {
-        my $hour_word = ($hours % 10 == 1 && $hours % 100 != 11) ? 'час' :
-                       (($hours % 10 >= 2 && $hours % 10 <= 4) && ($hours % 100 < 10 || $hours % 100 >= 20)) ? 'часа' : 'часов';
-        push @parts, "$hours $hour_word";
-    }
-
-    if ($minutes > 0) {
-        my $minute_word = ($minutes % 10 == 1 && $minutes % 100 != 11) ? 'минута' :
-                         (($minutes % 10 >= 2 && $minutes % 10 <= 4) && ($minutes % 100 < 10 || $minutes % 100 >= 20)) ? 'минуты' : 'минут';
-        push @parts, "$minutes $minute_word";
-    }
-
-    # Ограничиваем вывод максимум 3 компонентами для читаемости
-    @parts = splice(@parts, 0, 3) if @parts > 3;
-
-    return join(', ', @parts);
+    return @parts ? join(', ', @parts[0..2]) : 'менее минуты';
 }
 
 1;
