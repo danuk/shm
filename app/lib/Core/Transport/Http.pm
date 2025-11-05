@@ -190,7 +190,16 @@ sub _http {
         %args,
     );
 
-    return $response->json_content || $response->decoded_content;
+    if ($args{full_response}) {
+        return {
+            http_headers     => { $response->headers->flatten },
+            http_code        => $response->code,
+            http_status_line => $response->status_line,
+            body             => $response->json_content || $response->decoded_content,
+        };
+    } else {
+        return $response->json_content || $response->decoded_content;
+    }
 }
 
 sub get { return shift->_http( 'get', @_ ) }
