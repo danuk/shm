@@ -3,6 +3,13 @@ services:
     image: "${SHM_REPO}/shm-api:${CORE_VERSION}"
     pull_policy: always
     restart: always
+#    logging:
+#      driver: syslog
+#      options:
+#        syslog-address: "udp://localhost:514"
+#        tag: "shm-api"
+#    ports:
+#      - "${API_PORT}:80"
     depends_on:
       - core
   core:
