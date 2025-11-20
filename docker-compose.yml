@@ -3,6 +3,9 @@ services:
     image: "${SHM_REPO}/shm-api:${CORE_VERSION}"
     pull_policy: always
     restart: always
+    environment:
+      TRUSTED_IPS: ""
+      ENABLE_RATE_LIMIT: "${ENABLE_RATE_LIMIT:-false}"
     depends_on:
       - core
   core:

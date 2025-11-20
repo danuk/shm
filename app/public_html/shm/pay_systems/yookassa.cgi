@@ -11,6 +11,20 @@ use Core::Utils qw(
     encode_json
     decode_json
     get_random_value
+    hash_merge
+    get_user_ip
+    is_ip_allowed
+);
+
+# https://yookassa.ru/developers/using-api/webhooks#ip
+my @allowed_networks = qw(
+    185.71.76.0/27
+    185.71.77.0/27
+    77.75.153.0/25
+    77.75.156.11/32
+    77.75.156.35/32
+    77.75.154.128/25
+    2a02:5180::/32
 );
 
 use SHM qw(:all);
@@ -20,11 +34,17 @@ my $user = SHM->new( skip_check_auth => 1 );
 my $ps = 'yookassa';
 
 my $config = get_service('config', _id => 'pay_systems')->get_data;
+
 my $ps_name = $vars{ps} || $ps;
-my %ps_config = (
-    %{$config->{$ps}},
-    $vars{ps} ? %{$config->{$ps_name}} : (),
-);
+unless ( ref $config->{$ps_name} eq 'HASH' ) {
+    print_json({ status => 400, msg => "Error: payment system `$ps_name` not configured" });
+    exit 0;
+}
+
+my %ps_config = %{ hash_merge(
+    $config->{$ps},
+    $vars{ps} ? $config->{$ps_name} : {},
+)};
 
 if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
     if ( $vars{user_id} ) {
@@ -152,9 +172,14 @@ if ( $vars{action} eq 'create' || $vars{action} eq 'payment' ) {
     exit 0;
 }
 
+unless (is_ip_allowed( get_user_ip(), \@allowed_networks)) {
+    print_json({ status => 403, msg => "Error: forbidden " . get_user_ip() });
+    exit 0;
+}
+
 unless ( $vars{object} ) {
     print_json({ status => 400, msg => 'Error: bad request' });
-    exit;
+    exit 0;
 }
 
 my $account_id = $ps_config{account_id};

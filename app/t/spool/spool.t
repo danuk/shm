@@ -28,6 +28,7 @@ no warnings qw(redefine);
             host => $args{host},
             port => $args{port},
             key_id => $args{key_id},
+            info => 'MOCK server',
         },
         cmd => $args{cmd},
         ret_code => 0,
@@ -43,6 +44,7 @@ my %task1 = (
             category => 'dns',
             cmd => 'dns update',
         },
+        info => 't/spool/spool.t',
     },
     settings => {
         user_service_id => 16,
@@ -59,6 +61,7 @@ my %task2 = (
             category => 'dns',
             cmd => 'dns update',
         },
+        info => 't/spool/spool.t',
     },
     settings => {
         user_service_id => 16,
@@ -75,6 +78,7 @@ my $task3 = get_service('task')->res({
             category => 'dns',
             cmd => 'dns update',
         },
+        info => 't/spool/spool.t',
     },
     settings => {
         user_service_id => 16,

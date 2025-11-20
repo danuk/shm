@@ -7,6 +7,7 @@ use Core::Billing::Honest qw(
     calc_month_cost
     calc_end_date_by_months
     calc_total_by_date_range
+    calc_period_by_total
 );
 
 $ENV{SHM_TEST} = 1;
@@ -41,6 +42,7 @@ is( calc_end_date_by_months('2017-01-01 00:00:00', '0.0101'), '2017-01-02 00:59:
 is( calc_end_date_by_months('2023-11-19 22:17:12', '1'), '2023-12-20 13:25:45');
 is( calc_end_date_by_months('2023-11-19 22:17:12', '2'), '2024-01-20 13:25:45');
 is( calc_end_date_by_months('2023-11-19 22:17:12', '12'), '2024-11-19 22:17:11');
+is( calc_end_date_by_months('2025-10-11 06:37:40', '12'), '2026-10-11 06:37:39');
 
 is_deeply( calc_month_cost( from_date => '2017-04-01 00:00:00', cost => '3000' ), {
     start => '2017-04-01 00:00:00',
@@ -234,5 +236,126 @@ cmp_deeply( calc_total_by_date_range(
         months => '3.02',
     }
 ,'calc_total_by_date_range (calc zero cost)');
+
+# Tests for calc_period_by_total (Honest billing with calendar days)
+is( calc_period_by_total(
+        total => 500,
+        cost => 1000,
+        period => 1,
+        reference_date => '2017-01-01 00:00:00'
+    ), '0.16', 'calc_period_by_total: half cost in January (31 days)'
+);
+
+is( calc_period_by_total(
+        total => 500,
+        cost => 1000,
+        period => 1,
+        reference_date => '2017-02-01 00:00:00'
+    ), '0.15', 'calc_period_by_total: half cost in February (28 days)'
+);
+
+is( calc_period_by_total(
+        total => 500,
+        cost => 1000,
+        period => 1,
+        reference_date => '2016-02-01 00:00:00'  # leap year
+    ), '0.15', 'calc_period_by_total: half cost in February leap year (29 days)'
+);
+
+is( calc_period_by_total(
+        total => 1000,
+        cost => 1000,
+        period => 1,
+        reference_date => '2017-01-01 00:00:00'
+    ), '1.00', 'calc_period_by_total: full month cost'
+);
+
+is( calc_period_by_total(
+        total => 2000,
+        cost => 1000,
+        period => 1,
+        reference_date => '2017-01-01 00:00:00'
+    ), '2.00', 'calc_period_by_total: two months cost'
+);
+
+is( calc_period_by_total(
+        total => 1500,
+        cost => 1000,
+        period => 1,
+        reference_date => '2017-01-01 00:00:00'
+    ), '1.15', 'calc_period_by_total: 1.5 months cost'
+);
+
+is( calc_period_by_total(
+        total => 100,
+        cost => 3100,
+        period => 1,
+        reference_date => '2017-01-01 00:00:00'
+    ), '0.01', 'calc_period_by_total: small amount - should be 1 day'
+);
+
+# Edge cases
+is( calc_period_by_total(
+        total => 0,
+        cost => 1000,
+        period => 1
+    ), '0.00', 'calc_period_by_total: zero total'
+);
+
+is( calc_period_by_total(
+        total => 100,
+        cost => 0,
+        period => 1
+    ), '0.00', 'calc_period_by_total: zero cost'
+);
+
+is( calc_period_by_total(
+        total => 100,
+        cost => undef,
+        period => 1
+    ), '0.00', 'calc_period_by_total: undefined cost'
+);
+
+is( calc_period_by_total(
+        total => undef,
+        cost => 1000,
+        period => 1
+    ), '0.00', 'calc_period_by_total: undefined total'
+);
+
+# Test with different periods
+is( calc_period_by_total(
+        total => 100,
+        cost => 300,
+        period => 3,  # 300 for 3 months = 100 per month
+        reference_date => '2017-01-01 00:00:00'
+    ), '1.00', 'calc_period_by_total: fractional period - 3 months'
+);
+
+# Test different months to show calendar effect
+is( calc_period_by_total(
+        total => 1000,
+        cost => 3100,
+        period => 1,
+        reference_date => '2017-04-01 00:00:00'  # April has 30 days
+    ), '0.10', 'calc_period_by_total: April (30 days) - should get ~10 days'
+);
+
+is( calc_period_by_total(
+        total => 3000,
+        cost => 3100,
+        period => 1,
+        reference_date => '2017-01-01 00:00:00'  # January has 31 days
+    ), '0.30', 'calc_period_by_total: January (31 days) - should get ~30 days'
+);
+
+# Test month transition - cost spans multiple months
+is( calc_period_by_total(
+        total => 3500,
+        cost => 1000,
+        period => 1,
+        reference_date => '2017-01-15 00:00:00'
+    ), '3.15', 'calc_period_by_total: 3.5 months from mid-January'
+);
 
 done_testing();

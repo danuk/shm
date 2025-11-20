@@ -8,7 +8,9 @@ services:
     restart: always
     links:
       - core
-   # environment:
+    environment:
+      TRUSTED_IPS: ""
+      ENABLE_RATE_LIMIT: "false"
    #   RESOLVER: 8.8.8.8
   core:
     image: danuk/shm-core:latest

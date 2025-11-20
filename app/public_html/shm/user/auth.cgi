@@ -81,7 +81,7 @@ sub create_cookie {
                 -value => $value,
                 -expires =>  '+1M',
                 -secure => get_service('config')->file->{session}->{'ssl'},
-#                -samesite => "Lax",
+                # -httponly => 1,  # SECURITY: Защита от XSS
         );
         return $cookie;
 }

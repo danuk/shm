@@ -16,6 +16,8 @@ use Core::Utils qw(
     passgen
     blessed
     now
+    parse_headers
+    qrencode
 );
 
 sub init {
@@ -69,7 +71,7 @@ sub profile {
 
     if ( my $profile = $config->{ $name } ) {
         $self->{token} = $profile->{token};
-        $self->{chat_id} ||= $profile->{chat_id} if $profile->{chat_id};
+        $self->{chat_id} = $profile->{chat_id} if $profile->{chat_id};
     } else {
         $self->{token} = $config->{token}; # for backward compatible
     }
@@ -544,6 +546,7 @@ sub auth {
                 chat_id => $self->chat_id, # for backward compatible
                 $self->{profile} => {
                     chat_id => $self->chat_id,
+                    status => 'member',
                 },
             },
         },
@@ -585,6 +588,16 @@ sub tg_user {
     return $user;
 }
 
+sub verify_telegram_secret {
+    my $self = shift;
+
+    if ( my $expected_token = $self->config->{ $self->profile }->{secret} ) {
+        my $secret_token = parse_headers->{'x_telegram_bot_api_secret_token'};
+        return $secret_token eq $expected_token;
+    }
+    return 1;
+}
+
 sub process_message {
     my $self = shift;
     my %args = (
@@ -606,6 +619,15 @@ sub process_message {
     $self->{chat_id} = $chat_id if $chat_id;
 
     $self->profile( $args{tg_profile} || $args{template} );
+
+    unless ( $self->verify_telegram_secret ) {
+        return {
+            method => 'sendMessage',
+            chat_id => $self->{chat_id},
+            parse_mode => 'MarkdownV2',
+            text => "Webhook verification failed",
+        }
+    }
 
     my $template = $self->template( $args{template} );
     unless ( $template ) {
@@ -898,7 +920,8 @@ sub uploadPhotoFromStorage {
     return undef unless $data;
 
     if ( delete $args{format} eq 'qr_code_png' ) {
-        $data = qx(echo "$data" | qrencode -t PNG -o -);
+        my $result = qrencode($data, format => 'PNG');
+        $data = $result->{data} if $result->{success};
     }
 
     return $self->uploadPhoto(
@@ -920,7 +943,8 @@ sub printQrCode {
     return undef unless $data;
 
     if ( delete $args{format} eq 'qr_code_png' ) {
-        $data = qx(echo "$data" | qrencode -t PNG -o -);
+        my $result = qrencode($data, format => 'PNG');
+        $data = $result->{data} if $result->{success};
     }
 
     return $self->uploadPhoto(
@@ -1097,6 +1121,7 @@ sub webapp_auth {
 
     unless ( $args{initData} ) {
         report->error("bad request");
+        $self->set_user_fail_attempt( 'webapp_auth', 3600 ); # 5 fails/hour
         return undef;
     }
 
@@ -1108,6 +1133,7 @@ sub webapp_auth {
 
         if ( $tg_user->{id} ne $self->user_tg_settings->{user_id} ) {
             report->error("Telegram WebApp auth error: user_id doesn't match");
+            $self->set_user_fail_attempt( 'webapp_auth', 3600 ); # 5 fails/hour
             return undef;
         }
     } else {
@@ -1119,6 +1145,7 @@ sub webapp_auth {
         );
         unless ( $user ) {
             logger->error("Telegram WebApp auth error: user not found");
+            $self->set_user_fail_attempt( 'webapp_auth', 3600 ); # 5 fails/hour
             return undef;
         }
 
@@ -1137,6 +1164,7 @@ sub webapp_auth {
 
     unless ( $hex eq $hash ) {
         report->error('Telegram WebApp auth error');
+        $self->set_user_fail_attempt( 'webapp_auth', 3600 ); # 5 fails/hour
         return undef;
     }
 
@@ -1155,7 +1183,21 @@ sub web_auth {
 
     my $profile = $args{profile};
 
-    my %in = CGI->new( $args{query} )->Vars();
+    my @parameters = qw( id first_name last_name username photo_url auth_date hash );
+
+    my %in;
+    use URI::Escape;
+
+    if (grep { exists $args{$_} } qw(id auth_date hash)) {
+        for my $k (@parameters) {
+            $in{$k} = uri_unescape($args{$k}) if exists $args{$k};
+        }
+    } elsif ($args{query}) {
+        for my $pair (split /&/, $args{query}) {
+            my ($k, $v) = split /=/, $pair, 2;
+            $in{$k} = uri_unescape($v);
+        }
+    }
 
     my $hash = delete $in{hash};
 
@@ -1170,6 +1212,12 @@ sub web_auth {
 
     unless ($hex eq $hash) {
         report->error('Telegram WebApp auth error');
+        $self->set_user_fail_attempt( 'web_auth', 3600 ); # 5 fails/hour
+        return undef;
+    }
+
+    if (time - $in{auth_date} > 86400) {
+        report->error("Telegram auth data too old");
         return undef;
     }
 
@@ -1212,6 +1260,7 @@ sub web_auth {
 
     if ( !$args{register_if_not_exists} && !$user ) {
         logger->error("Telegram WebApp auth error: user not found");
+        $self->set_user_fail_attempt( 'web_auth', 3600 ); # 5 fails/hour
         return undef;
     }
 

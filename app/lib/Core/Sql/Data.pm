@@ -19,6 +19,7 @@ our @EXPORT = qw(
     query_select
     query_for_order
     query_for_filtering
+    prepare_query_for_filtering
     quote
     res_by_arr
     insert_id
@@ -84,7 +85,13 @@ sub db_connect {
 sub configure {
     my $dbh = shift;
 
-    $dbh->do( sprintf( "SET time_zone = '%s'", $ENV{TZ}) );
+    my @sql = (
+        "SET transaction_isolation = 'READ-COMMITTED'",
+        "SET sort_buffer_size = 256000000",
+        "SET time_zone = '$ENV{TZ}'",
+    );
+
+    $dbh->do( $_ ) for @sql;
 }
 
 sub dbh {
@@ -256,43 +263,155 @@ sub query_for_order {
     return [ $field => $args{sort_direction} ];
 }
 
+sub prepare_query_for_filtering {
+    my $data = shift;
+
+    return {} unless ref $data eq 'HASH';
+
+    my %result;
+
+    for my $field (keys %$data) {
+        my $value = $data->{$field};
+
+        if (ref $value eq 'SCALAR') {
+            if ($$value eq 'isEmpty') {
+                # Поле пустое (NULL или пустая строка)
+                $result{"--COALESCE($field, '')"} = '';
+            } elsif ($$value eq 'isNotEmpty') {
+                # Поле не пустое
+                $result{"--COALESCE($field, '')"} = { '!=' => '' };
+            } elsif ($$value eq 'isNull') {
+                # Поле равно NULL
+                $result{$field} = undef;
+            } elsif ($$value eq 'isNotNull') {
+                # Поле не равно NULL
+                $result{$field} = { '!=' => undef };
+            } elsif ($$value eq 'null') {
+                # Поле равно NULL (альтернативный синтаксис)
+                $result{$field} = undef;
+            } elsif ($$value eq 'true') {
+                # Поле равно истине (для boolean полей)
+                $result{$field} = 1;
+            } elsif ($$value eq 'false') {
+                # Поле равно лжи (для boolean полей)
+                $result{$field} = 0;
+            } elsif ($$value =~ /^(lt|gt|le|ge|eq|ne):(.*)$/) {
+                # Операторы сравнения с числами: lt:5, gt:10, le:100, etc.
+                my ($op, $val) = ($1, $2);
+                my %op_map = (
+                    'lt' => '<',
+                    'gt' => '>',
+                    'le' => '<=',
+                    'ge' => '>=',
+                    'eq' => '=',
+                    'ne' => '!=',
+                );
+                $result{$field} = { $op_map{$op} => $val };
+            } elsif ($$value =~ /^between:([^:]+):([^:]+)$/) {
+                # Оператор BETWEEN: between:10:100
+                my ($min, $max) = ($1, $2);
+                $result{$field} = { '-between' => [$min, $max] };
+            } elsif ($$value eq 'isPositive') {
+                # Поле больше нуля (положительное)
+                $result{$field} = { '>' => 0 };
+            } elsif ($$value eq 'isNegative') {
+                # Поле меньше нуля (отрицательное)
+                $result{$field} = { '<' => 0 };
+            } elsif ($$value eq 'isNonNegative') {
+                # Поле больше или равно нулю (неотрицательное)
+                $result{$field} = { '>=' => 0 };
+            } elsif ($$value eq 'isNonPositive') {
+                # Поле меньше или равно нулю (неположительное)
+                $result{$field} = { '<=' => 0 };
+            } else {
+                # Неизвестное скалярное значение - передаем как есть
+                $result{$field} = $value;
+            }
+        } elsif (ref $value eq 'HASH') {
+            # Если значение уже хеш (например, операторы SQL::Abstract) - передаем как есть
+            $result{$field} = $value;
+        } else {
+            # Обычные значения передаем как есть
+            $result{$field} = $value;
+        }
+    }
+
+    return \%result;
+}
+
 sub query_for_filtering {
     my $self = shift;
-    my %args = (
+    my $args = {
         @_,
-    );
+    };
 
     return undef unless $self->can('structure');
+
+    $args = prepare_query_for_filtering( $args );
+
     my %structure = %{ $self->structure };
 
     my %where;
 
-    for my $key ( keys %args ) {
+    for my $key ( keys %$args ) {
+        if ( $key =~ /^--(.+)$/ ) {
+            $where{ $1 } = $args->{ $key };
+            next;
+        }
+
         if ( my $field = $structure{ $key } ) {
             if ( $field->{key} || $field->{type} eq 'number' ) {
-                $args{ $key } =~s/%//g;
-                $where{ $key } = $args{ $key };
+                $args->{ $key } =~s/%//g if !ref $args->{ $key };
+                $where{ $key } = $args->{ $key };
             } elsif ( $field->{type} eq 'json' ) {
-                if ( ref $args{ $key } eq 'HASH' ) {
+                if ( ref $args->{ $key } eq 'HASH' ) {
                     # Check value in the key in a json object
-                    $where{ sprintf("%s->>'\$.%s'", $key, $_) } = $args{ $key }->{ $_ } for keys %{ $args{ $key } };
+                    for my $json_key ( keys %{ $args->{ $key } } ) {
+                        my $json_value = $args->{ $key }->{ $json_key };
+                        my $field_path = sprintf("%s->>'\$.%s'", $key, $json_key);
+
+                        # Если значение является скалярной ссылкой (результат функций типа ne(), gt(), etc.)
+                        if ( ref $json_value eq 'SCALAR' ) {
+                            # Применяем prepare_query_for_filtering к значению
+                            my $prepared = prepare_query_for_filtering({ temp_field => $json_value });
+                            if ( exists $prepared->{temp_field} ) {
+                                $where{ $field_path } = $prepared->{temp_field};
+                            } else {
+                                # Если есть специальные ключи с префиксом --, обрабатываем их
+                                for my $prep_key ( keys %$prepared ) {
+                                    if ( $prep_key =~ /^--COALESCE\(temp_field,/ ) {
+                                        # Заменяем temp_field на реальный путь JSON и убираем префикс --
+                                        my $coalesce_key = $prep_key;
+                                        $coalesce_key =~ s/temp_field/$field_path/;
+                                        $coalesce_key =~ s/^--//;  # Убираем префикс --
+                                        $where{ $coalesce_key } = $prepared->{ $prep_key };
+                                    } else {
+                                        $where{ $field_path } = $prepared->{ $prep_key };
+                                    }
+                                }
+                            }
+                        } else {
+                            # Обычное значение
+                            $where{ $field_path } = $json_value;
+                        }
+                    }
                 } else {
                     # Check exists key in a json object
-                    if ( $args{ $key }=~s/^\!// ) {
-                        $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args{ $key }) } = { '=', undef };
+                    if ( $args->{ $key }=~s/^\!// ) {
+                        $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args->{ $key }) } = { '=', undef };
                     } else {
-                        $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args{ $key }) } = { '!=', undef };
+                        $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args->{ $key }) } = { '!=', undef };
                     }
                 }
             } else {  # for type=(`text`, `now`, ``, ...)
-                if ( ref $args{ $key } ) {
-                    $where{ $key } = $args{ $key };
+                if ( ref $args->{ $key } ) {
+                    $where{ $key } = $args->{ $key };
                 } else {
-                    $where{ $key }{'-like'} = $args{ $key };
+                    $where{ $key }{'-like'} = $args->{ $key };
                 }
             }
         } elsif ( $key eq '-or' ) {
-            $where{ $key } = $args{ $key };
+            $where{ $key } = $args->{ $key };
         }
     }
 
@@ -408,9 +527,11 @@ sub _set {
     quote_where_keys( $args{where} );
     my ( $where, @bind ) = $sql->where( delete $args{where} );
 
-    my $data = join(',', map( "`$_`=?", keys %args ) );
+    my @keys = sort keys %args;
+    my @values = @args{@keys};
+    my $data = join(',', map( "`$_`=?", @keys ) );
 
-    return $self->do("UPDATE $table SET $data $where", values %args, @bind );
+    return $self->do("UPDATE $table SET $data $where", @values, @bind );
 }
 
 sub _delete {
@@ -459,14 +580,17 @@ sub _add {
     $args{table}||= $self->table;
     my $table = delete $args{table};
 
-    my $fields = join(',', map( "`$_`", keys %args ) );
-    my $values = join(',', map('?',1..scalar( keys %args ) ));
+    my @keys = sort keys %args;
+    my @values = @args{@keys};
+    my $fields = join(',', map( "`$_`", @keys ) );
+    my $placeholders = join(',', map('?', @keys) );
 
-    my $sth = $self->do("INSERT INTO $table ($fields) VALUES($values)", values %args );
+    my $sth = $self->do("INSERT INTO $table ($fields) VALUES($placeholders)", @values );
     return undef unless $sth;
 
-    if ( $args{ $self->get_table_key } ) {
-        return $args{ $self->get_table_key };
+    my $table_key = $self->get_table_key;
+    if ( $table_key && exists $args{ $table_key } ) {
+        return $args{ $table_key };
     }
     return $self->insert_id;
 }
@@ -474,7 +598,7 @@ sub _add {
 sub quote_where_keys {
     my $where = shift;
 
-    for ( keys %{ $where || {} } ) {
+    for ( sort keys %{ $where || {} } ) {
         $where->{ "`$_`" } = delete $where->{ $_ } if /^[a-z]+$/;
     }
 }

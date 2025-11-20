@@ -7,6 +7,7 @@ use Core::Const;
 
 sub job_prolongate {
     my $self = shift;
+    my $task = shift;
 
     return undef, { error => 'This task must be run under admin' } unless $self->user->authenticated->is_admin;
     my $spool = get_service('spool');
@@ -21,21 +22,25 @@ sub job_prolongate {
             $_->{expire},
         );
 
+        delete $_->{settings}; # do not save settings into event
+
         $spool->add(
             user_id => $_->{user_id},
             prio => 50,
             event => {
+                name => 'SYSTEM',
                 title => 'user service prolongate event',
                 kind => 'Jobs',
                 method => 'job_prolongate_event',
+                task_id => $task->id,
             },
             settings => {
-                user_service_id => $_->{user_service_id},
+                %{ $_ },
             },
         );
     }
 
-    return SUCCESS, { msg => 'successful' };
+    return SUCCESS, { msg => 'successful', affected_count => scalar @arr };
 }
 
 sub job_prolongate_event {
@@ -109,9 +114,11 @@ sub job_make_forecasts {
             user_id => $u->id,
             prio => 110,
             event => {
+                name => 'SYSTEM',
                 title => 'user forecast event',
                 kind => 'Jobs',
                 method => 'job_make_forecast_event',
+                task_id => $task->id,
             },
         );
 
@@ -152,6 +159,7 @@ sub job_users {
                 name => 'TASK',
                 title => $task->event->{title},
                 server_gid => $task->event->{server_gid},
+                task_id => $task->id,
             },
             settings => \%settings,
         );

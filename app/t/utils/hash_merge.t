@@ -32,4 +32,13 @@ my $h11 = { a => { y => 5 }, b => 7 };
 my $merged6 = hash_merge({%$h10}, $h11);
 is_deeply($merged6, { a => { y => 5 }, b => 7 }, 'merge with different structure (array vs hash, hash vs scalar)');
 
+my $merged7 = hash_merge('', $h11);
+is_deeply($merged7, $h11, 'merge left empty');
+
+my $merged8 = hash_merge($h10, '');
+is_deeply($merged8, $h10, 'merge right empty');
+
+my $merged9 = hash_merge('', '');
+is_deeply($merged9, {}, 'merge empty');
+
 done_testing;

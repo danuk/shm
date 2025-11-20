@@ -7,6 +7,7 @@ use Core::Const;
 use Core::Utils qw( now );
 use Core::Task;
 use Core::Utils;
+use Time::HiRes qw(time);
 
 sub table { return 'spool' };
 
@@ -89,7 +90,17 @@ sub add {
         get_smart_args( @_ ),
     );
 
-    $args{status} = TASK_DELAYED if $args{delayed};
+    if ( $args{status} eq TASK_NEW && $args{delayed} && $args{delayed} > 0  ) {
+        $args{status} = TASK_DELAYED;
+        $args{executed} = now; # delay вычисляется от текущего времени
+    } elsif ( $args{status} eq TASK_SUCCESS && $args{event}{period} > 0 ) {
+        $args{status} = TASK_DELAYED;
+    }
+
+    if ( my $task_id = $self->{task_id} ) {
+        $args{event}{task_id} ||= $task_id;
+    }
+
     return $self->SUPER::add( %args );
 }
 
@@ -211,7 +222,7 @@ sub process_one { # for spool.pl
 
     logger->warning('Task fail: ' . Dumper $info ) if $status ne TASK_SUCCESS;
 
-    if ( $status eq TASK_SUCCESS ) {
+    if ( $status eq TASK_SUCCESS || $status eq 'MOCK' ) {
         $spool->finish_task(
             status => $status,
             %{ $info },
@@ -223,13 +234,11 @@ sub process_one { # for spool.pl
             %{ $info },
         )
     }
-    elsif ( $status eq TASK_STUCK ) {
+    else { # TASK_STUCK
         $spool->finish_task(
-            status => $status,
+            status => TASK_STUCK,
             %{ $info },
         );
-    } else { # for tests (MOCK)
-        $spool->set( status => $status );
     }
 
     return $spool, $info;
@@ -244,18 +253,26 @@ sub finish_task {
 
     $self->set(
         executed => now,
-        $self->event->{period} ? (delayed => $self->event->{period} ) : (),
         %args,
     );
 
     $self->write_history;
 
-    if ( $self->event->{kind} eq 'Jobs' && $self->event->{period} ) {
-        return;
+    if ( $args{status} eq TASK_SUCCESS ) {
+        if ( $self->is_periodic ) {
+            $self->set(
+                delayed => $self->event->{period},
+                status => TASK_DELAYED,
+            )
+        } else {
+            $self->delete;
+        }
     }
-    elsif ( $args{status} eq TASK_SUCCESS ) {
-        $self->delete;
-    }
+}
+
+sub is_periodic {
+    my $self = shift;
+    return $self->event->{period} && $self->event->{period} > 0;
 }
 
 # TODO: check max retries
@@ -355,6 +372,12 @@ sub write_history_start {
     my $self = shift;
     my %task_data = $self->get;
 
+    $self->{spool} = {
+        pid => $$,
+        started => time(),
+    };
+    $task_data{response}{spool} = $self->{spool};
+
     my $history_id = $self->history->add(
         %task_data,
         created => now,
@@ -366,6 +389,13 @@ sub write_history_start {
 sub write_history {
     my $self = shift;
     my %task_data = $self->get;
+
+    if ( $self->{spool}{started} ) {
+        my $time = time();
+        $self->{spool}{finished} = $time;
+        $self->{spool}{duration} = sprintf( "%.5f", $time - $self->{spool}{started} ) + 0;
+        $task_data{response}{spool} = $self->{spool};
+    }
 
     if ( my $history = $self->history->id( $self->{history_id} ) ) {
         # Обновляем существующую запись

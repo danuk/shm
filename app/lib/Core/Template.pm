@@ -26,6 +26,22 @@ use Core::Utils qw(
 
 my $dir = 'data/templates';
 
+# Automatically create constants hash from Core::Const exports
+sub _get_constants {
+    my %constants;
+
+    # Get all exported constants from Core::Const
+    no strict 'refs';
+    for my $const_name (@Core::Const::EXPORT) {
+        if (defined &{"Core::Const::$const_name"}) {
+            $constants{$const_name} = &{"Core::Const::$const_name"}();
+        }
+    }
+    use strict 'refs';
+
+    return \%constants;
+}
+
 sub init {
     my $self = shift;
     my %args = (
@@ -73,6 +89,7 @@ sub parse {
     my (
         $pay_id,
         $bonus_id,
+        $task_id,
     );
 
     my $task = delete $args{task};
@@ -81,6 +98,7 @@ sub parse {
         $args{event_name} //= $task->event->{name};
         $pay_id = $task->get_settings->{pay_id};
         $bonus_id = $task->get_settings->{bonus_id};
+        $task_id = $task->id,
     }
 
     my $vars = {
@@ -102,11 +120,12 @@ sub parse {
         tg_api => sub { encode_json_perl( shift, pretty => 1 ) }, # for testing templates
         response => { test_data => 1 },  # for testing templates
         http => sub { get_service('Transport::Http') },
-        spool => sub { get_service('Spool', defined $_[0] ? (_id => $_[0]) : () ) },
+        spool => sub { get_service('Spool', $task_id ? (task_id => $task_id) : (), defined $_[0] ? (_id => $_[0]) : () ) },
         promo => sub { get_service('promo', defined $_[0] ? (_id => $_[0]) : () ) },
         misc => sub { get_service('misc') },
         logger => sub { get_service('logger') },
         cache => sub { get_service('Core::System::Cache') },
+        currency => sub { get_service('Cloud::Currency') },
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
         %{ $args{vars} }, # do not move it upper. It allows to override promo end others
         request => sub {
@@ -138,8 +157,35 @@ sub parse {
         toQueryString => sub { to_query_string( shift ) },
         toBase64Url => sub { encode_base64url( shift ) },
         fromBase64Url => sub { decode_base64url( shift ) },
-        true => \1,
-        false => \0,
+
+        # for filter()
+        isNull => sub { return \'isNull' },
+        isNotNull => sub { return \'isNotNull' },
+        isEmpty => sub { return \'isEmpty' },
+        isNotEmpty => sub { return \'isNotEmpty' },
+        # Numeric comparisons
+        lt => sub { return \('lt:' . ($_[0] // '')) },  # less than
+        gt => sub { return \('gt:' . ($_[0] // '')) },  # greater than
+        le => sub { return \('le:' . ($_[0] // '')) },  # less than or equal
+        ge => sub { return \('ge:' . ($_[0] // '')) },  # greater than or equal
+        eq => sub { return \('eq:' . ($_[0] // '')) },  # equal to
+        ne => sub { return \('ne:' . ($_[0] // '')) },  # not equal to
+        between => sub {
+            my ($min, $max) = @_;
+            return \("between:$min:$max") if defined $min && defined $max;
+        },
+        # Sign checks
+        isPositive => sub { return \'isPositive' },  # greater than 0
+        isNegative => sub { return \'isNegative' },  # less than 0
+        isNonNegative => sub { return \'isNonNegative' },  # greater than or equal to 0
+        isNonPositive => sub { return \'isNonPositive' },  # less than or equal to 0
+
+        null => \'null',
+        true => \'true',
+        false => \'false',
+
+        # Constants from Core::Const (automatically loaded directly)
+        %{ _get_constants() },
     };
 
     my $template = Template->new({

@@ -8,6 +8,7 @@ use Core::Utils qw(
     now
     passgen
     switch_user
+    sum_period
 );
 
 use Core::Billing;
@@ -351,7 +352,7 @@ sub add_domain {
 
 sub billing {
     if ( my $config = get_service('config', _id => 'billing') ) {
-        return $config->get_data->{type};
+        return ucfirst lc $config->get_data->{type} || 'Simpler';
     }
     return "Simpler";
 }
@@ -979,6 +980,8 @@ sub create_for_api_safe {
         @_,
     );
 
+    $self->set_user_fail_attempt( 'create_for_api_safe', 600 ); # 5 orders/10 mins
+
     my $us = $self->create_for_api(
         service_id => $args{service_id},
         check_allow_to_order => 1,
@@ -1053,6 +1056,47 @@ sub recalc {
     }
 
     return;
+}
+
+sub add_period_by_money {
+    my $self = shift;
+    my $money = shift || 0;
+
+    return undef if $self->status ne STATUS_ACTIVE;
+    return undef if $money <= 0;
+
+    return undef unless $self->withdraw;
+    my %wd = $self->withdraw->get;
+
+    my $cost = sprintf("%.2f", ( $wd{cost} - $wd{cost} * $wd{discount} / 100 ));
+
+    my $period = Core::Billing::calc_period_by_total(
+        $self->billing,
+        cost => $cost,
+        period => $self->service->get_period,
+        total => $money,
+    );
+    return undef if $period eq "0.0000";
+
+    my $months = sum_period( $wd{months}, $period );
+
+    my $expire_date = Core::Billing::calc_end_date_by_months(
+        $self->billing,
+        $wd{withdraw_date},
+        $months,
+    );
+
+    $self->withdraw->set(
+        months => $months,
+        total => $wd{total} + $money,
+        end_date => $expire_date,
+    );
+
+    $self->set( expire => $expire_date );
+    $self->user->set_balance( balance => -$money );
+    $self->make_commands_by_event( EVENT_PROLONGATE );
+
+    return 1;
 }
 
 1;

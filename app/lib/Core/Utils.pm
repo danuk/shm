@@ -24,6 +24,7 @@ our @EXPORT_OK = qw(
     days_in_months
     parse_date
     parse_period
+    sum_period
     add_date_time
     start_of_month
     start_of_day
@@ -61,6 +62,7 @@ our @EXPORT_OK = qw(
     print_header
     print_json
     get_user_ip
+    is_ip_allowed
 
     first
     any
@@ -70,6 +72,9 @@ our @EXPORT_OK = qw(
     uniq
 
     uniq_by_key
+    format_time_diff
+    exec_local_file
+    qrencode
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -83,6 +88,8 @@ use Data::Validate::IP qw(is_ipv4 is_ipv6);
 use Clone 'clone';
 use Date::Calc qw(
     Add_Delta_YMDHMS
+    N_Delta_YMDHMS
+    Today_and_Now
 );
 
 our %in;
@@ -310,6 +317,34 @@ sub obj_to_json {
     return $data;
 }
 
+# Рекурсивная функция для преобразования специальных значений в JSON-совместимые
+sub prepare_json_data {
+    my $data = shift;
+
+    if (ref $data eq 'SCALAR') {
+        # \false -> false, \true -> true, \null -> null
+        if ($$data eq 'false') {
+            return JSON::false;
+        } elsif ($$data eq 'true') {
+            return JSON::true;
+        } elsif ($$data eq 'null') {
+            return undef;
+        } else {
+            return $data;
+        }
+    } elsif (ref $data eq 'HASH') {
+        my %new_hash;
+        for my $key (keys %$data) {
+            $new_hash{$key} = prepare_json_data($data->{$key});
+        }
+        return \%new_hash;
+    } elsif (ref $data eq 'ARRAY') {
+        return [map { prepare_json_data($_) } @$data];
+    } else {
+        return $data;
+    }
+}
+
 # convert to JSON as it is (with internal Perl encoding)
 # for compatibility with other Cyrillic texts in the templates
 sub encode_json_perl {
@@ -318,6 +353,8 @@ sub encode_json_perl {
         pretty => 0,
         @_,
     );
+
+    $data = prepare_json_data($data);
 
     my $json;
     eval{ $json = JSON->new->canonical->pretty( $args{pretty} )->encode( obj_to_json $data ) } or do {
@@ -333,6 +370,8 @@ sub encode_json {
         pretty => 0,
         @_,
     );
+
+    $data = prepare_json_data($data);
 
     my $json;
     eval{ $json = JSON->new->latin1->canonical->pretty( $args{pretty} )->encode( encode_utf8($data) ) } or do {
@@ -475,10 +514,10 @@ sub decode_base64url {
 
 sub hash_merge {
     my ($left, @right) = @_;
-    return {} unless ref $left eq 'HASH';
+    $left = {} if ref $left ne 'HASH';
 
     for my $right (@right) {
-        return {} unless ref $right eq 'HASH';
+        next if ref $right ne 'HASH';
         for my $key (keys %$right) {
             if (ref($right->{$key}) eq 'HASH' && ref($left->{$key}) eq 'HASH') {
                 $left->{$key} = hash_merge($left->{$key}, $right->{$key});
@@ -497,6 +536,60 @@ sub is_host {
     return 1 if is_ipv4( $host );
     return 1 if is_ipv6( $host );
 
+    return 0;
+}
+
+sub ipv4_aton {
+    my $ip = shift;
+    my @o = split /\./, $ip;
+    return ($o[0]<<24) + ($o[1]<<16) + ($o[2]<<8) + $o[3];
+}
+
+sub is_ip_allowed {
+    my ($ip, $nets) = @_;
+    return 0 unless $ip;
+
+    if (is_ipv4($ip)) {
+        my $ip_int = ipv4_aton($ip);
+        for my $cidr (@$nets) {
+            next unless $cidr =~ /^[0-9.]+/;
+            my ($net, $masklen) = split '/', $cidr;
+            $masklen //= 32;
+
+            my $net_int = ipv4_aton($net);
+            my $mask = $masklen == 0 ? 0 : (0xFFFFFFFF << (32 - $masklen)) & 0xFFFFFFFF;
+
+            return 1 if ($ip_int & $mask) == ($net_int & $mask);
+        }
+    }
+    elsif (is_ipv6($ip)) {
+        require Socket;
+        my $ip_bin = Socket::inet_pton(Socket::AF_INET6(), $ip);
+        for my $cidr (@$nets) {
+            next unless $cidr =~ /:/;
+            my ($net, $masklen) = split '/', $cidr;
+            $masklen //= 128;
+            my $net_bin = Socket::inet_pton(Socket::AF_INET6(), $net);
+
+            my $bits = $masklen;
+            my $bytes = int($bits / 8);
+            my $rem = $bits % 8;
+
+            my $same = 1;
+            for (my $i = 0; $i < $bytes; $i++) {
+                if (substr($ip_bin, $i, 1) ne substr($net_bin, $i, 1)) {
+                    $same = 0; last;
+                }
+            }
+            if ($same && $rem > 0) {
+                my $mask = 0xFF << (8 - $rem);
+                my $b1 = unpack('C', substr($ip_bin, $bytes, 1));
+                my $b2 = unpack('C', substr($net_bin, $bytes, 1));
+                $same = (($b1 & $mask) == ($b2 & $mask));
+            }
+            return 1 if $same;
+        }
+    }
     return 0;
 }
 
@@ -530,6 +623,37 @@ sub parse_period {
         days => $days,
         hours => $hours,
     };
+}
+
+sub sum_period {
+    my @periods = @_;
+
+    my ($total_months, $total_days, $total_hours) = (0, 0, 0);
+
+    for my $period (@periods) {
+        next unless defined $period && $period ne '';
+
+        my ($months, $days, $hours) = parse_period($period);
+        $total_months += $months || 0;
+        $total_days += $days || 0;
+        $total_hours += $hours || 0;
+    }
+
+    # Нормализация: переводим часы в дни, дни в месяцы
+    if ($total_hours >= 24) {
+        $total_days += int($total_hours / 24);
+        $total_hours = $total_hours % 24;
+    }
+
+    if ($total_days >= 30) {
+        $total_months += int($total_days / 30);
+        $total_days = $total_days % 30;
+    }
+
+    # Форматируем результат в формате M.DDHH
+    my $result = sprintf("%d.%02d%02d", $total_months, $total_days, $total_hours);
+
+    return wantarray ? ($total_months, $total_days, $total_hours) : $result;
 }
 
 sub get_random_value {
@@ -580,7 +704,7 @@ sub print_header {
     my %args = (
         status => 200,
         type => 'application/json',
-        charset => 'utf8',
+        charset => 'utf-8',
         'Access-Control-Allow-Origin' => "$ENV{HTTP_ORIGIN}",
         'Access-Control-Allow-Credentials' => 'true',
         @_,
@@ -611,73 +735,37 @@ sub get_user_ip {
 }
 
 sub format_time_diff {
-    my $target_date = shift || return '';
-    my $base_date = shift || now();
+    my $target_date = shift or return '';
+    my ($y1, $m1, $d1, $H1, $M1, $S1) = $target_date =~ /^(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)$/;
+    return '' unless defined $y1 && defined $m1 && defined $d1 && defined $H1 && defined $M1 && defined $S1;
 
-    # Преобразуем даты в unix timestamp
-    my $target_time = string_to_utime($target_date);
-    my $base_time = string_to_utime($base_date);
+    my ($y2, $m2, $d2, $H2, $M2, $S2) = Today_and_Now();
 
-    # Вычисляем разность в секундах
-    my $diff = $target_time - $base_time;
-    my $is_future = $diff > 0;
-    $diff = abs($diff);
+    my ($Dy,$Dm,$Dd,$Dh,$Dmin,$Ds);
+    eval {
+        ($Dy,$Dm,$Dd,$Dh,$Dmin,$Ds) = N_Delta_YMDHMS($y1,$m1,$d1,$H1,$M1,$S1, $y2,$m2,$d2,$H2,$M2,$S2);
+    };
+    return '' if $@;
 
-    # Если разность меньше минуты, возвращаем "менее минуты"
-    return 'менее минуты' if $diff < 60;
+    # Используем абсолютные значения для корректного отображения
+    $Dy = abs($Dy);
+    $Dm = abs($Dm);
+    $Dd = abs($Dd);
+    $Dh = abs($Dh);
+    $Dmin = abs($Dmin);
 
-    # Вычисляем компоненты времени
-    my $years = int($diff / (365.25 * 24 * 3600));
-    $diff %= (365.25 * 24 * 3600);
-
-    my $months = int($diff / (30.44 * 24 * 3600));
-    $diff %= (30.44 * 24 * 3600);
-
-    my $days = int($diff / (24 * 3600));
-    $diff %= (24 * 3600);
-
-    my $hours = int($diff / 3600);
-    $diff %= 3600;
-
-    my $minutes = int($diff / 60);
-
-    # Формируем строку результата
     my @parts;
 
-    if ($years > 0) {
-        my $year_word = $years == 1 ? 'год' :
-                       ($years >= 2 && $years <= 4) ? 'года' : 'лет';
-        push @parts, "$years $year_word";
-    }
+    push @parts, "$Dy " . ($Dy == 1 ? 'год' : $Dy >= 2 && $Dy <= 4 ? 'года' : 'лет') if $Dy;
+    push @parts, "$Dm " . ($Dm == 1 ? 'месяц' : $Dm >= 2 && $Dm <= 4 ? 'месяца' : 'месяцев') if $Dm;
+    push @parts, "$Dd " . (($Dd % 10 == 1 && $Dd % 100 != 11) ? 'день'
+                     : ($Dd % 10 >= 2 && $Dd % 10 <= 4 && ($Dd % 100 < 10 || $Dd % 100 >= 20)) ? 'дня' : 'дней') if $Dd;
+    push @parts, "$Dh " . (($Dh % 10 == 1 && $Dh % 100 != 11) ? 'час'
+                     : ($Dh % 10 >= 2 && $Dh % 10 <= 4 && ($Dh % 100 < 10 || $Dh % 100 >= 20)) ? 'часа' : 'часов') if $Dh;
+    push @parts, "$Dmin " . (($Dmin % 10 == 1 && $Dmin % 100 != 11) ? 'минута'
+                     : ($Dmin % 10 >= 2 && $Dmin % 10 <= 4 && ($Dmin % 100 < 10 || $Dmin % 100 >= 20)) ? 'минуты' : 'минут') if $Dmin;
 
-    if ($months > 0) {
-        my $month_word = $months == 1 ? 'месяц' :
-                        ($months >= 2 && $months <= 4) ? 'месяца' : 'месяцев';
-        push @parts, "$months $month_word";
-    }
-
-    if ($days > 0) {
-        my $day_word = ($days % 10 == 1 && $days % 100 != 11) ? 'день' :
-                      (($days % 10 >= 2 && $days % 10 <= 4) && ($days % 100 < 10 || $days % 100 >= 20)) ? 'дня' : 'дней';
-        push @parts, "$days $day_word";
-    }
-
-    if ($hours > 0) {
-        my $hour_word = ($hours % 10 == 1 && $hours % 100 != 11) ? 'час' :
-                       (($hours % 10 >= 2 && $hours % 10 <= 4) && ($hours % 100 < 10 || $hours % 100 >= 20)) ? 'часа' : 'часов';
-        push @parts, "$hours $hour_word";
-    }
-
-    if ($minutes > 0) {
-        my $minute_word = ($minutes % 10 == 1 && $minutes % 100 != 11) ? 'минута' :
-                         (($minutes % 10 >= 2 && $minutes % 10 <= 4) && ($minutes % 100 < 10 || $minutes % 100 >= 20)) ? 'минуты' : 'минут';
-        push @parts, "$minutes $minute_word";
-    }
-
-    # Ограничиваем вывод максимум 3 компонентами для читаемости
-    @parts = splice(@parts, 0, 3) if @parts > 3;
-
-    return join(', ', @parts);
+    return @parts ? join(', ', @parts[0..2]) : 'менее минуты';
 }
 
 sub uniq_by_key {
@@ -686,6 +774,160 @@ sub uniq_by_key {
     return grep {
         !$seen{ $_->{$key} }++
     } @$array_ref;
+}
+
+sub exec_local_file {
+    my %args = (
+        stdin => undef,
+        cmd => [],
+        timeout => 3,
+        @_,
+    );
+
+    return { error => "No command specified" } unless @{ $args{cmd} };
+
+    use IPC::Open2;
+    my ($reader, $writer);
+
+    my $pid;
+    eval {
+        $pid = open2($reader, $writer, @{ $args{cmd} });
+    };
+    if ($@) {
+        return { error => "Failed to execute command: $@" };
+    }
+
+    if (defined $args{stdin} && length $args{stdin}) {
+        eval {
+            print $writer $args{stdin};
+        };
+        if ($@) {
+            kill 'TERM', $pid;
+            waitpid($pid, 0);
+            return { error => "Failed to write to stdin: $@" };
+        }
+    }
+    close $writer;
+
+    my $out = '';
+    eval {
+        local $SIG{ALRM} = sub { die "timeout\n" };
+        alarm($args{timeout});
+        $out = do { local $/; <$reader> };
+        alarm(0);
+    };
+
+    close $reader;
+
+    if ($@ && $@ =~ /timeout/) {
+        kill 'TERM', $pid;
+        waitpid($pid, 0);
+        return { error => "Command timed out after $args{timeout} seconds" };
+    } elsif ($@) {
+        kill 'TERM', $pid;
+        waitpid($pid, 0);
+        return { error => "Failed to read output: $@" };
+    }
+
+    waitpid($pid, 0);
+    my $exit_code = $? >> 8;
+
+    return {
+        output => $out // '',
+        exit_code => $exit_code,
+        success => $exit_code == 0,
+    };
+}
+
+sub qrencode {
+    my $text = shift;
+    my %args = (
+        size => 3,              # размер модуля (1-50)
+        margin => 4,            # отступ вокруг QR кода
+        level => 'M',           # уровень коррекции ошибок (L/M/Q/H)
+        format => 'PNG',        # формат вывода (PNG/SVG/EPS/PDF/etc)
+        encoding => 'UTF-8',    # кодировка входного текста
+        foreground => '000000', # цвет переднего плана (hex)
+        background => 'FFFFFF', # цвет фона (hex)
+        output_file => undef,   # файл для сохранения (опционально)
+        @_,
+    );
+
+    return { error => "No text provided" } unless defined $text && length $text;
+
+    unless ($args{level} =~ /^[LMQH]$/) {
+        return { error => "Invalid error correction level. Use L, M, Q, or H" };
+    }
+
+    unless ($args{size} >= 1 && $args{size} <= 50) {
+        return { error => "Invalid size. Must be between 1 and 50" };
+    }
+
+    unless ($args{margin} >= 0) {
+        return { error => "Invalid margin. Must be >= 0" };
+    }
+
+    unless ($args{foreground} =~ /^[0-9A-Fa-f]{6}$/) {
+        return { error => "Invalid foreground color. Use 6-digit hex format (e.g., '000000')" };
+    }
+
+    unless ($args{background} =~ /^[0-9A-Fa-f]{6}$/) {
+        return { error => "Invalid background color. Use 6-digit hex format (e.g., 'FFFFFF')" };
+    }
+
+    my @cmd = (
+        'qrencode',
+        '-s', $args{size},
+        '-m', $args{margin},
+        '-l', $args{level},
+        '-t', $args{format},
+        '--foreground=' . $args{foreground},
+        '--background=' . $args{background}
+    );
+
+    if ($args{output_file}) {
+        push @cmd, '-o', $args{output_file};
+    }
+
+    push @cmd, $text;
+
+    my $result = exec_local_file(
+        cmd => \@cmd,
+        timeout => 3,
+    );
+
+    if ($result->{error}) {
+        return { error => "QR encode failed: " . $result->{error} };
+    }
+
+    unless ($result->{success}) {
+        return {
+            error => "QR encode failed with exit code " . $result->{exit_code},
+            output => $result->{output}
+        };
+    }
+
+    if (!$args{output_file}) {
+        return {
+            success => 1,
+            data => $result->{output},
+            format => $args{format},
+            size => length($result->{output}),
+            text_length => length($text)
+        };
+    }
+
+    if (-f $args{output_file}) {
+        return {
+            success => 1,
+            file => $args{output_file},
+            size => -s $args{output_file},
+            format => $args{format},
+            text_length => length($text)
+        };
+    } else {
+        return { error => "Output file was not created: " . $args{output_file} };
+    }
 }
 
 1;

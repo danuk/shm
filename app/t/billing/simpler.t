@@ -6,6 +6,7 @@ use Data::Dumper;
 use Core::Billing::Simpler qw(
     calc_end_date_by_months
     calc_total_by_date_range
+    calc_period_by_total
 );
 
 $ENV{SHM_TEST} = 1;
@@ -165,5 +166,169 @@ cmp_deeply( calc_total_by_date_range(
         months => '1.0001',
     }
 ,'calc_total_by_date_range (calc zero cost)');
+
+# Tests for calc_period_by_total
+is( calc_period_by_total(
+        total => 100,
+        cost => 1000,
+        period => 1
+    ), '0.0300', 'calc_period_by_total: 100 out of 1000 per month'
+);
+
+is( calc_period_by_total(
+        total => 250,
+        cost => 1000,
+        period => 1
+    ), '0.0712', 'calc_period_by_total: quarter month'
+);
+
+is( calc_period_by_total(
+        total => 500,
+        cost => 1000,
+        period => 1
+    ), '0.1500', 'calc_period_by_total: half month'
+);
+
+is( calc_period_by_total(
+        total => 1000,
+        cost => 1000,
+        period => 1
+    ), '1.0000', 'calc_period_by_total: full month'
+);
+
+is( calc_period_by_total(
+        total => 1500,
+        cost => 1000,
+        period => 1
+    ), '1.1500', 'calc_period_by_total: month and half'
+);
+
+is( calc_period_by_total(
+        total => 50,
+        cost => 300,
+        period => '1.1500'
+    ), '0.0712', 'calc_period_by_total: fractional period 1.1500'
+);
+
+is( calc_period_by_total(
+        total => 25,
+        cost => 100,
+        period => '0.1012'
+    ), '0.0215', 'calc_period_by_total: small fractional period'
+);
+
+is( calc_period_by_total(
+        total => 30,
+        cost => 900,
+        period => 1
+    ), '0.0100', 'calc_period_by_total: one day worth'
+);
+
+is( calc_period_by_total(
+        total => 10,
+        cost => 900,
+        period => 1
+    ), '0.0008', 'calc_period_by_total: 8 hours worth'
+);
+
+# Edge cases
+is( calc_period_by_total(
+        total => 0,
+        cost => 1000,
+        period => 1
+    ), '0.0000', 'calc_period_by_total: zero total'
+);
+
+is( calc_period_by_total(
+        total => 100,
+        cost => 0,
+        period => 1
+    ), '0.0000', 'calc_period_by_total: zero cost'
+);
+
+is( calc_period_by_total(
+        total => 100,
+        cost => undef,
+        period => 1
+    ), '0.0000', 'calc_period_by_total: undefined cost'
+);
+
+is( calc_period_by_total(
+        total => undef,
+        cost => 1000,
+        period => 1
+    ), '0.0000', 'calc_period_by_total: undefined total'
+);
+
+# Test with period 0.01 (1 day) - if cost is 30 for 1 day, and total is 30, we get 1 day
+is( calc_period_by_total(
+        total => 30,
+        cost => 30,
+        period => 0.01
+    ), '0.0100', 'calc_period_by_total: period 0.01 (1 day tariff)'
+);
+
+# Test with period 0.0001 (1 hour) - if cost is 1 for 1 hour, and total is 1, we get 1 hour
+is( calc_period_by_total(
+        total => 1,
+        cost => 1,
+        period => 0.0001
+    ), '0.0001', 'calc_period_by_total: period 0.0001 (1 hour tariff)'
+);
+
+# Test precision with small amounts - 1.25 out of 30 per month
+is( calc_period_by_total(
+        total => 1.25,
+        cost => 30,
+        period => 1
+    ), '0.0106', 'calc_period_by_total: small amount precision'
+);
+
+# Reverse compatibility tests - calc_period_by_total should give results that work with calc_total_by_date_range
+# Test: 333.33 out of 1000 should give ~10 days, and calc_total_by_date_range for 10 days should give ~333.33
+my $reverse_period = calc_period_by_total(
+    total => 333.33,
+    cost => 1000,
+    period => 1
+);
+is( $reverse_period, '0.1000', 'calc_period_by_total: reverse compatibility check period' );
+
+# Test that calc_total_by_date_range with fractional period works as expected
+cmp_deeply( calc_total_by_date_range(
+        withdraw_date   => '2017-01-01 00:00:00',
+        end_date        => '2017-01-11 00:00:00',  # 10 days
+        cost            => 1000,
+        period          => 1
+    ),
+    {
+        total => '333.33',
+        months => '0.1000',
+    }
+,'calc_total_by_date_range: 10 days should cost 333.33'
+);
+
+# Test with very small period - actual calculation: 0.5/30*30*24 = 12 hours = 0.0012
+is( calc_period_by_total(
+        total => 0.5,
+        cost => 30,
+        period => 1
+    ), '0.0012', 'calc_period_by_total: very small amount - 12 hours'
+);
+
+# Test multi-month calculation
+is( calc_period_by_total(
+        total => 3000,
+        cost => 1000,
+        period => 1
+    ), '3.0000', 'calc_period_by_total: 3 months worth'
+);
+
+# Test with complex fractional period input - actual result based on calculation
+is( calc_period_by_total(
+        total => 150,
+        cost => 500,
+        period => '2.1012'  # 2 months, 10 days, 12 hours
+    ), '0.2104', 'calc_period_by_total: complex fractional period input'
+);
 
 done_testing();

@@ -541,23 +541,24 @@ sub money_back {
 }
 
 sub calc_end_date_by_months {
-    my $billing = shift;
+    my $billing = shift || 'Simpler';
 
-    if ( $billing eq 'Honest' ) {
-        return Core::Billing::Honest::calc_end_date_by_months( @_ );
-    } else {
-        return Core::Billing::Simpler::calc_end_date_by_months( @_ );
-    }
+    no strict 'refs';
+    return &{"Core::Billing::${billing}::calc_end_date_by_months"}( @_ );
 }
 
 sub calc_total_by_date_range {
-    my $billing = shift;
+    my $billing = shift || 'Simpler';
 
-    if ( $billing eq 'Honest' ) {
-        return Core::Billing::Honest::calc_total_by_date_range( @_ );
-    } else {
-        return Core::Billing::Simpler::calc_total_by_date_range( @_ );
-    }
+    no strict 'refs';
+    return &{"Core::Billing::${billing}::calc_total_by_date_range"}( @_ );
+}
+
+sub calc_period_by_total {
+    my $billing = shift || 'Simpler';
+
+    no strict 'refs';
+    return &{"Core::Billing::${billing}::calc_period_by_total"}( @_ );
 }
 
 1;

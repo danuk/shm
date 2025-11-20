@@ -15,17 +15,11 @@ use Core::Utils qw(
     print_header
     print_json
     get_user_ip
+    qrencode
 );
 
 use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
-
-my $cache = get_service('Core::System::Cache');
-if ( $cache->get( get_user_ip() ) > 5 ) {
-    print_header( status => 429 );
-    print_json( { status => 429, error => '429 Too Many Requests'} );
-    exit 0;
-}
 
 my $routes = {
 '/test' => {
@@ -64,7 +58,7 @@ my $routes = {
     },
     PUT => {
         controller => 'User',
-        method => 'reg',
+        method => 'reg_api_safe',
         skip_check_auth => 1,
         required => ['login','password'],
         swagger => { summary => 'Регистрация пользователя' },
@@ -321,6 +315,49 @@ my $routes = {
             format => 'plain',
         },
         swagger => { summary => 'Скачать данные из хранилища' },
+    },
+},
+'/promo' => {
+    swagger => { tags => 'Промокоды' },
+    GET => {
+        controller => 'Promo',
+        method => 'api_get',
+        swagger => {
+            summary => 'Список использованных промокодов',
+            responses => {
+                '200' => {
+                    content => {
+                        'application/json' => {
+                            schema => {
+                                type => 'object',
+                                properties => {
+                                    promo_code => {
+                                        type => 'string'
+                                    },
+                                    used_date => {
+                                        type => 'string',
+                                        format => 'date',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+},
+'/promo/apply/*' => {
+    swagger => { tags => 'Промокоды' },
+    splat_to => 'code',
+    GET => {
+        controller => 'Promo',
+        method => 'api_apply',
+        required => ['code'],
+        args => {
+            format => 'json',
+        },
+        swagger => { summary => 'Применить промокод' },
     },
 },
 
@@ -844,6 +881,40 @@ my $routes = {
 
     },
 },
+'/admin/promo' => {
+    swagger => { tags => 'Промокоды' },
+    GET => {
+        controller => 'Promo',
+        swagger => { summary => 'Список промокодов' },
+    },
+    PUT => {
+        controller => 'Promo',
+        method => 'generate',
+        swagger => { summary => 'Генерация промокодов' },
+    },
+    POST => {
+        controller => 'Promo',
+        method => 'update',
+        swagger => { summary => 'Изменить промокод' },
+    },
+    DELETE => {
+        controller => 'Promo',
+        method => 'delete',
+        required => ['id'],
+        swagger => { summary => 'Удалить промокод' },
+    },
+},
+'/admin/promo/*' => {
+    POST => {
+        controller => 'Promo',
+        method => 'update',
+    },
+    DELETE => {
+        controller => 'Promo',
+        method => 'delete',
+    },
+},
+
 '/telegram/bot' => {
     POST => {
         skip_check_auth => 1,
@@ -914,7 +985,6 @@ my $routes = {
         skip_check_auth => 1,
         controller => 'Transport::Telegram',
         method => 'web_auth',
-        required => ['query'],
         args => {
             format => 'json',
         },
@@ -939,6 +1009,47 @@ my $routes = {
         },
     },
 },
+'/admin/cloud/user' => {
+    GET => {
+        controller => 'Cloud',
+        method => 'get_user',
+    },
+    PUT => {
+        controller => 'Cloud',
+        method => 'reg_user',
+    },
+},
+'/admin/cloud/user/auth' => {
+    swagger => {
+        tags => 'Cloud SHM',
+    },
+    POST => {
+        controller => 'Cloud',
+        required => ['login','password'],
+        method => 'login_user',
+    },
+    DELETE => {
+        controller => 'Cloud',
+        method => 'logout_user',
+    },
+},
+'/admin/cloud/paysystems' => {
+    GET => {
+        controller => 'Cloud',
+        method => 'paysystems',
+    },
+},
+'/admin/cloud/currencies' => {
+    GET => {
+        controller => 'Cloud::Currency',
+        method => 'currencies',
+    },
+    POST => {
+        controller => 'Cloud::Currency',
+        method => 'save',
+        required => ['currencies'],
+    },
+}
 
 };
 
@@ -1050,6 +1161,16 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         print_json( { status => 500, error => 'Method not exists'} );
     }
 
+    if ( my $cache = get_service('Core::System::Cache') ) {
+        my $ip = get_user_ip();
+        my $tag = lc sprintf("%s-%s-%s", ref $service, $method, $ip);
+        if ( $cache->get( $tag ) >= 5 ) {
+            print_header( status => 429 );
+            print_json( { status => 429, error => '429 Too Many Requests', ip => $ip } );
+            exit 0;
+        }
+    }
+
     my @data;
     my %headers;
     my %info;
@@ -1159,15 +1280,15 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
             type => 'image/svg+xml',
         );
         my $data = join('', @data);
-        my $output = qx(echo "$data" | qrencode -t svg);
-        print $output;
+        my $result = qrencode($data, format => 'SVG');
+        print $result->{data} if $result->{success};
     } elsif ( $args{format} eq 'qrcode_png' ) {
         print_header( %headers,
             type => 'image/png',
         );
         my $data = join('', @data);
-        my $output = qx(echo "$data" | qrencode -t PNG -o -);
-        print $output;
+        my $result = qrencode($data, format => 'PNG');
+        print $result->{data} if $result->{success};
     } elsif ( $info{error} ) {
         print_header( %headers );
         print_json({

@@ -3,6 +3,10 @@ package Core::System::Cache;
 use v5.14;
 use parent qw/Core::Base/;
 use Redis;
+use Core::Utils qw(
+    encode_json
+    decode_json
+);
 
 use constant {
     REDIS_HOST => 'redis',
@@ -35,8 +39,14 @@ sub set {
     return undef unless $self->redis;
     return undef unless $key;
 
+    if ( ref $value ) {
+        $value = encode_json( $value );
+    }
+
     return $self->redis->setex( $key, $expire, $value );
 }
+
+sub set_json { shift->set( @_ ) };
 
 sub increment {
     my $self = shift;
@@ -53,10 +63,20 @@ sub increment {
 
 sub get {
     my $self = shift;
-    my $name = shift;
+    my $name = shift || return undef;
     return undef unless $self->redis;
 
     return $self->redis->get( $name );
+}
+
+sub get_json { decode_json shift->redis->get( shift ) };
+
+sub delete {
+    my $self = shift;
+    my $name = shift || return undef;
+
+    return undef unless $self->redis;
+    return $self->redis->del( $name );
 }
 
 1;

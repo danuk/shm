@@ -229,6 +229,7 @@ sub api_auth {
     unless ( $user ) {
         report->status( 401 );
         report->add_error('Incorrect login or password' );
+        $self->set_user_fail_attempt( 'api_auth', 180 ); # 5 auth/3 min
         return;
     }
 
@@ -263,7 +264,6 @@ sub auth {
         }
     );
     unless ( $user_row ) {
-        cache->increment( get_user_ip(), 180 );
         return undef;
     }
 
@@ -397,6 +397,24 @@ sub validate_attributes {
     return $report->is_success;
 }
 
+sub reg_api_safe {
+    my $self = shift;
+    my %args = (
+        login => undef,
+        password => undef,
+        partner_id => undef,
+        @_,
+    );
+
+    $self->set_user_fail_attempt( 'reg_api_safe', 3600 ); # 5 regs/hour
+
+    return $self->reg(
+        login => $args{login},
+        password => $args{password},
+        partner_id => $args{partner_id},
+    );
+}
+
 sub reg {
     my $self = shift;
     my %args = (
@@ -420,13 +438,13 @@ sub reg {
         delete $args{partner_id} if $partner_id == $self->id;
     }
 
-    delete $args{gid}; # deny create admins
     my $user_id = $self->add( %args, password => $password );
 
     unless ( $user_id ) {
         get_service('report')->add_error('Login already exists');
         return undef;
     }
+
 
     my $user = $self->id( $user_id );
     $user->make_event( 'registered' );
@@ -470,6 +488,10 @@ sub set {
         get_service('sessions')->delete_user_sessions( user_id => $self->user_id );
     }
 
+    if ( $args{credit} > 0 && $self->get_credit != $args{credit} ) {
+        $self->make_event( 'credit', settings => { credit => $args{credit} } );
+    }
+
     return $self->SUPER::set( %args );
 }
 
@@ -481,8 +503,11 @@ sub set_balance {
         @_,
     );
 
-    my $data = join(',', map( "$_=$_+?", keys %args ) );
-    my $ret = $self->do("UPDATE users SET $data WHERE user_id=?", values %args, $self->id );
+    my @keys = sort keys %args;
+    my @values = @args{@keys};
+
+    my $data = join(',', map { "$_=$_+?" } @keys);
+    my $ret = $self->do("UPDATE users SET $data WHERE user_id=?", @values, $self->id);
 
     $self->reload() if $ret;
 
@@ -537,7 +562,7 @@ sub payment {
         money => 0,
         currency => undef,
         uniq_key => undef,
-        @_,
+        get_smart_args( @_ ),
     );
 
     if ( $args{user_id} ) {
@@ -835,16 +860,7 @@ sub income_percent {
 }
 
 sub list_autopayments {
-    my $self = shift;
-
-    my $config = get_service('config', _id => 'pay_systems') or return {};
-    my $ps = $config->get_data || {};
-    my $pay_systems = $self->get_settings->{pay_systems} || {};
-
-    for ( keys %$pay_systems ) {
-        delete $pay_systems->{ $_ } unless $ps->{ $_ }->{allow_recurring};
-    }
-    return $pay_systems || {};
+    return {};
 }
 
 sub has_autopayment {
@@ -853,39 +869,6 @@ sub has_autopayment {
 }
 
 sub make_autopayment {
-    my $self = shift;
-    my $amount = shift;
-
-    return undef unless $amount;
-    return undef if $self->get_settings->{deny_auto_payments};
-
-    my $session_id = $self->gen_session->{id};
-    my $transport = get_service('Transport::Http');
-
-    my %pay_systems = %{ $self->list_autopayments };
-    return undef unless %pay_systems;
-
-    for my $name ( keys %pay_systems ) {
-        my $response = $transport->http(
-            url => sprintf("%s/shm/pay_systems/%s.cgi",
-                get_service('config')->data_by_name('api')->{url},
-                $name,
-            ),
-            method => 'post',
-            headers => {
-                session_id => $session_id,
-            },
-            content => {
-                action => 'payment',
-                amount => $amount,
-                $pay_systems{ $name },
-            },
-        );
-
-        if ( $response->is_success ) {
-            return 1;
-        }
-    }
     return 0;
 }
 

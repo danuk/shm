@@ -14,6 +14,8 @@ use Core::Utils qw(
     hash_merge
     encode_json
     dots_str_to_sql
+    get_user_ip
+    is_ip_allowed
 );
 $Data::Dumper::Deepcopy = 1;
 
@@ -528,6 +530,24 @@ sub get_smart_args {
         @args = %{ $args[0] };
     }
     return @args;
+}
+
+sub set_user_fail_attempt {
+    my $self = shift;
+    my $method = shift;
+    my $expire = shift || 600;
+
+    my $user_ip = get_user_ip() || return undef;
+
+    if (my $exclude_ips = $ENV{TRUSTED_IPS}) {
+        my @ip_ranges = map { s/^\s+|\s+$//gr } split /,/, $exclude_ips;
+        return 0 if is_ip_allowed($user_ip, \@ip_ranges);
+    }
+
+    my $cache = $self->cache || return undef;
+    my $tag = lc sprintf("%s-%s-%s", ref $self, $method, $user_ip);
+
+    return $cache->increment( $tag, $expire );
 }
 
 1;

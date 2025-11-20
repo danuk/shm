@@ -1,0 +1,1 @@
+ALTER TABLE `spool_history` ENGINE = MyISAM;

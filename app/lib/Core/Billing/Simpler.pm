@@ -7,6 +7,7 @@ use base qw(Exporter);
 our @EXPORT_OK = qw(
     calc_end_date_by_months
     calc_total_by_date_range
+    calc_period_by_total
 );
 
 use Core::Const;
@@ -104,6 +105,73 @@ sub calc_months_between_dates {
     my $hours = $delta{hour};
 
     return sprintf('%d.%02d%02d', $months, $days, $hours);
+}
+
+# Вычисляет период, который можно получить за указанную сумму
+# Возвращает период в формате parse_period: M.DDHH
+# где M - месяцы, DD - дни (2 цифры), HH - часы (2 цифры)
+sub calc_period_by_total {
+    my %args = (
+        total => undef,     # Сумма, которую готовы потратить
+        cost => undef,      # Стоимость услуги за период
+        period => 1,        # Период услуги (в месяцах или формате M.DDHH)
+        @_,
+    );
+
+    return '0.0000' unless $args{total} && $args{cost} && $args{cost} > 0;
+
+    my $total = $args{total};
+    my $cost = $args{cost};
+    my $period = $args{period} || 1;
+
+    # Вычисляем стоимость за месяц
+    my $months_cost;
+    if ( int( $period ) == $period ) {
+        # Период задан целым числом месяцев
+        $months_cost = $cost / $period;
+    } else {
+        # Период задан в формате M.DDHH
+        my $months_hours = DAYS_IN_MONTH * 24;
+        my ( $months, $days, $hours ) = parse_period( $period );
+        my $period_hours = $months * DAYS_IN_MONTH * 24 + $days * 24 + $hours;
+        $months_cost = $months_hours / $period_hours * $cost;
+    }
+
+    # Вычисляем стоимость за день, час и минуту
+    my $cost_day = $months_cost / DAYS_IN_MONTH;
+    my $cost_hour = $cost_day / 24;
+    my $cost_min = $cost_hour / 60;
+
+    # Определяем количество времени, которое можно купить за total
+    my $total_minutes = $total / $cost_min;
+
+    # Преобразуем минуты в дни и часы
+    my $total_hours = int($total_minutes / 60);
+    my $remaining_minutes = $total_minutes % 60;
+
+    # Преобразуем часы в дни
+    my $total_days = int($total_hours / 24);
+    my $remaining_hours = $total_hours % 24;
+
+    # Преобразуем дни в месяцы
+    my $months = int($total_days / DAYS_IN_MONTH);
+    my $days = $total_days % DAYS_IN_MONTH;
+
+    # Если есть остаток минут, округляем часы вверх
+    if ($remaining_minutes > 0) {
+        $remaining_hours++;
+        if ($remaining_hours >= 24) {
+            $days++;
+            $remaining_hours = 0;
+            if ($days >= DAYS_IN_MONTH) {
+                $months++;
+                $days = 0;
+            }
+        }
+    }
+
+    # Возвращаем период в формате M.DDHH
+    return sprintf('%d.%02d%02d', $months, $days, $remaining_hours);
 }
 
 1;
