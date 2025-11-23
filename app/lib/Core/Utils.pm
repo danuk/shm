@@ -849,7 +849,7 @@ sub qrencode {
         encoding => 'UTF-8',    # кодировка входного текста
         foreground => '000000', # цвет переднего плана (hex)
         background => 'FFFFFF', # цвет фона (hex)
-        output_file => undef,   # файл для сохранения (опционально)
+        output_file => '-',     # файл для сохранения (опционально)
         @_,
     );
 
@@ -881,13 +881,10 @@ sub qrencode {
         '-m', $args{margin},
         '-l', $args{level},
         '-t', $args{format},
+        '-o', $args{output_file},
         '--foreground=' . $args{foreground},
         '--background=' . $args{background}
     );
-
-    if ($args{output_file}) {
-        push @cmd, '-o', $args{output_file};
-    }
 
     push @cmd, $text;
 
@@ -907,27 +904,13 @@ sub qrencode {
         };
     }
 
-    if (!$args{output_file}) {
-        return {
-            success => 1,
-            data => $result->{output},
-            format => $args{format},
-            size => length($result->{output}),
-            text_length => length($text)
-        };
-    }
-
-    if (-f $args{output_file}) {
-        return {
-            success => 1,
-            file => $args{output_file},
-            size => -s $args{output_file},
-            format => $args{format},
-            text_length => length($text)
-        };
-    } else {
-        return { error => "Output file was not created: " . $args{output_file} };
-    }
+    return {
+        success => 1,
+        $args{output_file} eq '-' ? ( data => $result->{output} ) : ( file => $args{output_file} ),
+        format => $args{format},
+        size => length($result->{output}),
+        text_length => length($text)
+    };
 }
 
 1;
