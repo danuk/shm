@@ -173,10 +173,14 @@ sub http {
         %{ $args{headers} || {} },
     ));
 
+    $self->{response} = $response;
+
     logger->dump( $response->request );
 
     return $response;
 }
+
+sub response { shift->{response} };
 
 sub _http {
     my $self = shift;

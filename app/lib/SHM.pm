@@ -51,7 +51,11 @@ my %in;
 
 sub new {
     my $class = shift;
-
+    my $args = {
+        user_id => $ENV{USER_ID},
+        skip_check_auth => undef,
+        @_,
+    };
 
     # Redirect logs to PIPE
     open STDERR, ">>/tmp/shm_log" if -p "/tmp/shm_log";
@@ -67,14 +71,6 @@ sub new {
         );
         exit 0;
     }
-
-    my $args = {
-        user_id => undef,
-        skip_check_auth => undef,
-        @_,
-    };
-
-    $args->{user_id} ||= $ENV{USER_ID};
 
     my $user_id;
     my %headers = parse_headers;

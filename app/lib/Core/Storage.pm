@@ -18,6 +18,7 @@ sub structure {
         user_id => {
             type => 'number',
             auto_fill => 1,
+            key_mul => 1,
             title => 'id пользователя',
         },
         name => {

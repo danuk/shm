@@ -1,8 +1,5 @@
 package Core::System::Service;
 use strict;
-
-use base qw( Core::System::Object );
-
 use Core::System::ServiceManager qw($SERVICE_MANAGER);
 
 sub new {

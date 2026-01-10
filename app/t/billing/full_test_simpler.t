@@ -34,10 +34,15 @@ subtest 'Prepare user for test billing' => sub {
 Test::MockTime::set_fixed_time('2017-01-01T00:00:00Z');
 
 subtest 'Check create service' => sub {
-
     $us = create_service( service_id => 4, cost => 1000, months => 1 );
-
     is( $us->get_expire, '2017-01-30 23:59:59', 'Check expire date after create new service' );
+};
+
+subtest 'Check create service with disabled billing and custom status' => sub {
+    $us = create_service( service_id => 4, cost => 0, months => 1, status => 'NOT PAID', auto_bill => 0 );
+    is( $us->get_expire, undef);
+    is( $us->wd->withdraw_date, undef);
+    is( $us->get_status, 'NOT PAID');
 };
 
 done_testing();

@@ -3,6 +3,7 @@ package Core::Cloud::Currency;
 use v5.14;
 use parent 'Core::Cloud';
 use Core::Base;
+use POSIX qw(floor ceil);
 use Core::Utils qw(
     encode_json
     decode_json
@@ -18,15 +19,30 @@ sub currencies {
     $self->cache->delete('currencies') if $args{no_cache};
     my $currencies = $self->cache->get_json('currencies');
 
-    unless ( $currencies ) {
-        my $response = $self->cloud_request( url => '/service/currencies' );
-        return undef unless $response;
-        $currencies = $response->json_content();
-        unless ( $currencies ) {
-            logger->warning("Can't load currencies from Cloud");
-            return undef;
-        };
-        $self->cache->set_json('currencies', $currencies, 86400);
+    # Если в кеше нет данных или они устарели (более 1 часа)
+    my $cache_time = $self->cache->get('currencies_timestamp') || 0;
+    my $current_time = time();
+    my $cache_expired = ($current_time - $cache_time) > 3600; # 1 час
+
+    if ( !$currencies || $cache_expired ) {
+        my $response = $self->cloud_request( url => '/service/currencies/list' );
+
+        if ( $response && $response->is_success ) {
+            my $new_currencies = decode_json $response->decoded_content();
+            if ( $new_currencies ) {
+                $currencies = $new_currencies;
+                # Сохраняем навсегда, но будем пробовать обновлять каждый час
+                $self->cache->set_json('currencies', $currencies, 0);
+                $self->cache->set('currencies_timestamp', $current_time, 0);
+            } else {
+                logger->warning("Can't decode currencies from Cloud, using cached data");
+            }
+        } else {
+            logger->warning("Can't load currencies from Cloud, using cached data");
+        }
+
+        # Если обновление не удалось и кеша нет, возвращаем undef
+        return undef unless $currencies;
     }
 
     return $currencies;
@@ -41,13 +57,13 @@ sub save {
 
     my $response = $self->cloud_request(
         method => 'POST',
-        url => '/service/currencies',
+        url => '/service/currencies/list',
         content => {
             format => 'json',
             currencies => $args{currencies},
         },
     );
-    return undef unless $response;
+    return undef unless $response && $response->is_success;
 
     my $currencies = decode_json $response->decoded_content;
 
@@ -123,6 +139,52 @@ sub to {
 
     my $total = $amount / $value;
     return sprintf( "%.2f", $total );
+}
+
+sub system_currency {
+    my $self = shift;
+
+    state $currency //= get_service('config', _id => 'billing')->get_data->{currency} || 'RUB';
+    return $currency;
+}
+
+sub convert {
+    my $self = shift;
+    my %args = (
+        from => '',
+        to => '',
+        amount => 0,
+        @_,
+    );
+
+    my $system_currency = $self->system_currency;
+    my $from_currency = uc $args{from} || $system_currency;
+    my $to_currency = uc $args{to} || $system_currency;
+    my $amount = $args{amount};
+
+    return sprintf("%.2f", $amount) if $from_currency eq $to_currency;
+
+    my $from_value = $self->get_value($from_currency);
+    my $to_value = $self->get_value($to_currency);
+
+    return undef unless defined $from_value && defined $to_value;
+
+    my $rub_amount = $amount * $from_value;
+    my $converted_amount = $rub_amount / $to_value;
+
+    # Асимметричное округление для защиты от потерь при обратной конвертации
+    if ($from_currency eq $system_currency) {
+        # Конвертируем ИЗ системной валюты - округляем вверх
+        return sprintf("%.2f", ceil($converted_amount * 100) / 100);
+    }
+    elsif ($to_currency eq $system_currency) {
+        # Конвертируем В системную валюту - округляем вниз
+        return sprintf("%.2f", floor($converted_amount * 100) / 100);
+    }
+    else {
+        # Конвертация между не-системными валютами - обычное округление
+        return sprintf("%.2f", $converted_amount);
+    }
 }
 
 1;

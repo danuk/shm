@@ -352,6 +352,7 @@ sub activate_services {
                 STATUS_BLOCK,
                 STATUS_WAIT_FOR_PAY,
             ]},
+            auto_bill => 1,
         },
         order => [ user_service_id => 'ASC' ],
     );

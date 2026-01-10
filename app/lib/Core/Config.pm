@@ -8,6 +8,10 @@ our $config;
 our $session_config;
 require 'shm.conf';
 
+use Core::Utils qw(
+    decode_json
+);
+
 sub table { return 'config' };
 
 sub structure {
@@ -25,6 +29,7 @@ sub structure {
     }
 }
 
+# Кастомное имя сервиса. Не используем user_id в имени, так как сервис не зависит от пользователя
 sub _id {
     my $self = shift;
     my %args = @_;
@@ -81,7 +86,7 @@ sub local {
 sub api_data_by_name {
     my $self = shift;
     my %args = (
-        keys => undef,
+        key => undef,
         @_,
     );
 
@@ -108,6 +113,26 @@ sub data_by_name {
     return \%ret || {};
 }
 
+sub api_data_by_company {
+    my $self = shift;
+    my $key = 'company';
+
+    my @list = $self->list( where => {
+        key => $key,
+    });
+
+    my %ret = map{ $_->{key} => $_->{value} } @list;
+
+    if ( $key ) {
+        for ( keys %{ $ret{ $key } } ) {
+            $ret{ $_ } = delete $ret{ $key }->{ $_ };
+        }
+        delete $ret{ $key };
+    }
+
+    return \%ret || {};
+}
+
 sub delete {
     my $self = shift;
     my %args = @_;
@@ -119,7 +144,11 @@ sub delete {
         return undef;
     }
 
-    return $self->SUPER::delete( %args );
+    return $self->dbh->do(
+        "DELETE FROM config WHERE `key` = ?",
+        undef,
+        $self->id
+    );
 }
 
 sub get_data {
@@ -146,6 +175,58 @@ sub list_for_api {
     });
 }
 
+sub api_set_value {
+    my $self = shift;
+    my %args = (
+        key => undef,
+        @_,
+    );
+
+    return undef unless $self->id;
+
+    my $config = $self->id( $args{key} );
+    unless ( $config ) {
+        report->add_error( 'key not found' );
+        return undef;
+    }
+
+    if ( my $new_values = decode_json $args{ POSTDATA } ) {
+        my $old_values = $self->get;
+        $config->set_value( $new_values );
+
+        my $method = sprintf("updated_%s", $args{key} );
+        if ( $self->can( $method ) ) {
+            $self->$method( old_values => $old_values );
+        }
+    }
+    return scalar $self->get;
+}
+
+sub api_delete_value {
+    my $self = shift;
+    my %args = (
+        key => undef,
+        value => undef,
+        @_,
+    );
+
+    return undef unless $self->id;
+
+    my $config = $self->id( $args{key} );
+    unless ( $config ) {
+        report->add_error( 'key not found' );
+        return undef;
+    }
+
+    my $key = $self->get;
+    my $old_values = $key->{value};
+
+    delete $old_values->{ $args{value} };
+    $config->set_value( $old_values );
+
+    return scalar $self->get;
+}
+
 sub set_value {
     my $self = shift;
     my $new_data = shift;
@@ -153,5 +234,14 @@ sub set_value {
     return $self->set_json('value', $new_data );
 }
 
-1;
+sub updated_pay_systems {
+    my $self = shift;
+    my %args = (
+        old_values => undef,
+        @_,
+    );
 
+    $self->srv('Cloud::Jobs')->job_download_all_paystems();
+}
+
+1;

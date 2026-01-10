@@ -3,7 +3,10 @@
 use v5.14;
 use SHM;
 use Core::System::ServiceManager qw( get_service );
-use Core::Utils qw( read_file );
+use Core::Utils qw(
+    read_file
+    switch_user
+);
 use Core::Sql::Data;
 use version;
 
@@ -21,9 +24,11 @@ if ( -f "$ENV{SHM_ROOT_DIR}/version" ) {
     }
 }
 
+my $logger = get_service('logger');
 my $config = get_service('config');
 my $dbh = db_connect( %{ $config->file->{config}{database} } ) or die "Can't connect to DN";
 $config->local('dbh', $dbh );
+switch_user( 1 );
 
 my $tables_count = $sql->do("SHOW TABLES");
 
@@ -39,7 +44,7 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
         print "Loading data... ";
         import_sql_file( $dbh, "$ENV{SHM_ROOT_DIR}/sql/shm/shm_data.sql" );
     }
-    $config->id( '_shm' )->set( value => { version => $version . $version_prefix } ) if $version;
+    $config->id( '_shm' )->set_value( { version => $version . $version_prefix } ) if $version;
     say "done";
 } elsif ( $version ) {
     # Start migrations
@@ -68,13 +73,16 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
         } else {
             eval `cat $nv`;
         }
-        $config->set( value => { version => $nv . $version_prefix } );
+        $config->set_value( { version => $nv . $version_prefix } );
         $dbh->commit();
         say "done"
     }
 
-    $config->set( value => { version => $version . $version_prefix } );
+    $config->set_value( { version => $version . $version_prefix } );
 }
+
+# Load cloud and download paysystems and templates
+get_service('Cloud::Jobs')->startup();
 
 $dbh->commit();
 $dbh->disconnect();

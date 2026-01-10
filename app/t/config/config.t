@@ -40,9 +40,11 @@ is( $test->get_data->{"QAZ"}, 1 );
 my $version = $config->id( '_shm')->get_data;
 cmp_deeply( $version, {
     version => ignore(),
+    cloud => ignore(),
 });
 
 is( $config->data_by_name( 'billing')->{partner}->{income_percent}, 20 );
+is( $config->data_by_name( 'billing')->{currency}, 'RUB' );
 is( $config->data_by_name( '_billing')->{partner}->{income_percent}, undef );
 
 done_testing();

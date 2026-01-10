@@ -20,6 +20,27 @@ use Core::Utils qw(
     qrencode
 );
 
+# https://core.telegram.org/resources/cidr.txt
+sub telegram_ips {
+    my @ips = qw(
+        91.108.56.0/22
+        91.108.4.0/22
+        91.108.8.0/22
+        91.108.16.0/22
+        91.108.12.0/22
+        149.154.160.0/20
+        91.105.192.0/23
+        91.108.20.0/22
+        185.76.151.0/24
+        2001:b28:f23d::/48
+        2001:b28:f23f::/48
+        2001:67c:4e8::/48
+        2001:b28:f23c::/48
+        2a0a:f280::/32
+    );
+    return \@ips;
+}
+
 sub init {
     my $self = shift;
     my %args = (
@@ -55,6 +76,7 @@ sub user_tg_settings {
 sub settings { shift->user_tg_settings };
 sub login { shift->user_tg_settings->{username} };
 sub username { shift->user_tg_settings->{username} };
+sub response { shift->{response} };
 
 # устанавливает указанный профиль: token & chat_id
 # Не устанавливаем chat_id, если он был установлен ранее,
@@ -282,7 +304,7 @@ sub bot {
     $self->profile( $template_id ) unless $self->{profile};
 
     unless ( $self->chat_id ) {
-        logger->debug('chat_id не найден' );
+        logger->error('chat_id не найден');
         return undef;
     }
 
@@ -791,6 +813,8 @@ sub exec_template {
     return \@ret;
 }
 
+sub api { shift->tg_api( @_ ) };
+
 sub tg_api {
     my $self = shift;
     my %args = (
@@ -1121,7 +1145,7 @@ sub webapp_auth {
 
     unless ( $args{initData} ) {
         report->error("bad request");
-        $self->set_user_fail_attempt( 'webapp_auth', 3600 ); # 5 fails/hour
+        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
         return undef;
     }
 
@@ -1133,7 +1157,7 @@ sub webapp_auth {
 
         if ( $tg_user->{id} ne $self->user_tg_settings->{user_id} ) {
             report->error("Telegram WebApp auth error: user_id doesn't match");
-            $self->set_user_fail_attempt( 'webapp_auth', 3600 ); # 5 fails/hour
+            $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
             return undef;
         }
     } else {
@@ -1145,7 +1169,7 @@ sub webapp_auth {
         );
         unless ( $user ) {
             logger->error("Telegram WebApp auth error: user not found");
-            $self->set_user_fail_attempt( 'webapp_auth', 3600 ); # 5 fails/hour
+            $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
             return undef;
         }
 
@@ -1164,7 +1188,7 @@ sub webapp_auth {
 
     unless ( $hex eq $hash ) {
         report->error('Telegram WebApp auth error');
-        $self->set_user_fail_attempt( 'webapp_auth', 3600 ); # 5 fails/hour
+        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
         return undef;
     }
 
@@ -1212,7 +1236,7 @@ sub web_auth {
 
     unless ($hex eq $hash) {
         report->error('Telegram WebApp auth error');
-        $self->set_user_fail_attempt( 'web_auth', 3600 ); # 5 fails/hour
+        $self->set_user_fail_attempt( 'web_auth', 3600, $self->telegram_ips ); # 5 fails/hour
         return undef;
     }
 
@@ -1260,7 +1284,7 @@ sub web_auth {
 
     if ( !$args{register_if_not_exists} && !$user ) {
         logger->error("Telegram WebApp auth error: user not found");
-        $self->set_user_fail_attempt( 'web_auth', 3600 ); # 5 fails/hour
+        $self->set_user_fail_attempt( 'web_auth', 3600, $self->telegram_ips ); # 5 fails/hour
         return undef;
     }
 
@@ -1270,6 +1294,53 @@ sub web_auth {
         session_id => $self->srv('sessions')->add(),
     };
 
+}
+
+sub set_webhook {
+    my $self = shift;
+    my %args = (
+        method => 'post',
+        content_type => 'application/json; charset=utf-8',
+        url => undef,
+        token => undef,
+        secret => undef,
+        template_id => undef,
+        @_,
+    );
+
+    my $method = delete $args{method};
+
+    my $delete_webhook = $self->{lwp}->get(
+        sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->{server}, $args{token}),
+    );
+
+    my $content = {
+        secret_token => $args{secret},
+        url => sprintf('%s/shm/v1/telegram/bot/%s', $args{url}, $args{template_id}),
+        allowed_updates => [
+            'message',
+            'inline_query',
+            'callback_query',
+            'pre_checkout_query',
+            'my_chat_member',
+        ]
+    };
+
+    my $set_webhook = $self->{lwp}->$method(
+        sprintf('%s/bot%s/setWebhook', $self->{server}, $args{token}),
+        Content_Type => $args{content_type},
+        Content => encode_json( $content ),
+    );
+
+    logger->dump('Send to TG', $set_webhook->request );
+    logger->dump('Answer from TG', $set_webhook->decoded_content );
+
+    unless ( $set_webhook->is_success ) {
+        my $message = $set_webhook->decoded_content;
+        logger->error( $message );
+    }
+
+    return $set_webhook->decoded_content;
 }
 
 1;

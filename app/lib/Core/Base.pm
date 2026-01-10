@@ -31,13 +31,14 @@ our @EXPORT = qw(
 );
 
 use vars qw($AUTOLOAD);
+sub DESTROY {}; # ignore destroy destructor
 sub AUTOLOAD {
     my $self = shift;
 
     if ( $AUTOLOAD =~ /^.*::(get_)?(\w+)$/ ) {
         my $method = $2;
 
-        unless ( my %res = $self->res ) {
+        unless ( %{ $self->res } ) {
             # load data if not loaded before
             $self->get if $self->can('structure');
         }
@@ -49,8 +50,6 @@ sub AUTOLOAD {
             return $structure->{ $method }->{value}; # return default value from struct
         }
         return undef;
-    } elsif ( $AUTOLOAD=~/::DESTROY$/ ) {
-        # Skip
     } else {
         confess ("Method not exists: " . $AUTOLOAD );
     }
@@ -132,7 +131,7 @@ sub id {
 
 sub user_id {
     my $self = shift;
-    return $self->get_user_id || $self->{user_id} || get_service('config')->local->{user_id};
+    return $self->res->{user_id} || $self->{user_id} || get_service('config')->local->{user_id};
 }
 
 sub user {
@@ -230,6 +229,9 @@ sub get {
     return wantarray ? %{ $self->{res} } : $self->{res};
 }
 
+# Method for templates. It always gets scalar
+sub pairs { scalar shift->get }
+
 sub items {
     my $self = shift;
     my %args = (
@@ -325,6 +327,12 @@ sub _add_or_set {
         unless ( $self->validate_attributes( $method, %args ) ) {
             logger->warning('validate attribute error:', $method, \%args );
             return undef;
+        }
+    }
+
+    if ( $method eq 'add' ) {
+        if ( my $defaults = get_service('config')->data_by_name('defaults')->{ lc $self->kind } ) {
+            %args = %{ hash_merge( $defaults, \%args ) };
         }
     }
 
@@ -532,14 +540,24 @@ sub get_smart_args {
     return @args;
 }
 
+sub cloud_headers {
+    my $self = shift;
+
+    return {
+        SHM_INFO_CNT => $self->user->active_count,
+        SHM_INFO_VER => get_service('config')->id( '_shm' )->get_data->{'version'},
+    }
+}
+
 sub set_user_fail_attempt {
     my $self = shift;
     my $method = shift;
     my $expire = shift || 600;
+    my $ips = shift || $ENV{TRUSTED_IPS};
 
     my $user_ip = get_user_ip() || return undef;
 
-    if (my $exclude_ips = $ENV{TRUSTED_IPS}) {
+    if (my $exclude_ips = $ips) {
         my @ip_ranges = map { s/^\s+|\s+$//gr } split /,/, $exclude_ips;
         return 0 if is_ip_allowed($user_ip, \@ip_ranges);
     }
@@ -548,6 +566,14 @@ sub set_user_fail_attempt {
     my $tag = lc sprintf("%s-%s-%s", ref $self, $method, $user_ip);
 
     return $cache->increment( $tag, $expire );
+}
+
+sub arch {
+    my $self = shift;
+
+    state $arch ||= `uname -m`;
+    chomp $arch;
+    return $arch;
 }
 
 1;

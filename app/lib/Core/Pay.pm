@@ -128,6 +128,8 @@ sub forecast {
         ],
     )->with('services','withdraws','settings')->get;
 
+    my $bonus = $user->get_bonus,
+
     my @forecast_services;
 
     for my $usi ( sort { $a <=> $b } keys %{ $user_services } ) {
@@ -135,8 +137,10 @@ sub forecast {
         next if $obj->{next} == -1 && $obj->{expire};
 
         my $us = get_service('us', user_id => $self->user_id, _id => $usi );
+        next unless $us;
 
         my %wd = $us->withdraw->get;
+        $wd{months} = $us->service->get_period;
         my $service_next_name = $obj->{services}->{name};
 
         if ( $us->wd->paid ) {
@@ -164,6 +168,15 @@ sub forecast {
             %wd,
         );
 
+        my $total = $wd_forecast{total};
+        my $calc_bonuses = Core::Billing::calc_available_bonuses( $us, $bonus, $total );
+        if ( $calc_bonuses >= $total ) {
+            $total = 0;
+        } else {
+            $total -= $calc_bonuses;
+        }
+        $bonus -= $calc_bonuses;
+
         push @forecast_services, {
             name => $obj->{services}->{name},
             service_id => $obj->{service_id},
@@ -183,16 +196,18 @@ sub forecast {
                 months => $wd_forecast{months},
                 qnt => $wd_forecast{qnt},
                 discount => $wd_forecast{discount},
-                total => $wd_forecast{total},
+                bonus => $calc_bonuses,
+                total => $total,
             },
-        } if $wd_forecast{total};
-
+        } if $total;
     }
 
+   my $balance = $user->get_balance;
+
     my %ret = (
-        balance => $user->get_balance,
+        balance => $balance,
         bonuses => $user->get_bonus,
-        total => 0,
+        total => 0,                     # amount to be paid
         items => \@forecast_services,
     );
 
@@ -200,13 +215,11 @@ sub forecast {
         $ret{total} += $_->{next}->{total};
     }
 
-    my $total = $user->get_balance + $user->get_bonus;
-
-    if ( $total > 0 ) {
-        $ret{total} -= $total;
+    if ( $balance > 0 ) {
+        $ret{total} -= $balance;
         $ret{total} = 0 if $ret{total} < 0;
     } else {
-        $ret{dept} = abs( $total );
+        $ret{dept} = abs( $balance );
         $ret{total} += $ret{dept};
     }
 

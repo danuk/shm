@@ -25,8 +25,8 @@ INSERT INTO `templates` VALUES
 ;
 
 INSERT INTO `config` VALUES
-("_shm", '{"version":"0.0.3"}'),
-('billing','{"type": "Simpler", "partner": {"income_percent": 0}}'),
+("_shm", '{"version":"0.0.3", "cloud": {}}'),
+("billing",'{"type": "Simpler", "partner": {"income_percent": 0},"currency": "RUB"}'),
 ("company", '{"name":"My Company LTD"}'),
 ("telegram", '{"token":""}'),
 ("api",     '{"url":"https://bill.domain.ru"}'),

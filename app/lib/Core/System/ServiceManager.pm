@@ -51,6 +51,13 @@ sub get_service {
     return undef unless $name;
 
     my $class = get_class_name( $name );
+
+    # Security check: validate class name
+    unless ( $class =~ /^[A-Za-z0-9_:]+$/ ) {
+        print STDERR "ERROR\tInvalid class name: $class\n";
+        return undef;
+    }
+
     my $service = $SERVICE_MANAGER->{services}->{ $class };
     unless ( $service ) {
         eval "require $class; 1";

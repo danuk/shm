@@ -50,6 +50,13 @@ my $routes = {
         skip_check_auth => 1,
     },
 },
+'/company' => {
+    GET => {
+        controller => 'Config',
+        method => 'api_data_by_company',
+        skip_check_auth => 1,
+    },
+},
 '/user' => {
     swagger => { tags => 'Пользователи' },
     GET => {
@@ -72,7 +79,7 @@ my $routes = {
     swagger => { tags => 'Пользователи' },
     POST => {
         controller => 'User',
-        method => 'api_auth',
+        method => 'auth_api_safe',
         skip_check_auth => 1,
         required => ['login','password'],
         args => {
@@ -97,6 +104,201 @@ my $routes = {
                 },
             },
         },
+    },
+},
+'/user/password-auth/disable' => {
+    POST => {
+        controller => 'User',
+        method => 'api_disable_password_auth',
+    },
+},
+'/user/password-auth/enable' => {
+    POST => {
+        controller => 'User',
+        method => 'api_enable_password_auth',
+    },
+},
+'/user/password-auth/status' => {
+    GET => {
+        controller => 'User',
+        method => 'api_password_auth_status',
+    },
+},
+'/user/otp/setup' => {
+    swagger => {
+        tags => ['OTP'],
+        summary => 'Setup OTP for user',
+        description => 'Generates secret and QR code for OTP setup'
+    },
+    POST => {
+        controller => 'OTP',
+        method => 'api_setup',
+    },
+},
+'/user/otp/enable' => {
+    swagger => {
+        tags => ['OTP'],
+        summary => 'Enable OTP',
+        description => 'Enable OTP after verification'
+    },
+    POST => {
+        controller => 'OTP',
+        method => 'api_enable',
+        required => ['token'],
+    },
+},
+'/user/otp/disable' => {
+    swagger => {
+        tags => ['OTP'],
+        summary => 'Disable OTP',
+        description => 'Disable OTP with token verification'
+    },
+    POST => {
+        controller => 'OTP',
+        method => 'api_disable',
+        required => ['token'],
+    },
+},
+'/user/otp/verify' => {
+    swagger => {
+        tags => ['OTP'],
+        summary => 'Verify OTP token',
+        description => 'Verify OTP token or backup code'
+    },
+    POST => {
+        controller => 'OTP',
+        method => 'api_verify',
+        required => ['token'],
+    },
+},
+'/user/otp/status' => {
+    swagger => {
+        tags => ['OTP'],
+        summary => 'Get OTP status',
+        description => 'Get current OTP status for user'
+    },
+    GET => {
+        controller => 'OTP',
+        method => 'api_status',
+    },
+},
+'/user/passkey/register/options' => {
+    swagger => {
+        tags => ['Passkey'],
+        summary => 'Get Passkey registration options',
+        description => 'Get WebAuthn options for registering a new passkey'
+    },
+    POST => {
+        controller => 'Passkey',
+        method => 'api_register_options',
+    },
+},
+'/user/passkey/register/complete' => {
+    swagger => {
+        tags => ['Passkey'],
+        summary => 'Complete Passkey registration',
+        description => 'Complete WebAuthn registration with attestation response'
+    },
+    POST => {
+        controller => 'Passkey',
+        method => 'api_register_complete',
+        required => ['credential_id', 'response'],
+    },
+},
+'/user/passkey/auth/options' => {
+    swagger => {
+        tags => ['Passkey'],
+        summary => 'Get Passkey authentication options',
+        description => 'Get WebAuthn options for authenticating with passkey (requires auth)'
+    },
+    POST => {
+        controller => 'Passkey',
+        method => 'api_auth_options',
+    },
+},
+'/user/passkey/auth/complete' => {
+    swagger => {
+        tags => ['Passkey'],
+        summary => 'Complete Passkey authentication',
+        description => 'Complete WebAuthn authentication with assertion response (requires auth)'
+    },
+    POST => {
+        controller => 'Passkey',
+        method => 'api_auth_complete',
+        required => ['credential_id', 'response'],
+    },
+},
+'/user/passkey/list' => {
+    swagger => {
+        tags => ['Passkey'],
+        summary => 'List registered passkeys',
+        description => 'Get list of all registered passkeys for current user'
+    },
+    GET => {
+        controller => 'Passkey',
+        method => 'api_list',
+    },
+},
+'/user/passkey/delete' => {
+    swagger => {
+        tags => ['Passkey'],
+        summary => 'Delete a passkey',
+        description => 'Remove a registered passkey'
+    },
+    POST => {
+        controller => 'Passkey',
+        method => 'api_delete',
+        required => ['credential_id'],
+    },
+},
+'/user/passkey/rename' => {
+    swagger => {
+        tags => ['Passkey'],
+        summary => 'Rename a passkey',
+        description => 'Change the display name of a passkey'
+    },
+    POST => {
+        controller => 'Passkey',
+        method => 'api_rename',
+        required => ['credential_id', 'name'],
+    },
+},
+'/user/passkey/status' => {
+    swagger => {
+        tags => ['Passkey'],
+        summary => 'Get Passkey status',
+        description => 'Get current passkey status for user'
+    },
+    GET => {
+        controller => 'Passkey',
+        method => 'api_status',
+    },
+},
+# Public passkey auth (no session required)
+'/user/passkey/auth/options/public' => {
+    swagger => {
+        tags => ['Passkey'],
+        summary => 'Get Passkey authentication options (public)',
+        description => 'Get WebAuthn options for login with passkey (no auth required)'
+    },
+    POST => {
+        controller => 'Passkey',
+        method => 'api_auth_options_public',
+        skip_check_auth => 1,
+        required => ['login'],
+    },
+},
+'/user/passkey/auth/public' => {
+    swagger => {
+        tags => ['Passkey'],
+        summary => 'Authenticate with Passkey (public)',
+        description => 'Login using passkey without password'
+    },
+    POST => {
+        controller => 'Passkey',
+        method => 'api_auth_public',
+        skip_check_auth => 1,
+        required => ['login', 'credential_id', 'response'],
     },
 },
 '/user/passwd' => {
@@ -133,7 +335,7 @@ my $routes = {
     swagger => { tags => 'Услуги пользователей' },
     POST => {
         controller => 'USObject',
-        method => 'block',
+        method => 'block_force',
         required => ['user_service_id'],
         swagger => { summary => 'Остановить услугу пользователя' },
     },
@@ -492,9 +694,10 @@ my $routes = {
         controller => 'Pay',
         swagger => { summary => 'Список платежей клиентов' },
     },
-    PUT => {
+    DELETE => {
         controller => 'Pay',
-        swagger => { summary => 'Создать платеж' },
+        required => ['user_id', 'id'],
+        swagger => { summary => 'Удалить платеж клиента' },
     },
 },
 '/admin/user/bonus' => {
@@ -514,7 +717,7 @@ my $routes = {
     DELETE => {
         controller => 'Bonus',
         required => ['id','user_id'],
-        swagger => { summary => 'Изменить бонус' },
+        swagger => { summary => 'Удалить бонус' },
     },
 },
 '/admin/user/service' => {
@@ -560,6 +763,11 @@ my $routes = {
         required => ['user_id', 'withdraw_id'],
         swagger => { summary => 'Изменить списание клиента' },
     },
+    DELETE => {
+        controller => 'Withdraw',
+        required => ['user_id', 'withdraw_id'],
+        swagger => { summary => 'Удалить списание клиента' },
+    },
 },
 '/admin/user/service/status' => {
     swagger => { tags => 'Услуги пользователей' },
@@ -586,6 +794,24 @@ my $routes = {
         method => 'activate_force',
         required => ['user_id','user_service_id'],
         swagger => { summary => 'Возобновить услугу клиента' },
+    },
+},
+'/admin/user/service/touch' => {
+    swagger => { tags => 'Услуги пользователей' },
+    POST => {
+        controller => 'USObject',
+        method => 'touch_api',
+        required => ['user_id','user_service_id'],
+        swagger => { summary => 'Обработать услугу' },
+    },
+},
+'/admin/user/service/change' => {
+    swagger => { tags => 'Услуги пользователей' },
+    POST => {
+        controller => 'USObject',
+        method => 'change',
+        required => ['user_id','user_service_id','service_id'],
+        swagger => { summary => 'Сменить тариф услуги клиента' },
     },
 },
 '/admin/user/service/spool' => {
@@ -811,9 +1037,19 @@ my $routes = {
 '/admin/storage/manage/*' => {
     swagger => { tags => 'Хранилище' },
     splat_to => 'name',
+    GET => {
+        controller => 'Storage',
+        method => 'read',
+        required => ['user_id'],
+        args => {
+            format => 'other',
+        },
+        swagger => { summary => 'Получить объект хранилища' },
+    },
     POST => {
         controller => 'Storage',
         method => 'replace',
+        required => ['user_id'],
     },
     DELETE => {
         controller => 'Storage',
@@ -848,6 +1084,18 @@ my $routes = {
         controller => 'Config',
         method => 'api_data_by_name',
         swagger => { summary => 'Получить объект конфига' },
+    },
+    POST => {
+        controller => 'Config',
+        method => 'api_set_value',
+        skip_auto_parse_json => 1,
+        swagger => { summary => 'Изменить объект в конфиге' },
+    },
+    DELETE => {
+        controller => 'Config',
+        method => 'api_delete_value',
+        required => ['value'],
+        swagger => { summary => 'Удалить значение или обьект внутри объекта конфига' },
     },
 },
 '/admin/console' => {
@@ -914,7 +1162,18 @@ my $routes = {
         method => 'delete',
     },
 },
-
+'/admin/analytics' => {
+    GET => {
+        controller => 'Analytics',
+        method => 'api_report',
+    },
+},
+'/admin/analytics/cache/clear' => {
+    POST => {
+        controller => 'Analytics',
+        method => 'clear_cache',
+    },
+},
 '/telegram/bot' => {
     POST => {
         skip_check_auth => 1,
@@ -941,6 +1200,25 @@ my $routes = {
         },
         swagger => {
             summary => 'Приём данных от Telegram',
+        },
+    },
+},
+'/telegram/set_webhook' => {
+    POST => {
+        skip_check_auth => 1,
+        controller => 'Transport::Telegram',
+        method => 'set_webhook',
+        required => [
+            'url',
+            'token',
+            'secret',
+            'template_id',
+        ],
+        args => {
+            format => 'json',
+        },
+        swagger => {
+            summary => 'Установка Webhook в Telegram бота',
         },
     },
 },
@@ -1048,6 +1326,37 @@ my $routes = {
         controller => 'Cloud::Currency',
         method => 'save',
         required => ['currencies'],
+    },
+},
+'/admin/cloud/proxy/*' => {
+    splat_to => 'uri',
+    GET => {
+        controller => 'Cloud',
+        method => 'proxy',
+        args => {
+            format => 'json',
+        },
+    },
+    POST => {
+        controller => 'Cloud',
+        method => 'proxy',
+        args => {
+            format => 'json',
+        },
+    },
+    PUT => {
+        controller => 'Cloud',
+        method => 'proxy',
+        args => {
+            format => 'json',
+        },
+    },
+    DELETE => {
+        controller => 'Cloud',
+        method => 'proxy',
+        args => {
+            format => 'json',
+        },
     },
 }
 

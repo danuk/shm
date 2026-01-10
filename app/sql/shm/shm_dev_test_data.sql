@@ -296,8 +296,8 @@ INSERT INTO `profiles` VALUES
 ;
 
 INSERT INTO `config` VALUES
-("_shm", '{"version":"0.0.3"}'),
-('billing','{"type": "Honest", "partner": {"income_percent": 20}}'),
+("_shm", '{"version":"0.0.3", "cloud": {}}'),
+("billing",'{"type": "Honest", "partner": {"income_percent": 20},"currency": "RUB"}'),
 ("company", '{"name":"My Company LTD"}'),
 ("telegram", '{"token":""}'),
 ("api",     '{"url":"http://127.0.0.1:8081"}'),

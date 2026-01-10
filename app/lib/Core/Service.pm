@@ -334,4 +334,11 @@ sub settings {
     return $self->config || {};
 }
 
+sub config {
+    my $self = shift;
+    return $self->get_config || {};
+}
+
+sub no_auto_renew { shift->config->{no_auto_renew} || 0 };
+
 1;

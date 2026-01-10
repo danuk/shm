@@ -13,6 +13,12 @@ use constant DOMAIN_INCORRECT => -2;
 
 sub load_registrator {
     my ( $self, $name ) = @_;
+
+    # Security check: validate registrator name
+    unless ( $name =~ /^[A-Za-z0-9_]+$/ ) {
+        die "Invalid registrator name: $name\n";
+    }
+
     my $class = "Core::Domain::Registrator::" . ucfirst $name;
     eval "require $class; 1" or die $@;
     return $class;

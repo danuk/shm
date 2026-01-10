@@ -674,7 +674,7 @@ sub list_for_api {
 
     my @ret = $self->$method(
         $args{fields} ? ( fields => $args{fields} ) : (),
-        $range ? ( $range ) : (),
+        $range ? ( range => $range ) : (),
         limit => $args{limit},
         offset => $args{offset},
         calc => 1,
@@ -723,8 +723,24 @@ sub get {
         return undef;
     }
 
+    my $table_key = $self->get_table_key;
+
+    # Добавлять user_id автоматически если флаг: key_mul
+    my $user_id;
+    my $structure = $self->structure;
+    if ( $table_key ne 'user_id' && $structure->{user_id} && $structure->{user_id}->{key_mul} ) {
+        $user_id = $self->user_id;
+    }
+
     # do not use list() because of list might contain default selectors
-    my ( $ret ) = $self->_list( where => { sprintf("%s.%s", $self->table, $self->get_table_key ) => $self->id }, limit => 1, @_ );
+    my ( $ret ) = $self->_list(
+        where => {
+            sprintf("%s.%s", $self->table, $table_key ) => $self->id,
+            $user_id ? ( sprintf("%s.%s", $self->table, 'user_id' ) => $user_id, ) : (),
+        },
+        limit => 1,
+        @_,
+    );
     return wantarray ? %{ $ret||={} } : $ret;
 }
 

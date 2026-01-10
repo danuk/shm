@@ -41,9 +41,9 @@ sub create_service {
         @_,
     );
 
-    my $us = create_service_recursive( %args );
+    my $us = create_service_recursive( %args ) || return undef;
 
-    return process_service_recursive( $us, EVENT_CREATE );
+    return $us->get_auto_bill ? process_service_recursive( $us, EVENT_CREATE ) : $us;
 }
 
 sub create_service_recursive {
@@ -240,7 +240,7 @@ sub is_pay {
 
     my $user = $self->user;
     my $balance = $user->get_balance + $user->get_credit;
-    my $bonus = $user->get_bonus;
+    my $bonus = calc_available_bonuses( $self, $user->get_bonus, $wd->get_total );
     my $total = $wd->get_total;
 
     my $root = $self->top_parent;
@@ -330,6 +330,10 @@ sub create {
 
 sub prolongate {
     my $self = shift;
+    my %args = (
+        force => 0,
+        @_,
+    );
 
     logger->info('Trying to prolong the service: ' . $self->id );
 
@@ -339,6 +343,11 @@ sub prolongate {
     ) {
         logger->warning( sprintf "Can't prolongate service %d with status: %s . Skipped", $self->id, $self->get_status );
         return undef;
+    }
+
+    if ( $self->service->no_auto_renew && !$args{force} ) {
+        logger->debug( sprintf "Block service because of `no_auto_renew` is set for usi %d", $self->id );
+        return block( $self );
     }
 
     unless ( $self->has_expired ) {
@@ -355,7 +364,7 @@ sub prolongate {
     if ( $self->withdraw->paid && $self->get_next == -1 ) {
         return remove( $self );
     } elsif ( $self->withdraw->paid && $self->get_next ) {
-        unless (switch_to_next_service( $self)) {
+        unless (switch_to_next_service( $self )) {
             logger->error( "Failed to switch to next service for user service: " . $self->id );
             return undef;
         }
@@ -379,7 +388,7 @@ sub prolongate {
 
     unless ( is_pay( $self ) ) {
         logger->info('Not enough money');
-        return block( $self );
+        return $self->get_status eq STATUS_BLOCK ? undef : block( $self );
     }
 
     set_service_expire( $self );
@@ -559,6 +568,27 @@ sub calc_period_by_total {
 
     no strict 'refs';
     return &{"Core::Billing::${billing}::calc_period_by_total"}( @_ );
+}
+
+sub calc_available_bonuses {
+    my $us = shift;
+    my $bonus = shift;
+    my $total = shift;
+
+    return 0 unless $us;
+    return 0 if $bonus <= 0;
+    return 0 if $total <= 0;
+
+    my $limit_bonus_percent = $us->service->config->{limit_bonus_percent};
+    return $bonus unless length $limit_bonus_percent;
+
+    my $max_bonus_amount = $total * int($limit_bonus_percent) / 100;
+
+    if ( $bonus > $max_bonus_amount ) {
+        $bonus = $max_bonus_amount;
+    }
+
+    return sprintf("%.2f", $bonus) + 0;
 }
 
 1;

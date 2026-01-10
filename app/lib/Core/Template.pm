@@ -120,10 +120,13 @@ sub parse {
         tg_api => sub { encode_json_perl( shift, pretty => 1 ) }, # for testing templates
         response => { test_data => 1 },  # for testing templates
         http => sub { get_service('Transport::Http') },
+        ssh => sub { get_service('Transport::Ssh') },
+        s3 => sub { get_service('S3') },
         spool => sub { get_service('Spool', $task_id ? (task_id => $task_id) : (), defined $_[0] ? (_id => $_[0]) : () ) },
         promo => sub { get_service('promo', defined $_[0] ? (_id => $_[0]) : () ) },
         misc => sub { get_service('misc') },
         logger => sub { get_service('logger') },
+        report => sub { get_service('report') },
         cache => sub { get_service('Core::System::Cache') },
         currency => sub { get_service('Cloud::Currency') },
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
@@ -195,6 +198,8 @@ sub parse {
         INTERPOLATE  => 0,
         PRE_CHOMP => 1,
         EVAL_PERL => 1,
+        INCLUDE_PATH => 'data/templates',
+        #LOAD_TEMPLATES => [ $provider1 ],
     });
 
     my $result = "";
@@ -337,6 +342,15 @@ sub _db_list {
     if ( my $id = $args{id} ) {
         $args{where}->{id} ||= $id;
     }
+
+    if ( my $filter = delete $args{filter} ) {
+        my $where = $self->query_for_filtering( %$filter );
+        $args{where} = {
+            %{ $args{where} || {} },
+            %{ $where || {} },
+        };
+    }
+
     return $self->SUPER::_list( %args );
 }
 
@@ -347,6 +361,11 @@ sub _list {
     );
 
     return $self->_db_list( @_ ) unless $self->{file_mode};
+
+    if ( my $filter = delete $args{filter} ) {
+        my $where = $self->query_for_filtering( %$filter );
+        $args{where} = { %{ $args{where} || {} }, %{ $where || {} } };
+    }
 
     my @data;
 
@@ -362,6 +381,23 @@ sub _list {
             push @data, {
                 id => $_,
                 settings => decode_json( read_settings_from_file( $_ )) || {},
+            }
+        }
+        if ( my $where = $args{where} ) {
+            my $id_filter_key = exists $where->{id} ? 'id' : exists $where->{'templates.id'} ? 'templates.id' : undef;
+
+            if ( $id_filter_key ) {
+                my $id_filter = $where->{$id_filter_key};
+
+                if ( ref $id_filter eq 'HASH' && exists $id_filter->{'-like'} ) {
+                    my $pattern = $id_filter->{'-like'};
+                    $pattern =~ s/%/.*/g;
+                    $pattern =~ s/_/./g;
+                    @data = grep { $_->{id} =~ /$pattern/i } @data;
+                }
+                elsif ( !ref $id_filter ) {
+                    @data = grep { $_->{id} eq $id_filter } @data;
+                }
             }
         }
     }

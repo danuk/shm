@@ -11,18 +11,11 @@ unless ( $user ) {
     exit 1;
 }
 
-$user->set(
-    gid => 1,
-    block => 0,
-);
+$user->set_settings({ password_auth_disabled => 0 }) if $user->settings->{password_auth_disabled};
 
-$user->set_settings({ strict_ip_mode => 0 }) if $user->settings->{strict_ip_mode};
-
-say "The password has been changed:";
+say "The password authentication enabled";
 say sprintf("Login: %s", $user->get_login );
-say sprintf("Password: %s", $user->set_new_passwd( len => 16 + int(rand(5)) ) );
 
 $user->commit;
 
 exit 0;
-

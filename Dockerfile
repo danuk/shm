@@ -12,6 +12,7 @@ WORKDIR /app
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
+    vim \
     uwsgi \
     default-libmysqlclient-dev \
     openssh-client \
@@ -45,7 +46,9 @@ RUN apt-get install -y \
     librouter-simple-perl \
     libcryptx-perl \
     libbytes-random-secure-perl \
-    libcrypt-jwt-perl
+    libcrypt-jwt-perl \
+    libmime-base32-perl \
+    libmath-random-secure-perl
 
 RUN cpan Crypt::Curve25519
 

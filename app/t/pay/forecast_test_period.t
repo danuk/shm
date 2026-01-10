@@ -51,6 +51,7 @@ cmp_deeply( $ret, {
                 cost => 100,
                 discount => 10,
                 total => 90,
+                bonus => 0,
                 qnt => 1,
             },
         },

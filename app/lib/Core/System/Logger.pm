@@ -8,7 +8,7 @@ use Data::Dumper;
 use Core::System::ServiceManager qw(get_service $data);
 use Core::Utils qw( encode_json  );
 
-$SIG{__DIE__} = sub { get_service('logger')->warning( @_ ) };
+$SIG{__DIE__} = sub { get_service('logger')->error( @_ ) };
 
 my $LEVEL_TRACE     = 0;
 my $LEVEL_DEBUG     = 1;

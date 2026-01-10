@@ -11,10 +11,14 @@ use Core::Utils qw(
     now
     get_cookies
     get_user_ip
+    decode_json
 );
 use Core::Const;
 
-use Digest::SHA qw(sha1_hex);
+use Digest::SHA qw(sha1_hex hmac_sha1);
+use MIME::Base32;
+use MIME::Base64 qw(decode_base64url encode_base64 encode_base64url);
+use Math::Random::Secure qw(rand);
 
 sub table { return 'users' };
 
@@ -217,7 +221,7 @@ sub crypt_password {
     return sha1_hex( join '--', $args{salt}, $args{password} );
 }
 
-sub api_auth {
+sub auth_api_safe {
     my $self = shift;
     my %args = (
         login => undef,
@@ -229,8 +233,55 @@ sub api_auth {
     unless ( $user ) {
         report->status( 401 );
         report->add_error('Incorrect login or password' );
-        $self->set_user_fail_attempt( 'api_auth', 180 ); # 5 auth/3 min
+        $self->set_user_fail_attempt( 'auth_api_safe', 180 ); # 5 auth/3 min
         return;
+    }
+
+    if ( $user->is_password_auth_disabled ) {
+        report->status( 403 );
+        report->add_error('Password authentication is disabled.');
+        return undef;
+    }
+
+    my %user_settings = $user->settings;
+    if ( $user_settings{strict_ip_mode} && $user_settings{ip} ) {
+        if ( $user_settings{ip} ne get_user_ip() ) {
+            report->status( 403 );
+            report->add_error("Login from this IP is prohibited");
+            return undef;
+        }
+    }
+
+    my $otp = get_service('OTP');
+    if ( $otp->get_enabled($user) ) {
+        unless ( $args{otp_token} ) {
+            return {
+                login => $user->get_login,
+                otp_required => 1,
+                message => 'OTP token required'
+            };
+        }
+
+        unless ( $otp->verify_token( $otp->get_secret($user), $args{otp_token} ) ) {
+            my $backup_valid = 0;
+            if ( $otp->get_backup_codes($user) ) {
+                my @backup_codes = split(',', $otp->get_backup_codes($user));
+                if ( grep { $_ eq $args{otp_token} } @backup_codes ) {
+                    $backup_valid = 1;
+                    @backup_codes = grep { $_ ne $args{otp_token} } @backup_codes;
+                    $otp->set_settings($user, backup_codes => join(',', @backup_codes));
+                }
+            }
+
+            unless ( $backup_valid ) {
+                return {
+                    msg => 'INVALID_OTP_TOKEN',
+                    status => 'fail',
+                };
+            }
+        }
+
+        $otp->set_settings($user, verified_at => now());
     }
 
     my $session_id = $user->gen_session->{id};
@@ -406,6 +457,13 @@ sub reg_api_safe {
         @_,
     );
 
+    my $allow_user_register_api = get_service('config')->data_by_name('billing')->{allow_user_register_api} // 1;
+    unless ( $allow_user_register_api ) {
+        report->status( 403 );
+        report->add_error("Registration of new users is prohibited");
+        return undef;
+    }
+
     $self->set_user_fail_attempt( 'reg_api_safe', 3600 ); # 5 regs/hour
 
     return $self->reg(
@@ -488,7 +546,9 @@ sub set {
         get_service('sessions')->delete_user_sessions( user_id => $self->user_id );
     }
 
-    if ( $args{credit} > 0 && $self->get_credit != $args{credit} ) {
+    if (( $args{credit} > 0 && $self->get_credit != $args{credit} )
+        || $args{perm_credit}
+    ){
         $self->make_event( 'credit', settings => { credit => $args{credit} } );
     }
 
@@ -678,6 +738,7 @@ sub delete {
         sessions
         Acts
         ActsData
+        promo
     );
 
     get_service( $_, user_id => $self->id )->delete_all for @objects;
@@ -860,7 +921,16 @@ sub income_percent {
 }
 
 sub list_autopayments {
-    return {};
+    my $self = shift;
+
+    my $config = get_service('config', _id => 'pay_systems') or return {};
+    my $ps = $config->get_data || {};
+    my $pay_systems = $self->get_settings->{pay_systems} || {};
+
+    for ( keys %$pay_systems ) {
+        delete $pay_systems->{ $_ } unless $ps->{ $_ }->{allow_recurring};
+    }
+    return $pay_systems || {};
 }
 
 sub has_autopayment {
@@ -869,7 +939,63 @@ sub has_autopayment {
 }
 
 sub make_autopayment {
+    my $self = shift;
+    my $amount = shift;
+
+    return undef unless $amount;
+    return undef if $self->get_settings->{deny_auto_payments};
+
+    my $session_id = $self->gen_session->{id};
+    my $transport = get_service('Transport::Http');
+
+    my %pay_systems = %{ $self->list_autopayments };
+    return undef unless %pay_systems;
+
+    for my $name ( keys %pay_systems ) {
+        my $response = $transport->http(
+            url => sprintf("%s/shm/pay_systems/%s.cgi",
+                get_service('config')->data_by_name('api')->{url},
+                $name,
+            ),
+            method => 'post',
+            headers => {
+                session_id => $session_id,
+            },
+            content => {
+                action => 'payment',
+                amount => $amount,
+                $pay_systems{ $name },
+            },
+        );
+
+        if ( $response->is_success ) {
+            return 1;
+        }
+    }
     return 0;
+}
+
+sub active_count {
+    my $self = shift;
+
+    if ( my $cnt = $self->cache->get('shm_active_users_count') ) {
+        return $cnt;
+    }
+
+    my ($cnt) = $self->dbh->selectrow_array("
+        SELECT COUNT(DISTINCT us.user_id)
+        FROM user_services AS us
+        INNER JOIN withdraw_history AS wd ON us.withdraw_id = wd.withdraw_id
+        WHERE
+            us.status = 'ACTIVE' AND
+            us.expire IS NOT NULL AND
+            (wd.bonus > 0 OR wd.total > 0)
+        "
+    );
+
+    $self->cache->set('shm_active_users_count', $cnt, 86400);
+
+    return $cnt || 0;
 }
 
 sub telegram { shift->srv('Transport::Telegram') };
@@ -883,5 +1009,79 @@ sub partner {
     return $self->id( $partner_id );
 }
 
-1;
+sub is_otp_required {
+    my $self = shift;
 
+    return 0 unless $self->get_otp_enabled;
+    return 1 unless $self->get_otp_verified_at;
+
+    my $verification_timeout = 24 * 60 * 60;
+    my $last_verified = $self->get_otp_verified_at;
+
+    my $verified_timestamp;
+    if ($last_verified =~ /(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/) {
+        use Time::Local;
+        $verified_timestamp = timelocal($6, $5, $4, $3, $2-1, $1);
+    } else {
+        $verified_timestamp = $last_verified;
+    }
+
+    return (time() - $verified_timestamp) >= $verification_timeout;
+}
+
+sub is_password_auth_disabled {
+    my $self = shift;
+    return $self->get_settings->{password_auth_disabled} || 0;
+}
+
+sub api_disable_password_auth {
+    my $self = shift;
+
+    my $report = get_service('report');
+
+    my $passkey = get_service('Passkey');
+    unless ($passkey->get_enabled($self)) {
+        $report->add_error('PASSKEY_REQUIRED');
+        return undef;
+    }
+
+    my $settings = $self->get_settings;
+    $settings->{password_auth_disabled} = 1;
+
+    delete $settings->{otp};
+
+    $self->set(settings => $settings);
+
+    return {
+        success => 1,
+        password_auth_disabled => 1,
+    };
+}
+
+sub api_enable_password_auth {
+    my $self = shift;
+
+    my $settings = $self->get_settings;
+    delete $settings->{password_auth_disabled};
+    $self->set(settings => $settings);
+
+    return {
+        success => 1,
+        password_auth_disabled => 0,
+    };
+}
+
+sub api_password_auth_status {
+    my $self = shift;
+
+    my $passkey = get_service('Passkey');
+    my $otp = get_service('OTP');
+
+    return {
+        password_auth_disabled => $self->is_password_auth_disabled ? 1 : 0,
+        passkey_enabled => $passkey->get_enabled($self) ? 1 : 0,
+        otp_enabled => $otp->get_enabled($self) ? 1 : 0,
+    };
+}
+
+1;

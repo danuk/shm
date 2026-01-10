@@ -18,7 +18,8 @@ use Core::System::ServiceManager qw( get_service );
 $ENV{SHM_TEST} = 1;
 
 use SHM;
-my $srv = SHM->new( user_id => 40092 )->services;
+my $user = SHM->new( user_id => 40092 );
+my $srv = $user->services;
 
 use Core::Billing;
 use Core::Utils qw/days_in_months/;
@@ -116,6 +117,69 @@ subtest 'Check set `end_date` via service.create' => sub {
     );
 
     is ($us->expire, $manual_end_date );
+};
+
+subtest 'Create service with limit_bonus_percent = 0%' => sub {
+    $user->set( bonus => 99 );
+    my $si = get_service('service')->add(
+        name => 'TEST',
+        cost => 100,
+        category => 'new',
+        period => 1,
+        pay_always => 0,
+        allow_to_order => 1,
+        config => {
+            limit_bonus_percent => 0,
+        },
+    );
+
+    my $us = $si->reg( service_id => $si->id );
+
+    is( $us->wd->get_total, 100 );
+    is( $us->wd->get_bonus, 0 );
+    is( $user->get_bonus, 99 );
+};
+
+subtest 'Create service with limit_bonus_percent = 50%' => sub {
+    $user->set( bonus => 99 );
+    my $si = get_service('service')->add(
+        name => 'TEST',
+        cost => 100,
+        category => 'new',
+        period => 1,
+        pay_always => 0,
+        allow_to_order => 1,
+        config => {
+            limit_bonus_percent => 30,
+        },
+    );
+
+    my $us = $si->reg( service_id => $si->id );
+
+    is( $us->wd->get_total, 70 );
+    is( $us->wd->get_bonus, 30 );
+    is( $user->get_bonus, 69 );
+};
+
+subtest 'Create service with limit_bonus_percent = 100%' => sub {
+    $user->set( bonus => 99 );
+    my $si = get_service('service')->add(
+        name => 'TEST',
+        cost => 100,
+        category => 'new',
+        period => 1,
+        pay_always => 0,
+        allow_to_order => 1,
+        config => {
+            limit_bonus_percent => 100,
+        },
+    );
+
+    my $us = $si->reg( service_id => $si->id );
+
+    is( $us->wd->get_total, 1 );
+    is( $us->wd->get_bonus, 99 );
+    is( $user->get_bonus, 0 );
 };
 
 done_testing();

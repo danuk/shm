@@ -366,6 +366,14 @@ sub touch {
     return $self->process_service_recursive( $e );
 }
 
+sub touch_api {
+    my $self = shift;
+    my $e = shift || EVENT_PROLONGATE;
+
+    $self->touch( $e );
+    return scalar $self->get;
+}
+
 sub category {
     my $self = shift;
 
@@ -739,6 +747,14 @@ sub activate_force {
 
     if ($self->get_status eq STATUS_BLOCK) {
         $self->set( auto_bill => int $args{auto_bill} ) if defined $args{auto_bill};
+
+        if ( $self->has_expired ) {
+            my $event = Core::Billing::prolongate( $self, force => 1 );
+            if ( $event ne EVENT_ACTIVATE ) {
+                report->add_error('Not enough money') unless $event;
+                return;
+            }
+        }
         $self->touch( EVENT_ACTIVATE_FORCE );
     }
 

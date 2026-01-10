@@ -25,6 +25,8 @@ sub init {
     return $self;
 }
 
+sub _id {}; # всегда один экземляр для всех
+
 sub redis {
     my $self = shift;
     return $self->{redis};
@@ -34,7 +36,8 @@ sub set {
     my $self = shift;
     my $key = shift;
     my $value = shift;
-    my $expire = shift || 3600; # 1h
+    my $expire = shift;
+    $expire //= 3600; # 1h по умолчанию
 
     return undef unless $self->redis;
     return undef unless $key;
@@ -43,6 +46,7 @@ sub set {
         $value = encode_json( $value );
     }
 
+    return $self->redis->set( $key, $value ) if $expire == 0;
     return $self->redis->setex( $key, $expire, $value );
 }
 
@@ -69,7 +73,7 @@ sub get {
     return $self->redis->get( $name );
 }
 
-sub get_json { decode_json shift->redis->get( shift ) };
+sub get_json { decode_json shift->get( shift ) };
 
 sub delete {
     my $self = shift;
