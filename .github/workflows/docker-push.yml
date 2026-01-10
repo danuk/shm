@@ -1,0 +1,72 @@
+name: Docker Push
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Get version info
+        id: version
+        run: |
+          TAG=${GITHUB_REF_NAME}
+          REV=$(git rev-parse --short HEAD)
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "rev=${REV}" >> $GITHUB_OUTPUT
+          echo "full=${TAG}-${REV}" >> $GITHUB_OUTPUT
+          # Extract major.minor version (e.g., 1.2.5 -> 1.2)
+          if [[ $TAG =~ ^([0-9]+\.[0-9]+)\. ]]; then
+            echo "minor=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+          else
+            echo "minor=${TAG}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Write version file
+        run: echo -n "${{ steps.version.outputs.full }}" > app/version
+
+      - name: Build and push API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          target: api
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/shm-api:${{ steps.version.outputs.minor }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/shm-api:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build and push Core
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          target: core
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:${{ steps.version.outputs.minor }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:latest
+          cache-from: type=gha,scope=core
+          cache-to: type=gha,mode=max,scope=core
