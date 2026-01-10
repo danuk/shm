@@ -53,6 +53,7 @@ jobs:
           target: api
           platforms: linux/amd64,linux/arm64
           tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:${{ steps.version.outputs.tag }}
             ${{ secrets.DOCKERHUB_USERNAME }}/shm-api:${{ steps.version.outputs.minor }}
             ${{ secrets.DOCKERHUB_USERNAME }}/shm-api:latest
           cache-from: type=gha,scope=api
@@ -66,6 +67,7 @@ jobs:
           target: core
           platforms: linux/amd64,linux/arm64
           tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:${{ steps.version.outputs.tag }}
             ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:${{ steps.version.outputs.minor }}
             ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:latest
           cache-from: type=gha,scope=core
