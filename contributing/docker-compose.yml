@@ -1,6 +1,5 @@
 services:
   api:
-    image: danuk/shm-api:latest
     build:
       context: shm
       dockerfile: ./Dockerfile
@@ -8,12 +7,12 @@ services:
     restart: always
     links:
       - core
+    ports:
+      - "8080:80"
     environment:
-      TRUSTED_IPS: ""
+      TRUSTED_IPS: "0.0.0.0/0"
       ENABLE_RATE_LIMIT: "false"
-   #   RESOLVER: 8.8.8.8
   core:
-    image: danuk/shm-core:latest
     build:
       context: shm
       dockerfile: ./Dockerfile
@@ -33,12 +32,23 @@ services:
     links:
       - mysql
     volumes:
+      - ./shm/app/data:/app/data
       - ./shm/app:/app
     depends_on:
       mysql:
         condition: service_healthy
+  webdav:
+    image: danuk/shm-webdav:latest
+    build:
+      context: shm
+      dockerfile: ./Dockerfile
+      target: webdav
+    restart: always
+    ports:
+      - "8888:80"
+    volumes:
+      - ./shm/app/data:/app/data
   spool:
-    image: danuk/shm-core:latest
     deploy:
       mode: replicated
       replicas: 1
@@ -60,27 +70,12 @@ services:
     links:
       - mysql
     volumes:
+      - ./shm/app/data:/app/data
       - ./shm/app:/app
     depends_on:
       mysql:
         condition: service_healthy
-  admin:
-    image: danuk/shm-admin:latest
-    build:
-      context: shm-admin
-      dockerfile: ./Dockerfile
-      target: admin
-    restart: always
-    environment:
-      SHM_HOST: http://api
-    volumes:
-      - ./shm-admin/app:/app
-    ports:
-      - "8081:80"
-    links:
-      - api
   client:
-    image: danuk/shm-client:latest
     build:
       context: shm-client
       dockerfile: ./Dockerfile
@@ -96,7 +91,6 @@ services:
       - api
   mysql:
     image: mysql:lts
-    restart: always
     environment:
       TZ: Europe/Moscow
       LANG: C.UTF-8
@@ -111,6 +105,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  redis:
+    image: redis:latest
+    ports:
+      - "127.0.0.1:6379:6379"
+    restart: always
 
 volumes:
   mysql-data:
