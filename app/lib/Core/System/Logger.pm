@@ -6,9 +6,24 @@ use base qw( Core::System::Service );
 
 use Data::Dumper;
 use Core::System::ServiceManager qw(get_service $data);
-use Core::Utils qw( encode_json  );
+use Core::Utils qw(
+    encode_json
+    blessed
+);
 
-$SIG{__DIE__} = sub { get_service('logger')->error( @_ ) };
+$SIG{__DIE__} = sub {
+    my $error = shift;
+
+    # 1. Проверяем, является ли ошибка объектом Template::Exception
+    if (blessed($error) && $error->isa('Template::Exception')) {
+        my $type = $error->type;
+        # 2. Если это STOP или RETURN, просто выходим из обработчика
+        return if $type eq 'stop' || $type eq 'return';
+    }
+
+    # Во всех остальных случаях — логируем
+    get_service('logger')->error($error);
+};
 
 my $LEVEL_TRACE     = 0;
 my $LEVEL_DEBUG     = 1;
