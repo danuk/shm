@@ -115,4 +115,23 @@ sub job_download_paystem {
     return SUCCESS, { msg => "successful saved: $file" };
 }
 
+sub make_receipt {
+    my $self = shift;
+    my $task = shift;
+
+    my $pay_id = $task->settings->{pay_id} || return;
+    my $pay = $self->srv('Pay', _id => $pay_id ) || return;
+
+    my $srv_customlab_nalog = $self->config->{pay_systems}->{srv_customlab_nalog} || return;
+    return unless $srv_customlab_nalog->{enabled};
+
+    # TODO:
+    # use exec_local_file() from Utils.pm for safe execute srv_customlab_nalog
+    # check execute status and make correct task answer.
+    # For retry task use it: return FAIL, { error => 'error message' };
+
+    return SUCCESS, { msg => 'successful' };
+}
+
+
 1;

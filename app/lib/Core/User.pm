@@ -193,6 +193,13 @@ sub events {
                 method => 'activate_services',
             },
         },
+        'receipt' => {
+            event => {
+                title => 'make receipt',
+                kind => 'Cloud::Jobs',
+                method => 'make_receipt',
+            },
+        },
         'bonus' => {
             event => {
                 title => 'user payment with bonuses',
@@ -642,6 +649,8 @@ sub payment {
     $self->add_bonuses_for_partners( $args{money} ) if $args{money} > 0;
 
     $self->make_event( 'payment', settings => { pay_id => $pay_id } );
+    $self->make_event( 'receipt', settings => { pay_id => $pay_id } ) if $args{money} > 0;
+
     return scalar $pays->id( $pay_id )->get;
 }
 
