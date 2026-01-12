@@ -42,8 +42,6 @@ RUN apt-get install -y \
     libmime-base32-perl \
     libmath-random-secure-perl
 
-RUN cpan Crypt::Curve25519
-
 RUN set -x \
     && mkdir /var/www && chown www-data: /var/www \
     && useradd shm -d /var/shm -m \
