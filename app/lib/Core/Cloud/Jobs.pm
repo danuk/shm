@@ -4,6 +4,8 @@ use v5.14;
 use parent 'Core::Cloud';
 use Core::Base;
 use Core::Const;
+use Core::Utils qw(exec_local_file);
+use Core::System::ServiceManager qw( get_service );
 
 use constant PAY_SYSTEM_DIR => '/app/data/pay_systems';
 
@@ -119,18 +121,35 @@ sub make_receipt {
     my $self = shift;
     my $task = shift;
 
-    my $pay_id = $task->settings->{pay_id} || return;
-    my $pay = $self->srv('Pay', _id => $pay_id ) || return;
+    my $srv_customlab_nalog = get_service('config')->id( 'pay_systems' )->get_data->{'srv_customlab_nalog'} || {};
+    unless ( $srv_customlab_nalog && $srv_customlab_nalog->{enabled} ) {
+        return SUCCESS, { msg => 'srv_customlab_nalog is not enabled, skipping receipt' };
+    }
 
-    my $srv_customlab_nalog = $self->config->{pay_systems}->{srv_customlab_nalog} || return;
-    return unless $srv_customlab_nalog->{enabled};
+    my $ps_file = $self->ps_file_name('srv_customlab_nalog');
+    unless ( -f $ps_file ) {
+        return SUCCESS, { msg => "SHMCustomlab_nalog is not found" };
+    }
 
-    # TODO:
-    # use exec_local_file() from Utils.pm for safe execute srv_customlab_nalog
-    # check execute status and make correct task answer.
-    # For retry task use it: return FAIL, { error => 'error message' };
+    my $pay_id = $task->settings->{pay_id};
+    my $result = exec_local_file(
+        cmd => [ $ps_file, 'action=send', "pay_id=$pay_id" ],
+        timeout => 60,
+    );
 
-    return SUCCESS, { msg => 'successful' };
+    if ( $result->{error} ) {
+        return FAIL, { error => $result->{error} };
+    }
+
+    unless ( $result->{success} ) {
+        return FAIL, {
+            error => 'Failed to send receipt',
+            output => $result->{output},
+            exit_code => $result->{exit_code},
+        };
+    }
+
+    return SUCCESS, { msg => 'successful', output => $result->{output} };
 }
 
 

@@ -649,7 +649,11 @@ sub payment {
     $self->add_bonuses_for_partners( $args{money} ) if $args{money} > 0;
 
     $self->make_event( 'payment', settings => { pay_id => $pay_id } );
-    $self->make_event( 'receipt', settings => { pay_id => $pay_id } ) if $args{money} > 0;
+
+    my $srv_customlab_nalog = get_service('config')->id( 'pay_systems' )->get_data->{'srv_customlab_nalog'} || undef;
+    if ( $srv_customlab_nalog ) {
+        $self->make_event( 'receipt', settings => { pay_id => $pay_id } ) if $args{money} > 0;
+    }
 
     return scalar $pays->id( $pay_id )->get;
 }
