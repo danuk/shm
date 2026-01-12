@@ -712,6 +712,9 @@ sub print_header {
 
     return undef if $is_header;
 
+    # Не печатаем заголовки, если скрипт запущен не из под HTTP
+    return undef unless $ENV{REQUEST_METHOD};
+
     print $cgi->header( map +( "-$_" => $args{$_} ), keys %args );
     $is_header = 1;
 }
