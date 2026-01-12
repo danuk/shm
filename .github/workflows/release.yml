@@ -82,3 +82,32 @@ jobs:
           ${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.tag }}
           ${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.minor }}
           ${{ env.IMAGE_NAME }}-core:latest
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.tag }}
+        name: Release ${{ steps.version.outputs.tag }}
+        generate_release_notes: true
+        make_latest: true
+        body: |
+          ## Docker Images Built
+
+          ### API Image
+          - `${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.tag }}`
+          - `${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.minor }}`
+          - `${{ env.IMAGE_NAME }}-api:latest`
+
+          ### Core Image
+          - `${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.tag }}`
+          - `${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.minor }}`
+          - `${{ env.IMAGE_NAME }}-core:latest`
+
+          **Version:** `${{ steps.version.outputs.version_string }}`
+          **Git Revision:** `${{ steps.version.outputs.rev }}`
+
+          ## What's Changed
+
+          *Changelog will be generated automatically below based on commits and pull requests.*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
