@@ -10,6 +10,7 @@ function build_and_push {
 
     docker build --platform linux/amd64,linux/arm64 \
         $(printf " -t %s" "${TAGS[@]}") \
+        -f Dockerfile-base \
         --target $1 .
 
     for TAG in ${TAGS[*]}; do
@@ -36,5 +37,6 @@ read -p "Press enter to continue..."
 echo -n "${GIT_TAG}-${REV}" > app/version
 
 build_and_push api
-build_and_push core
+build_and_push core-base
+build_and_push webdav
 

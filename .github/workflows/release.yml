@@ -1,0 +1,84 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: danuk/shm
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for git describe
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract version info
+      id: version
+      run: |
+        # Get the tag name
+        TAG=${GITHUB_REF#refs/tags/}
+        echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+        # Get minor version (1.2 from 1.2.3)
+        VERSION_MINOR=$(echo $TAG | cut -d '.' -f 1,2)
+        echo "minor=${VERSION_MINOR}" >> $GITHUB_OUTPUT
+
+        # Get git revision
+        REV=$(git rev-parse --short HEAD)
+        echo "rev=${REV}" >> $GITHUB_OUTPUT
+
+        # Create version string for app/version
+        VERSION_STRING="${TAG}-${REV}"
+        echo "version_string=${VERSION_STRING}" >> $GITHUB_OUTPUT
+
+        echo "Building version: ${VERSION_STRING}"
+
+    - name: Create version file
+      run: |
+        echo -n "${{ steps.version.outputs.version_string }}" > app/version
+
+    - name: Build and push API image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        target: api
+        tags: |
+          ${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.tag }}
+          ${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.minor }}
+          ${{ env.IMAGE_NAME }}-api:latest
+
+    - name: Build and push Core image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        target: core
+        tags: |
+          ${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.tag }}
+          ${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.minor }}
+          ${{ env.IMAGE_NAME }}-core:latest
