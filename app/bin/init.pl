@@ -53,6 +53,14 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
     my $config = $config->id( '_shm' );
     my $cur_version = $config->get_data->{version};
     say "Current version: $cur_version";
+
+    # Check version format (should be like 1.2.3-abcd)
+    unless ( $cur_version && $cur_version =~ /^\d+\.\d+\.\d+-.+$/ ) {
+        say "Invalid version format '$cur_version', using current version '$version'";
+        $cur_version = $version . $version_prefix;
+        $config->set_value( { version => $cur_version } );
+    }
+
     $cur_version =~s/-.+$//;
 
     my @migrations = `ls`;
