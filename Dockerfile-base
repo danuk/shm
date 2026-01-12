@@ -4,15 +4,12 @@ WORKDIR /app
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
-    vim \
     uwsgi \
     default-libmysqlclient-dev \
     openssh-client \
     curl \
     apache2-utils \
-    qrencode
-
-RUN apt-get install -y \
+    qrencode \
     perl \
     libdbi-perl \
     libdbd-mysql-perl \
@@ -40,12 +37,13 @@ RUN apt-get install -y \
     libbytes-random-secure-perl \
     libcrypt-jwt-perl \
     libmime-base32-perl \
-    libmath-random-secure-perl
-
-RUN set -x \
+    libmath-random-secure-perl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/apt/* \
+    && rm -rf /root/.cpan \
     && mkdir /var/www && chown www-data: /var/www \
-    && useradd shm -d /var/shm -m \
-    && rm -rf /var/lib/apt/lists/*
+    && useradd shm -d /var/shm -m
 
 COPY nginx/uwsgi.ini /etc/uwsgi/apps-enabled/shm.ini
 
