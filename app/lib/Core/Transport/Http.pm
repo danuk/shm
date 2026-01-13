@@ -138,6 +138,7 @@ sub http {
         content => '',
         verify_hostname => 1,
         timeout => 10,
+        binary => 0,
         @_,
     );
 
@@ -177,6 +178,16 @@ sub http {
 
     logger->dump( $response->request );
 
+    # Декодирование UTF-8 для текстового контента
+    if (!$args{binary} && $response->is_success) {
+        my $content = $response->decoded_content;
+        if (!utf8::is_utf8($content)) {
+            utf8::decode($content);
+            # Заменяем контент в response объекте
+            $response->{_content} = $content;
+        }
+    }
+
     return $response;
 }
 
@@ -186,7 +197,10 @@ sub _http {
     my $self = shift;
     my $method = shift;
     my $url = shift;
-    my %args = @_;
+    my %args = (
+        binary => 0,
+        get_smart_args( @_ ),
+    );
 
     my $response = $self->http(
         method => $method,
@@ -199,10 +213,10 @@ sub _http {
             http_headers     => { $response->headers->flatten },
             http_code        => $response->code,
             http_status_line => $response->status_line,
-            body             => $response->json_content || $response->decoded_content,
+            body             => $args{binary} ? $response->content : ($response->json_content || $response->decoded_content),
         };
     } else {
-        return $response->json_content || $response->decoded_content;
+        return $args{binary} ? $response->content : ($response->json_content || $response->decoded_content);
     }
 }
 

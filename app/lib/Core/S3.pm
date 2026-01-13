@@ -177,13 +177,14 @@ sub get_object {
         url => $url,
         headers => $auth_headers,
         content => '',
+        binary => $args{binary},
         timeout => 30
     );
 
     $self->{response} = $response;
 
     if ($response->is_success) {
-        return $args{binary} ? $response->content : $response->decoded_content;
+        return $args{binary} ? $response->content : ($response->json_content || $response->decoded_content);
     } else {
         return undef;
     }
