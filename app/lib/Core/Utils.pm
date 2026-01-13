@@ -287,6 +287,7 @@ sub http_content_range {
 
 sub decode_json {
     my $data = shift || return undef;
+    return undef if $data =~ /^\s*$/;
 
     utf8::decode( $data );
 
