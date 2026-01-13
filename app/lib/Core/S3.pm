@@ -146,6 +146,7 @@ sub get_object {
     my %args = (
         bucket => $self->{bucket},
         key => undef,
+        binary => 0,
         @_,
     );
 
@@ -182,7 +183,7 @@ sub get_object {
     $self->{response} = $response;
 
     if ($response->is_success) {
-        return $response->content;
+        return $args{binary} ? $response->content : $response->decoded_content;
     } else {
         return undef;
     }
