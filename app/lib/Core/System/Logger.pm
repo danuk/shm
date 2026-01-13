@@ -14,21 +14,15 @@ use Core::Utils qw(
 $SIG{__DIE__} = sub {
     my $error = shift;
 
-    # Проверяем, что ошибка происходит в SHM-модулях
-    my $should_log = 0;
-    my $level = 1;
-    while (my ($package, $filename) = caller($level++)) {
-        # Логируем если ошибка из SHM, Core:: модулей или из app/ директории
-        if ($package =~ /^(SHM|Core::)/ || $filename =~ m{/app/}) {
-            $should_log = 1;
-            last;
-        }
-        # Прерываем поиск если достигли системных модулей
-        last if $level > 10;
+    # 1. Проверяем, является ли ошибка объектом Template::Exception
+    if (blessed($error) && $error->isa('Template::Exception')) {
+        my $type = $error->type;
+        # 2. Если это STOP или RETURN, просто выходим из обработчика
+        return if $type eq 'stop' || $type eq 'return';
     }
 
-    # Логируем только ошибки из SHM-модулей
-    get_service('logger')->error($error) if $should_log;
+    # Во всех остальных случаях — логируем
+    get_service('logger')->error($error);
 };
 
 my $LEVEL_TRACE     = 0;
