@@ -429,6 +429,7 @@ sub list_for_api {
     );
 
     my $filter_by_settings = delete $args{filter}{settings};
+    my $filter_by_name = delete $args{filter}{name};
 
     $args{where} = $self->query_for_filtering( %{$args{filter}} );
 
@@ -440,6 +441,7 @@ sub list_for_api {
     }
 
     $args{where}{settings} = { '-like' => $filter_by_settings } if $filter_by_settings;
+    $args{where}{'services.name'} = $filter_by_name if $filter_by_name;
 
     if ( $args{user_id} && $args{admin} ) {
         $args{where}{user_id} = delete $args{user_id};
@@ -461,4 +463,3 @@ sub list_for_api {
 }
 
 1;
-
