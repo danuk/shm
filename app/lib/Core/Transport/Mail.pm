@@ -157,9 +157,10 @@ sub send_mail {
             Cc      => $args{cc} || "",
             BCc     => $args{bcc} || "",
             Subject => sprintf("=?UTF-8?B?%s?=", MIME::Base64::encode_base64($args{subject}, '')),
-            Type    => 'text/plain;charset=UTF-8',
+            'Content-Type' => 'text/plain; charset=UTF-8',
+            'Content-Transfer-Encoding' => 'base64',
         ],
-        body => $args{message},
+        body => MIME::Base64::encode_base64($args{message}, ""),
     );
 
     my $err;
