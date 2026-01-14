@@ -891,6 +891,8 @@ sub change {
         get_smart_args( @_ ),
     );
 
+    return undef unless $self->id;
+
     my $service = $self->srv('service', _id => $args{service_id} );
     unless ( $service ) {
         logger->error("Can't change us to non exists service: $args{service_id}");
