@@ -54,6 +54,8 @@ services:
     restart: always
     environment:
       SHM_HOST: http://api
+      SHM_BASE_PATH: /
+      VITE_SHOW_SWAGGER: false
     ports:
       - "${ADMIN_PORT}:80"
     depends_on:
