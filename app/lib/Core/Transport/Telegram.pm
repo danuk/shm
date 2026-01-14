@@ -559,6 +559,7 @@ sub auth {
     $self->user->set_json(
         'settings', {
             telegram => {
+                user_id => $telegram_user_id,  # field for auth
                 login => $tg_user->{username}, # for backward compatible
                 username => $tg_user->{username},
                 first_name => $tg_user->{first_name},
