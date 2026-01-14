@@ -1389,8 +1389,16 @@ sub bonus_metrics {
         push @params, $args{end_date};
     }
 
-    # 1. Начисленные бонусы партнёрам (из bonus_history, где есть from_user_id)
-    my ($accrued_bonuses) = $self->dbh->selectrow_array("
+    # 1. Общая сумма всех начисленных бонусов за период
+    my ($total_bonuses) = $self->dbh->selectrow_array("
+        SELECT COALESCE(SUM(bonus), 0)
+        FROM bonus_history
+        WHERE bonus > 0
+            $where_date
+    ", undef, @params);
+
+    # 2. Бонусы от партнёров (где есть from_user_id в comment)
+    my ($partner_bonuses) = $self->dbh->selectrow_array("
         SELECT COALESCE(SUM(bonus), 0)
         FROM bonus_history
         WHERE bonus > 0
@@ -1398,7 +1406,12 @@ sub bonus_metrics {
             $where_date
     ", undef, @params);
 
-    # 2. Использованные бонусы (из withdraw_history, поле bonus - списанные бонусы при оплате услуг)
+    # 3. Процент партнерских бонусов от общей суммы бонусов
+    my $partner_percent = $total_bonuses > 0
+        ? ($partner_bonuses / $total_bonuses * 100)
+        : 0;
+
+    # 4. Использованные бонусы (из withdraw_history, поле bonus - списанные бонусы при оплате услуг)
     my $where_withdraw = $where_date;
     $where_withdraw =~ s/date/withdraw_date/g if $where_withdraw;
 
@@ -1408,44 +1421,30 @@ sub bonus_metrics {
         WHERE withdraw_date IS NOT NULL $where_withdraw
     ", undef, @params);
 
-    # 3. Общий оборот (выручка за период)
+    # 5. Общий оборот (выручка за период)
     my ($total_revenue) = $self->dbh->selectrow_array("
         SELECT COALESCE(SUM(money), 0)
         FROM pays_history
         WHERE money > 0 $where_date
     ", undef, @params);
 
-    # 4. Процент партнерского начисления из конфига
-    # Берём из настроек billing.partner.income_percent
-    my ($partner_percent) = $self->dbh->selectrow_array("
-        SELECT value FROM config WHERE key = 'billing.partner.income_percent'
-    ");
-
-    $partner_percent //= 20;
-
     # Расчет метрик
-    my $possible_bonuses = $total_revenue * ($partner_percent / 100);
-    my $actual_percent = $possible_bonuses > 0
-        ? ($accrued_bonuses / $possible_bonuses * 100)
-        : 0;
-
     my $bonus_load_percent = $total_revenue > 0
         ? ($used_bonuses / $total_revenue * 100)
         : 0;
 
-    my $bonus_debt = $accrued_bonuses - $used_bonuses;
+    my $bonus_debt = $total_bonuses - $used_bonuses;
 
     my $debt_share_percent = $total_revenue > 0
         ? ($bonus_debt / $total_revenue * 100)
         : 0;
 
     my $result = {
-        accrued_bonuses => sprintf("%.2f", $accrued_bonuses),
+        total_bonuses => sprintf("%.2f", $total_bonuses),
+        partner_bonuses => sprintf("%.2f", $partner_bonuses),
+        partner_percent => sprintf("%.1f", $partner_percent),
         used_bonuses => sprintf("%.2f", $used_bonuses),
         total_revenue => sprintf("%.2f", $total_revenue),
-        partner_percent => sprintf("%.1f", $partner_percent),
-        possible_bonuses => sprintf("%.2f", $possible_bonuses),
-        actual_percent => sprintf("%.1f", $actual_percent),
         bonus_load_percent => sprintf("%.2f", $bonus_load_percent),
         bonus_debt => sprintf("%.2f", $bonus_debt),
         debt_share_percent => sprintf("%.1f", $debt_share_percent),
