@@ -39,9 +39,14 @@ jobs:
             echo "tag_name=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
             echo "name=${{ github.event.release.name }}" >> $GITHUB_OUTPUT
             echo "prerelease=${{ github.event.release.prerelease }}" >> $GITHUB_OUTPUT
-            # Escape newlines and special characters in body
             BODY=$(echo '${{ github.event.release.body }}' | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
             echo "body=$BODY" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            TAG_NAME="${GITHUB_REF##*/}"
+            echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+            echo "name=Release $TAG_NAME" >> $GITHUB_OUTPUT
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "body=No changelog (push tag trigger)" >> $GITHUB_OUTPUT
           else
             echo "tag_name=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
             echo "name=${{ github.event.inputs.release_name }}" >> $GITHUB_OUTPUT
