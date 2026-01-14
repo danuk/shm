@@ -3,6 +3,9 @@ name: 'Telegram Release Notification'
 on:
   release:
     types: [published]
+  push:
+    tags:
+      - '*'
   workflow_dispatch:
     inputs:
       tag_name:
