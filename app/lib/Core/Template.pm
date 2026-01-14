@@ -121,6 +121,7 @@ sub parse {
         response => { test_data => 1 },  # for testing templates
         http => sub { get_service('Transport::Http') },
         ssh => sub { get_service('Transport::Ssh') },
+        mail => sub { get_service('Transport::Mail') },
         s3 => sub { get_service('S3') },
         spool => sub { get_service('Spool', $task_id ? (task_id => $task_id) : (), defined $_[0] ? (_id => $_[0]) : () ) },
         promo => sub { get_service('promo', defined $_[0] ? (_id => $_[0]) : () ) },

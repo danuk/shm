@@ -16,7 +16,56 @@ use Core::Utils qw(
     encode_utf8
 );
 
+sub init {
+    my $self = shift;
+    my %args = @_;
+
+    $self->{$_} = $args{$_} for keys %args;
+    $self->{server_gid} //= 6; #Mail Group
+
+    return $self;
+}
+
+sub setup { shift->init( get_smart_args @_ ) };
+
 sub send {
+    my $self = shift;
+    my $message = shift;
+    my %args = (
+        get_smart_args( @_ ),
+    );
+
+    my $server_group = get_service('ServerGroups', _id => $self->{server_gid} );
+    unless ( $server_group ) {
+        return undef;
+    }
+
+    my ( $server ) = $server_group->get_servers();
+    unless ( $server ) {
+        return undef;
+    }
+
+    my $settings = delete $server->{settings} || {};
+
+    my %data = (
+        %{ $server },
+        %{ $settings },
+        %args,
+    );
+
+    my ( $status, $response ) = $self->send_mail(
+        host => $self->{host},
+        from => $self->{from},
+        to => $self->{to},
+        subject => $self->{subject} || 'SHM',
+        from_name => $self->{from_name} || 'SHM',
+        message => $message,
+        %data,
+    );
+    return $status;
+}
+
+sub task_send {
     my $self = shift;
     my $task = shift;
 
