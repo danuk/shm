@@ -217,21 +217,6 @@ sub events {
     };
 }
 
-sub api_set {
-    my $self = shift;
-    my %args = @_;
-
-    if ( my $tg_login = $args{settings}->{telegram}->{login} ) {
-        $self->set_settings({
-            telegram => {
-                login => $tg_login,
-            }
-        });
-    }
-
-    return $self->SUPER::api_set( %args );
-}
-
 sub crypt_password {
     my $self = shift;
     my %args = (

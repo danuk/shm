@@ -72,6 +72,23 @@ sub user_tg_settings {
     return $self->{user_tg_settings} = $data || {};
 }
 
+sub api_set_user_tg_settings {
+    my $self = shift;
+    my %args = @_;
+
+    my $data = delete $args{ PUTDATA } || delete $args{ POSTDATA };
+    my $json = decode_json( $data );
+    unless ( $json ) {
+        get_service('report')->add_error("Incorrect JSON data: $data");
+        return undef;
+    }
+
+    $self->user->set_settings({
+        telegram => $json,
+    });
+    return $self->user->settings->{telegram} || {};
+}
+
 # methods for Templates
 sub settings { shift->user_tg_settings };
 sub login { shift->user_tg_settings->{username} };

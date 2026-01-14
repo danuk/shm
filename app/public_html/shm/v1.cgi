@@ -1174,6 +1174,32 @@ my $routes = {
         method => 'clear_cache',
     },
 },
+'/telegram/user' => {
+    swagger => {
+        tags => 'Telegram bot',
+    },
+    GET => {
+        controller => 'Transport::Telegram',
+        method => 'user_tg_settings',
+        args => {
+            format => 'json',
+        },
+        swagger => {
+            summary => 'Получить настройки пользователя для Telegram бота',
+        },
+    },
+    POST => {
+        controller => 'Transport::Telegram',
+        method => 'api_set_user_tg_settings',
+        skip_auto_parse_json => 1,
+        args => {
+            format => 'json',
+        },
+        swagger => {
+            summary => 'Изменить настройки пользователя для Telegram бота',
+        },
+    },
+},
 '/telegram/bot' => {
     POST => {
         skip_check_auth => 1,
