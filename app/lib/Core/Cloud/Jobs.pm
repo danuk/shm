@@ -69,6 +69,9 @@ sub job_download_paystem {
     my $ps_arch = $task->settings->{arch} || $self->arch;
     my $ps_name = $task->settings->{ps_name};
 
+    my $config = get_service('config', _id => 'pay_systems');
+    my $version = $config->get_data->{ $ps_name }->{version};
+
     unless ( $self->get_auth_basic() ) {
         return SUCCESS, { msg => 'no auth' };
     }
@@ -80,6 +83,7 @@ sub job_download_paystem {
         content => {
             ps => $ps_name,
             arch => $ps_arch,
+            version => $version,
         }
     );
 
