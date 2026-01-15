@@ -34,10 +34,14 @@ sub job_download_all_paystems {
         return undef;
     }
 
+    my $config = get_service('config', _id => 'pay_systems');
+
     my $spool = get_service('spool');
 
     for my $ps_name ( $self->ps_list ) {
-        next if -f $self->ps_file_name( $ps_name );
+
+        my $need_update_to = $config->get_data->{ $ps_name }->{need_update_to};
+        next if -f $self->ps_file_name( $ps_name ) && !$need_update_to;
 
         $spool->add(
             user_id => 1,
@@ -51,6 +55,7 @@ sub job_download_all_paystems {
             settings => {
                 ps_name => $ps_name,
                 arch => $self->arch,
+                $need_update_to ? ( version => $need_update_to ) : (),
             },
         );
     }
@@ -68,9 +73,7 @@ sub job_download_paystem {
 
     my $ps_arch = $task->settings->{arch} || $self->arch;
     my $ps_name = $task->settings->{ps_name};
-
-    my $config = get_service('config', _id => 'pay_systems');
-    my $version = $config->get_data->{ $ps_name }->{version};
+    my $version = $task->settings->{version};
 
     unless ( $self->get_auth_basic() ) {
         return SUCCESS, { msg => 'no auth' };
@@ -83,7 +86,7 @@ sub job_download_paystem {
         content => {
             ps => $ps_name,
             arch => $ps_arch,
-            version => $version,
+            $version ? ( version => $version ) : (),
         }
     );
 
@@ -116,6 +119,17 @@ sub job_download_paystem {
     close $fh;
 
     chmod 0755, $file;
+
+    my $config = get_service('config', _id => 'pay_systems');
+    if ( my $version = $config->get_data->{ $ps_name }->{need_update_to} ) {
+        $config->set_value({
+            $ps_name => {
+                version => $version,
+                need_update_to => undef,
+            },
+        });
+    };
+
     logger->info("Downloaded paysystem: $ps_name");
 
     return SUCCESS, { msg => "successful saved: $file" };
