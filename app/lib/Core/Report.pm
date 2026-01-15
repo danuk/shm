@@ -6,7 +6,6 @@ use parent 'Core::Base';
 use Core::Base;
 
 *error = \&add_error;
-*fatal = \&add_error;
 *warning = \&add_error;
 
 sub add_error {

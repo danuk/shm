@@ -449,7 +449,7 @@ sub clean_query_args {
                         } elsif ( $self->can( $f ) ) {
                             $args->{where}{ $f } = $self->$f;
                         }
-                        report->fatal( "`$f` required" ) unless length $args->{where}{ $f };
+                        logger->fatal( "`$f` required" ) unless length $args->{where}{ $f };
                     }
                     # Запрещаем обновлять ключевое поле
                     delete $args->{ $f } if exists $args->{ $f };
@@ -468,7 +468,7 @@ sub clean_query_args {
                     } elsif ( $self->can( $f ) ) {
                         $args->{ $f } = $self->$f;
                     }
-                    report->fatal( "Can't get `$f` from self" ) unless length $args->{ $f };
+                    logger->fatal( "Can't get `$f` from self" ) unless length $args->{ $f };
                 }
                 next;
             }
