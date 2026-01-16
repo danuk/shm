@@ -92,6 +92,8 @@ jobs:
 
           # Ограничиваем количество коммитов (последние 100)
           if [ -n "$COMMITS" ]; then
+            # Исключаем строки, начинающиеся на 'Merge pull request'
+            COMMITS=$(echo "$COMMITS" | grep -v '^• Merge pull request')
             COMMITS=$(echo "$COMMITS" | head -100)
             COMMITS_SECTION="$COMMITS"
           else
