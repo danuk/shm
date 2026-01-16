@@ -396,8 +396,11 @@ sub query_for_filtering {
                         }
                     }
                 } else {
+                    if ( $args->{ $key } =~ /%/ ) {
+                        $where{ $key }{'-like'} = $args->{ $key };
+                    }
                     # Check exists key in a json object
-                    if ( $args->{ $key }=~s/^\!// ) {
+                    elsif ( $args->{ $key }=~s/^\!// ) {
                         $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args->{ $key }) } = { '=', undef };
                     } else {
                         $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args->{ $key }) } = { '!=', undef };
