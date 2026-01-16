@@ -63,6 +63,7 @@ our @EXPORT_OK = qw(
     print_json
     get_user_ip
     is_ip_allowed
+    trusted_ips
 
     first
     any
@@ -915,6 +916,31 @@ sub qrencode {
         size => length($result->{output}),
         text_length => length($text)
     };
+}
+
+sub trusted_ips {
+    my $additional_ips = shift;
+
+    my @ip_ranges = qw(
+        127.0.0.0/8
+        172.16.0.0/12
+        192.168.0.0/16
+        10.0.0.0/8
+    );
+
+    if (my $trusted_ips = $ENV{TRUSTED_IPS}) {
+        push @ip_ranges, map { s/^\s+|\s+$//gr } split /,/, $trusted_ips;
+    }
+
+    if ($additional_ips) {
+        if (ref $additional_ips eq 'ARRAY') {
+            push @ip_ranges, @$additional_ips;
+        } elsif (!ref $additional_ips) {
+            push @ip_ranges, map { s/^\s+|\s+$//gr } split /,/, $additional_ips;
+        }
+    }
+
+    return @ip_ranges;
 }
 
 1;

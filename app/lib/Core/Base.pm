@@ -16,6 +16,7 @@ use Core::Utils qw(
     dots_str_to_sql
     get_user_ip
     is_ip_allowed
+    trusted_ips
 );
 $Data::Dumper::Deepcopy = 1;
 
@@ -553,13 +554,12 @@ sub set_user_fail_attempt {
     my $self = shift;
     my $method = shift;
     my $expire = shift || 600;
-    my $ips = shift || $ENV{TRUSTED_IPS};
+    my $additional_ips = shift;
 
     my $user_ip = get_user_ip() || return undef;
 
-    if (my $exclude_ips = $ips) {
-        my @ip_ranges = map { s/^\s+|\s+$//gr } split /,/, $exclude_ips;
-        return 0 if is_ip_allowed($user_ip, \@ip_ranges);
+    if ( my @ip_ranges = trusted_ips( $additional_ips ) ) {
+        return 0 if is_ip_allowed($user_ip, \@ip_ranges );
     }
 
     my $cache = $self->cache || return undef;
