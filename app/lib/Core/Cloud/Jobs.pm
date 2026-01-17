@@ -118,6 +118,7 @@ sub job_download_paystem {
     print $fh $content;
     close $fh;
 
+    chown 33, 33, $file;
     chmod 0755, $file;
 
     my $config = get_service('config', _id => 'pay_systems');
