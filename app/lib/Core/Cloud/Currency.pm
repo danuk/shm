@@ -159,7 +159,7 @@ sub convert {
         from => '',
         to => '',
         amount => 0,
-        @_,
+        get_smart_args( @_ ),
     );
 
     my $system_currency = $self->system_currency;
