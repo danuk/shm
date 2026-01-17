@@ -46,8 +46,6 @@ RUN apt-get update && apt-get install -y \
     && mkdir /var/www && chown www-data: /var/www \
     && useradd shm -d /var/shm -m
 
-COPY nginx/uwsgi.ini /etc/uwsgi/apps-enabled/shm.ini
-
 ENV SHM_ROOT_DIR=/app
 ENV SHM_DATA_DIR=/var/shm
 ENV PERL5LIB=/app/lib:/app/conf
@@ -57,7 +55,6 @@ ENV DB_HOST=127.0.0.1
 ENV DB_PORT=3306
 ENV DB_NAME=shm
 
-COPY entry-core.sh /entry.sh
 CMD ["/entry.sh"]
 
 
@@ -65,8 +62,6 @@ FROM nginx:stable-alpine AS api
 EXPOSE 80
 CMD ["/entry.sh"]
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD curl -f 127.0.0.1/shm/healthcheck.cgi || exit 1
-COPY nginx/nginx.conf /etc/nginx/
-COPY entry-api.sh /entry.sh
 
 
 FROM httpd:2.4 AS webdav
