@@ -16,6 +16,11 @@ sub currencies {
         @_,
     );
 
+    # my $subscription = get_service('Cloud::Subscription');
+    # unless ($subscription->check_subscription()) {
+    #     return undef;
+    # }
+
     $self->cache->delete('currencies') if $args{no_cache};
     my $currencies = $self->cache->get_json('currencies');
 

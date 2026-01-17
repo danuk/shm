@@ -709,8 +709,15 @@ sub process_message {
     my $exchange_rate;
     if ( my $payment = $self->message->{successful_payment} ) {
         my $money = $payment->{total_amount};
+
         if ( $payment->{currency} eq 'XTR' ) {
-            if ( $exchange_rate = $self->config->{xtr_exchange_rate} ) {
+            my $cr = get_service('Cloud::Currency');
+            if ( my $cr_amount = $cr->convert(
+                to => $payment->{currency},
+                amount => $money,
+            )) {
+                $money = $cr_amount;
+            } elsif ( $exchange_rate = $self->config->{xtr_exchange_rate} ) {
                 $money = $money * $exchange_rate;
             }
         }
