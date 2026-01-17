@@ -111,6 +111,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
         run: |
           if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
             echo "❌ Секрет TELEGRAM_BOT_TOKEN не найден"
@@ -132,7 +133,9 @@ jobs:
             -H "Content-Type: application/json" \
             -d "{
               \"chat_id\": \"${TELEGRAM_CHAT_ID}\",
+              \"message_thread_id\": \"${TELEGRAM_THREAD_ID}\",
               \"text\": \"${MESSAGE}\",
+              \"disable_notification\": true,
               \"disable_web_page_preview\": true
             }")
 
