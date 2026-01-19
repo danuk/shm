@@ -244,4 +244,19 @@ sub updated_pay_systems {
     $self->srv('Cloud::Jobs')->job_download_all_paystems();
 }
 
-1;
+sub version_info {
+    my $self = shift;
+    my $report = get_service('report');
+
+    my $version_file = "$ENV{SHM_ROOT_DIR}/version.json";
+
+    unless ( -f $version_file ) {
+        $report->add_error('VersionFileNotFound');
+        return undef;
+    }
+
+    my $version_data = decode_json( Core::Utils::read_file( $version_file ) );
+
+    return $version_data;
+}
+

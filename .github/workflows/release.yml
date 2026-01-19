@@ -55,9 +55,16 @@ jobs:
 
         echo "Building version: ${VERSION_STRING}"
 
-    - name: Create version file
+    - name: Create version.json
       run: |
-        echo -n "${{ steps.version.outputs.version_string }}" > app/version
+        cat > app/version.json << EOF
+        {
+            "version": "${{ steps.version.outputs.version_string }}",
+            "commitSha": "${{ github.sha }}",
+            "releaseUrl": "https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}"
+        }
+        EOF
+        cat app/version.json
 
     - name: Build and push API image
       uses: docker/build-push-action@v5

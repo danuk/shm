@@ -9,19 +9,19 @@ use Core::Utils qw(
 );
 use Core::Sql::Data;
 use version;
+use JSON::PP;
 
 my $sql = Core::Sql::Data->new;
 
 my $version;
 my $version_prefix;
-if ( -f "$ENV{SHM_ROOT_DIR}/version" ) {
-    $version = read_file( "$ENV{SHM_ROOT_DIR}/version" );
-    chomp $version;
-    say "SHM version: $version";
-    if ( $version =~/(-.+)$/ ) {
-        $version_prefix = $1;
-        $version =~s/-.+$//;
-    }
+if ( -f "$ENV{SHM_ROOT_DIR}/version.json" ) {
+    my $version_json_str = read_file( "$ENV{SHM_ROOT_DIR}/version.json" );
+    my $version_data = decode_json( $version_json_str );
+    $version = $version_data->{version};
+    $version_prefix = "-" . $version_data->{commitSha};
+    $version =~s/-.+$//;
+    say "SHM version: $version$version_prefix";
 }
 
 my $logger = get_service('logger');

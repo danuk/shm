@@ -33,7 +33,18 @@ echo "Build version: ${GIT_TAG}-${REV}"
 echo "TAGS: ${LABELS[@]}"
 
 read -p "Press enter to continue..."
-echo -n "${GIT_TAG}-${REV}" > app/version
+
+# Create version.json
+COMMIT_SHA=$(git rev-parse HEAD)
+cat > app/version.json << EOF
+{
+    "version": "${GIT_TAG}-${REV}",
+    "commitSha": "${COMMIT_SHA}",
+    "releaseUrl": "https://github.com/danuk/shm/releases/tag/${GIT_TAG}"
+}
+EOF
+echo "Created app/version.json:"
+cat app/version.json
 
 build_and_push api
 build_and_push core

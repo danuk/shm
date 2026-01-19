@@ -39,8 +39,16 @@ jobs:
             echo "minor=${TAG}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Write version file
-        run: echo -n "${{ steps.version.outputs.full }}" > app/version
+      - name: Create version.json
+        run: |
+          cat > app/version.json << EOF
+          {
+              "version": "${{ steps.version.outputs.full }}",
+              "commitSha": "${{ github.sha }}",
+              "releaseUrl": "https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}"
+          }
+          EOF
+          cat app/version.json
 
       - name: Build and push API
         uses: docker/build-push-action@v5

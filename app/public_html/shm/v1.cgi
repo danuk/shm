@@ -563,6 +563,15 @@ my $routes = {
     },
 },
 
+'/admin/system/version' => {
+    GET => {
+        controller => 'Config',
+        method => 'version_info',
+        args => {
+            format => 'json',
+        },
+    },
+},
 '/admin/service' => {
     swagger => { tags => 'Услуги' },
     GET => {

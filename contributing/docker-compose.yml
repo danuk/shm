@@ -39,10 +39,6 @@ services:
         condition: service_healthy
   webdav:
     image: danuk/shm-webdav:latest
-    build:
-      context: shm
-      dockerfile: ./Dockerfile
-      target: webdav
     restart: always
     ports:
       - "8888:80"
