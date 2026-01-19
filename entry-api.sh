@@ -1,7 +1,5 @@
 #!/bin/sh -e
 
-[ -z "$RESOLVER" ] || sed -i "s|resolver 127.0.0.11|resolver $RESOLVER|" /etc/nginx/conf.d/default.conf
-
 # Add IP addresses to geo block for rate limit exclusion
 if [ -n "$TRUSTED_IPS" ]; then
     # Split IPs by comma and add each one to geo block
