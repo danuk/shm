@@ -713,7 +713,7 @@ sub process_message {
         if ( $payment->{currency} eq 'XTR' ) {
             my $cr = get_service('Cloud::Currency');
             if ( my $cr_amount = $cr->convert(
-                to => $payment->{currency},
+                from => $payment->{currency},
                 amount => $money,
             )) {
                 $money = $cr_amount;
