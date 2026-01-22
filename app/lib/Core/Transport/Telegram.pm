@@ -777,6 +777,14 @@ sub process_message {
         cmd => $cmd,
     );
 
+    if ( my $cb = $self->get_callback_query ) {
+        $self->http( 'answerCallbackQuery',
+            data => {
+                callback_query_id => $cb->{id},
+            },
+        );
+    }
+
     return {};
     # Reply directly for only first response
     return get_last_object( $response );
