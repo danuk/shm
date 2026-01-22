@@ -1509,6 +1509,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         my $ip = get_user_ip();
         my $tag = lc sprintf("%s-%s-%s", ref $service, $method, $ip);
         if ( $cache->get( $tag ) >= 5 ) {
+            get_service('logger')->error("API rejected for tag: $tag");
             print_header( status => 429 );
             print_json( { status => 429, error => '429 Too Many Requests', ip => $ip } );
             exit 0;
