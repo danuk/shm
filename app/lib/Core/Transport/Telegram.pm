@@ -777,6 +777,14 @@ sub process_message {
         cmd => $cmd,
     );
 
+    if ( my $cb = $self->get_callback_query ) {
+        $self->http( 'answerCallbackQuery',
+            data => {
+                callback_query_id => $cb->{id},
+            },
+        );
+    }
+
     return {};
     # Reply directly for only first response
     return get_last_object( $response );
@@ -1330,6 +1338,8 @@ sub set_webhook {
         token => undef,
         secret => undef,
         template_id => undef,
+        tg_profile => undef,
+        allowed_updates => undef,
         @_,
     );
 
@@ -1339,10 +1349,12 @@ sub set_webhook {
         sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->{server}, $args{token}),
     );
 
+    my $bot = $args{template_id};
+    $bot .=  "?tg_profile=$args{tg_profile}" if $args{tg_profile};
     my $content = {
         secret_token => $args{secret},
-        url => sprintf('%s/shm/v1/telegram/bot/%s', $args{url}, $args{template_id}),
-        allowed_updates => [
+        url => sprintf('%s/shm/v1/telegram/bot/%s', $args{url}, $bot),
+        allowed_updates => $args{allowed_updates} // [
             'message',
             'inline_query',
             'callback_query',
