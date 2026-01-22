@@ -182,5 +182,24 @@ subtest 'Create service with limit_bonus_percent = 100%' => sub {
     is( $user->get_bonus, 0 );
 };
 
+subtest 'Create service with custom period (less that period of service)' => sub {
+    $user->set( balance => 1200 );
+    my $si = get_service('service')->add(
+        name => 'TEST_12',
+        category => 'TEST_12',
+        cost => 1200,
+        period => 12,
+        allow_to_order => 1,
+    );
+
+    my $us1 = $si->reg( service_id => $si->id, months => 1 );
+    is( $us1->wd->get_total, 100 );
+    is( $us1->wd->get_bonus, 0 );
+
+    my $us2 = $si->reg( service_id => $si->id, months => 0.01 );
+    is( $us2->wd->get_total, 3.23 );
+    is( $us2->wd->get_bonus, 0 );
+};
+
 done_testing();
 
