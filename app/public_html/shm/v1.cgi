@@ -958,14 +958,14 @@ my $routes = {
         swagger => { summary => 'Список архива задач' },
     },
 },
-'/admin/spool/*' => {
+'/admin/spool/manual' => {
     swagger => { tags => 'Задачи' },
     splat_to => 'action',
     POST => {
         controller => 'Spool',
         method => 'api_manual_action',
         required => ['id'],
-        swagger => { summary => 'Изменить статус задачи' },
+        swagger => { summary => 'Изменить статус задачи вручную' },
     },
 },
 '/admin/template' => {
