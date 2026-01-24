@@ -131,7 +131,7 @@ sub api_register_options {
 
     my $user = get_service('user');
     my $challenge = $self->generate_challenge($user);
-    my $project_name = eval { get_service('config')->data_by_name('project')->{name} } || 'SHM';
+    my $project_name = get_service('config')->data_by_name('project')->{name}|| 'SHM';
 
     # Получаем существующие credential id для исключения
     my @exclude_credentials = map {
@@ -184,7 +184,7 @@ sub api_register_complete {
 
     # Проверяем clientDataJSON
     my $client_data_json = decode_base64url($args{response}->{clientDataJSON} || '');
-    my $client_data = eval { decode_json($client_data_json) } || {};
+    my $client_data = decode_json($client_data_json) || {};
 
     # Проверяем challenge
     unless ($self->verify_challenge($user, $client_data->{challenge})) {
@@ -268,7 +268,7 @@ sub api_auth_complete {
 
     # Проверяем clientDataJSON
     my $client_data_json = decode_base64url($args{response}->{clientDataJSON} || '');
-    my $client_data = eval { decode_json($client_data_json) } || {};
+    my $client_data = decode_json($client_data_json) || {};
 
     # Проверяем challenge
     unless ($self->verify_challenge($user, $client_data->{challenge})) {
@@ -497,7 +497,7 @@ sub api_auth_public {
 
     # Проверяем clientDataJSON
     my $client_data_json = decode_base64url($args{response}->{clientDataJSON} || '');
-    my $client_data = eval { decode_json($client_data_json) } || {};
+    my $client_data = decode_json($client_data_json) || {};
 
     # Проверяем challenge
     unless ($self->verify_challenge($user, $client_data->{challenge})) {
