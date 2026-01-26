@@ -576,4 +576,16 @@ sub arch {
     return $arch;
 }
 
+sub attr {
+    my $self = shift;
+    my $key = shift;
+    my $value = shift;
+
+    if ( defined $value ) {
+        $self->{ $key } = $value;
+    }
+
+    return $self->{ $key };
+}
+
 1;
