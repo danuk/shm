@@ -107,198 +107,167 @@ my $routes = {
     },
 },
 '/user/password-auth/disable' => {
+    swagger => { tags => 'Пользователи' },
     POST => {
         controller => 'User',
         method => 'api_disable_password_auth',
+        swagger => { summary => 'Отключить вход по паролю' },
     },
 },
 '/user/password-auth/enable' => {
+    swagger => { tags => 'Пользователи' },
     POST => {
         controller => 'User',
         method => 'api_enable_password_auth',
+        swagger => { summary => 'Включить вход по паролю' },
     },
 },
 '/user/password-auth/status' => {
+    swagger => { tags => 'Пользователи' },
     GET => {
         controller => 'User',
         method => 'api_password_auth_status',
+        swagger => { summary => 'Статус входа по паролю' },
     },
 },
 '/user/otp/setup' => {
-    swagger => {
-        tags => ['OTP'],
-        summary => 'Setup OTP for user',
-        description => 'Generates secret and QR code for OTP setup'
-    },
+    swagger => { tags => 'OTP' },
     POST => {
         controller => 'OTP',
         method => 'api_setup',
+        swagger => {
+            summary => 'Настройка OTP',
+            responses => {
+                '200' => {
+                    content => {
+                        'application/json' => {
+                            schema => {
+                                type => 'object',
+                                properties => {
+                                    qr_url => {
+                                        type => 'string'
+                                    },
+                                    secret => {
+                                        type => 'string'
+                                    },
+                                    backup_codes => {
+                                        type => 'array',
+                                        items => {
+                                            type => 'number'
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
 },
 '/user/otp/enable' => {
-    swagger => {
-        tags => ['OTP'],
-        summary => 'Enable OTP',
-        description => 'Enable OTP after verification'
-    },
+    swagger => { tags => 'OTP' },
     POST => {
         controller => 'OTP',
         method => 'api_enable',
         required => ['token'],
+        swagger => { summary => 'Включение OTP' },
     },
 },
 '/user/otp/disable' => {
-    swagger => {
-        tags => ['OTP'],
-        summary => 'Disable OTP',
-        description => 'Disable OTP with token verification'
-    },
+    swagger => { tags => 'OTP' },
     POST => {
         controller => 'OTP',
         method => 'api_disable',
         required => ['token'],
+        swagger => { summary => 'Отключение OTP' },
     },
 },
 '/user/otp/verify' => {
-    swagger => {
-        tags => ['OTP'],
-        summary => 'Verify OTP token',
-        description => 'Verify OTP token or backup code'
-    },
+    swagger => { tags => 'OTP' },
     POST => {
         controller => 'OTP',
         method => 'api_verify',
         required => ['token'],
+        swagger => { summary => 'Проверка OTP' },
     },
 },
 '/user/otp/status' => {
-    swagger => {
-        tags => ['OTP'],
-        summary => 'Get OTP status',
-        description => 'Get current OTP status for user'
-    },
+    swagger => { tags => 'OTP' },
     GET => {
         controller => 'OTP',
         method => 'api_status',
     },
 },
 '/user/passkey/register/options' => {
-    swagger => {
-        tags => ['Passkey'],
-        summary => 'Get Passkey registration options',
-        description => 'Get WebAuthn options for registering a new passkey'
-    },
+    swagger => { tags => 'Passkey' },
     POST => {
         controller => 'Passkey',
         method => 'api_register_options',
+        swagger => { summary => 'Получить параметры регистрации Passkey' },
     },
 },
 '/user/passkey/register/complete' => {
-    swagger => {
-        tags => ['Passkey'],
-        summary => 'Complete Passkey registration',
-        description => 'Complete WebAuthn registration with attestation response'
-    },
+    swagger => { tags => 'Passkey' },
     POST => {
         controller => 'Passkey',
         method => 'api_register_complete',
         required => ['credential_id', 'response'],
-    },
-},
-'/user/passkey/auth/options' => {
-    swagger => {
-        tags => ['Passkey'],
-        summary => 'Get Passkey authentication options',
-        description => 'Get WebAuthn options for authenticating with passkey (requires auth)'
-    },
-    POST => {
-        controller => 'Passkey',
-        method => 'api_auth_options',
-    },
-},
-'/user/passkey/auth/complete' => {
-    swagger => {
-        tags => ['Passkey'],
-        summary => 'Complete Passkey authentication',
-        description => 'Complete WebAuthn authentication with assertion response (requires auth)'
-    },
-    POST => {
-        controller => 'Passkey',
-        method => 'api_auth_complete',
-        required => ['credential_id', 'response'],
+        swagger => { summary => 'Завершить регистрацию Passkey' },
     },
 },
 '/user/passkey/list' => {
-    swagger => {
-        tags => ['Passkey'],
-        summary => 'List registered passkeys',
-        description => 'Get list of all registered passkeys for current user'
-    },
+    swagger => { tags => 'Passkey' },
     GET => {
         controller => 'Passkey',
         method => 'api_list',
+        swagger => { summary => 'Список зарегистрированных Passkey' },
     },
 },
 '/user/passkey/delete' => {
-    swagger => {
-        tags => ['Passkey'],
-        summary => 'Delete a passkey',
-        description => 'Remove a registered passkey'
-    },
+    swagger => { tags => 'Passkey' },
     POST => {
         controller => 'Passkey',
         method => 'api_delete',
         required => ['credential_id'],
+        swagger => { summary => 'Удалить зарегистрированный Passkey по идентификатору' },
     },
 },
 '/user/passkey/rename' => {
-    swagger => {
-        tags => ['Passkey'],
-        summary => 'Rename a passkey',
-        description => 'Change the display name of a passkey'
-    },
+    swagger => { tags => 'Passkey' },
     POST => {
         controller => 'Passkey',
         method => 'api_rename',
         required => ['credential_id', 'name'],
+        swagger => { summary => 'Переименовать зарегистрированный Passkey' },
     },
 },
 '/user/passkey/status' => {
-    swagger => {
-        tags => ['Passkey'],
-        summary => 'Get Passkey status',
-        description => 'Get current passkey status for user'
-    },
+    swagger => { tags => 'Passkey' },
     GET => {
         controller => 'Passkey',
         method => 'api_status',
+        swagger => { summary => 'Статус Passkey' },
     },
 },
-# Public passkey auth (no session required)
+# Public passkey auth
 '/user/passkey/auth/options/public' => {
-    swagger => {
-        tags => ['Passkey'],
-        summary => 'Get Passkey authentication options (public)',
-        description => 'Get WebAuthn options for login with passkey (no auth required)'
-    },
+    swagger => { tags => 'Passkey' },
     POST => {
         controller => 'Passkey',
         method => 'api_auth_options_public',
         skip_check_auth => 1,
-        required => ['login'],
+        swagger => { summary => 'Получить параметры публичной аутентификации Passkey' },
     },
 },
 '/user/passkey/auth/public' => {
-    swagger => {
-        tags => ['Passkey'],
-        summary => 'Authenticate with Passkey (public)',
-        description => 'Login using passkey without password'
-    },
+    swagger => { tags => 'Passkey' },
     POST => {
         controller => 'Passkey',
         method => 'api_auth_public',
         skip_check_auth => 1,
-        required => ['login', 'credential_id', 'response'],
+        required => ['credential_id', 'response'],
+        swagger => { summary => 'Аутентификация пользователя с помощью Passkey' },
     },
 },
 '/user/passwd' => {
@@ -958,14 +927,14 @@ my $routes = {
         swagger => { summary => 'Список архива задач' },
     },
 },
-'/admin/spool/*' => {
+'/admin/spool/manual/*' => {
     swagger => { tags => 'Задачи' },
     splat_to => 'action',
     POST => {
         controller => 'Spool',
         method => 'api_manual_action',
         required => ['id'],
-        swagger => { summary => 'Изменить статус задачи' },
+        swagger => { summary => 'Изменить статус задачи вручную' },
     },
 },
 '/admin/template' => {
@@ -1509,6 +1478,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         my $ip = get_user_ip();
         my $tag = lc sprintf("%s-%s-%s", ref $service, $method, $ip);
         if ( $cache->get( $tag ) >= 5 ) {
+            get_service('logger')->error("API rejected for tag: $tag");
             print_header( status => 429 );
             print_json( { status => 429, error => '429 Too Many Requests', ip => $ip } );
             exit 0;
