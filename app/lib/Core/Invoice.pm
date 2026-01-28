@@ -1,4 +1,4 @@
-package Core::Orders;
+package Core::Invoice;
 
 use v5.14;
 use parent 'Core::Base';
