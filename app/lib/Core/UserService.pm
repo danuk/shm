@@ -455,10 +455,17 @@ sub list_for_api {
     # sorting the results according to the query
     my ( $field, $dir ) = @{ $self->query_for_order( %args ) };
     my @arr;
+    my %date_fields = map { $_ => 1 } qw(expire created);
+    my $is_date_field = $date_fields{ $field };
+
     if ( $dir eq 'desc' ) {
-        @arr = sort { $b->{ $field } <=> $a->{ $field } } @ret;
+        @arr = $is_date_field
+            ? sort { ($b->{ $field } // '') cmp ($a->{ $field } // '') } @ret
+            : sort { ($b->{ $field } // 0) <=> ($a->{ $field } // 0) } @ret;
     } else {
-        @arr = sort { $a->{ $field } <=> $b->{ $field } } @ret;
+        @arr = $is_date_field
+            ? sort { ($a->{ $field } // '') cmp ($b->{ $field } // '') } @ret
+            : sort { ($a->{ $field } // 0) <=> ($b->{ $field } // 0) } @ret;
     }
 
     return wantarray ? @arr : \@arr;
