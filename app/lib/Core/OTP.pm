@@ -123,7 +123,7 @@ sub api_setup {
         enabled => 0
     );
 
-    my $project_name = eval { get_service('config')->data_by_name('project')->{name} } || 'SHM';
+    my $project_name = get_service('config')->data_by_name('project')->{name} || 'SHM';
     my $qr_url = sprintf(
         'otpauth://totp/%s:%s?secret=%s&issuer=%s',
         $project_name, $user->get_login, $secret, $project_name
