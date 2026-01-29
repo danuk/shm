@@ -125,11 +125,18 @@ jobs:
           fi
 
           # Форматирование сообщения (используем plain text без Markdown)
-          MESSAGE="${EMOJI} ${RELEASE_TYPE} ${TAG_NAME}\n\n📦 Репозиторий: ${REPO_NAME}\n\n📋 Changelog:\n${COMMITS_SECTION}\n\n🔗 Посмотреть релиз: ${REPO_URL}/releases/tag/${TAG_NAME}"
+          MESSAGE="${EMOJI} ${RELEASE_TYPE} ${TAG_NAME}
 
-          # Escape the message for JSON
-          MESSAGE=$(echo "$MESSAGE" | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
-          echo "message=$MESSAGE" >> $GITHUB_OUTPUT
+📦 Репозиторий: ${REPO_NAME}
+
+📋 Changelog:
+${COMMITS_SECTION}
+
+🔗 Посмотреть релиз: ${REPO_URL}/releases/tag/${TAG_NAME}"
+
+          # Сохраняем сообщение во временный файл для безопасной передачи
+          echo "$MESSAGE" > /tmp/telegram_message.txt
+          echo "message_file=/tmp/telegram_message.txt" >> $GITHUB_OUTPUT
 
       - name: Отправка в Telegram
         if: steps.check_conditions.outputs.should_notify == 'true'
@@ -150,19 +157,26 @@ jobs:
             exit 1
           fi
 
-          MESSAGE="${{ steps.format_message.outputs.message }}"
+          MESSAGE_FILE="${{ steps.format_message.outputs.message_file }}"
+
+          # Создаем JSON payload с помощью jq для правильного экранирования
+          PAYLOAD=$(jq -n \
+            --arg chat_id "${TELEGRAM_CHAT_ID}" \
+            --arg thread_id "${TELEGRAM_THREAD_ID}" \
+            --rawfile text "$MESSAGE_FILE" \
+            '{
+              chat_id: $chat_id,
+              message_thread_id: ($thread_id // null),
+              text: $text,
+              disable_notification: true,
+              disable_web_page_preview: true
+            }')
 
           # Отправка сообщения в Telegram
           RESPONSE=$(curl -s -X POST \
             "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"chat_id\": \"${TELEGRAM_CHAT_ID}\",
-              \"message_thread_id\": \"${TELEGRAM_THREAD_ID}\",
-              \"text\": \"${MESSAGE}\",
-              \"disable_notification\": true,
-              \"disable_web_page_preview\": true
-            }")
+            -d "$PAYLOAD")
 
           # Проверка успешной отправки сообщения
           if echo "$RESPONSE" | grep -q '"ok":true'; then
