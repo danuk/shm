@@ -125,16 +125,13 @@ jobs:
           fi
 
           # Форматирование сообщения (используем plain text без Markdown)
-          cat > /tmp/telegram_message.txt << EOF
-${EMOJI} ${RELEASE_TYPE} ${TAG_NAME}
-
-📦 Репозиторий: ${REPO_NAME}
-
-📋 Changelog:
-${COMMITS_SECTION}
-
-🔗 Посмотреть релиз: ${REPO_URL}/releases/tag/${TAG_NAME}
-EOF
+          printf '%s\n\n%s\n\n%s\n%s\n\n%s' \
+            "${EMOJI} ${RELEASE_TYPE} ${TAG_NAME}" \
+            "📦 Репозиторий: ${REPO_NAME}" \
+            "📋 Changelog:" \
+            "${COMMITS_SECTION}" \
+            "🔗 Посмотреть релиз: ${REPO_URL}/releases/tag/${TAG_NAME}" \
+            > /tmp/telegram_message.txt
 
           # Сохраняем путь к файлу сообщения
           echo "message_file=/tmp/telegram_message.txt" >> $GITHUB_OUTPUT
