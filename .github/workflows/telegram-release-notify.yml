@@ -125,17 +125,18 @@ jobs:
           fi
 
           # Форматирование сообщения (используем plain text без Markdown)
-          MESSAGE="${EMOJI} ${RELEASE_TYPE} ${TAG_NAME}
+          cat > /tmp/telegram_message.txt << EOF
+${EMOJI} ${RELEASE_TYPE} ${TAG_NAME}
 
 📦 Репозиторий: ${REPO_NAME}
 
 📋 Changelog:
 ${COMMITS_SECTION}
 
-🔗 Посмотреть релиз: ${REPO_URL}/releases/tag/${TAG_NAME}"
+🔗 Посмотреть релиз: ${REPO_URL}/releases/tag/${TAG_NAME}
+EOF
 
-          # Сохраняем сообщение во временный файл для безопасной передачи
-          echo "$MESSAGE" > /tmp/telegram_message.txt
+          # Сохраняем путь к файлу сообщения
           echo "message_file=/tmp/telegram_message.txt" >> $GITHUB_OUTPUT
 
       - name: Отправка в Telegram
