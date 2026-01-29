@@ -8,6 +8,11 @@ on:
         required: false
         default: 'latest'
         type: string
+      push_latest:
+        description: 'Push latest tag (only from master branch)'
+        required: false
+        default: false
+        type: boolean
 
 env:
   REGISTRY: docker.io
@@ -36,6 +41,23 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+    - name: Check branch
+      id: branch_check
+      run: |
+        CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        echo "current_branch=${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+        if [ "$CURRENT_BRANCH" = "master" ] && [ "${{ inputs.push_latest }}" = "true" ]; then
+          echo "should_push_latest=true" >> $GITHUB_OUTPUT
+          echo "Will push 'latest' tag (master branch + push_latest enabled)"
+        else
+          echo "should_push_latest=false" >> $GITHUB_OUTPUT
+          if [ "$CURRENT_BRANCH" != "master" ]; then
+            echo "Will NOT push 'latest' tag (not on master branch: ${CURRENT_BRANCH})"
+          else
+            echo "Will NOT push 'latest' tag (push_latest parameter is false)"
+          fi
+        fi
+
     - name: Build and push API base image
       uses: docker/build-push-action@v5
       with:
@@ -46,7 +68,7 @@ jobs:
         target: api
         tags: |
           ${{ env.IMAGE_NAME }}-api:${{ inputs.tag }}
-          ${{ env.IMAGE_NAME }}-api:latest
+          ${{ steps.branch_check.outputs.should_push_latest == 'true' && format('{0}-api:latest', env.IMAGE_NAME) || '' }}
 
     - name: Build and push Core base image
       uses: docker/build-push-action@v5
@@ -58,7 +80,7 @@ jobs:
         target: core-base
         tags: |
           ${{ env.IMAGE_NAME }}-core-base:${{ inputs.tag }}
-          ${{ env.IMAGE_NAME }}-core-base:latest
+          ${{ steps.branch_check.outputs.should_push_latest == 'true' && format('{0}-core-base:latest', env.IMAGE_NAME) || '' }}
 
     - name: Build and push WebDAV base image
       uses: docker/build-push-action@v5
@@ -70,4 +92,4 @@ jobs:
         target: webdav
         tags: |
           ${{ env.IMAGE_NAME }}-webdav:${{ inputs.tag }}
-          ${{ env.IMAGE_NAME }}-webdav:latest
+          ${{ steps.branch_check.outputs.should_push_latest == 'true' && format('{0}-webdav:latest', env.IMAGE_NAME) || '' }}

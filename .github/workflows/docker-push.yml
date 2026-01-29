@@ -38,6 +38,15 @@ jobs:
           else
             echo "minor=${TAG}" >> $GITHUB_OUTPUT
           fi
+          # Check if current branch is master
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          if [ "$CURRENT_BRANCH" = "master" ]; then
+            echo "is_master=true" >> $GITHUB_OUTPUT
+            echo "Current branch is master - will push 'latest' tag"
+          else
+            echo "is_master=false" >> $GITHUB_OUTPUT
+            echo "Current branch is $CURRENT_BRANCH (not master) - will NOT push 'latest' tag"
+          fi
 
       - name: Create version.json
         run: |
@@ -59,7 +68,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/shm-api:${{ steps.version.outputs.minor }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/shm-api:latest
+            ${{ steps.version.outputs.is_master == 'true' && format('{0}/shm-api:latest', secrets.DOCKERHUB_USERNAME) || '' }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
@@ -72,6 +81,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:${{ steps.version.outputs.minor }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:latest
+            ${{ steps.version.outputs.is_master == 'true' && format('{0}/shm-core:latest', secrets.DOCKERHUB_USERNAME) || '' }}
           cache-from: type=gha,scope=core
           cache-to: type=gha,mode=max,scope=core
