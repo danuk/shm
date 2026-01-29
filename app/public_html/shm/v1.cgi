@@ -75,6 +75,14 @@ my $routes = {
         swagger => { summary => 'Изменить пользователя' },
     },
 },
+'/user/referrals' => {
+    swagger => { tags => 'Пользователи' },
+    GET => {
+        controller => 'User',
+        method => 'get_api_referrals',
+        swagger => { summary => 'Получение статистики по приглашенным друзьям' },
+    },
+},
 '/user/auth' => {
     swagger => { tags => 'Пользователи' },
     POST => {

@@ -1097,4 +1097,19 @@ sub api_password_auth_status {
     };
 }
 
+sub get_api_referrals {
+    my $self = shift;
+
+    my ($referral_bonuses) = $self->dbh->selectrow_array(
+        "SELECT COALESCE(SUM(bonus), 0) FROM bonus_history
+         WHERE user_id = ? AND JSON_EXTRACT(comment, '\$.from_user_id') IS NOT NULL AND bonus > 0",
+        undef, $self->id
+    );
+
+    return {
+        invited => $self->referrals_count,
+        received_bonuses => sprintf("%.2f", $referral_bonuses || 0),
+    };
+}
+
 1;
