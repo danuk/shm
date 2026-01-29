@@ -1,11 +1,10 @@
 name: 'Telegram Release Notification'
 
 on:
-  release:
-    types: [published]
-  push:
-    tags:
-      - '*'
+  workflow_run:
+    workflows: ["Build and Push Docker Images"]
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       tag_name:
@@ -28,37 +27,62 @@ on:
 jobs:
   notify-telegram:
     runs-on: ubuntu-latest
+    # Запускать только если workflow_run завершился успешно или это ручной запуск
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     steps:
       - name: Получение репозитория
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref }}
+
+      - name: Проверка условий для уведомления
+        id: check_conditions
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_notify=true" >> $GITHUB_OUTPUT
+            echo "is_manual=true" >> $GITHUB_OUTPUT
+            echo "✅ Ручной запуск - отправим уведомление"
+          else
+            # Проверяем, что это был запуск из master ветки
+            BRANCH="${{ github.event.workflow_run.head_branch }}"
+            echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+
+            if [ "$BRANCH" = "master" ]; then
+              echo "should_notify=true" >> $GITHUB_OUTPUT
+              echo "is_manual=false" >> $GITHUB_OUTPUT
+              echo "✅ Релиз из master ветки - отправим уведомление"
+            else
+              echo "should_notify=false" >> $GITHUB_OUTPUT
+              echo "is_manual=false" >> $GITHUB_OUTPUT
+              echo "⏭️ Релиз не из master ветки (${BRANCH}) - пропускаем уведомление"
+            fi
+          fi
 
       - name: Получение информации о релизе
         id: release_info
+        if: steps.check_conditions.outputs.should_notify == 'true'
         run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            echo "tag_name=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
-            echo "name=${{ github.event.release.name }}" >> $GITHUB_OUTPUT
-            echo "prerelease=${{ github.event.release.prerelease }}" >> $GITHUB_OUTPUT
-            BODY=$(echo '${{ github.event.release.body }}' | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
-            echo "body=$BODY" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            TAG_NAME="${GITHUB_REF##*/}"
-            echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-            echo "name=Release $TAG_NAME" >> $GITHUB_OUTPUT
-            echo "prerelease=false" >> $GITHUB_OUTPUT
-            echo "body=No changelog (push tag trigger)" >> $GITHUB_OUTPUT
-          else
+          if [ "${{ steps.check_conditions.outputs.is_manual }}" = "true" ]; then
             echo "tag_name=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
             echo "name=${{ github.event.inputs.release_name }}" >> $GITHUB_OUTPUT
             echo "prerelease=false" >> $GITHUB_OUTPUT
             BODY=$(echo '${{ github.event.inputs.body }}' | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
             echo "body=$BODY" >> $GITHUB_OUTPUT
+          else
+            # Получаем последний тег
+            TAG_NAME=$(git describe --tags --abbrev=0 2>/dev/null || echo "unknown")
+            echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+            echo "name=Release $TAG_NAME" >> $GITHUB_OUTPUT
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "body=Автоматический релиз из master ветки" >> $GITHUB_OUTPUT
           fi
 
       - name: Форматирование сообщения для Telegram
         id: format_message
+        if: steps.check_conditions.outputs.should_notify == 'true'
         run: |
           TAG_NAME="${{ steps.release_info.outputs.tag_name }}"
           RELEASE_NAME="${{ steps.release_info.outputs.name }}"
@@ -108,6 +132,7 @@ jobs:
           echo "message=$MESSAGE" >> $GITHUB_OUTPUT
 
       - name: Отправка в Telegram
+        if: steps.check_conditions.outputs.should_notify == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -150,7 +175,13 @@ jobs:
           fi
 
       - name: Тестовое сообщение (только при ручном запуске)
-        if: github.event_name == 'workflow_dispatch'
+        if: steps.check_conditions.outputs.is_manual == 'true'
         run: |
           echo "🧪 Это был тестовый запуск, выполненный вручную"
-          echo "В продакшене этот workflow будет запускаться автоматически при создании релиза"
+          echo "В продакшене этот workflow будет запускаться автоматически после сборки релиза из master ветки"
+
+      - name: Информация о пропуске
+        if: steps.check_conditions.outputs.should_notify == 'false'
+        run: |
+          echo "⏭️ Уведомление пропущено - релиз не из master ветки"
+          echo "Уведомления отправляются только для релизов из master ветки (с тегом latest)"
