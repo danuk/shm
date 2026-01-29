@@ -260,7 +260,8 @@ sub auth_api_safe {
     }
 
     my $otp = get_service('OTP');
-    if ( $otp->get_enabled($user) ) {
+    my $settings = $user->get_settings->{otp} || {};
+    if ( $settings->{enabled} ) {
         unless ( $args{otp_token} ) {
             return {
                 login => $user->get_login,
@@ -269,14 +270,14 @@ sub auth_api_safe {
             };
         }
 
-        unless ( $otp->verify_token( $otp->get_secret($user), $args{otp_token} ) ) {
+        unless ( $otp->verify_token( $settings->{secret}, $args{otp_token} ) ) {
             my $backup_valid = 0;
-            if ( $otp->get_backup_codes($user) ) {
-                my @backup_codes = split(',', $otp->get_backup_codes($user));
+            if ( $settings->{backup_codes} ) {
+                my @backup_codes = split(',', $settings->{backup_codes});
                 if ( grep { $_ eq $args{otp_token} } @backup_codes ) {
                     $backup_valid = 1;
                     @backup_codes = grep { $_ ne $args{otp_token} } @backup_codes;
-                    $otp->set_settings($user, backup_codes => join(',', @backup_codes));
+                    $user->set_settings(otp => { backup_codes => join(',', @backup_codes) });
                 }
             }
 
@@ -288,7 +289,7 @@ sub auth_api_safe {
             }
         }
 
-        $otp->set_settings($user, verified_at => now());
+        $user->set_settings( otp => { verified_at => now() } );
     }
 
     my $session_id = $user->gen_session->{id};
@@ -1022,26 +1023,6 @@ sub partner {
     return $self->id( $partner_id );
 }
 
-sub is_otp_required {
-    my $self = shift;
-
-    return 0 unless $self->get_otp_enabled;
-    return 1 unless $self->get_otp_verified_at;
-
-    my $verification_timeout = 24 * 60 * 60;
-    my $last_verified = $self->get_otp_verified_at;
-
-    my $verified_timestamp;
-    if ($last_verified =~ /(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/) {
-        use Time::Local;
-        $verified_timestamp = timelocal($6, $5, $4, $3, $2-1, $1);
-    } else {
-        $verified_timestamp = $last_verified;
-    }
-
-    return (time() - $verified_timestamp) >= $verification_timeout;
-}
-
 sub is_password_auth_disabled {
     my $self = shift;
     return $self->get_settings->{password_auth_disabled} || 0;
@@ -1093,7 +1074,15 @@ sub api_password_auth_status {
     return {
         password_auth_disabled => $self->is_password_auth_disabled ? 1 : 0,
         passkey_enabled => $passkey->get_enabled($self) ? 1 : 0,
-        otp_enabled => $otp->get_enabled($self) ? 1 : 0,
+        otp_enabled => $self->get_settings->{otp}->{enabled} ? 1 : 0,
+    };
+}
+
+sub get_api_referrals {
+    my $self = shift;
+
+    return {
+        invited => $self->referrals_count,
     };
 }
 

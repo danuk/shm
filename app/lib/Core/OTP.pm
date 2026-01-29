@@ -4,11 +4,9 @@ use v5.14;
 
 use parent 'Core::Base';
 use Core::Base;
-use Core::Utils qw( now encode_json decode_json qrencode );
-
-use Digest::SHA qw(sha1_hex hmac_sha1);
+use Core::Utils qw(now);
+use Digest::SHA qw(hmac_sha1);
 use MIME::Base32;
-use MIME::Base64 qw(encode_base64);
 use Math::Random::Secure qw(rand);
 
 sub table { return 'users' };
@@ -72,69 +70,49 @@ sub generate_backup_codes {
 
 sub get_enabled {
     my $self = shift;
-    my $user = shift;
-    return $user->get_settings->{otp}->{enabled} || 0;
+    return $self->user->get_settings->{otp}->{enabled} || 0;
 }
 
 sub get_secret {
     my $self = shift;
-    my $user = shift;
-    return $user->get_settings->{otp}->{secret};
+    return $self->user->get_settings->{otp}->{secret};
 }
 
 sub get_backup_codes {
     my $self = shift;
-    my $user = shift;
-    return $user->get_settings->{otp}->{backup_codes};
+    return $self->user->get_settings->{otp}->{backup_codes};
 }
 
 sub get_verified_at {
     my $self = shift;
-    my $user = shift;
-    return $user->get_settings->{otp}->{verified_at};
-}
-
-sub set_settings {
-    my $self = shift;
-    my $user = shift;
-    my %otp_data = @_;
-
-    my $settings = $user->get_settings;
-    $settings->{otp} = { %{$settings->{otp} || {}}, %otp_data };
-    $user->set(settings => $settings);
+    return $self->user->get_settings->{otp}->{verified_at};
 }
 
 sub api_setup {
     my $self = shift;
 
-    my $user = get_service('user');
-
-    if ($self->get_enabled($user)) {
-        get_service('report')->add_error('OTP_ALREADY_ENABLED');
+    if ($self->get_enabled()) {
+        report->add_error('OTP_ALREADY_ENABLED');
         return undef;
     }
 
     my $secret = $self->generate_secret();
     my @backup_codes = $self->generate_backup_codes();
 
-    $self->set_settings($user,
+    $self->user->set_settings({ otp => {
         secret => $secret,
         backup_codes => join(',', @backup_codes),
         enabled => 0
-    );
+    }});
 
     my $project_name = get_service('config')->data_by_name('project')->{name} || 'SHM';
     my $qr_url = sprintf(
         'otpauth://totp/%s:%s?secret=%s&issuer=%s',
-        $project_name, $user->get_login, $secret, $project_name
+        $project_name, $self->get_login, $secret, $project_name
     );
-
-    my $qr_svg = qrencode($qr_url, type => 'svg');
-    my $qr_base64 = encode_base64($qr_svg, '');
 
     return {
         qr_url => $qr_url,
-        # qr_image => "data:image/svg+xml;base64,$qr_base64",
         secret => $secret,
         backup_codes => \@backup_codes
     };
@@ -147,26 +125,23 @@ sub api_enable {
         @_,
     );
 
-    my $report = get_service('report');
-    my $user = get_service('user');
-
     unless ($args{token}) {
-        $report->add_error('TOKEN_REQUIRED');
+        report->add_error('TOKEN_REQUIRED');
         return undef;
     }
 
-    my $secret = $self->get_secret($user);
+    my $secret = $self->get_secret();
     unless ($secret) {
-        $report->add_error('OTP_NOT_SETUP');
+        report->add_error('OTP_NOT_SETUP');
         return undef;
     }
 
     unless ($self->verify_token($secret, $args{token})) {
-        $report->add_error('INVALID_TOKEN');
+        report->add_error('INVALID_TOKEN');
         return undef;
     }
 
-    $self->set_settings($user, enabled => 1);
+    $self->user->set_settings({ otp => { enabled => 1 } });
 
     return { success => 1 };
 }
@@ -178,39 +153,36 @@ sub api_disable {
         @_,
     );
 
-    my $report = get_service('report');
-    my $user = get_service('user');
-
     unless ($args{token}) {
-        $report->add_error('TOKEN_REQUIRED');
+        report->add_error('TOKEN_REQUIRED');
         return undef;
     }
 
-    unless ($self->get_enabled($user)) {
-        $report->add_error('OTP_NOT_ENABLED');
+    unless ($self->get_enabled()) {
+        report->add_error('OTP_NOT_ENABLED');
         return undef;
     }
 
     my $valid = 0;
-    if ($self->verify_token($self->get_secret($user), $args{token})) {
+    if ($self->verify_token($self->get_secret(), $args{token})) {
         $valid = 1;
-    } elsif ($self->get_backup_codes($user)) {
-        my @backup_codes = split(',', $self->get_backup_codes($user));
+    } elsif ($self->get_backup_codes()) {
+        my @backup_codes = split(',', $self->get_backup_codes());
         if (grep { $_ eq $args{token} } @backup_codes) {
             $valid = 1;
             @backup_codes = grep { $_ ne $args{token} } @backup_codes;
-            $self->set_settings($user, backup_codes => join(',', @backup_codes));
+            $self->user->set_settings({ otp => { backup_codes => join(',', @backup_codes) } });
         }
     }
 
     unless ($valid) {
-        $report->add_error('INVALID_TOKEN');
+        report->add_error('INVALID_TOKEN');
         return undef;
     }
 
-    my $settings = $user->get_settings;
+    my $settings = $self->user->get_settings;
     delete $settings->{otp};
-    $user->set(settings => $settings);
+    $self->user->set(settings => $settings);
 
     return { success => 1 };
 }
@@ -222,52 +194,48 @@ sub api_verify {
         @_,
     );
 
-    my $report = get_service('report');
-    my $user = get_service('user');
-
     unless ($args{token}) {
-        $report->add_error('TOKEN_REQUIRED');
+        report->add_error('TOKEN_REQUIRED');
         return undef;
     }
 
-    unless ($self->get_enabled($user)) {
-        $report->add_error('OTP_NOT_ENABLED');
+    unless ($self->get_enabled()) {
+        report->add_error('OTP_NOT_ENABLED');
         return undef;
     }
 
     my $valid = 0;
-    if ($self->verify_token($self->get_secret($user), $args{token})) {
+    if ($self->verify_token($self->get_secret(), $args{token})) {
         $valid = 1;
-    } elsif ($self->get_backup_codes($user)) {
-        my @backup_codes = split(',', $self->get_backup_codes($user));
+    } elsif ($self->get_backup_codes()) {
+        my @backup_codes = split(',', $self->get_backup_codes());
         if (grep { $_ eq $args{token} } @backup_codes) {
             $valid = 1;
             @backup_codes = grep { $_ ne $args{token} } @backup_codes;
-            $self->set_settings($user, backup_codes => join(',', @backup_codes));
+            $self->user->set_settings({ otp => { backup_codes => join(',', @backup_codes) } });
         }
     }
 
     if ($valid) {
-        $self->set_settings($user, verified_at => now());
+        $self->user->set_settings({ otp => { verified_at => now() } });
         return { verified => 1 };
     }
 
-    $report->add_error('INVALID_TOKEN');
+    report->add_error('INVALID_TOKEN');
     return undef;
 }
 
 sub api_status {
     my $self = shift;
 
-    my $user = get_service('user');
-    my $enabled = $self->get_enabled($user) || 0;
+    my $enabled = $self->get_enabled() || 0;
 
     my $verified = 0;
     my $required = 0;
 
-    if ($enabled && $self->get_verified_at($user)) {
+    if ($enabled && $self->get_verified_at()) {
         my $verification_timeout = 24 * 60 * 60;
-        my $last_verified = $self->get_verified_at($user);
+        my $last_verified = $self->get_verified_at();
 
         my $verified_timestamp;
         if ($last_verified =~ /(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/) {
@@ -295,7 +263,7 @@ sub api_status {
         enabled => $enabled ? 1 : 0,
         verified => $verified,
         required => $required,
-        last_verified => $self->get_verified_at($user)
+        last_verified => $self->get_verified_at()
     };
 }
 

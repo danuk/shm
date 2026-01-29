@@ -10,41 +10,26 @@ use MIME::Base64 qw(decode_base64url encode_base64url);
 
 sub table { return 'users' };
 
-sub get_settings {
-    my $self = shift;
-    my $user = shift;
-    return $user->get_settings->{passkey} || {};
-}
-
-sub set_settings {
-    my $self = shift;
-    my $user = shift;
-    my %passkey_data = @_;
-
-    $user->set_settings({ passkey => \%passkey_data });
-}
-
 sub get_credentials {
     my $self = shift;
-    my $user = shift;
-    return $self->get_settings($user)->{credentials} || [];
+    return $self->user->get_settings->{passkey}->{credentials} || [];
 }
 
 sub find_credential {
     my $self = shift;
-    my $user = shift;
     my $credential_id = shift;
 
-    my ($credential) = grep { $_->{id} eq $credential_id } @{$self->get_credentials($user)};
+    my ($credential) = grep { $_->{id} eq $credential_id } @{$self->get_credentials};
     return $credential;
 }
 
 sub add_credential {
     my $self = shift;
-    my $user = shift;
     my %credential = @_;
 
-    my @credentials = @{$self->get_credentials($user)};
+    my $passkey_settings = $self->user->get_settings->{passkey} || {};
+    my @credentials = @{$passkey_settings->{credentials} || []};
+
     push @credentials, {
         id => $credential{id},
         public_key => $credential{public_key},
@@ -53,30 +38,31 @@ sub add_credential {
         counter => 0,
     };
 
-    $self->set_settings($user, credentials => \@credentials);
+    $passkey_settings->{credentials} = \@credentials;
+    $self->user->set_settings({ passkey => $passkey_settings });
 }
 
 sub remove_credential {
     my $self = shift;
-    my $user = shift;
     my $credential_id = shift;
 
-    my @credentials = grep { $_->{id} ne $credential_id } @{$self->get_credentials($user)};
+    my $passkey_settings = $self->user->get_settings->{passkey} || {};
+    my @credentials = grep { $_->{id} ne $credential_id } @{$passkey_settings->{credentials} || []};
 
     if (@credentials) {
-        $self->set_settings($user, credentials => \@credentials);
+        $passkey_settings->{credentials} = \@credentials;
+        $self->user->set_settings({ passkey => $passkey_settings });
     } else {
         # Если credentials пусто - удаляем весь passkey из settings
-        my $settings = $user->get_settings;
+        my $settings = $self->user->get_settings;
         delete $settings->{passkey};
-        $user->set(settings => $settings);
+        $self->user->set(settings => $settings);
     }
 }
 
 sub get_enabled {
     my $self = shift;
-    my $user = shift;
-    return scalar(@{$self->get_credentials($user)}) > 0 ? 1 : 0;
+    return scalar(@{$self->get_credentials}) > 0 ? 1 : 0;
 }
 
 sub get_rp_id {
@@ -139,8 +125,7 @@ sub parse_client_data {
 sub api_register_options {
     my $self = shift;
 
-    my $user = get_service('user');
-    my $challenge = $self->generate_challenge($user->id);
+    my $challenge = $self->generate_challenge($self->user->id);
     my $project_name = get_service('config')->data_by_name('project')->{name} || 'SHM';
 
     return {
@@ -150,9 +135,9 @@ sub api_register_options {
             id => $self->get_rp_id(),
         },
         user => {
-            id => encode_base64url($user->id, ''),
-            name => $user->get_login,
-            displayName => $user->get_login,
+            id => encode_base64url($self->user->id, ''),
+            name => $self->user->get_login,
+            displayName => $self->user->get_login,
         },
         pubKeyCredParams => [
             { type => 'public-key', alg => -7 },   # ES256
@@ -161,7 +146,7 @@ sub api_register_options {
         timeout => 60000,
         attestation => 'none',
         excludeCredentials => [
-            map { { id => $_->{id}, type => 'public-key' } } @{$self->get_credentials($user)}
+            map { { id => $_->{id}, type => 'public-key' } } @{$self->get_credentials}
         ],
         authenticatorSelection => {
             authenticatorAttachment => 'platform',
@@ -180,26 +165,23 @@ sub api_register_complete {
         @_,
     );
 
-    my $report = get_service('report');
-    my $user = get_service('user');
-
     unless ($args{credential_id} && $args{response}) {
-        $report->add_error('INVALID_PASSKEY_RESPONSE');
+        report->add_error('INVALID_PASSKEY_RESPONSE');
         return undef;
     }
 
     my $client_data = $self->parse_client_data($args{response}->{clientDataJSON}, 'webauthn.create');
     unless ($client_data) {
-        $report->add_error('INVALID_OPERATION_TYPE');
+        report->add_error('INVALID_OPERATION_TYPE');
         return undef;
     }
 
-    unless ($self->verify_challenge($client_data->{challenge}, $user->id)) {
-        $report->add_error('INVALID_CHALLENGE');
+    unless ($self->verify_challenge($client_data->{challenge}, $self->user->id)) {
+        report->add_error('INVALID_CHALLENGE');
         return undef;
     }
 
-    $self->add_credential($user,
+    $self->add_credential(
         id => $args{credential_id},
         public_key => $args{response}->{attestationObject},
         name => $args{name},
@@ -214,14 +196,12 @@ sub api_register_complete {
 sub api_list {
     my $self = shift;
 
-    my $user = get_service('user');
-
     return {
         credentials => [
             map { { id => $_->{id}, name => $_->{name}, created_at => $_->{created_at} } }
-            @{$self->get_credentials($user)}
+            @{$self->get_credentials()}
         ],
-        enabled => $self->get_enabled($user),
+        enabled => $self->get_enabled(),
     };
 }
 
@@ -229,20 +209,17 @@ sub api_delete {
     my $self = shift;
     my %args = ( credential_id => undef, @_ );
 
-    my $report = get_service('report');
-    my $user = get_service('user');
-
     unless ($args{credential_id}) {
-        $report->add_error('CREDENTIAL_ID_REQUIRED');
+        report->add_error('CREDENTIAL_ID_REQUIRED');
         return undef;
     }
 
-    unless ($self->find_credential($user, $args{credential_id})) {
-        $report->add_error('CREDENTIAL_NOT_FOUND');
+    unless ($self->find_credential($args{credential_id})) {
+        report->add_error('CREDENTIAL_NOT_FOUND');
         return undef;
     }
 
-    $self->remove_credential($user, $args{credential_id});
+    $self->remove_credential($args{credential_id});
     return { success => 1 };
 }
 
@@ -250,15 +227,12 @@ sub api_rename {
     my $self = shift;
     my %args = ( credential_id => undef, name => undef, @_ );
 
-    my $report = get_service('report');
-    my $user = get_service('user');
-
     unless ($args{credential_id} && $args{name}) {
-        $report->add_error('CREDENTIAL_ID_AND_NAME_REQUIRED');
+        report->add_error('CREDENTIAL_ID_AND_NAME_REQUIRED');
         return undef;
     }
 
-    my @credentials = @{$self->get_credentials($user)};
+    my @credentials = @{$self->get_credentials()};
     my $found = 0;
 
     for my $cred (@credentials) {
@@ -270,22 +244,22 @@ sub api_rename {
     }
 
     unless ($found) {
-        $report->add_error('CREDENTIAL_NOT_FOUND');
+        report->add_error('CREDENTIAL_NOT_FOUND');
         return undef;
     }
 
-    $self->set_settings($user, credentials => \@credentials);
+    my $passkey_settings = $self->user->get_settings->{passkey} || {};
+    $passkey_settings->{credentials} = \@credentials;
+    $self->user->set_settings({ passkey => $passkey_settings });
     return { success => 1 };
 }
 
 sub api_status {
     my $self = shift;
 
-    my $user = get_service('user');
-
     return {
-        enabled => $self->get_enabled($user),
-        credentials_count => scalar(@{$self->get_credentials($user)}),
+        enabled => $self->get_enabled,
+        credentials_count => scalar(@{$self->get_credentials}),
     };
 }
 
@@ -305,56 +279,59 @@ sub api_auth_public {
     my $self = shift;
     my %args = ( credential_id => undef, response => undef, @_ );
 
-    my $report = get_service('report');
-
     unless ($args{credential_id} && $args{response}) {
-        $report->add_error('INVALID_PASSKEY_RESPONSE');
+        report->add_error('INVALID_PASSKEY_RESPONSE');
         return undef;
     }
 
     # Получаем userHandle из ответа (это user_id в base64url)
     my $user_handle = $args{response}->{userHandle};
     unless ($user_handle) {
-        $report->add_error('USER_HANDLE_REQUIRED');
+        report->add_error('USER_HANDLE_REQUIRED');
         return undef;
     }
 
     # Декодируем user_id из userHandle
     my $user_id = decode_base64url($user_handle);
     unless ($user_id && $user_id =~ /^\d+$/) {
-        $report->add_error('INVALID_USER_HANDLE');
+        report->add_error('INVALID_USER_HANDLE');
         return undef;
     }
 
     my $client_data = $self->parse_client_data($args{response}->{clientDataJSON}, 'webauthn.get');
     unless ($client_data) {
-        $report->add_error('INVALID_OPERATION_TYPE');
+        report->add_error('INVALID_OPERATION_TYPE');
         return undef;
     }
 
     unless ($self->verify_challenge($client_data->{challenge})) {
-        $report->add_error('INVALID_CHALLENGE');
+        report->add_error('INVALID_CHALLENGE');
         return undef;
     }
 
     # Ищем пользователя по user_id
     my $user = get_service('user')->id($user_id);
     unless ($user->get) {
-        $report->add_error('USER_NOT_FOUND');
+        report->add_error('USER_NOT_FOUND');
         return undef;
     }
 
-    unless ($self->find_credential($user, $args{credential_id})) {
-        $report->add_error('UNKNOWN_CREDENTIAL');
+    # Ищем credential в settings найденного пользователя
+    my $credentials = $user->get_settings->{passkey}{credentials} || [];
+    my ($credential) = grep { $_->{id} eq $args{credential_id} } @$credentials;
+    unless ($credential) {
+        report->add_error('UNKNOWN_CREDENTIAL');
         return undef;
     }
 
     switch_user($user_id);
-    $self->set_settings($user, verified_at => now());
+    $user->set_settings({ passkey => { verified_at => now() } });
 
     # Также отмечаем OTP как верифицированный (если включен)
-    my $otp = get_service('OTP');
-    $otp->set_settings($user, verified_at => now()) if $otp->get_enabled($user);
+    my $otp_settings = $user->get_settings->{otp} || {};
+    if ($otp_settings->{enabled}) {
+        $user->set_settings({ otp => { verified_at => now() } });
+    }
 
     return { id => $user->gen_session->{id} };
 }

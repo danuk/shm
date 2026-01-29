@@ -522,9 +522,21 @@ sub sendMessage {
         $args{text} = substr( $args{text}, 0, 4093 ) . '...';
     }
 
-    return $self->http( 'sendMessage',
+    my $has_force_reply = ref $args{reply_markup} eq 'HASH'
+        && $args{reply_markup}->{force_reply};
+
+    my $response = $self->http( 'sendMessage',
         data => \%args,
     );
+
+    if ( $has_force_reply && blessed $response && $response->is_success ) {
+        my $json = decode_json( $response->decoded_content );
+        if ( $json->{ok} && $json->{result}->{message_id} ) {
+            $self->expectReply( message_id => $json->{result}->{message_id} );
+        }
+    }
+
+    return $response;
 }
 
 sub deleteMessage {
@@ -605,6 +617,51 @@ sub deleteMessage {
     return $self->http( 'deleteMessage',
         data => \%args,
     );
+}
+
+sub _expect_reply_key {
+    my $self = shift;
+    return sprintf('tg:expect_reply:%s:%s', $self->{profile} || 'default', $self->chat_id);
+}
+
+sub expectReply {
+    my $self = shift;
+    my %args = (
+        message_id => undef,
+        expire => 3600,
+        @_,
+    );
+
+    return unless $args{message_id};
+
+    my $cache = get_service('Core::System::Cache');
+    return unless $cache;
+    $cache->set( $self->_expect_reply_key, $args{message_id}, $args{expire} );
+
+    logger->error( 'debug:', $args{message_id} );
+
+    return undef;
+}
+
+sub getExpectReply {
+    my $self = shift;
+    my $cache = get_service('Core::System::Cache');
+    return unless $cache;
+    return $cache->get( $self->_expect_reply_key );
+}
+
+sub cancelExpectReply {
+    my $self = shift;
+
+    my $message_id = $self->getExpectReply();
+    return unless $message_id;
+
+    $self->deleteMessage( message_id => $message_id );
+
+    my $cache = get_service('Core::System::Cache');
+    $cache->delete( $self->_expect_reply_key ) if $cache;
+
+    return undef;
 }
 
 sub tg_user {
@@ -695,6 +752,11 @@ sub process_message {
     }
 
     my $user = $self->auth();
+
+    # Если ожидался ответ на force_reply, но пришёл callback — удаляем сообщение с force_reply
+    if ( $self->get_callback_query && $self->getExpectReply() ) {
+        $self->cancelExpectReply();
+    }
 
     if ( my $data = $self->get_pre_checkout_query ) {
         $self->{deny_answer_direct} = 1;

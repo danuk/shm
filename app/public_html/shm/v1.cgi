@@ -106,28 +106,49 @@ my $routes = {
         },
     },
 },
-'/user/password-auth/disable' => {
-    swagger => { tags => 'Пользователи' },
-    POST => {
-        controller => 'User',
-        method => 'api_disable_password_auth',
-        swagger => { summary => 'Отключить вход по паролю' },
-    },
-},
-'/user/password-auth/enable' => {
-    swagger => { tags => 'Пользователи' },
-    POST => {
-        controller => 'User',
-        method => 'api_enable_password_auth',
-        swagger => { summary => 'Включить вход по паролю' },
-    },
-},
-'/user/password-auth/status' => {
+'/user/password-auth' => {
     swagger => { tags => 'Пользователи' },
     GET => {
         controller => 'User',
         method => 'api_password_auth_status',
         swagger => { summary => 'Статус входа по паролю' },
+    },
+    POST => {
+        controller => 'User',
+        method => 'api_enable_password_auth',
+        swagger => { summary => 'Включить вход по паролю' },
+    },
+    DELETE => {
+        controller => 'User',
+        method => 'api_disable_password_auth',
+        swagger => { summary => 'Отключить вход по паролю' },
+    },
+},
+# OTP
+'/user/otp' => {
+    swagger => { tags => 'OTP' },
+    GET => {
+        controller => 'OTP',
+        method => 'api_status',
+        swagger => { summary => 'Статус OTP' },
+    },
+    POST => {
+        controller => 'OTP',
+        method => 'api_verify',
+        required => ['token'],
+        swagger => { summary => 'Проверка OTP' },
+    },
+    PUT => {
+        controller => 'OTP',
+        method => 'api_enable',
+        required => ['token'],
+        swagger => { summary => 'Включение OTP' },
+    },
+    DELETE => {
+        controller => 'OTP',
+        method => 'api_disable',
+        required => ['token'],
+        swagger => { summary => 'Отключение OTP' },
     },
 },
 '/user/otp/setup' => {
@@ -165,50 +186,14 @@ my $routes = {
         },
     },
 },
-'/user/otp/enable' => {
-    swagger => { tags => 'OTP' },
-    POST => {
-        controller => 'OTP',
-        method => 'api_enable',
-        required => ['token'],
-        swagger => { summary => 'Включение OTP' },
-    },
-},
-'/user/otp/disable' => {
-    swagger => { tags => 'OTP' },
-    POST => {
-        controller => 'OTP',
-        method => 'api_disable',
-        required => ['token'],
-        swagger => { summary => 'Отключение OTP' },
-    },
-},
-'/user/otp/verify' => {
-    swagger => { tags => 'OTP' },
-    POST => {
-        controller => 'OTP',
-        method => 'api_verify',
-        required => ['token'],
-        swagger => { summary => 'Проверка OTP' },
-    },
-},
-'/user/otp/status' => {
-    swagger => { tags => 'OTP' },
-    GET => {
-        controller => 'OTP',
-        method => 'api_status',
-    },
-},
-'/user/passkey/register/options' => {
+# Passkey
+'/user/passkey/register' => {
     swagger => { tags => 'Passkey' },
-    POST => {
+    GET => {
         controller => 'Passkey',
         method => 'api_register_options',
         swagger => { summary => 'Получить параметры регистрации Passkey' },
     },
-},
-'/user/passkey/register/complete' => {
-    swagger => { tags => 'Passkey' },
     POST => {
         controller => 'Passkey',
         method => 'api_register_complete',
@@ -216,52 +201,35 @@ my $routes = {
         swagger => { summary => 'Завершить регистрацию Passkey' },
     },
 },
-'/user/passkey/list' => {
+'/user/passkey' => {
     swagger => { tags => 'Passkey' },
     GET => {
         controller => 'Passkey',
         method => 'api_list',
         swagger => { summary => 'Список зарегистрированных Passkey' },
     },
-},
-'/user/passkey/delete' => {
-    swagger => { tags => 'Passkey' },
-    POST => {
-        controller => 'Passkey',
-        method => 'api_delete',
-        required => ['credential_id'],
-        swagger => { summary => 'Удалить зарегистрированный Passkey по идентификатору' },
-    },
-},
-'/user/passkey/rename' => {
-    swagger => { tags => 'Passkey' },
     POST => {
         controller => 'Passkey',
         method => 'api_rename',
         required => ['credential_id', 'name'],
         swagger => { summary => 'Переименовать зарегистрированный Passkey' },
     },
-},
-'/user/passkey/status' => {
-    swagger => { tags => 'Passkey' },
-    GET => {
+    DELETE => {
         controller => 'Passkey',
-        method => 'api_status',
-        swagger => { summary => 'Статус Passkey' },
+        method => 'api_delete',
+        required => ['credential_id'],
+        swagger => { summary => 'Удалить зарегистрированный Passkey по идентификатору' },
     },
 },
-# Public passkey auth
-'/user/passkey/auth/options/public' => {
+# Passkey public auth
+'/user/auth/passkey' => {
     swagger => { tags => 'Passkey' },
-    POST => {
+    GET => {
         controller => 'Passkey',
         method => 'api_auth_options_public',
         skip_check_auth => 1,
         swagger => { summary => 'Получить параметры публичной аутентификации Passkey' },
     },
-},
-'/user/passkey/auth/public' => {
-    swagger => { tags => 'Passkey' },
     POST => {
         controller => 'Passkey',
         method => 'api_auth_public',
@@ -349,6 +317,38 @@ my $routes = {
         controller => 'Pay',
         method => 'paysystems',
         swagger => { summary => 'Платежные системы' },
+    },
+},
+'/user/ticket' => {
+    swagger => { tags => 'Тикеты' },
+    GET => {
+        controller => 'Ticket::Tickets',
+        method => 'api_list',
+        swagger => { summary => 'Список тикетов пользователя' },
+    },
+    PUT => {
+        controller => 'Ticket::Tickets',
+        method => 'api_create',
+        swagger => { summary => 'Создать тикет' },
+    },
+},
+'/user/ticket/*' => {
+    swagger => { tags => 'Тикеты' },
+    splat_to => 'ticket_id',
+    GET => {
+        controller => 'Ticket::Tickets',
+        method => 'api_get',
+        swagger => { summary => 'Получить тикет' },
+    },
+    POST => {
+        controller => 'Ticket::Tickets',
+        method => 'api_message',
+        swagger => { summary => 'Добавить сообщение в тикет' },
+    },
+    DELETE => {
+        controller => 'Ticket::Tickets',
+        method => 'api_close',
+        swagger => { summary => 'Закрыть тикет' },
     },
 },
 '/service/order' => {
@@ -1150,6 +1150,38 @@ my $routes = {
     POST => {
         controller => 'Analytics',
         method => 'clear_cache',
+    },
+},
+'/admin/ticket' => {
+    swagger => { tags => 'Тикеты (админ)' },
+    GET => {
+        controller => 'Ticket::Tickets',
+        method => 'api_admin_list',
+        swagger => { summary => 'Список тикетов' },
+    },
+    PUT => {
+        controller => 'Ticket::Tickets',
+        method => 'api_admin_create',
+        swagger => { summary => 'Создать тикет' },
+    },
+},
+'/admin/ticket/*' => {
+    swagger => { tags => 'Тикеты (админ)' },
+    splat_to => 'ticket_id',
+    GET => {
+        controller => 'Ticket::Tickets',
+        method => 'api_admin_get',
+        swagger => { summary => 'Получить тикет' },
+    },
+    POST => {
+        controller => 'Ticket::Tickets',
+        method => 'api_admin_update',
+        swagger => { summary => 'Изменить статус тикета или добавить сообщение' },
+    },
+    DELETE => {
+        controller => 'Ticket::Tickets',
+        method => 'api_admin_delete',
+        swagger => { summary => 'Удалить тикет' },
     },
 },
 '/telegram/user' => {

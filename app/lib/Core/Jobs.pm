@@ -84,6 +84,10 @@ sub job_cleanup {
         $us->commit;
     }
 
+    my $tickets = get_service('Ticket::Tickets');
+    $tickets->archive_old_tickets( days => $days );
+    $tickets->cleanup_tickets( days => $days );
+
     return SUCCESS, { msg => 'successful' };
 }
 
