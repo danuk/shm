@@ -307,6 +307,7 @@ sub paysystems {
                 ( $args{pp} ? $proposed_payment : '' ),
             ),
             recurring => $p->{recurring} ? 1 : 0,
+            internal => $p->{internal} ? 1 : 0,
             allow_deletion => $p->{allow_deletion} ? 1 : 0,
             user_id => $user->id,
             forecast => $forecast,
