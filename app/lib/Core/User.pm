@@ -397,17 +397,41 @@ sub passwd_reset_request {
     my $self = shift;
     my %args = (
         email => undef,
+        login => undef,
         @_,
     );
 
-    my ( $user ) = $self->_list(
-        where => {
-            login => $args{email},
-        },
-    );
+    my $user;
 
-    unless ( $user ) {
-        # TODO: search in profiles
+    if ( $args{login} ) {
+        ( $user ) = $self->_list(
+            where => {
+                login => $args{login},
+            },
+            limit => 1,
+        );
+    }
+
+    if ( !$user && $args{email} && is_email($args{email}) ) {
+        ( $user ) = $self->_list(
+            where => {
+                sprintf('%s->>"$.%s"', 'settings', 'email') => $args{email},
+            },
+            limit => 1,
+        );
+
+        unless ( $user ) {
+            my $profile = get_service("profile");
+            my ( $profile_data ) = $profile->_list(
+                where => {
+                    sprintf('%s->>"$.%s"', 'data', 'email') => $args{email},
+                },
+                limit => 1,
+            );
+            if ( $profile_data ) {
+                $user = { user_id => $profile_data->{user_id} };
+            }
+        }
     }
 
     if ( $user ) {
@@ -419,9 +443,10 @@ sub passwd_reset_request {
         }
 
         $self->make_event( 'user_password_reset' );
+        return { msg => 'Successful' };
     }
 
-    return { msg => 'Successful' };
+    return { msg => 'User not found' };
 }
 
 sub is_blocked {

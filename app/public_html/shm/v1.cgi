@@ -284,7 +284,6 @@ my $routes = {
         controller => 'User',
         method => 'passwd_reset_request',
         skip_check_auth => 1,
-        required => ['email'],
     },
 },
 '/user/service' => {
