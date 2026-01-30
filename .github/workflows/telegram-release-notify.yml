@@ -46,18 +46,31 @@ jobs:
             echo "is_manual=true" >> $GITHUB_OUTPUT
             echo "✅ Ручной запуск - отправим уведомление"
           else
-            # Проверяем, что это был запуск из master ветки
-            BRANCH="${{ github.event.workflow_run.head_branch }}"
-            echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+            # Проверяем, что тег был создан из master ветки
+            # Получаем последний тег
+            TAG_NAME=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
-            if [ "$BRANCH" = "master" ]; then
+            if [ -z "$TAG_NAME" ]; then
+              echo "should_notify=false" >> $GITHUB_OUTPUT
+              echo "is_manual=false" >> $GITHUB_OUTPUT
+              echo "⏭️ Тег не найден - пропускаем уведомление"
+              exit 0
+            fi
+
+            # Проверяем, с какой ветки был создан этот тег
+            BRANCHES=$(git branch -r --contains "tags/${TAG_NAME}" | grep -v HEAD | sed 's/.*origin\///' | tr -d ' ')
+
+            echo "Тег ${TAG_NAME} содержится в ветках: ${BRANCHES}"
+
+            if echo "$BRANCHES" | grep -q "^master$"; then
               echo "should_notify=true" >> $GITHUB_OUTPUT
               echo "is_manual=false" >> $GITHUB_OUTPUT
-              echo "✅ Релиз из master ветки - отправим уведомление"
+              echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+              echo "✅ Тег ${TAG_NAME} создан из master ветки - отправим уведомление"
             else
               echo "should_notify=false" >> $GITHUB_OUTPUT
               echo "is_manual=false" >> $GITHUB_OUTPUT
-              echo "⏭️ Релиз не из master ветки (${BRANCH}) - пропускаем уведомление"
+              echo "⏭️ Тег ${TAG_NAME} НЕ из master ветки (${BRANCHES}) - пропускаем уведомление"
             fi
           fi
 
@@ -72,8 +85,11 @@ jobs:
             BODY=$(echo '${{ github.event.inputs.body }}' | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
             echo "body=$BODY" >> $GITHUB_OUTPUT
           else
-            # Получаем последний тег
-            TAG_NAME=$(git describe --tags --abbrev=0 2>/dev/null || echo "unknown")
+            # Получаем тег из предыдущего шага или напрямую
+            TAG_NAME="${{ steps.check_conditions.outputs.tag_name }}"
+            if [ -z "$TAG_NAME" ]; then
+              TAG_NAME=$(git describe --tags --abbrev=0 2>/dev/null || echo "unknown")
+            fi
             echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
             echo "name=Release $TAG_NAME" >> $GITHUB_OUTPUT
             echo "prerelease=false" >> $GITHUB_OUTPUT
