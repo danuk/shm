@@ -1047,26 +1047,6 @@ sub partner {
     return $self->id( $partner_id );
 }
 
-sub is_otp_required {
-    my $self = shift;
-
-    return 0 unless $self->get_otp_enabled;
-    return 1 unless $self->get_otp_verified_at;
-
-    my $verification_timeout = 24 * 60 * 60;
-    my $last_verified = $self->get_otp_verified_at;
-
-    my $verified_timestamp;
-    if ($last_verified =~ /(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/) {
-        use Time::Local;
-        $verified_timestamp = timelocal($6, $5, $4, $3, $2-1, $1);
-    } else {
-        $verified_timestamp = $last_verified;
-    }
-
-    return (time() - $verified_timestamp) >= $verification_timeout;
-}
-
 sub is_password_auth_disabled {
     my $self = shift;
     return $self->get_settings->{password_auth_disabled} || 0;
