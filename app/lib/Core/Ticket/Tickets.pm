@@ -73,6 +73,17 @@ sub structure {
     }
 }
 
+sub events {
+    return {
+        'changed_ticket' => {
+            event => {
+                title => 'Ticket changed',
+                kind => 'Ticket::Tickets',
+            },
+        },
+    };
+}
+
 # Создать новый тикет
 sub create {
     my $self = shift;
@@ -101,8 +112,11 @@ sub create {
         $ticket->add_message(
             message => $args{message},
             is_admin => 0,
+            skip_event => 1,
         );
     }
+
+    $self->make_event( 'changed_ticket', settings => { action => 'create', user => 1 } );
 
     return $ticket;
 }
@@ -134,6 +148,10 @@ sub add_message {
         $self->set( status => 'open' );
     }
 
+    unless ( $args{skip_event} ) {
+        $self->make_event( 'changed_ticket', settings => { action => 'message', ($args{is_admin} ? (admin => 1) : (user => 1)) } );
+    }
+
     return $msg;
 }
 
@@ -145,16 +163,7 @@ sub close {
         closed_at => now(),
     );
 
-    return $self;
-}
-
-sub reopen {
-    my $self = shift;
-
-    $self->set(
-        status => 'open',
-        closed_at => undef,
-    );
+    $self->make_event( 'changed_ticket', settings => { action => 'close', user => 1 } );
 
     return $self;
 }
@@ -367,6 +376,8 @@ sub api_admin_update {
             $ticket->set( status => 'waiting' );
         }
     }
+
+    $ticket->make_event( 'changed_ticket', settings => { action => 'update', admin => 1 } ) if %update || $args{message};
 
     return $ticket->full_info;
 }

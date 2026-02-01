@@ -1,7 +1,3 @@
--- Миграция для модуля тикетов
--- Версия: 1.10.0
-
--- Тикеты
 CREATE TABLE IF NOT EXISTS `tickets` (
   `ticket_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -22,10 +18,9 @@ CREATE TABLE IF NOT EXISTS `tickets` (
   KEY `idx_tickets_closed` (`closed_at`),
   KEY `idx_tickets_type` (`ticket_type`),
   KEY `idx_tickets_user_service` (`user_service_id`),
-  FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Сообщения тикетов
 CREATE TABLE IF NOT EXISTS `ticket_messages` (
   `message_id` int(11) NOT NULL AUTO_INCREMENT,
   `ticket_id` int(11) NOT NULL,

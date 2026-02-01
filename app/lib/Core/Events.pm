@@ -27,7 +27,7 @@ sub structure {
         name => {           # create,block,unblock...
             type => 'text',
             required => 1,
-            enum => [EVENT_CREATE,EVENT_BLOCK,EVENT_REMOVE,EVENT_PROLONGATE,EVENT_ACTIVATE,EVENT_NOT_ENOUGH_MONEY,EVENT_CHANGED,EVENT_CHANGED_TARIFF],
+            enum => [EVENT_CREATE,EVENT_BLOCK,EVENT_REMOVE,EVENT_PROLONGATE,EVENT_ACTIVATE,EVENT_NOT_ENOUGH_MONEY,EVENT_CHANGED,EVENT_CHANGED_TARIFF,EVENT_CHANGED_TICKET],
             title => 'событие',
         },
         server_gid => {     # Group_id of servers
