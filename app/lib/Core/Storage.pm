@@ -210,8 +210,11 @@ sub data {
     );
 
    if ( $args{decode_json} && $self->get_settings->{json} ) {
-        if ( my $json = decode_json( $self->get_data ) ) {
-            $self->{res}->{data} = $json;
+        my $data = $self->get_data;
+        unless ( ref $data ) {
+            if ( my $json = decode_json( $data ) ) {
+                $self->{res}->{data} = $json;
+            }
         }
     } else {
         utf8::decode( $self->{res}->{data} );
