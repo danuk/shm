@@ -35,7 +35,7 @@ my $data = $storage->read( name => 'test' );
 is( $data->{foo}, 2 );
 
 cmp_deeply( scalar $storage->id('test')->get, {
-    'data' => '{"foo":2}',
+    'data' => {"foo" => 2},
     'created' => ignore(),
     'user_service_id' => undef,
     'user_id' => 40092,
