@@ -999,6 +999,10 @@ my $routes = {
         controller => 'Storage',
         swagger => { summary => 'Получить список объектов хранилища' },
     },
+    PUT => {
+        controller => 'Storage',
+        swagger => { summary => 'Создать объект в хранилище' },
+    },
     POST => {
         controller => 'Storage',
         method => 'replace',
