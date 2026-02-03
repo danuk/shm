@@ -93,7 +93,7 @@ sub add {
     if ( $args{status} eq TASK_NEW && $args{delayed} && $args{delayed} > 0  ) {
         $args{status} = TASK_DELAYED;
         $args{executed} = now; # delay вычисляется от текущего времени
-    } elsif ( $args{status} eq TASK_SUCCESS && $args{event}{period} > 0 ) {
+    } elsif ( $args{status} eq TASK_SUCCESS && $args{event} && $args{event}{period} && $args{event}{period} > 0 ) {
         $args{status} = TASK_DELAYED;
     }
 
@@ -272,7 +272,7 @@ sub finish_task {
 
 sub is_periodic {
     my $self = shift;
-    return $self->event->{period} && $self->event->{period} > 0;
+    return $self->event && $self->event->{period} && $self->event->{period} > 0;
 }
 
 # TODO: check max retries
@@ -284,6 +284,7 @@ sub retry_task {
     );
 
     my $delayed = $self->res->{delayed}||=1;
+    $delayed ||= 1;  # ensure numeric value
     # не меняем делей, если задан вручную (больше 15 мин)
     if ( $delayed < 900 ) {
         $delayed *= 3;  # 3s, 9s, 27s, 81s,...
