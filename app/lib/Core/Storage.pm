@@ -196,10 +196,10 @@ sub get {
     my $self = shift;
     my %args = @_;
 
-    my $ret = $self->SUPER::get( %args );
+    $self->SUPER::get( %args ) || return '';
     $self->data(); # convert data to json if json
 
-    return $ret;
+    return wantarray ? %{ $self->{res} } : $self->{res};
 }
 
 sub data {
