@@ -167,12 +167,18 @@ sub list_for_api {
     my $self = shift;
     my %args = (
         key => undef,
+        filter => {},
         @_,
     );
 
-    return $self->SUPER::list_for_api( where => {
-            $args{key} ? ( key => $args{key} ) : (),
-    });
+    if ( $args{key} ) {
+        $args{where}->{key} = $args{key};
+    }
+    elsif ( $args{filter}->{key} ) {
+        $args{where}->{key} = delete $args{filter}->{key};
+    }
+
+    return $self->SUPER::list_for_api( %args );
 }
 
 sub api_set_value {
