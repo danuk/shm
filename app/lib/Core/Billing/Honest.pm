@@ -224,7 +224,7 @@ sub calc_period_by_total {
     }
 
     # Теперь считаем дни из остатка
-    if ($remaining_total > 0) {
+    if (defined $remaining_total && $remaining_total > 0) {
         my $days_in_current_month = days_in_months($current_date);
         my $cost_per_day = $monthly_cost / $days_in_current_month;
 

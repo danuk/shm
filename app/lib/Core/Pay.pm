@@ -215,7 +215,7 @@ sub forecast {
         $ret{total} += $_->{next}->{total};
     }
 
-    if ( $balance > 0 ) {
+    if ( defined $balance && $balance > 0 ) {
         $ret{total} -= $balance;
         $ret{total} = 0 if $ret{total} < 0;
     } else {

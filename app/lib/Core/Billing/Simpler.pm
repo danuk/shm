@@ -158,7 +158,7 @@ sub calc_period_by_total {
     my $days = $total_days % DAYS_IN_MONTH;
 
     # Если есть остаток минут, округляем часы вверх
-    if ($remaining_minutes > 0) {
+    if (defined $remaining_minutes && $remaining_minutes > 0) {
         $remaining_hours++;
         if ($remaining_hours >= 24) {
             $days++;

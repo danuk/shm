@@ -39,7 +39,7 @@ sub revenue {
     if (defined $args{months}) {
         $cache_key = sprintf('analytics_revenue_months_%d', $args{months});
         # Если указан months > 0, вычисляем start_date
-        if ($args{months} > 0) {
+        if (defined $args{months} && $args{months} > 0) {
             $args{start_date} = $self->dbh->selectrow_array(
                 "SELECT DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL ? MONTH), '%Y-%m-%d')",
                 undef, $args{months}
@@ -130,7 +130,7 @@ sub revenue_by_month {
         ";
         @params = ();
     }
-    elsif ($args{months} > 0) {
+    elsif (defined $args{months} && $args{months} > 0) {
         # За последние N месяцев
         $sql = "
             SELECT
@@ -572,7 +572,7 @@ sub renewal_metrics {
                 AND us.created >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
         ");
     }
-    elsif ($args{months} > 0) {
+    elsif (defined $args{months} && $args{months} > 0) {
         # За последние N месяцев
         ($total_services, $renewed_services) = $self->dbh->selectrow_array("
             SELECT
@@ -690,7 +690,7 @@ sub churn_analysis {
                 )
         ");
     }
-    elsif ($args{months} > 0) {
+    elsif (defined $args{months} && $args{months} > 0) {
         # За последние N месяцев
         ($new_users) = $self->dbh->selectrow_array("
             SELECT COUNT(*) FROM users
@@ -800,7 +800,7 @@ sub payment_metrics {
             ORDER BY weekday
         ", {Slice => {}});
     }
-    elsif ($args{months} > 0) {
+    elsif (defined $args{months} && $args{months} > 0) {
         # За последние N месяцев
         $by_paysystem = $self->dbh->selectall_arrayref("
             SELECT
@@ -1103,7 +1103,7 @@ sub charges_volume {
             ) w ON m.month = w.month
         ", {Slice => {}});
     }
-    elsif ($args{months} > 0) {
+    elsif (defined $args{months} && $args{months} > 0) {
         # За последние N месяцев
         $charges_by_month = $self->dbh->selectall_arrayref("
             SELECT

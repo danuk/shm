@@ -578,7 +578,7 @@ sub set {
         get_service('sessions')->delete_user_sessions( user_id => $self->user_id );
     }
 
-    if (( $args{credit} > 0 && $self->get_credit != $args{credit} )
+    if (( defined $args{credit} && $args{credit} > 0 && $self->get_credit != $args{credit} )
         || $args{perm_credit}
     ){
         $self->make_event( 'credit', settings => { credit => $args{credit} } );
@@ -614,7 +614,7 @@ sub set_bonus {
         get_smart_args( @_ ),
     );
 
-    return undef if $args{bonus} == 0;
+    return undef if !$args{bonus} || $args{bonus} == 0;
 
     my $bonus_id = $self->bonus->add( %args );
 
@@ -628,7 +628,7 @@ sub set_credit {
     my $self = shift;
     my $credit = shift;
 
-    $self->make_event( 'credit', settings => { credit => $credit } ) if $credit > 0;
+    $self->make_event( 'credit', settings => { credit => $credit } ) if defined $credit && $credit > 0;
     return $self->set( credit => $credit );
 }
 
@@ -671,13 +671,13 @@ sub payment {
     }
 
     $self->set_balance( balance => $args{money} );
-    $self->add_bonuses_for_partners( $args{money} ) if $args{money} > 0;
+    $self->add_bonuses_for_partners( $args{money} ) if $args{money} && $args{money} > 0;
 
     $self->make_event( 'payment', settings => { pay_id => $pay_id } );
 
     my $srv_customlab_nalog = get_service('config')->id( 'pay_systems' )->get_data->{'srv_customlab_nalog'};
     if ( $srv_customlab_nalog && $srv_customlab_nalog->{enabled} ) {
-        $self->make_event( 'receipt', settings => { pay_id => $pay_id } ) if $args{money} > 0;
+        $self->make_event( 'receipt', settings => { pay_id => $pay_id } ) if $args{money} && $args{money} > 0;
     }
 
     return scalar $pays->id( $pay_id )->get;
