@@ -16,7 +16,7 @@ sub send {
 
     unless ( $template_id ) {
         if ( my $server = $task->server ) {
-            $template_id = $server->{settings}->{template_id};
+            $template_id = $server->get_settings->{template_id};
         }
     }
 
