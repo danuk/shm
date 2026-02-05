@@ -139,7 +139,13 @@ sub forecast {
         my $us = get_service('us', user_id => $self->user_id, _id => $usi );
         next unless $us;
 
-        my %wd = $us->withdraw->get;
+        my $wd = $us->withdraw;
+        unless ( $wd ) {
+            logger->error( sprintf("Withdraw not exists! usi=%d, wd_id=%d", $usi, $us->get_withdraw_id) );
+            next;
+        }
+
+        my %wd = $wd->get;
         $wd{months} = $us->service->get_period;
         my $service_next_name = $obj->{services}->{name};
 
