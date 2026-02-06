@@ -93,7 +93,16 @@ sub api_set_user_tg_settings {
 sub settings { shift->user_tg_settings };
 sub login { shift->user_tg_settings->{username} };
 sub username { shift->user_tg_settings->{username} };
-sub response { shift->{response} };
+sub response {
+    my $self = shift;
+    my $data = shift;
+
+    if ( $data ) {
+        $self->{response} = $data;
+    }
+
+    return $self->{response};
+};
 
 # устанавливает указанный профиль: token & chat_id
 # Не устанавливаем chat_id, если он был установлен ранее,
@@ -192,7 +201,7 @@ sub task_send {
         vars => {
             tg => sub { $self },
             tg_api => sub{ $self->tg_api( @_ ) },
-            response => sub { $self->{response} },
+            response => sub { $self->response },
         },
     );
     return SUCCESS, { msg => "Шаблон не содержит данных" } unless $message;
@@ -293,7 +302,7 @@ sub send {
         if ( $response->is_success ) {
             logger->info( $message );
             push @ret, { message => 'successful', profile => $profile, response => $message };
-            $self->{response} = $message;
+            $self->response( $message );
         } else {
             logger->error( $message );
             push @ret, {
@@ -868,9 +877,9 @@ sub tg_api {
 
     if ( blessed $response ) {
         if ( $response->header('content-type') =~ /application\/json/i ) {
-            $self->{response} = decode_json( $response->decoded_content );
+            $self->response( decode_json( $response->decoded_content ) );
         } else {
-            $self->{response} = $response->decoded_content;
+            $self->response( $response->decoded_content );
         }
     }
 
@@ -916,7 +925,7 @@ sub get_script {
             tg => sub { $self },
             cmd => $cmd,
             message => $self->message,
-            response => sub { $self->{response} },
+            response => sub { $self->response },
             callback_query => $self->get_callback_query || {},
             args => $args{args},
             start_args => \%start_args,
