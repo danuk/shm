@@ -102,7 +102,7 @@ sub parse {
     }
 
     my $vars = {
-        user => sub { get_service('user', defined $_[0] ? (_id => $_[0]) : () ) },
+        user => sub { $self->srv('user', defined $_[0] ? (_id => $_[0]) : () ) },
         us => sub { get_service('us', _id => $args{usi} || $_[0] ) },
         $task ? ( task => $task ) : (),
         server => sub { get_service('server', _id => $args{server_id} || $_[0] ) },
