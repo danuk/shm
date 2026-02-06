@@ -96,13 +96,20 @@ sub username { shift->user_tg_settings->{username} };
 sub response {
     my $self = shift;
     my $data = shift;
+    my $expire = 86400 * 2; # 48h
 
     if ( $data ) {
         $self->{response} = $data;
+        cache->set_json( sprintf('tg_response_%s_%s', $self->profile, $self->user_id), $data, $expire );
     }
 
     return $self->{response};
 };
+
+sub response_from_cache {
+    my $self = shift;
+    return cache->get_json( sprintf('tg_response_%s_%s', $self->profile, $self->user_id) );
+}
 
 # устанавливает указанный профиль: token & chat_id
 # Не устанавливаем chat_id, если он был установлен ранее,
@@ -1018,6 +1025,20 @@ sub printQrCode {
         %{ delete $args{parameters} || {} },
         %args,
     );
+}
+
+sub shmDeletePreviousMessage {
+    my $self = shift;
+
+    my $message_id;
+
+    if ( my $id = $self->message->{message_id} ) {
+        $message_id = $id;
+    } elsif ( my $cache = $self->response_from_cache ) {
+        $message_id = $cache->{result}->{message_id};
+    }
+
+    return $message_id ? $self->deleteMessage( message_id => $message_id ) : undef;
 }
 
 sub shmRedirectCallback {
