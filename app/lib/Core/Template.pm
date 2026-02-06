@@ -207,7 +207,7 @@ sub parse {
     unless ($template->process( \$data, $vars, \$result )) {
         my $err = "Template render error: " . $template->error();
         logger->error( $err );
-        get_service('report')->add_error( $err );
+        report->add_error( $err );
 
         if ( $task && blessed( $task ) ) {
             $task->answer(
@@ -235,7 +235,7 @@ sub show {
 
     unless ( $template ) {
         logger->warning("Template not found");
-        get_service('report')->add_error('Template not found');
+        report->add_error('Template not found');
         return undef;
     }
 
@@ -256,13 +256,13 @@ sub show_public {
     my $template = $self->id( $args{id} );
     unless ( $template ) {
         logger->warning("Template not found");
-        get_service('report')->add_error('Template not found');
+        report->add_error('Template not found');
         return undef;
     }
 
     unless ( $template->get_settings->{allow_public} ) {
         logger->warning("Template not public");
-        get_service('report')->add_error('Permission denied: template is not public');
+        report->add_error('Permission denied: template is not public');
         return undef;
     }
 
@@ -291,7 +291,7 @@ sub read_template_from_file {
     my $file = sprintf("%s/%s.tpl", $dir, shift );
     my $data = read_file( $file );
     if ( ref $data ) {
-        get_service('report')->error( $file, $data->{error} );
+        report->error( $file, $data->{error} );
         return undef;
     }
 
@@ -303,7 +303,7 @@ sub read_settings_from_file {
     my $file = sprintf("%s/%s.tpls", $dir, shift );
     my $data = read_file( $file );
     if ( ref $data ) {
-        get_service('report')->error( $file, $data->{error} ) if -f $file;
+        report->error( $file, $data->{error} ) if -f $file;
         return;
     }
 
@@ -318,7 +318,7 @@ sub write_template_to_file {
     my $settings = shift;
     my $ret = write_file( $file, $data );
     if ( ref $ret ) {
-        get_service('report')->error( $file, $ret->{error} );
+        report->error( $file, $ret->{error} );
         return;
     }
 
@@ -327,7 +327,7 @@ sub write_template_to_file {
         my $file = sprintf("%s/%s.tpls", $dir, $template );
         my $ret = write_file( $file, $json );
         if ( ref $ret ) {
-            get_service('report')->error( $file, $ret->{error} );
+            report->error( $file, $ret->{error} );
             return;
         }
     }

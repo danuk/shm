@@ -79,7 +79,7 @@ sub api_set_user_tg_settings {
     my $data = delete $args{ PUTDATA } || delete $args{ POSTDATA };
     my $json = decode_json( $data );
     unless ( $json ) {
-        get_service('report')->add_error("Incorrect JSON data: $data");
+        report->add_error("Incorrect JSON data: $data");
         return undef;
     }
 
@@ -354,7 +354,7 @@ sub template {
     $self->{template_id} = $template_id if $template_id;
     return undef unless $self->{template_id};
 
-    my $template = get_service('template', _id => $self->{template_id});
+    my $template = $self->srv('template', _id => $self->{template_id});
     return $template;
 }
 
@@ -727,7 +727,7 @@ sub process_message {
         my $money = $payment->{total_amount};
 
         if ( $payment->{currency} eq 'XTR' ) {
-            my $cr = get_service('Cloud::Currency');
+            my $cr = $self->srv('Cloud::Currency');
             if ( my $cr_amount = $cr->convert(
                 from => $payment->{currency},
                 amount => $money,
@@ -951,7 +951,7 @@ sub get_data_from_storage {
     my $self = shift;
     my $name = shift;
 
-    my $data = get_service('storage')->read(
+    my $data = $self->srv('storage')->read(
         name => $name,
         decode_json => 0,
     );
@@ -1180,7 +1180,7 @@ sub shmServiceDelete {
         @_,
     );
 
-    my $us = get_service('us')->id( $args{usi} );
+    my $us = $self->srv('us')->id( $args{usi} );
 
     if ( $us && $us->delete( force => 1 ) ) {
         return $self->exec_template(
