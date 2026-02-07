@@ -535,6 +535,7 @@ sub sendMessage {
     my $self = shift;
     my %args = (
         text => undef,
+        try_to_edit => 0,
         parse_mode => 'HTML',
         disable_web_page_preview => 'True',
         @_,
@@ -544,6 +545,18 @@ sub sendMessage {
 
     if ( length( $args{text} ) > 4096 ) {
         $args{text} = substr( $args{text}, 0, 4093 ) . '...';
+    }
+
+    if ( my $try_to_edit = delete $args{try_to_edit} ) {
+        if ( my $message_id = $self->smart_message_id ) {
+            my $res = $self->http( 'editMessageText',
+                data => {
+                    %args,
+                    message_id => $message_id,
+                }
+            );
+            return $res if $res->is_success;
+        }
     }
 
     return $self->http( 'sendMessage',
