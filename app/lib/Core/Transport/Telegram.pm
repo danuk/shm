@@ -108,7 +108,15 @@ sub response {
 
 sub response_from_cache {
     my $self = shift;
-    return cache->get_json( sprintf('tg_response_%s_%s', $self->profile, $self->user_id) );
+    my %args = (
+        cleanup => 0,
+        get_smart_args( @_ ),
+    );
+
+    my $key = sprintf('tg_response_%s_%s', $self->profile, $self->user_id);
+    my $json = cache->get_json( $key );
+    cache->delete( $key ) if $json && $args{cleanup};
+    return $json;
 }
 
 # устанавливает указанный профиль: token & chat_id
@@ -1027,16 +1035,22 @@ sub printQrCode {
     );
 }
 
-sub shmDeletePreviousMessage {
+sub smart_message_id {
     my $self = shift;
-
     my $message_id;
 
     if ( my $id = $self->message->{message_id} ) {
         $message_id = $id;
-    } elsif ( my $cache = $self->response_from_cache ) {
+    } elsif ( my $cache = $self->response_from_cache( cleanup => 1 ) ) {
         $message_id = $cache->{result}->{message_id};
     }
+    return $message_id;
+}
+
+
+sub shmDeletePreviousMessage {
+    my $self = shift;
+    my $message_id = $self->smart_message_id;
 
     return $message_id ? $self->deleteMessage( message_id => $message_id ) : undef;
 }
