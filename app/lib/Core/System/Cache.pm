@@ -79,8 +79,11 @@ sub delete {
     my $self = shift;
     my $name = shift || return undef;
 
-    return undef unless $self->redis;
-    return $self->redis->del( $name );
+    my $data = $self->get( $name );
+    $self->redis->del( $name ) if $data;
+    return $data;
 }
+
+sub delete_json { decode_json shift->delete( shift ) };
 
 1;
