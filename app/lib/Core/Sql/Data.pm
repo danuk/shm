@@ -242,7 +242,7 @@ sub convert_sql_structure_data {
         }
     }
     else {
-        logger->fatal('Unknown type of data');
+        logger->fatal('Unknown type of data', $self);
     }
 }
 
@@ -452,7 +452,7 @@ sub clean_query_args {
                         } elsif ( $self->can( $f ) ) {
                             $args->{where}{ $f } = $self->$f;
                         }
-                        logger->fatal( "`$f` required" ) unless length $args->{where}{ $f };
+                        logger->fatal( "`$f` required", $self ) unless length $args->{where}{ $f };
                     }
                     # Запрещаем обновлять ключевое поле
                     delete $args->{ $f } if exists $args->{ $f };
@@ -471,7 +471,7 @@ sub clean_query_args {
                     } elsif ( $self->can( $f ) ) {
                         $args->{ $f } = $self->$f;
                     }
-                    logger->fatal( "Can't get `$f` from self" ) unless length $args->{ $f };
+                    logger->fatal( "Can't get `$f` from self", $self ) unless length $args->{ $f };
                 }
                 next;
             }
@@ -493,9 +493,9 @@ sub clean_query_args {
                         $args->{ $f } = $self->$f;
                     }
                 }
-                logger->fatal( "Can't get `$f` from self" ) unless length $args->{ $f };
+                logger->fatal( "Can't get `$f` from self", $self ) unless length $args->{ $f };
             } elsif ( $v->{required} ) {
-                logger->fatal( "`$f` required" ) unless length $args->{$f};
+                logger->fatal( "`$f` required", $self ) unless length $args->{$f};
             } elsif ( $v->{type} eq 'now' ) {
                 if ( $self->user->authenticated->is_admin ) {
                     $args->{ $f } //= now;
@@ -797,7 +797,7 @@ sub query_select {
 
     if ( $args{where} && ref $args{where} ) {
         if ( ref $args{where} ne 'HASH' ) {
-            logger->fatal('WHERE not HASH!');
+            logger->fatal('WHERE not HASH!', $self);
         }
     }
     $args{where}||= {};
