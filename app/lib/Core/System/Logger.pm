@@ -102,6 +102,8 @@ sub make_message {
     for ( @msg ) {
         if ( ref $_ eq 'HASH' || ref $_ eq 'ARRAY' ) {
             $_ = encode_json( $_ );
+        } elsif ( blessed $_ ) {
+            $_ = Data::Dumper->new( [ $_ ] )->Indent(0)->Quotekeys(0)->Sortkeys(1)->Terse(1)->Dump();
         }
     }
     my $msg = join(' ', @msg );
@@ -166,7 +168,7 @@ sub write_log_file {
 }
 
 sub trace   { shift->_log( 'TRACE', @_ ) }
-sub dump    { shift->_log( 'DUMP', Data::Dumper->new( [@_] )->Indent(1)->Quotekeys(0)->Sortkeys(1)->Dump() ) }
+sub dump    { shift->_log( 'DUMP', Data::Dumper->new( [@_] )->Indent(1)->Quotekeys(0)->Sortkeys(1)->Terse(1)->Dump() ) }
 sub debug   { shift->_log( 'DEBUG', @_ ) }
 sub info    { shift->_log( 'INFO', @_ ) }
 sub warning { shift->_log( 'WARNING', @_ ) }
