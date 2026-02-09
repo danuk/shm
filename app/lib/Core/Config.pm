@@ -171,12 +171,15 @@ sub list_for_api {
         @_,
     );
 
+    my $filter_by_value = delete $args{filter}->{value};
+
     if ( $args{key} ) {
         $args{where}->{key} = $args{key};
     }
     elsif ( $args{filter}->{key} ) {
         $args{where}->{key} = delete $args{filter}->{key};
     }
+    $args{where}->{value} = { '-like' => $filter_by_value } if $filter_by_value;
 
     return $self->SUPER::list_for_api( %args );
 }
