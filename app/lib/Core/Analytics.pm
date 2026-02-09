@@ -7,10 +7,7 @@ use Core::Base;
 use Core::Const;
 use Core::Utils qw(now decode_json);
 
-# Модуль аналитики биллинга
-# Все методы используют кеширование для оптимизации
-
-sub table { return 'users' };  # базовая таблица для init
+sub table { return 'users' };
 
 sub structure {
     return {
@@ -27,9 +24,9 @@ sub structure {
 sub revenue {
     my $self = shift;
     my %args = (
-        start_date => undef,  # формат: 'YYYY-MM-DD'
+        start_date => undef,
         end_date => undef,
-        months => undef,  # альтернатива start_date - последние N месяцев (0 = за всё время)
+        months => undef,
         no_cache => 0,
         @_,
     );
@@ -82,7 +79,7 @@ sub revenue {
             COUNT(*) as payments_count,
             IFNULL(AVG(money), 0) as avg_payment
         FROM pays_history
-        WHERE money > 0 $where_date
+        WHERE money > 0 AND pay_system_id != 'manual' $where_date
     ", undef, @params);
 
     my $result = {
@@ -99,7 +96,7 @@ sub revenue {
 sub revenue_by_month {
     my $self = shift;
     my %args = (
-        months => 12,  # последние N месяцев (0 = за всё время)
+        months => 12,  # последние N месяцев, -1 = текущий месяц
         no_cache => 0,
         @_,
     );
@@ -125,6 +122,7 @@ sub revenue_by_month {
             FROM pays_history
             WHERE date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
                 AND money > 0
+                AND pay_system_id != 'manual'
             GROUP BY DATE_FORMAT(date, '%Y-%m')
             ORDER BY month DESC
         ";
@@ -140,23 +138,11 @@ sub revenue_by_month {
             FROM pays_history
             WHERE date >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
                 AND money > 0
+                AND pay_system_id != 'manual'
             GROUP BY DATE_FORMAT(date, '%Y-%m')
             ORDER BY month DESC
         ";
         @params = ($args{months});
-    } else {
-        # За всё время (months=0)
-        $sql = "
-            SELECT
-                DATE_FORMAT(date, '%Y-%m') as month,
-                SUM(money) as revenue,
-                COUNT(*) as count
-            FROM pays_history
-            WHERE money > 0
-            GROUP BY DATE_FORMAT(date, '%Y-%m')
-            ORDER BY month DESC
-        ";
-        @params = ();
     }
 
     my $rows = $self->dbh->selectall_arrayref($sql, {Slice => {}}, @params);
@@ -195,6 +181,7 @@ sub revenue_by_day {
             FROM pays_history
             WHERE date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
                 AND money > 0
+                AND pay_system_id != 'manual'
             GROUP BY DATE_FORMAT(date, '%Y-%m-%d')
             ORDER BY day ASC
         ";
@@ -208,6 +195,7 @@ sub revenue_by_day {
             FROM pays_history
             WHERE date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
                 AND money > 0
+                AND pay_system_id != 'manual'
             GROUP BY DATE_FORMAT(date, '%Y-%m-%d')
             ORDER BY day ASC
         ";
@@ -261,6 +249,7 @@ sub revenue_by_week {
         FROM pays_history
         WHERE date >= ?
             AND money > 0
+            AND pay_system_id != 'manual'
         GROUP BY YEAR(date), WEEK(date, 1)
         ORDER BY week ASC
     ", {Slice => {}}, $start_date) || [];
@@ -281,7 +270,7 @@ sub service_profitability {
     my %args = (
         start_date => undef,
         end_date => undef,
-        months => undef,  # альтернатива start_date - последние N месяцев (0 = за всё время)
+        months => undef,  # альтернатива start_date - последние N месяцев
         limit => 20,
         no_cache => 0,
         @_,
@@ -389,7 +378,7 @@ sub top_clients {
         FROM users u
         LEFT JOIN (
             SELECT user_id, SUM(money) as total_payments, COUNT(*) as payments_count
-            FROM pays_history WHERE money > 0
+            FROM pays_history WHERE money > 0 AND pay_system_id != 'manual'
             GROUP BY user_id
         ) p ON u.user_id = p.user_id
         LEFT JOIN (
@@ -530,7 +519,7 @@ sub popular_services {
 sub renewal_metrics {
     my $self = shift;
     my %args = (
-        months => 6,  # 0 = за всё время
+        months => 6,  # -1 = текущий месяц
         no_cache => 0,
         @_,
     );
@@ -598,29 +587,6 @@ sub renewal_metrics {
             WHERE us.status != 'REMOVED'
                 AND us.created >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
         ", undef, $args{months});
-    } else {
-        # За всё время (months=0)
-        ($total_services, $renewed_services) = $self->dbh->selectrow_array("
-            SELECT
-                COUNT(DISTINCT wd.user_service_id) as total,
-                SUM(CASE WHEN renewals.renewal_count > 1 THEN 1 ELSE 0 END) as renewed
-            FROM withdraw_history wd
-            INNER JOIN (
-                SELECT user_service_id, COUNT(*) as renewal_count
-                FROM withdraw_history
-                WHERE withdraw_date IS NOT NULL
-                GROUP BY user_service_id
-            ) renewals ON wd.user_service_id = renewals.user_service_id
-        ");
-
-        ($avg_lifetime_days) = $self->dbh->selectrow_array("
-            SELECT AVG(DATEDIFF(
-                COALESCE(us.expire, CURDATE()),
-                us.created
-            )) as avg_lifetime
-            FROM user_services us
-            WHERE us.status != 'REMOVED'
-        ");
     }
 
     my $renewal_rate = $total_services > 0 ? ($renewed_services / $total_services * 100) : 0;
@@ -641,7 +607,7 @@ sub renewal_metrics {
 sub churn_analysis {
     my $self = shift;
     my %args = (
-        months => 3,  # 0 = за всё время
+        months => 3,  # -1 = текущий месяц
         no_cache => 0,
         @_,
     );
@@ -717,27 +683,6 @@ sub churn_analysis {
                     WHERE p2.user_id = u.user_id
                 )
         ", undef, $args{months});
-    } else {
-        # За всё время (months=0)
-        ($new_users) = $self->dbh->selectrow_array("
-            SELECT COUNT(*) FROM users
-            WHERE block = 0
-        ");
-
-        ($paying_users) = $self->dbh->selectrow_array("
-            SELECT COUNT(DISTINCT user_id) FROM pays_history
-            WHERE money > 0
-        ");
-
-        # Неактивные = пользователи без платежей вообще (при months=0 это бессмысленно, но для согласованности)
-        ($inactive_users) = $self->dbh->selectrow_array("
-            SELECT COUNT(*) FROM users u
-            WHERE u.block = 0
-                AND NOT EXISTS (
-                    SELECT 1 FROM pays_history p
-                    WHERE p.user_id = u.user_id
-                )
-        ");
     }
 
     my $result = {
@@ -758,7 +703,7 @@ sub churn_analysis {
 sub payment_metrics {
     my $self = shift;
     my %args = (
-        months => 3,  # 0 = за всё время
+        months => 3,  # -1 = текущий месяц
         no_cache => 0,
         @_,
     );
@@ -796,6 +741,7 @@ sub payment_metrics {
             FROM pays_history
             WHERE date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
                 AND money > 0
+                AND pay_system_id != 'manual'
             GROUP BY DAYOFWEEK(date)
             ORDER BY weekday
         ", {Slice => {}});
@@ -823,33 +769,10 @@ sub payment_metrics {
             FROM pays_history
             WHERE date >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
                 AND money > 0
+                AND pay_system_id != 'manual'
             GROUP BY DAYOFWEEK(date)
             ORDER BY weekday
         ", {Slice => {}}, $args{months});
-    } else {
-        # За всё время (months=0)
-        $by_paysystem = $self->dbh->selectall_arrayref("
-            SELECT
-                IFNULL(pay_system_id, 'manual') as pay_system,
-                COUNT(*) as count,
-                SUM(money) as total,
-                AVG(money) as avg_amount
-            FROM pays_history
-            WHERE money > 0
-            GROUP BY pay_system_id
-            ORDER BY total DESC
-        ", {Slice => {}});
-
-        $by_weekday = $self->dbh->selectall_arrayref("
-            SELECT
-                DAYOFWEEK(date) as weekday,
-                COUNT(*) as count,
-                SUM(money) as total
-            FROM pays_history
-            WHERE money > 0
-            GROUP BY DAYOFWEEK(date)
-            ORDER BY weekday
-        ", {Slice => {}});
     }
 
     my $result = {
@@ -1043,7 +966,7 @@ sub receivables {
 sub charges_volume {
     my $self = shift;
     my %args = (
-        months => 12,  # 0 = за всё время
+        months => 12,  # -1 = текущий месяц
         no_cache => 0,
         @_,
     );
@@ -1088,7 +1011,7 @@ sub charges_volume {
             LEFT JOIN (
                 SELECT DATE_FORMAT(date, '%Y-%m') as month, SUM(money) as revenue
                 FROM pays_history
-                WHERE money > 0 AND date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+                WHERE money > 0 AND pay_system_id != 'manual' AND date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
                 GROUP BY DATE_FORMAT(date, '%Y-%m')
             ) p ON m.month = p.month
             LEFT JOIN (
@@ -1138,7 +1061,7 @@ sub charges_volume {
             ) m
             LEFT JOIN (
                 SELECT DATE_FORMAT(date, '%Y-%m') as month, SUM(money) as revenue
-                FROM pays_history WHERE money > 0
+                FROM pays_history WHERE money > 0 AND pay_system_id != 'manual'
                 GROUP BY DATE_FORMAT(date, '%Y-%m')
             ) p ON m.month = p.month
             LEFT JOIN (
@@ -1153,53 +1076,6 @@ sub charges_volume {
             ORDER BY m.month DESC
             LIMIT ?
         ", {Slice => {}}, $args{months}, $args{months}, $args{months});
-    } else {
-        # За всё время (months=0)
-        $charges_by_month = $self->dbh->selectall_arrayref("
-            SELECT
-                DATE_FORMAT(withdraw_date, '%Y-%m') as month,
-                SUM(total) as total_charged,
-                SUM(bonus) as bonuses_used,
-                GREATEST(SUM(total) - SUM(bonus), 0) as net_charged,
-                COUNT(*) as transactions
-            FROM withdraw_history
-            WHERE withdraw_date IS NOT NULL
-            GROUP BY DATE_FORMAT(withdraw_date, '%Y-%m')
-            ORDER BY month DESC
-        ", {Slice => {}});
-
-        $revenue_vs_charges = $self->dbh->selectall_arrayref("
-            SELECT
-                m.month,
-                IFNULL(p.revenue, 0) as revenue,
-                IFNULL(w.total_charged, 0) as total_charged,
-                IFNULL(w.bonuses_used, 0) as bonuses_used,
-                IFNULL(w.money_charged, 0) as charges,
-                IFNULL(p.revenue, 0) - IFNULL(w.money_charged, 0) as difference
-            FROM (
-                SELECT DISTINCT DATE_FORMAT(date, '%Y-%m') as month
-                FROM pays_history
-                UNION
-                SELECT DISTINCT DATE_FORMAT(withdraw_date, '%Y-%m') as month
-                FROM withdraw_history
-                WHERE withdraw_date IS NOT NULL
-            ) m
-            LEFT JOIN (
-                SELECT DATE_FORMAT(date, '%Y-%m') as month, SUM(money) as revenue
-                FROM pays_history WHERE money > 0
-                GROUP BY DATE_FORMAT(date, '%Y-%m')
-            ) p ON m.month = p.month
-            LEFT JOIN (
-                SELECT
-                    DATE_FORMAT(withdraw_date, '%Y-%m') as month,
-                    SUM(total) as total_charged,
-                    SUM(bonus) as bonuses_used,
-                    SUM(GREATEST(total - bonus, 0)) as money_charged
-                FROM withdraw_history WHERE withdraw_date IS NOT NULL
-                GROUP BY DATE_FORMAT(withdraw_date, '%Y-%m')
-            ) w ON m.month = w.month
-            ORDER BY m.month DESC
-        ", {Slice => {}});
     }
 
     my $result = {
@@ -1460,7 +1336,7 @@ sub bonus_metrics {
 sub api_report {
     my $self = shift;
     my %args = (
-        months => -1,  # -1 = текущий месяц, 0 = за всё время
+        months => -1,  # -1 = текущий месяц
         no_cache => 0,
         @_,
     );
@@ -1501,7 +1377,7 @@ sub api_report {
     $overview->{active_paying_users} = $active_paying_users || 0;
 
     # Используем переданный months для всех методов
-    # -1 = текущий месяц, 0 = за всё время, >0 = за N месяцев
+    # -1 = текущий месяц, >0 = за N месяцев
     my $period = $args{months};
 
     # Определяем гранулярность данных для графиков
@@ -1600,7 +1476,7 @@ sub overview {
     ");
 
     my ($total_revenue) = $self->dbh->selectrow_array("
-        SELECT SUM(money) FROM pays_history WHERE money > 0
+        SELECT SUM(money) FROM pays_history WHERE money > 0 AND pay_system_id != 'manual'
     ");
 
     my ($total_balance, $total_bonus) = $self->dbh->selectrow_array("
