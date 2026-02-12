@@ -73,11 +73,9 @@ sub _add_or_replace {
     } else {
         $data = delete $args{ PUTDATA } || delete $args{ POSTDATA };
         if ( $ENV{CONTENT_TYPE} =~/application\/json/i ) {
-            unless ( decode_json( $data ) ) {
-                get_service('report')->add_error("Incorrect JSON data: $data");
-                return undef;
+            if ( decode_json( $data ) ) {
+                $args{settings}->{json} = 1;
             }
-            $args{settings}->{json} = 1;
         }
     }
 
