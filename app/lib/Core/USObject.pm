@@ -206,6 +206,8 @@ sub delete {
     return scalar $self->get;
 }
 
+sub delete_force { shift->delete( force => 1 ) };
+
 sub has_expired {
     my $self = shift;
 
