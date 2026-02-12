@@ -928,6 +928,14 @@ my $routes = {
         swagger => { summary => 'Удалить задачу' },
     },
 },
+'/admin/spool/statuses' => {
+    swagger => { tags => 'Задачи' },
+    GET => {
+        controller => 'Spool',
+        method => 'statuses',
+        swagger => { summary => 'Статусы задач' },
+    },
+},
 '/admin/spool/history' => {
     swagger => { tags => 'Задачи' },
     GET => {

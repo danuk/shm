@@ -407,4 +407,15 @@ sub write_history {
     }
 }
 
+sub statuses {
+    my $self = shift;
+    my $list = $self->dbh->selectall_arrayref('SELECT status, COUNT(status) as cnt FROM '. $self->table . ' GROUP by status', { Slice => {} });
+
+    if ( wantarray ) {
+        return @$list;
+    } else {
+        return $list;
+    }
+}
+
 1;
