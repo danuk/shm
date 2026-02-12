@@ -308,6 +308,15 @@ my $routes = {
         swagger => { summary => 'Остановить услугу пользователя' },
     },
 },
+'/user/service/change' => {
+    swagger => { tags => 'Услуги пользователей' },
+    POST => {
+        controller => 'USObject',
+        method => 'change',
+        required => ['user_service_id','service_id'],
+        swagger => { summary => 'Сменить тариф' },
+    },
+},
 '/user/withdraw' => {
     swagger => { tags => 'Пользователи' },
     GET => {
