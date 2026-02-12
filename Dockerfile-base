@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     libdbd-mysql-perl \
     libredis-perl \
     libcgi-pm-perl \
+    libfcgi-procmanager-perl \
     libtime-parsedate-perl \
     libdate-calc-perl \
     libjson-perl \
