@@ -16,6 +16,7 @@ services:
       #DEBUG: DEBUG
       TZ: ${TZ}
       LANG: C.UTF-8
+      WORKERS_COUNT: ${WORKERS_COUNT:-4}
       DB_NAME: ${MYSQL_DATABASE}
       DB_USER: ${MYSQL_USER}
       DB_PASS: ${MYSQL_PASS}

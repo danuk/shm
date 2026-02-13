@@ -4,7 +4,6 @@ COPY entry-api.sh /entry.sh
 
 
 FROM danuk/shm-core-base:latest AS core
-COPY nginx/uwsgi.ini /etc/uwsgi/apps-enabled/shm.ini
 COPY entry-core.sh /entry.sh
 COPY app /app
 
