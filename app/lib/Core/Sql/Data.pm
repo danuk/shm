@@ -62,7 +62,6 @@ sub db_connect {
         attr => {
             RaiseError => 0,
             AutoCommit => 0,
-            mysql_auto_reconnect => 1,
             mysql_enable_utf8mb4 => 1,
             InactiveDestroy => 1,
         },

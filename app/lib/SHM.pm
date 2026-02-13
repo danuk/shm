@@ -138,6 +138,17 @@ sub ext_user_auth {
 sub db_connect {
     my $config = get_service('config');
 
+    # Reuse existing connection if still alive
+    if (my $local = $config->local) {
+        if (my $existing = $local->{dbh}) {
+            if ($existing->ping) {
+                Core::Sql::Data::configure( $existing );
+                return;
+            }
+            $existing->disconnect;
+        }
+    }
+
     # Connect to db
     my $dbh = Core::Sql::Data::db_connect( %{ $config->file->{config}{database} } );
 

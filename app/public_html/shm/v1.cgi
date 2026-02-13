@@ -21,7 +21,7 @@ use Core::Utils qw(
 use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
 
-my $routes = {
+state $routes //= {
 '/test' => {
     GET => {
         controller => 'Test',
@@ -1411,7 +1411,7 @@ $routes->{'/swagger_admin.json'} = {
     },
 };
 
-my $router = Router::Simple->new();
+state $router //= Router::Simple->new();
 for my $uri ( keys %{ $routes } ) {
     for my $method ( 'GET','POST','PUT','DELETE' ) {
         next unless $routes->{$uri}->{$method};
@@ -1646,7 +1646,6 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     } else {
         $user->commit();
     }
-    $user->dbh->disconnect();
 } else {
     print_header( status => 404 );
     print_json( { status => 404, error => 'Method not found'} );
@@ -1671,4 +1670,4 @@ sub get_service_id {
     return $service_id;
 }
 
-exit 0;
+# exit 0;
