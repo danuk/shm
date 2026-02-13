@@ -28,18 +28,21 @@ my $dir = 'data/templates';
 
 # Automatically create constants hash from Core::Const exports
 sub _get_constants {
-    my %constants;
+    state $constants;
+    return $constants if $constants;
 
+    my %c;
     # Get all exported constants from Core::Const
     no strict 'refs';
     for my $const_name (@Core::Const::EXPORT) {
         if (defined &{"Core::Const::$const_name"}) {
-            $constants{$const_name} = &{"Core::Const::$const_name"}();
+            $c{$const_name} = &{"Core::Const::$const_name"}();
         }
     }
     use strict 'refs';
 
-    return \%constants;
+    $constants = \%c;
+    return $constants;
 }
 
 sub init {
@@ -192,7 +195,10 @@ sub parse {
         %{ _get_constants() },
     };
 
-    my $template = Template->new({
+    # Cache Template objects — they are stateless and safe to reuse across requests
+    state %tt_cache;
+    my $cache_key = $args{START_TAG} . '|' . $args{END_TAG};
+    my $template = $tt_cache{$cache_key} //= Template->new({
         START_TAG => quotemeta( $args{START_TAG} ),
         END_TAG   => quotemeta( $args{END_TAG} ),
         ANYCASE => 1,

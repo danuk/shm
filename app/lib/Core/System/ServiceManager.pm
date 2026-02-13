@@ -164,7 +164,8 @@ sub unregister_all {
     );
 
     for my $service ( keys %{ $self->{services} } ) {
-        next if exists $protected_services{ $service };
+        my ($base) = split(/\s+/, $service, 2);
+        next if $protected_services{ $base };
         delete $self->{services}->{ $service };
     }
 }
