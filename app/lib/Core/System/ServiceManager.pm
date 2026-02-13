@@ -128,7 +128,6 @@ sub register_service {
     write_log("Register new service with name: [$service_name]");
 
     my ($package, $filename, $line, $subroutine) = caller(1);
-    $self->{service_register}{ $service_name } = "$subroutine at $filename line $line";
 
     $self->{services}->{ $service_name } = $service;
     return $service;
@@ -167,7 +166,6 @@ sub unregister_all {
     for my $service ( keys %{ $self->{services} } ) {
         next if exists $protected_services{ $service };
         delete $self->{services}->{ $service };
-        delete $self->{service_register}{ $service };
     }
 }
 
@@ -183,7 +181,6 @@ sub unregister_service {
     }
 
     delete $self->{services}->{$id};
-    delete $self->{service_register}{$id};
 
     return 1;
 }
