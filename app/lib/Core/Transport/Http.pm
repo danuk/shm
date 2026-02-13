@@ -146,9 +146,13 @@ sub http {
 
     my $method = uc $args{method};
 
-    my $ua = LWP::UserAgent->new(
+    # Cache UA per timeout+verify_hostname combination
+    state %ua_cache;
+    my $cache_key = join('|', $args{timeout}, $args{verify_hostname} // 0);
+    my $ua = $ua_cache{$cache_key} //= LWP::UserAgent->new(
         agent => 'SHM',
         timeout => $args{timeout},
+        keep_alive => 4,
         ssl_opts => {
             verify_hostname => $args{verify_hostname},
         },
