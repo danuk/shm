@@ -461,7 +461,11 @@ sub shm_test_api {
     );
 
     use LWP::UserAgent ();
-    my $ua = LWP::UserAgent->new(timeout => 3);
+    state $cached_ua = LWP::UserAgent->new(
+        timeout => 3,
+        keep_alive => 4,
+    );
+    my $ua = $cached_ua;
 
     $ua->default_header('Content-Type' => 'application/json');
     $ua->default_header('login' => $args{login}) if $args{login};
