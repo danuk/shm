@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+use v5.14;
 use strict;
 use warnings;
 use FCGI;
@@ -90,6 +91,10 @@ $pm->pm_manage();
 
 $0 = 'shm-worker';
 log_msg("Worker started, entering request loop (PID: $$)");
+my $worker_start_time = time;
+
+# Initialize worker (call startup hook if exists)
+worker_startup();
 
 # Save clean environment before any request processing
 my %CLEAN_ENV = %ENV;
@@ -365,3 +370,22 @@ sub execute_fork {
         print "Empty response from script\n";
     }
 }
+
+sub worker_startup {
+    # Set minimal environment
+    local $ENV{PATH_INFO} = '';
+    local $ENV{DOCUMENT_ROOT} = '/app/public_html';
+    local $ENV{PERL5LIB} = '/app/lib:/app/conf';
+
+    eval {
+        use SHM;
+        my $user = SHM->new( skip_check_auth => 1 );
+        Core::System::ServiceManager::setup();
+    };
+
+    if ($@) {
+        log_msg("Warning: worker startup failed: $@");
+    }
+
+}
+

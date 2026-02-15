@@ -17,6 +17,7 @@ $| = 1;
 
 my $user = SHM->new( user_id => 1 );
 $user->dbh->{RaiseError} = 1;
+# Core::System::ServiceManager::setup();
 
 my $task;
 

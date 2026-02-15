@@ -95,6 +95,14 @@ sub api_data_by_name {
 
 sub data_by_name {
     my $self = shift;
+    my $key = shift || return $self->all_data_by_name();
+
+    my $config = $self->id( $key );
+    return $config ? $config->get_data : {};
+}
+
+sub all_data_by_name {
+    my $self = shift;
     my $key = shift;
 
     my @list = $self->list( where => {
@@ -113,55 +121,21 @@ sub data_by_name {
     return \%ret || {};
 }
 
-sub api_data_by_company {
-    my $self = shift;
-    my $key = 'company';
-
-    my @list = $self->list( where => {
-        key => $key,
-    });
-
-    my %ret = map{ $_->{key} => $_->{value} } @list;
-
-    if ( $key ) {
-        for ( keys %{ $ret{ $key } } ) {
-            $ret{ $_ } = delete $ret{ $key }->{ $_ };
-        }
-        delete $ret{ $key };
-    }
-
-    return \%ret || {};
-}
+sub api_data_by_company { shift->data_by_name('company') };
 
 sub delete {
     my $self = shift;
     my %args = @_;
 
-    my $report = get_service('report');
-
     if ( $self->id =~/^_/ ) {
-        $report->add_error('KeyProhibited');
+        report->add_error('KeyProhibited');
         return undef;
     }
 
-    return $self->dbh->do(
-        "DELETE FROM config WHERE `key` = ?",
-        undef,
-        $self->id
-    );
+    return $self->SUPER::delete();
 }
 
-sub get_data {
-    my $self = shift;
-
-    my $config = $self->list(
-        where => {
-            key => $self->id,
-        }
-    );
-
-    return $config->{ $self->id }->{value} || {};
-}
+sub get_data { shift->get->{value} || {} };
 
 sub list_for_api {
     my $self = shift;
@@ -208,6 +182,7 @@ sub api_set_value {
             $self->$method( old_values => $old_values );
         }
     }
+
     return scalar $self->get;
 }
 
@@ -268,4 +243,3 @@ sub version_info {
 
     return $version_data;
 }
-
