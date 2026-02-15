@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+use v5.14;
 use strict;
 use warnings;
 use FCGI;
@@ -9,6 +10,7 @@ use IO::Handle;
 use CGI;
 use POSIX ();
 use Time::HiRes qw(time);
+use Redis;
 use Data::Dumper;
 
 # Override exit() globally (for ALL packages) to throw an exception
@@ -34,6 +36,10 @@ my $num_workers = 4;
 my $timeout = 300;
 my $uid = 'www-data';
 my $gid = 'www-data';
+my $restart_flag_key = 'shm:restart:workers';
+my $restart_flag_ttl = 300;
+my $redis_host = 'redis';
+my $redis_port = 6379;
 
 # Document roots and mappings
 my %doc_roots = (
@@ -90,6 +96,7 @@ $pm->pm_manage();
 
 $0 = 'shm-worker';
 log_msg("Worker started, entering request loop (PID: $$)");
+my $worker_start_time = time;
 
 # Save clean environment before any request processing
 my %CLEAN_ENV = %ENV;
@@ -112,6 +119,11 @@ while ($request_count < $max_requests && $request->Accept() >= 0) {
         %ENV = (%CLEAN_ENV, %request_env);
 
         my $request_uri = $ENV{REQUEST_URI} // $ENV{DOCUMENT_URI} // $ENV{SCRIPT_NAME} // '';
+        my $restart_after_request = 0;
+
+        if (restart_flag_is_newer($worker_start_time)) {
+            $restart_after_request = 1;
+        }
 
         # Check if we should skip logging
         my $skip_log = 0;
@@ -143,6 +155,13 @@ while ($request_count < $max_requests && $request->Accept() >= 0) {
             unless ($skip_log) {
                 log_msg("404 - file not found or not executable: $script_filename");
             }
+        }
+
+        if ($restart_after_request) {
+            log_msg("Restart requested, worker exiting (PID: $$)");
+            $IN_REQUEST = 0;
+            $pm->pm_post_dispatch();
+            CORE::exit(0);
         }
     };
     if ($@ && $@ ne $EXIT_EXCEPTION) {
@@ -364,4 +383,47 @@ sub execute_fork {
         print "Content-Type: text/plain\r\n\r\n";
         print "Empty response from script\n";
     }
+}
+
+sub get_redis {
+    state $redis;
+    state $checked = 0;
+
+    return $redis if $checked;
+    $checked = 1;
+
+    eval {
+        $redis = Redis->new(
+            server => sprintf('%s:%d', $redis_host, $redis_port),
+            reconnect => 1,
+            every => 2000,
+            cnx_timeout => 1,
+            read_timeout => 1,
+            write_timeout => 1,
+        );
+    };
+
+    if ($@) {
+        log_msg("Redis connect failed: $@");
+        $redis = undef;
+    }
+
+    return $redis;
+}
+
+sub restart_flag_is_newer {
+    my ($started_at) = @_;
+    my $redis = get_redis() or return 0;
+    my $ts;
+
+    eval {
+        $ts = $redis->get($restart_flag_key);
+    };
+    if ($@) {
+        log_msg("Cannot read restart flag from Redis: $@");
+        return 0;
+    }
+
+    return 0 unless defined $ts && $ts ne '';
+    return $ts > $started_at ? 1 : 0;
 }

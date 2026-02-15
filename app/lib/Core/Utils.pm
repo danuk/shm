@@ -61,6 +61,7 @@ our @EXPORT_OK = qw(
     uuid_gen
     print_header
     print_json
+    request_workers_restart
     get_user_ip
     is_ip_allowed
     trusted_ips
@@ -738,6 +739,19 @@ sub print_json {
     print_header( ref $ref eq 'HASH' ? %{ $ref } : () ) unless $is_header;
 
     say encode_json( $ref );
+}
+
+sub request_workers_restart {
+    my %args = (
+        key => 'shm:restart:workers',
+        ttl => 300,
+        @_,
+    );
+
+    my $cache = get_service('Core::System::Cache');
+    return undef unless $cache && $cache->redis;
+
+    return $cache->set( $args{key}, time, $args{ttl} );
 }
 
 sub get_user_ip {
