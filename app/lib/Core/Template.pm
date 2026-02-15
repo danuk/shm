@@ -466,12 +466,15 @@ sub set {
         @_,
     );
 
+    $self->reset_cache();
+
     return $self->_db_set( @_ ) unless $self->{file_mode};
 
     $self->{res}->{data} = $args{data};
     $self->{res}->{settings} = $args{settings};
 
     write_template_to_file( $self->id, $args{data} || $args{PUTDATA} || $args{POSTDATA}, $args{settings} );
+
     return $self->id;
 };
 

@@ -317,6 +317,15 @@ sub set_settings {
     return $self->set_json('settings', $new_data );
 }
 
+sub reset_cache {
+    my $self = shift;
+
+    if ( my $cache = $self->cache ) {
+        # Сигнализируем воркерам о необходимости сброса кеша
+        $cache->redis->hset('SHM:Cache:Reset', ref $self, time );
+    }
+}
+
 # Пробуем получить уже загруженные данные
 # Проверяем статус операции и обновляем res
 sub _add_or_set {
@@ -347,7 +356,13 @@ sub _add_or_set {
         }
     }
 
-    my $ret = $method eq 'add' ? $self->SUPER::add( %super_args ) : $self->SUPER::set( %super_args );
+    my $ret;
+    if ( $method eq 'add' ) {
+        $ret = $self->SUPER::add( %super_args )
+    } elsif ( $method eq 'set' ) {
+        $ret = $self->SUPER::set( %super_args );
+        $self->reset_cache();
+    }
 
     if ( defined $ret && %{ $self->res } ) {
         for ( keys %args ) {
