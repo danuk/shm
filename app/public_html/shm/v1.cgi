@@ -254,12 +254,6 @@ my $routes = {
         method => 'api_password_auth_status',
     },
 },
-'/user/otp/setup' => {
-    POST => {
-        controller => 'OTP',
-        method => 'api_setup',
-    },
-},
 '/user/otp/enable' => {
     POST => {
         controller => 'OTP',
