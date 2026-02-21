@@ -435,7 +435,6 @@ sub passwd_reset_request {
     }
 
     if ( $user ) {
-        switch_user( $user->{user_id} );
         $self = $self->id( $user->{user_id} );
 
         if ( $self->is_blocked ) {
@@ -503,7 +502,6 @@ sub passwd_reset_verify {
         return { msg => 'Invalid token' };
     }
 
-    switch_user( $user->{user_id} );
     $self = $self->id( $user->{user_id} );
 
     my $settings = $self->get_settings;
@@ -539,7 +537,7 @@ sub set_email {
         return { msg => 'is not email' };
     }
 
-    my $current_email = $self->user->emails;;
+    my $current_email = $self->user->emails;
     if ( $current_email && $current_email eq $args{email} ) {
         return { msg => 'Successful' };
     }
@@ -1019,7 +1017,6 @@ sub list_for_api {
         $args{where}->{user_id} = $self->id;
     }
 
-    # return $self->SUPER::list_for_api( %args );
     my @result = $self->SUPER::list_for_api( %args );
 
     for my $item (@result) {
