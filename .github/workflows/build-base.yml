@@ -44,31 +44,24 @@ jobs:
     - name: Check branch
       id: branch_check
       run: |
-        CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-        echo "current_branch=${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
-        if [ "$CURRENT_BRANCH" = "master" ] && [ "${{ inputs.push_latest }}" = "true" ]; then
+        # Check if current commit is on master branch (works in detached HEAD)
+        IS_MASTER="false"
+        if git branch -r --contains HEAD | grep -q 'origin/master'; then
+          IS_MASTER="true"
+          echo "Current commit is on master branch"
+        else
+          echo "Current commit is NOT on master branch"
+        fi
+        
+        # Determine if we should push latest tag
+        PUSH_LATEST="${{ inputs.push_latest }}"
+        if [ "$PUSH_LATEST" = "true" ] && [ "$IS_MASTER" = "true" ]; then
           echo "should_push_latest=true" >> $GITHUB_OUTPUT
-          echo "Will push 'latest' tag (master branch + push_latest enabled)"
+          echo "Will push 'latest' tag (master + push_latest enabled)"
         else
           echo "should_push_latest=false" >> $GITHUB_OUTPUT
-          if [ "$CURRENT_BRANCH" != "master" ]; then
-            echo "Will NOT push 'latest' tag (not on master branch: ${CURRENT_BRANCH})"
-          else
-            echo "Will NOT push 'latest' tag (push_latest parameter is false)"
-          fi
+          echo "Will NOT push 'latest' tag"
         fi
-
-    - name: Build and push API base image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile-base
-        platforms: linux/amd64,linux/arm64
-        push: true
-        target: api
-        tags: |
-          ${{ env.IMAGE_NAME }}-api:${{ inputs.tag }}
-          ${{ steps.branch_check.outputs.should_push_latest == 'true' && format('{0}-api:latest', env.IMAGE_NAME) || '' }}
 
     - name: Build and push Core base image
       uses: docker/build-push-action@v5
@@ -80,16 +73,6 @@ jobs:
         target: core-base
         tags: |
           ${{ env.IMAGE_NAME }}-core-base:${{ inputs.tag }}
-          ${{ steps.branch_check.outputs.should_push_latest == 'true' && format('{0}-core-base:latest', env.IMAGE_NAME) || '' }}
-
-    - name: Build and push WebDAV base image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile-base
-        platforms: linux/amd64,linux/arm64
-        push: true
-        target: webdav
-        tags: |
-          ${{ env.IMAGE_NAME }}-webdav:${{ inputs.tag }}
-          ${{ steps.branch_check.outputs.should_push_latest == 'true' && format('{0}-webdav:latest', env.IMAGE_NAME) || '' }}
+          ${{ steps.branch_check.outputs.should_push_latest == 'true' && format('{0}-core-base:latest', env.IMAGE_NAME) || format('{0}-core-base:skip-latest-{1}', env.IMAGE_NAME, github.sha) }}
+        cache-from: type=gha,scope=core-base
+        cache-to: type=gha,mode=max,scope=core-base

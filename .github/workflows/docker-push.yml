@@ -2,6 +2,12 @@ name: Docker Push
 
 on:
   workflow_dispatch:
+    inputs:
+      push_latest:
+        description: 'Also tag as latest'
+        type: boolean
+        default: false
+        required: false
 
 jobs:
   build-and-push:
@@ -38,14 +44,22 @@ jobs:
           else
             echo "minor=${TAG}" >> $GITHUB_OUTPUT
           fi
-          # Check if current branch is master
-          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          if [ "$CURRENT_BRANCH" = "master" ]; then
-            echo "is_master=true" >> $GITHUB_OUTPUT
-            echo "Current branch is master - will push 'latest' tag"
+          # Check if current commit is on master branch (works in detached HEAD)
+          IS_MASTER="false"
+          if git branch -r --contains HEAD | grep -q 'origin/master'; then
+            IS_MASTER="true"
+            echo "Current commit is on master branch"
           else
-            echo "is_master=false" >> $GITHUB_OUTPUT
-            echo "Current branch is $CURRENT_BRANCH (not master) - will NOT push 'latest' tag"
+            echo "Current commit is NOT on master branch"
+          fi
+          # Determine if we should push latest tag
+          PUSH_LATEST="${{ github.event.inputs.push_latest }}"
+          if [ "$PUSH_LATEST" = "true" ] || [ "$IS_MASTER" = "true" ]; then
+            echo "push_latest=true" >> $GITHUB_OUTPUT
+            echo "Will push 'latest' tag (master=${IS_MASTER}, manual=${PUSH_LATEST})"
+          else
+            echo "push_latest=false" >> $GITHUB_OUTPUT
+            echo "Will NOT push 'latest' tag"
           fi
 
       - name: Create version.json
@@ -68,7 +82,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/shm-api:${{ steps.version.outputs.minor }}
-            ${{ steps.version.outputs.is_master == 'true' && format('{0}/shm-api:latest', secrets.DOCKERHUB_USERNAME) || '' }}
+            ${{ steps.version.outputs.push_latest == 'true' && format('{0}/shm-api:latest', secrets.DOCKERHUB_USERNAME) || format('{0}/shm-api:skip-latest-{1}', secrets.DOCKERHUB_USERNAME, steps.version.outputs.rev) }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
@@ -81,6 +95,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:${{ steps.version.outputs.minor }}
-            ${{ steps.version.outputs.is_master == 'true' && format('{0}/shm-core:latest', secrets.DOCKERHUB_USERNAME) || '' }}
+            ${{ steps.version.outputs.push_latest == 'true' && format('{0}/shm-core:latest', secrets.DOCKERHUB_USERNAME) || format('{0}/shm-core:skip-latest-{1}', secrets.DOCKERHUB_USERNAME, steps.version.outputs.rev) }}
           cache-from: type=gha,scope=core
           cache-to: type=gha,mode=max,scope=core

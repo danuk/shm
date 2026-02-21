@@ -53,16 +53,22 @@ jobs:
         VERSION_STRING="${TAG}-${REV}"
         echo "version_string=${VERSION_STRING}" >> $GITHUB_OUTPUT
 
-        # Check if tag is from master branch
-        BRANCH=$(git branch -r --contains tags/${TAG} | grep 'origin/master' || true)
-        if [ -n "$BRANCH" ]; then
-          echo "is_master=true" >> $GITHUB_OUTPUT
-          echo "Tag is from master branch - will push 'latest' tag"
-        else
-          echo "is_master=false" >> $GITHUB_OUTPUT
+        # Check if tag is from master branch - more reliable method
+        IS_MASTER="false"
+        if git merge-base --is-ancestor HEAD origin/master 2>/dev/null; then
+          # Tag is an ancestor of master
+          BRANCH=$(git branch -r --contains HEAD | grep -E 'origin/master$' | head -n1)
+          if [ -n "$BRANCH" ]; then
+            IS_MASTER="true"
+            echo "Tag is from master branch - will push 'latest' tag"
+          fi
+        fi
+
+        if [ "$IS_MASTER" = "false" ]; then
           echo "Tag is NOT from master branch - will NOT push 'latest' tag"
         fi
 
+        echo "push_latest=${IS_MASTER}" >> $GITHUB_OUTPUT
         echo "Building version: ${VERSION_STRING}"
 
     - name: Create version.json
@@ -85,8 +91,8 @@ jobs:
         target: api
         tags: |
           ${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.tag }}
-          ${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.minor }}
-          ${{ steps.version.outputs.is_master == 'true' && format('{0}-api:latest', env.IMAGE_NAME) || '' }}
+          ${{ steps.version.outputs.push_latest == 'true' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || format('{0}-api:skip-minor-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
+          ${{ steps.version.outputs.push_latest == 'true' && format('{0}-api:latest', env.IMAGE_NAME) || format('{0}-api:skip-latest-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
 
     - name: Build and push Core image
       uses: docker/build-push-action@v5
@@ -97,8 +103,8 @@ jobs:
         target: core
         tags: |
           ${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.tag }}
-          ${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.minor }}
-          ${{ steps.version.outputs.is_master == 'true' && format('{0}-core:latest', env.IMAGE_NAME) || '' }}
+          ${{ steps.version.outputs.push_latest == 'true' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || format('{0}-core:skip-minor-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
+          ${{ steps.version.outputs.push_latest == 'true' && format('{0}-core:latest', env.IMAGE_NAME) || format('{0}-core:skip-latest-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
@@ -110,15 +116,14 @@ jobs:
           ## Docker Images Built
 
           ### API Image
-          - `${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.tag }}`
-          - `${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.minor }}`${{ steps.version.outputs.is_master == 'true' && format('\n          - `{0}-api:latest`', env.IMAGE_NAME) || '' }}
+          - `${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.tag }}`${{ steps.version.outputs.push_latest == 'true' && format('\n          - `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}${{ steps.version.outputs.push_latest == 'true' && format('\n          - `{0}-api:latest`', env.IMAGE_NAME) || '' }}
 
           ### Core Image
-          - `${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.tag }}`
-          - `${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.minor }}`${{ steps.version.outputs.is_master == 'true' && format('\n          - `{0}-core:latest`', env.IMAGE_NAME) || '' }}
+          - `${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.tag }}`${{ steps.version.outputs.push_latest == 'true' && format('\n          - `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}${{ steps.version.outputs.push_latest == 'true' && format('\n          - `{0}-core:latest`', env.IMAGE_NAME) || '' }}
 
           **Version:** `${{ steps.version.outputs.version_string }}`
           **Git Revision:** `${{ steps.version.outputs.rev }}`
+          ${{ steps.version.outputs.push_latest != 'true' && '**Note:** This release is from a non-master branch. Minor version and latest tags were not created.' || '' }}
 
           ## What's Changed
 
