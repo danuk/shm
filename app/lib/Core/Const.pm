@@ -33,6 +33,9 @@ our @EXPORT = qw(
     TASK_DELAYED
     TASK_STUCK
     TASK_PAUSED
+
+    GROUP_ID_LOCAL
+    GROUP_ID_MAIL
 );
 
 use constant {
@@ -78,6 +81,11 @@ use constant {
     TASK_DELAYED => 'DELAYED',
     TASK_STUCK => 'STUCK',
     TASK_PAUSED => 'PAUSED',
+};
+
+use constant {
+    GROUP_ID_LOCAL => 1,
+    GROUP_ID_MAIL => 2,
 };
 
 1;

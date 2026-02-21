@@ -435,18 +435,188 @@ sub passwd_reset_request {
     }
 
     if ( $user ) {
-        switch_user( $user->{user_id} );
         $self = $self->id( $user->{user_id} );
 
         if ( $self->is_blocked ) {
             return { msg => 'User is blocked' };
         }
 
-        $self->make_event( 'user_password_reset' );
+        my $config = get_service('config');
+        my $use_for_reset_password = $config->data_by_name('cli')->{use_for_reset_password};
+
+        if ( $use_for_reset_password ) {
+            my $token = passgen( 35 );
+            my $expires = time() + 3600;
+
+            $self->user->set_settings({
+                reset_password_verify_token => $token,
+                reset_password_verify_expires => $expires,
+            });
+
+            my $project_name = $config->data_by_name('company')->{name} || 'SHM';
+            my $subject = "$project_name - Сброс пароля";
+            my $url = $config->data_by_name('cli')->{url};
+            my $link = $url ? "$url?token=$token" : undef;
+            my $message = "Ваша ссылка для сброса пароля: $link\n\nСсылка действительна в течение часа.";
+
+            $self->srv('spool')->add(
+                event => {
+                    title => 'send verify code',
+                    name => 'SYSTEM',
+                    server_gid => GROUP_ID_MAIL,
+                },
+                settings => {
+                    to => $args{email},
+                    subject => $subject,
+                    message => $message,
+                },
+            );
+        } else {
+            $self->make_event( 'user_password_reset' );
+        }
+
         return { msg => 'Successful' };
     }
 
     return { msg => 'User not found' };
+}
+
+sub passwd_reset_verify {
+    my $self = shift;
+    my %args = (
+        token => undef,
+        password => undef,
+        @_,
+    );
+
+    my $token = $args{token};
+
+    my ( $user ) = $self->_list(
+        where => {
+            sprintf('%s->>"$.%s"', 'settings', 'reset_password_verify_token') => $token,
+        },
+        limit => 1,
+    );
+
+    unless ( $user ) {
+        return { msg => 'Invalid token' };
+    }
+
+    $self = $self->id( $user->{user_id} );
+
+    my $settings = $self->get_settings;
+    unless ( $settings->{reset_password_verify_token} && $settings->{reset_password_verify_token} eq $token ) {
+        return { msg => 'Invalid token' };
+    }
+
+    if ( $settings->{reset_password_verify_expires} && $settings->{reset_password_verify_expires} < time() ) {
+        return { msg => 'Token expired' };
+    }
+
+    unless ( $args{password} ) {
+        return { msg => 'Successful' };
+    }
+
+    delete $settings->{reset_password_verify_token};
+    delete $settings->{reset_password_verify_expires};
+    $self->set( settings => $settings );
+
+    $self->passwd( password => $args{password} );
+
+    return { msg => 'Password reset successful' };
+}
+
+sub set_email {
+    my $self = shift;
+    my %args = (
+        email => undef,
+        @_,
+    );
+
+    unless ( is_email($args{email}) ) {
+        return { msg => 'is not email' };
+    }
+
+    my $current_email = $self->user->emails;
+    if ( $current_email && $current_email eq $args{email} ) {
+        return { msg => 'Successful' };
+    }
+
+    $self->user->set_settings({
+        email_verified => 0,
+        email => $args{email},
+    });
+
+    return { msg => 'Successful' };
+}
+
+sub verify_email {
+    my $self = shift;
+    my %args = (
+        email => undef,
+        code => undef,
+        @_,
+    );
+
+    if ( $args{email} ) {
+        unless ( is_email($args{email}) ) {
+            return { msg => 'is not email' };
+        }
+
+        my $current_email = $self->user->emails;
+        unless ( $current_email && $args{email} eq $current_email ) {
+            return { msg => 'Email mismatch. Use the email shown in your profile.' };
+        }
+
+        my $code = sprintf("%06d", int(rand(1000000)));
+        my $expires = time() + 600;
+
+        $self->user->set_settings({
+            email_verify_code => $code,
+            email_verify_expires => $expires,
+        });
+
+        my $project_name = get_service('config')->data_by_name('company')->{name} || 'SHM';
+        my $subject = "$project_name - Код подтверждения email";
+        my $message = "Ваш код подтверждения: $code\n\nКод действителен 10 минут.";
+
+        $self->srv('spool')->add(
+            event => {
+                title => 'send verify code',
+                name => 'SYSTEM',
+                server_gid => GROUP_ID_MAIL,
+            },
+            settings => {
+                to => $args{email},
+                subject => $subject,
+                message => $message,
+            },
+        );
+
+        return { msg => 'Verification code sent' };
+    }
+
+    if ( $args{code} ) {
+        my $settings = $self->get_settings;
+
+        unless ( $args{code} eq $settings->{email_verify_code} ) {
+            return { msg => 'Invalid code' };
+        }
+
+        if ( $settings->{email_verify_expires} && $settings->{email_verify_expires} < time() ) {
+            return { msg => 'Code expired' };
+        }
+
+        delete $settings->{email_verify_code};
+        delete $settings->{email_verify_expires};
+        $settings->{email_verified} = 1;
+
+        $self->set( settings => $settings );
+
+        return { msg => 'Email verified successfully' };
+    }
+
+    return { msg => 'Email or code required' };
 }
 
 sub is_blocked {
@@ -847,7 +1017,14 @@ sub list_for_api {
         $args{where}->{user_id} = $self->id;
     }
 
-    return $self->SUPER::list_for_api( %args );
+    my @result = $self->SUPER::list_for_api( %args );
+
+    for my $item (@result) {
+        $item->{email} = $self->id( $item->{user_id} )->emails || '';
+        $item->{email_verified} = $self->id( $item->{user_id} )->get_settings->{email_verified} || 0;
+    }
+
+    return @result;
 }
 
 sub _list {

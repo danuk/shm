@@ -80,4 +80,18 @@ sub get_servers {
     return undef;
 }
 
+sub delete {
+    my $self = shift;
+    my %args = (
+        group_id => undef,
+        @_,
+    );
+
+    if ( any { $args{group_id} == $_ } (GROUP_ID_MAIL, GROUP_ID_LOCAL) ) {
+        return undef;
+    }
+
+    return $self->SUPER::delete( @_ );
+}
+
 1;
