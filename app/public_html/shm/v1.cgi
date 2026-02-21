@@ -106,28 +106,48 @@ my $routes = {
         },
     },
 },
-'/user/password-auth/disable' => {
-    swagger => { tags => 'Пользователи' },
-    POST => {
-        controller => 'User',
-        method => 'api_disable_password_auth',
-        swagger => { summary => 'Отключить вход по паролю' },
-    },
-},
-'/user/password-auth/enable' => {
-    swagger => { tags => 'Пользователи' },
-    POST => {
-        controller => 'User',
-        method => 'api_enable_password_auth',
-        swagger => { summary => 'Включить вход по паролю' },
-    },
-},
-'/user/password-auth/status' => {
+'/user/password-auth' => {
     swagger => { tags => 'Пользователи' },
     GET => {
         controller => 'User',
         method => 'api_password_auth_status',
         swagger => { summary => 'Статус входа по паролю' },
+    },
+    POST => {
+        controller => 'User',
+        method => 'api_enable_password_auth',
+        swagger => { summary => 'Включить вход по паролю' },
+    },
+    DELETE => {
+        controller => 'User',
+        method => 'api_disable_password_auth',
+        swagger => { summary => 'Отключить вход по паролю' },
+    },
+},
+'/user/otp' => {
+    swagger => { tags => 'OTP' },
+    GET => {
+        controller => 'OTP',
+        method => 'api_status',
+        swagger => { summary => 'Статус OTP' },
+    },
+    POST => {
+        controller => 'OTP',
+        method => 'api_verify',
+        required => ['token'],
+        swagger => { summary => 'Проверка OTP' },
+    },
+    PUT => {
+        controller => 'OTP',
+        method => 'api_enable',
+        required => ['token'],
+        swagger => { summary => 'Включение OTP' },
+    },
+    DELETE => {
+        controller => 'OTP',
+        method => 'api_disable',
+        required => ['token'],
+        swagger => { summary => 'Отключение OTP' },
     },
 },
 '/user/otp/setup' => {
@@ -165,50 +185,13 @@ my $routes = {
         },
     },
 },
-'/user/otp/enable' => {
-    swagger => { tags => 'OTP' },
-    POST => {
-        controller => 'OTP',
-        method => 'api_enable',
-        required => ['token'],
-        swagger => { summary => 'Включение OTP' },
-    },
-},
-'/user/otp/disable' => {
-    swagger => { tags => 'OTP' },
-    POST => {
-        controller => 'OTP',
-        method => 'api_disable',
-        required => ['token'],
-        swagger => { summary => 'Отключение OTP' },
-    },
-},
-'/user/otp/verify' => {
-    swagger => { tags => 'OTP' },
-    POST => {
-        controller => 'OTP',
-        method => 'api_verify',
-        required => ['token'],
-        swagger => { summary => 'Проверка OTP' },
-    },
-},
-'/user/otp/status' => {
-    swagger => { tags => 'OTP' },
+'/user/passkey/register' => {
+    swagger => { tags => 'Passkey Регистрация' },
     GET => {
-        controller => 'OTP',
-        method => 'api_status',
-    },
-},
-'/user/passkey/register/options' => {
-    swagger => { tags => 'Passkey' },
-    POST => {
         controller => 'Passkey',
         method => 'api_register_options',
         swagger => { summary => 'Получить параметры регистрации Passkey' },
     },
-},
-'/user/passkey/register/complete' => {
-    swagger => { tags => 'Passkey' },
     POST => {
         controller => 'Passkey',
         method => 'api_register_complete',
@@ -216,52 +199,34 @@ my $routes = {
         swagger => { summary => 'Завершить регистрацию Passkey' },
     },
 },
-'/user/passkey/list' => {
-    swagger => { tags => 'Passkey' },
+'/user/passkey' => {
+    swagger => { tags => 'Passkey Настройки' },
     GET => {
         controller => 'Passkey',
         method => 'api_list',
         swagger => { summary => 'Список зарегистрированных Passkey' },
     },
-},
-'/user/passkey/delete' => {
-    swagger => { tags => 'Passkey' },
     POST => {
+        controller => 'Passkey',
+        method => 'api_rename',
+        required => ['credential_id', 'name'],
+        swagger => { summary => 'Переименовать зарегистрированный Passkey по идентификатору' },
+    },
+    DELETE => {
         controller => 'Passkey',
         method => 'api_delete',
         required => ['credential_id'],
         swagger => { summary => 'Удалить зарегистрированный Passkey по идентификатору' },
     },
 },
-'/user/passkey/rename' => {
-    swagger => { tags => 'Passkey' },
-    POST => {
-        controller => 'Passkey',
-        method => 'api_rename',
-        required => ['credential_id', 'name'],
-        swagger => { summary => 'Переименовать зарегистрированный Passkey' },
-    },
-},
-'/user/passkey/status' => {
-    swagger => { tags => 'Passkey' },
+'/user/auth/passkey' => {
+    swagger => { tags => 'Passkey Аутентификация' },
     GET => {
-        controller => 'Passkey',
-        method => 'api_status',
-        swagger => { summary => 'Статус Passkey' },
-    },
-},
-# Public passkey auth
-'/user/passkey/auth/options/public' => {
-    swagger => { tags => 'Passkey' },
-    POST => {
         controller => 'Passkey',
         method => 'api_auth_options_public',
         skip_check_auth => 1,
         swagger => { summary => 'Получить параметры публичной аутентификации Passkey' },
     },
-},
-'/user/passkey/auth/public' => {
-    swagger => { tags => 'Passkey' },
     POST => {
         controller => 'Passkey',
         method => 'api_auth_public',
@@ -270,6 +235,108 @@ my $routes = {
         swagger => { summary => 'Аутентификация пользователя с помощью Passkey' },
     },
 },
+# ниже роуты для удаления после реализации в админке
+'/user/password-auth/disable' => {
+    POST => {
+        controller => 'User',
+        method => 'api_disable_password_auth',
+    },
+},
+'/user/password-auth/enable' => {
+    POST => {
+        controller => 'User',
+        method => 'api_enable_password_auth',
+    },
+},
+'/user/password-auth/status' => {
+    GET => {
+        controller => 'User',
+        method => 'api_password_auth_status',
+    },
+},
+'/user/otp/enable' => {
+    POST => {
+        controller => 'OTP',
+        method => 'api_enable',
+        required => ['token'],
+    },
+},
+'/user/otp/disable' => {
+    POST => {
+        controller => 'OTP',
+        method => 'api_disable',
+        required => ['token'],
+    },
+},
+'/user/otp/verify' => {
+    POST => {
+        controller => 'OTP',
+        method => 'api_verify',
+        required => ['token'],
+    },
+},
+'/user/otp/status' => {
+    GET => {
+        controller => 'OTP',
+        method => 'api_status',
+    },
+},
+'/user/passkey/register/options' => {
+    POST => {
+        controller => 'Passkey',
+        method => 'api_register_options',
+    },
+},
+'/user/passkey/register/complete' => {
+    POST => {
+        controller => 'Passkey',
+        method => 'api_register_complete',
+        required => ['credential_id', 'response'],
+    },
+},
+'/user/passkey/list' => {
+    GET => {
+        controller => 'Passkey',
+        method => 'api_list',
+    },
+},
+'/user/passkey/delete' => {
+    POST => {
+        controller => 'Passkey',
+        method => 'api_delete',
+        required => ['credential_id'],
+    },
+},
+'/user/passkey/rename' => {
+    POST => {
+        controller => 'Passkey',
+        method => 'api_rename',
+        required => ['credential_id', 'name'],
+    },
+},
+'/user/passkey/status' => {
+    GET => {
+        controller => 'Passkey',
+        method => 'api_status',
+    },
+},
+# Public passkey auth
+'/user/passkey/auth/options/public' => {
+    POST => {
+        controller => 'Passkey',
+        method => 'api_auth_options_public',
+        skip_check_auth => 1,
+    },
+},
+'/user/passkey/auth/public' => {
+    POST => {
+        controller => 'Passkey',
+        method => 'api_auth_public',
+        skip_check_auth => 1,
+        required => ['credential_id', 'response'],
+    },
+},
+# выше роуты для удаления после реализации в админке
 '/user/passwd' => {
     swagger => { tags => 'Пользователи' },
     POST => {

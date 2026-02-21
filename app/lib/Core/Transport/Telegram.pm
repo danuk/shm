@@ -1322,7 +1322,7 @@ sub web_auth {
     use Digest::SHA qw(sha256 hmac_sha256_hex);
     my $secret_key = sha256( $token );
 
-    my $hex = hmac_sha256_hex($data_check_string, $secret_key);
+    my $hex = hmac_sha256_hex(encode_utf8($data_check_string), $secret_key);
 
     unless ($hex eq $hash) {
         report->error('Telegram WebApp auth error');
