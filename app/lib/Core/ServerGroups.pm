@@ -87,8 +87,8 @@ sub delete {
         @_,
     );
 
-    if ( $args{group_id} == 1 || $args{group_id} == 2 ) {
-        return "1";
+    if ( any { $args{group_id} == $_ } (GROUP_ID_MAIL, GROUP_ID_LOCAL) ) {
+        return undef;
     }
 
     return $self->SUPER::delete( @_ );

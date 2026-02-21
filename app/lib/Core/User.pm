@@ -463,7 +463,7 @@ sub passwd_reset_request {
                 event => {
                     title => 'send verify code',
                     name => 'SYSTEM',
-                    server_gid => 2,
+                    server_gid => GROUP_ID_MAIL,
                 },
                 settings => {
                     to => $args{email},
