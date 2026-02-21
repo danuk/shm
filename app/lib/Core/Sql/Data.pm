@@ -550,6 +550,7 @@ sub _delete {
     clean_query_args( $self, \%args, { is_update => 1 } ) if $args{check_args};
 
     my $sql = SQL::Abstract->new;
+    quote_where_keys( $args{where} );
     my ( $where, @bind ) = $sql->where( $args{where} );
 
     return $self->do("DELETE FROM $table $where", @bind );

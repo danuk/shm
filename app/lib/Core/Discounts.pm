@@ -34,7 +34,7 @@ sub get_by_period {
         @_,
     };
 
-    die 'Months required' unless defined $args->{months};
+    return 0 unless $args->{months};
 
     my @ret = $self->list(
         range => { field => 'months', stop => $args->{months} },
