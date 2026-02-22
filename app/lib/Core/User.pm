@@ -1006,6 +1006,15 @@ sub make_autopayment {
         );
 
         if ( $response->is_success ) {
+            $self->set_settings(
+                autopayment => {
+                    last_payment => {
+                        ps_name => $name,
+                        date => now(),
+                        amount => $amount,
+                    },
+                },
+            );
             return 1;
         }
     }
