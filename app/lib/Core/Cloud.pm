@@ -67,7 +67,7 @@ sub cloud_request {
 
 sub config {
     my $self = shift;
-    return get_service('config', _id => '_shm');
+    return cfg('_shm');
 }
 
 sub get_auth_basic {

@@ -342,7 +342,7 @@ sub _add_or_set {
     }
 
     if ( $method eq 'add' ) {
-        if ( my $defaults = get_service('config')->data_by_name('defaults')->{ lc $self->kind } ) {
+        if ( my $defaults = cfg('defaults')->{ lc $self->kind } ) {
             %args = %{ hash_merge( $defaults, \%args ) };
         }
     }
@@ -562,7 +562,7 @@ sub cloud_headers {
 
     return {
         SHM_INFO_CNT => $self->user->active_count,
-        SHM_INFO_VER => get_service('config')->id( '_shm' )->get_data->{'version'},
+        SHM_INFO_VER => cfg('_shm')->{'version'},
     }
 }
 

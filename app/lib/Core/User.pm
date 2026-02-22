@@ -489,7 +489,7 @@ sub reg_api_safe {
         @_,
     );
 
-    my $allow_user_register_api = get_service('config')->data_by_name('billing')->{allow_user_register_api} // 1;
+    my $allow_user_register_api = cfg('billing')->{allow_user_register_api} // 1;
     unless ( $allow_user_register_api ) {
         report->status( 403 );
         report->add_error("Registration of new users is prohibited");
@@ -675,7 +675,7 @@ sub payment {
 
     $self->make_event( 'payment', settings => { pay_id => $pay_id } );
 
-    my $srv_customlab_nalog = get_service('config')->id( 'pay_systems' )->get_data->{'srv_customlab_nalog'};
+    my $srv_customlab_nalog = cfg('pay_systems')->{'srv_customlab_nalog'};
     if ( $srv_customlab_nalog && $srv_customlab_nalog->{enabled} ) {
         $self->make_event( 'receipt', settings => { pay_id => $pay_id } ) if $args{money} && $args{money} > 0;
     }
@@ -955,14 +955,13 @@ sub income_percent {
         return $p_settings->{income_percent} || 0;
     }
 
-    return get_service('config')->data_by_name('billing')->{partner}->{income_percent} || 0;
+    return cfg('billing')->{partner}->{income_percent} || 0;
 }
 
 sub list_autopayments {
     my $self = shift;
 
-    my $config = get_service('config', _id => 'pay_systems') or return {};
-    my $ps = $config->get_data || {};
+    my $ps = cfg('pay_systems') || return {};
     my $pay_systems = $self->get_settings->{pay_systems} || {};
 
     for ( keys %$pay_systems ) {
@@ -992,7 +991,7 @@ sub make_autopayment {
     for my $name ( keys %pay_systems ) {
         my $response = $transport->http(
             url => sprintf("%s/shm/pay_systems/%s.cgi",
-                get_service('config')->data_by_name('api')->{url},
+                cfg('api')->{url},
                 $name,
             ),
             method => 'post',
