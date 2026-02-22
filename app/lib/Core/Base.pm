@@ -22,6 +22,7 @@ $Data::Dumper::Deepcopy = 1;
 
 our @EXPORT = qw(
     get_service
+    cfg
     Dumper
     confess
     logger
@@ -601,6 +602,16 @@ sub attr {
     }
 
     return $self->{ $key };
+}
+
+sub cfg {
+    my $key = shift || return;
+
+    state $config ||= get_service('config');
+    my $obj = $config->id( $key ) || return {};
+
+    my $data = $obj->get_data || {};
+    return wantarray ? %{ $data } : $data;
 }
 
 1;
