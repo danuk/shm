@@ -12,6 +12,8 @@ use Core::Utils qw(
     get_cookies
     get_user_ip
     decode_json
+    add_date_time
+    hash_merge
 );
 use Core::Const;
 
@@ -980,7 +982,49 @@ sub make_autopayment {
     my $amount = shift;
 
     return undef unless $amount;
-    return undef if $self->get_settings->{deny_auto_payments};
+    return undef if $self->get_settings->{deny_auto_payments}; # old
+
+    my $auto_payments = hash_merge(
+        $self->get_settings->{auto_payments},
+        cfg('billing')->{auto_payments},
+    );
+
+    return undef unless $auto_payments->{enabled};
+    if ( my $max_amount = $auto_payments->{withdraw}->{max_amount} ) {
+        if ( $amount > $max_amount ) {
+            $self->logger->info("Пропускаем автоплатеж из-за ограничения максимальной суммы");
+            return 0;
+        }
+    }
+
+    if ( my $period = $auto_payments->{withdraw}->{period} ) {
+        if ( my $last_payment_date = $auto_payments->{last_payment}->{date} ) {
+            # Парсим period (1d, 1m, 1y)
+            my ($num, $unit) = $period =~ /^(\d+)([dmy])$/;
+
+            if ( $num && $unit ) {
+                # Вычисляем дату следующего платежа
+                my %add_args = (
+                    'd' => { day => $num },
+                    'm' => { month => $num },
+                    'y' => { year => $num },
+                );
+
+                my $next_payment_date = add_date_time(
+                    $last_payment_date,
+                    %{ $add_args{$unit} }
+                );
+
+                # Если сейчас раньше чем следующий платеж, выходим
+                if ( now() lt $next_payment_date ) {
+                    $self->logger->info("Пропускаем автоплатеж: следующий платеж разрешен после $next_payment_date");
+                    return 0;
+                }
+            } else {
+                $self->logger->warn("Неверный формат period: '$period' (ожидается: 1d, 1m, 1y)");
+            }
+        }
+    }
 
     my $session_id = $self->gen_session->{id};
     my $transport = get_service('Transport::Http');
@@ -1007,7 +1051,7 @@ sub make_autopayment {
 
         if ( $response->is_success ) {
             $self->set_settings(
-                autopayment => {
+                auto_payments => {
                     last_payment => {
                         ps_name => $name,
                         date => now(),
