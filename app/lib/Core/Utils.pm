@@ -26,6 +26,7 @@ our @EXPORT_OK = qw(
     parse_period
     sum_period
     add_date_time
+    add_period
     start_of_month
     start_of_day
     end_of_month
@@ -148,6 +149,28 @@ sub add_date_time {
     );
 
     return sprintf("%d-%.2d-%.2d %.2d:%.2d:%.2d", @ret[0..5] );
+}
+
+sub add_period {
+    my $date = shift || return;
+    my $period = shift || return;
+
+    # Парсим period (1d, 1m, 1y, 1H, 1M)
+    my ($num, $unit) = $period =~ /^(\d+)([dmyHM])$/;
+    return $date unless $num && $unit;
+
+    my %add_args = (
+        'd' => { day => $num },
+        'm' => { month => $num },
+        'y' => { year => $num },
+        'H' => { hour => $num },
+        'M' => { min => $num },
+    );
+
+    return add_date_time(
+        $date,
+        %{ $add_args{$unit} }
+    );
 }
 
 sub start_of_month {
