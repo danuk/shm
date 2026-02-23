@@ -14,6 +14,7 @@ use Core::Utils qw(
     decode_json
     add_date_time
     hash_merge
+    add_period
 );
 use Core::Const;
 
@@ -981,47 +982,40 @@ sub make_autopayment {
     my $self = shift;
     my $amount = shift;
 
-    return undef unless $amount;
-    return undef if $self->get_settings->{deny_auto_payments}; # old
+    unless ( $amount ) {
+        $self->logger->info("Пропускаем автоплатеж: отсутствует сумма");
+        return 0;
+    }
+
+    if ( $self->get_settings->{deny_auto_payments} ) {
+        $self->logger->info("Пропускаем автоплатеж: самозапрета (легаси вариант)");
+        return 0;
+    }
 
     my $auto_payments = hash_merge(
         $self->get_settings->{auto_payments},
         cfg('billing')->{auto_payments},
     );
 
-    return undef unless $auto_payments->{enabled};
+    unless ($auto_payments->{enabled}) {
+        $self->logger->info("Пропускаем автоплатеж: отключены в конфиге");
+        return 0;
+    }
+
     if ( my $max_amount = $auto_payments->{withdraw}->{max_amount} ) {
         if ( $amount > $max_amount ) {
-            $self->logger->info("Пропускаем автоплатеж из-за ограничения максимальной суммы");
+            $self->logger->info("Пропускаем автоплатеж: ограничение максимальной суммы");
             return 0;
         }
     }
 
     if ( my $period = $auto_payments->{withdraw}->{period} ) {
         if ( my $last_payment_date = $auto_payments->{last_payment}->{date} ) {
-            # Парсим period (1d, 1m, 1y)
-            my ($num, $unit) = $period =~ /^(\d+)([dmy])$/;
-
-            if ( $num && $unit ) {
-                # Вычисляем дату следующего платежа
-                my %add_args = (
-                    'd' => { day => $num },
-                    'm' => { month => $num },
-                    'y' => { year => $num },
-                );
-
-                my $next_payment_date = add_date_time(
-                    $last_payment_date,
-                    %{ $add_args{$unit} }
-                );
-
-                # Если сейчас раньше чем следующий платеж, выходим
-                if ( now() lt $next_payment_date ) {
-                    $self->logger->info("Пропускаем автоплатеж: следующий платеж разрешен после $next_payment_date");
-                    return 0;
-                }
-            } else {
-                $self->logger->warn("Неверный формат period: '$period' (ожидается: 1d, 1m, 1y)");
+            my $next_payment_date = add_period( $last_payment_date, $period );
+            # Если сейчас раньше чем следующий платеж, выходим
+            if ( now() lt $next_payment_date ) {
+                $self->logger->info("Пропускаем автоплатеж: следующий платеж разрешен после $next_payment_date");
+                return 0;
             }
         }
     }
@@ -1030,7 +1024,10 @@ sub make_autopayment {
     my $transport = get_service('Transport::Http');
 
     my %pay_systems = %{ $self->list_autopayments };
-    return undef unless %pay_systems;
+    unless (%pay_systems) {
+        $self->logger->info("Пропускаем автоплатеж: нет доступных платежных систем");
+        return undef;
+    }
 
     for my $name ( keys %pay_systems ) {
         my $response = $transport->http(
@@ -1050,7 +1047,7 @@ sub make_autopayment {
         );
 
         if ( $response->is_success ) {
-            $self->set_settings(
+            $self->set_settings({
                 auto_payments => {
                     last_payment => {
                         ps_name => $name,
@@ -1058,10 +1055,12 @@ sub make_autopayment {
                         amount => $amount,
                     },
                 },
-            );
+            });
+            $self->logger->info("Автоплатеж успешно совершен");
             return 1;
         }
     }
+    $self->logger->info("Автоплатеж не прошел");
     return 0;
 }
 
