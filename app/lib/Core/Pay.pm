@@ -261,8 +261,7 @@ sub paysystems {
     my @ps;
     my %recurring;
 
-    my $config = get_service("config", _id => 'pay_systems');
-    my %list = %{ $config ? $config->get_data : {} };
+    my %list = cfg('pay_systems');
     for ( keys %list ) {
         push @ps, { $_ => $list{ $_ } };
         $recurring{ $_ } = 1 if $list{ $_ }->{allow_recurring};
