@@ -353,6 +353,34 @@ my $routes = {
         skip_check_auth => 1,
     },
 },
+'/user/passwd/reset/verify' => {
+    GET => {
+        controller => 'User',
+        method => 'passwd_reset_verify',
+        required => ['token'],
+        skip_check_auth => 1,
+    },
+    POST => {
+        controller => 'User',
+        method => 'passwd_reset_verify',
+        required => ['password', 'token'],
+        skip_check_auth => 1,
+    },
+},
+'/user/email/set' => {
+    PUT => {
+        controller => 'User',
+        method => 'set_email',
+        required => ['email'],
+    },
+},
+'/user/email/verify' => {
+    POST => {
+        controller => 'User',
+        method => 'verify_email',
+        optional => ['email', 'code'],
+    },
+},
 '/user/service' => {
     swagger => { tags => 'Услуги пользователей' },
     GET => {
