@@ -3,6 +3,7 @@ package Core::ServerGroups;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Core::Const;
 
 sub table { return 'servers_groups' };
 
