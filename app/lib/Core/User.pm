@@ -293,6 +293,8 @@ sub auth_api_safe {
 
     my $session_id = $user->gen_session->{id};
 
+    $user->set( last_login => now );
+
     return {
         id => $session_id,
     };
