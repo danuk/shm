@@ -555,7 +555,10 @@ sub set_email {
 
 sub get_email {
     my $self = shift;
-    return { email => $self->user->emails };
+    return {
+        email => $self->user->emails,
+        email_verified => $self->get_settings->{email_verified} // 0,
+    };
 }
 
 sub verify_email {
