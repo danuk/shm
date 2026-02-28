@@ -539,17 +539,23 @@ sub set_email {
         return { msg => 'is not email' };
     }
 
+    my $verified = 0;
     my $current_email = $self->user->emails;
     if ( $current_email && $current_email eq $args{email} ) {
-        return { msg => 'Successful' };
+        $verified = $self->get_settings->{email_verified} // 0;
     }
 
     $self->user->set_settings({
-        email_verified => 0,
+        email_verified => $verified,
         email => $args{email},
     });
 
     return { msg => 'Successful' };
+}
+
+sub get_email {
+    my $self = shift;
+    return { email => $self->user->emails };
 }
 
 sub verify_email {
@@ -619,6 +625,17 @@ sub verify_email {
     }
 
     return { msg => 'Email or code required' };
+}
+
+sub delete_email {
+    my $self = shift;
+
+    $self->user->set_settings({
+        email => undef,
+        email_verified => 0,
+    });
+
+    return { msg => 'Successful' };
 }
 
 sub is_blocked {
@@ -1019,14 +1036,7 @@ sub list_for_api {
         $args{where}->{user_id} = $self->id;
     }
 
-    my @result = $self->SUPER::list_for_api( %args );
-
-    for my $item (@result) {
-        $item->{email} = $self->id( $item->{user_id} )->emails || '';
-        $item->{email_verified} = $self->id( $item->{user_id} )->get_settings->{email_verified} || 0;
-    }
-
-    return @result;
+    return $self->SUPER::list_for_api( %args );
 }
 
 sub _list {

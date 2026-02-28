@@ -347,38 +347,63 @@ my $routes = {
     },
 },
 '/user/passwd/reset' => {
+    swagger => { tags => 'Пользователи' },
     POST => {
         controller => 'User',
         method => 'passwd_reset_request',
         skip_check_auth => 1,
+        swagger => { summary => 'Запрос на сброс пароля пользователя' },
     },
 },
 '/user/passwd/reset/verify' => {
+    swagger => { tags => 'Пользователи' },
     GET => {
         controller => 'User',
         method => 'passwd_reset_verify',
         required => ['token'],
         skip_check_auth => 1,
+        swagger => { summary => 'Проверка токена сброса пароля пользователя перед сменой пароля' },
     },
     POST => {
         controller => 'User',
         method => 'passwd_reset_verify',
         required => ['password', 'token'],
         skip_check_auth => 1,
+        swagger => { summary => 'Сменить пароль пользователя по токену сброса' },
     },
 },
-'/user/email/set' => {
+'/user/email' => {
+    swagger => { tags => 'Пользователи' },
     PUT => {
         controller => 'User',
         method => 'set_email',
         required => ['email'],
+        swagger => { summary => 'Установить email пользователя' },
     },
-},
-'/user/email/verify' => {
+    GET => {
+        controller => 'User',
+        method => 'get_email',
+        swagger => { summary => 'Получить email пользователя' },
+    },
     POST => {
         controller => 'User',
         method => 'verify_email',
         optional => ['email', 'code'],
+        swagger => { summary => 'Верификацировать email пользователя' },
+    },
+    DELETE => {
+        controller => 'User',
+        method => 'delete_email',
+        swagger => { summary => 'Удалить email пользователя' },
+    },
+},
+'/user/email/verify' => {
+    swagger => { tags => 'Пользователи' },
+    POST => {
+        controller => 'User',
+        method => 'verify_email',
+        optional => ['email', 'code'],
+        swagger => { summary => 'Верификация email пользователя' },
     },
 },
 '/user/service' => {
