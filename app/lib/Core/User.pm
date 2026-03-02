@@ -1020,12 +1020,14 @@ sub list_for_api {
         $args{where}->{user_id} = $self->id;
     }
 
+    $args{fields} = join(',',
+        "*",
+        "settings->>'\$.email' AS email",
+        "settings->>'\$.email_verified' AS email_verified",
+    );
+
     my @result = $self->SUPER::list_for_api( %args );
 
-    for my $item (@result) {
-        $item->{email} = $self->id( $item->{user_id} )->emails || '';
-        $item->{email_verified} = $self->id( $item->{user_id} )->get_settings->{email_verified} || 0;
-    }
 
     return @result;
 }
