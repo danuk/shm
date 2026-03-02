@@ -23,4 +23,8 @@ sub unregister {
     return $SERVICE_MANAGER->unregister_service(shift);
 }
 
+sub unregister_child {
+    return $SERVICE_MANAGER->unregister_child(shift);
+}
+
 1;

@@ -712,7 +712,7 @@ sub finish {
     my $self = shift;
     my %args = (
         money_back => 1,
-        @_,
+        get_smart_args( @_ ),
     );
 
     return 0 if $self->get_status ne STATUS_ACTIVE;

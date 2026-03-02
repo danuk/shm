@@ -1,18 +1,15 @@
 use v5.14;
-
 use Test::More;
 use Data::Dumper;
+use Core::System::ServiceManager qw( get_service );
 
 $ENV{SHM_TEST} = 1;
-
-use Core::System::ServiceManager qw( get_service );
-use SHM;
+$ENV{DEBUG} = 'ERROR';
 
 my $report = get_service('report');
 
 $report->add_error('my big error');
 is_deeply scalar $report->errors, ['my big error'], 'Check for one recors';
-
 is_deeply scalar $report->errors, [], 'Check for empty records';
 
 $report->add_error('first error');

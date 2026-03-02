@@ -21,7 +21,7 @@ use Core::Utils qw(
 use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
 
-my $routes = {
+state $routes //= {
 '/test' => {
     GET => {
         controller => 'Test',
@@ -1429,7 +1429,7 @@ $routes->{'/swagger_admin.json'} = {
     },
 };
 
-my $router = Router::Simple->new();
+state $router //= Router::Simple->new();
 for my $uri ( keys %{ $routes } ) {
     for my $method ( 'GET','POST','PUT','DELETE' ) {
         next unless $routes->{$uri}->{$method};
@@ -1512,6 +1512,9 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         print_json( { status => 500, error => 'Method not exists'} );
     }
 
+    our $last_cache_reset //= time();
+    our $cache_reset_interval //= 10;
+
     if ( my $cache = get_service('Core::System::Cache') ) {
         my $ip = get_user_ip();
         my $tag = lc sprintf("%s-%s-%s", ref $service, $method, $ip);
@@ -1520,6 +1523,24 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
             print_header( status => 429 );
             print_json( { status => 429, error => '429 Too Many Requests', ip => $ip } );
             exit 0;
+        }
+
+        # Cache reset operations with rate limiting (max 1 per 10 seconds per worker)
+        my $now = time();
+        if ($now - $last_cache_reset >= $cache_reset_interval) {
+            my %resets = $cache->redis->hgetall('SHM:Cache:Reset');
+            for my $item ( keys %resets ) {
+                my $reset_ts = $resets{$item};
+                next if $reset_ts < $last_cache_reset;
+                my $reset_service = get_service( $item ) || next;
+                $reset_service->unregister_child();
+                Core::System::ServiceManager::setup() if $item eq 'Core::Config';
+                get_service('logger')->info("Worker PID=$$ Reset cache for $item");
+            }
+
+            # Always update last check time after interval passes
+            # Set -1 sec to prevent race conditions
+            $last_cache_reset = $now - 1;
         }
     }
 
@@ -1664,7 +1685,6 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     } else {
         $user->commit();
     }
-    $user->dbh->disconnect();
 } else {
     print_header( status => 404 );
     print_json( { status => 404, error => 'Method not found'} );
@@ -1689,4 +1709,4 @@ sub get_service_id {
     return $service_id;
 }
 
-exit 0;
+# exit 0;

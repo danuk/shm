@@ -22,6 +22,7 @@ $Data::Dumper::Deepcopy = 1;
 
 our @EXPORT = qw(
     get_service
+    cfg
     Dumper
     confess
     logger
@@ -317,6 +318,15 @@ sub set_settings {
     return $self->set_json('settings', $new_data );
 }
 
+sub reset_cache {
+    my $self = shift;
+
+    if ( my $cache = $self->cache ) {
+        # Сигнализируем воркерам о необходимости сброса кеша
+        $cache->redis->hset('SHM:Cache:Reset', ref $self, time );
+    }
+}
+
 # Пробуем получить уже загруженные данные
 # Проверяем статус операции и обновляем res
 sub _add_or_set {
@@ -332,7 +342,7 @@ sub _add_or_set {
     }
 
     if ( $method eq 'add' ) {
-        if ( my $defaults = get_service('config')->data_by_name('defaults')->{ lc $self->kind } ) {
+        if ( my $defaults = cfg('defaults')->{ lc $self->kind } ) {
             %args = %{ hash_merge( $defaults, \%args ) };
         }
     }
@@ -347,7 +357,13 @@ sub _add_or_set {
         }
     }
 
-    my $ret = $method eq 'add' ? $self->SUPER::add( %super_args ) : $self->SUPER::set( %super_args );
+    my $ret;
+    if ( $method eq 'add' ) {
+        $ret = $self->SUPER::add( %super_args )
+    } elsif ( $method eq 'set' ) {
+        $ret = $self->SUPER::set( %super_args );
+        $self->reset_cache();
+    }
 
     if ( defined $ret && %{ $self->res } ) {
         for ( keys %args ) {
@@ -546,7 +562,7 @@ sub cloud_headers {
 
     return {
         SHM_INFO_CNT => $self->user->active_count,
-        SHM_INFO_VER => get_service('config')->id( '_shm' )->get_data->{'version'},
+        SHM_INFO_VER => cfg('_shm')->{'version'},
     }
 }
 
@@ -586,6 +602,16 @@ sub attr {
     }
 
     return $self->{ $key };
+}
+
+sub cfg {
+    my $key = shift || return;
+
+    state $config ||= get_service('config');
+    my $obj = $config->id( $key ) || return {};
+
+    my $data = $obj->get_data || {};
+    return wantarray ? %{ $data } : $data;
 }
 
 1;

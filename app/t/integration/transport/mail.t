@@ -26,8 +26,6 @@ my $ret = $mail->send_mail(
     message => 'example message',
 );
 
-is 1,1;
-
 is( is_email('test@server.ru'), 'test@server.ru' );
 is( is_email('server.ru'), undef );
 is( is_email('<test>test@server.ru'), undef );

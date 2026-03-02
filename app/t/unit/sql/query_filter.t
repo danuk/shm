@@ -1,88 +1,8 @@
 use v5.14;
 use utf8;
 
-use SHM;
 use Test::More;
 use Test::Deep;
-use Core::Sql::Data qw/query_for_filtering/;
-use Core::System::ServiceManager qw( get_service );
-use Data::Dumper;
-
-my $user = SHM->new( user_id => 40092 );
-
-cmp_deeply (
-    $user->query_for_filtering(
-        user_id => 40092,
-        full_name => "%hello%",
-        alien => 'strange',
-    ),
-    {
-        'user_id' => 40092,
-        'full_name' => {
-            '-like' => '%hello%'
-        }
-    },
-);
-
-cmp_deeply (
-    $user->query_for_filtering(
-        user_id => 40092,
-        full_name => { -not_like => "%hello%" },
-    ),
-    {
-        'user_id' => 40092,
-        'full_name' => {
-            '-not_like' => '%hello%'
-        }
-    },
-);
-
-cmp_deeply (
-    $user->query_for_filtering(
-        user_id => 40092,
-        settings => 'a.b',
-    ),
-    {
-        user_id => 40092,
-        q/JSON_EXTRACT(settings, '$.a.b')/ => { '!=', undef },
-    },
-    'Check exits a->b in settings'
-);
-
-cmp_deeply (
-    $user->query_for_filtering(
-        user_id => 40092,
-        settings => '!a.b',
-    ),
-    {
-        user_id => 40092,
-        q/JSON_EXTRACT(settings, '$.a.b')/ => { '=', undef },
-    },
-    'Check non exits a->b in settings'
-);
-
-cmp_deeply (
-    $user->query_for_filtering(
-        user_id => 40092,
-        settings => { 'a.b' => 1, 'c' => { '>', 2 } },
-    ),
-    {
-        user_id => 40092,
-        q/settings->>'$.a.b'/ => 1,
-        q/settings->>'$.c'/ => { '>', 2 },
-    },
-    'Check values for a->b and c in settings'
-);
-
-cmp_deeply (
-    $user->query_for_filtering(
-        alien => 'strange',
-    ),
-    {},
-);
-
-# Тесты для prepare_query_for_filtering с новыми специальными значениями
-
 use Core::Sql::Data qw/prepare_query_for_filtering/;
 
 subtest 'prepare_query_for_filtering - isEmpty' => sub {
@@ -268,28 +188,24 @@ subtest 'prepare_query_for_filtering - mixed values' => sub {
 };
 
 subtest 'prepare_query_for_filtering - edge cases' => sub {
-    # Пустой хеш
     cmp_deeply(
         prepare_query_for_filtering({}),
         {},
         'Empty hash returns empty hash'
     );
 
-    # Не хеш
     cmp_deeply(
         prepare_query_for_filtering('not a hash'),
         {},
         'Non-hash input returns empty hash'
     );
 
-    # undef
     cmp_deeply(
         prepare_query_for_filtering(undef),
         {},
         'undef input returns empty hash'
     );
 
-    # Неизвестное скалярное значение
     cmp_deeply(
         prepare_query_for_filtering({
             field => \'unknown_value',
@@ -301,7 +217,6 @@ subtest 'prepare_query_for_filtering - edge cases' => sub {
     );
 };
 
-# Тесты для вложенных выражений в JSON полях
 subtest 'prepare_query_for_filtering - nested JSON expressions' => sub {
     cmp_deeply(
         prepare_query_for_filtering({
@@ -324,11 +239,9 @@ subtest 'prepare_query_for_filtering - nested JSON expressions' => sub {
     );
 };
 
-subtest 'query_for_filtering - nested JSON expressions integration' => sub {
-    # Создаем тестовый объект с JSON полем в структуре
+subtest 'query_for_filtering - nested JSON expressions with mock' => sub {
     my $test_obj = bless {}, 'TestJSONClass';
 
-    # Мокаем методы
     no warnings 'redefine';
     local *TestJSONClass::can = sub {
         my ($self, $method) = @_;
@@ -342,10 +255,8 @@ subtest 'query_for_filtering - nested JSON expressions integration' => sub {
         };
     };
 
-    # Наследуем query_for_filtering от Core::Sql::Data
     @TestJSONClass::ISA = ('Core::Sql::Data');
 
-    # Тестируем обработку вложенных выражений в JSON
     my $result = $test_obj->query_for_filtering(
         user_id => 123,
         settings => {
@@ -360,85 +271,21 @@ subtest 'query_for_filtering - nested JSON expressions integration' => sub {
         }
     );
 
-    # Проверяем результат
     is($result->{user_id}, 123, 'Regular field passed through');
-
-    # Проверяем JSON поля с операторами
     cmp_deeply($result->{"settings->>'\$.auto_backup'"}, { '!=' => '1' }, 'ne:1 converted correctly for JSON field');
     cmp_deeply($result->{"settings->>'\$.max_items'"}, { '>' => '10' }, 'gt:10 converted correctly for JSON field');
     cmp_deeply($result->{"settings->>'\$.priority'"}, { '<=' => '5' }, 'le:5 converted correctly for JSON field');
-
-    # Проверяем JSON поля с boolean значениями
     is($result->{"settings->>'\$.notifications'"}, 1, 'true converted to 1 for JSON field');
     is($result->{"settings->>'\$.enabled'"}, 0, 'false converted to 0 for JSON field');
-
-    # Проверяем обычные значения
     is($result->{"settings->>'\$.theme'"}, 'dark', 'Regular string value preserved for JSON field');
-
-    # Проверяем специальные функции
     cmp_deeply($result->{"settings->>'\$.api_key'"}, { '!=' => undef }, 'isNotNull converted correctly for JSON field');
-
-    # Проверяем COALESCE для isEmpty в JSON
     ok(exists $result->{"COALESCE(settings->>'\$.temp_data', '')"}, 'COALESCE field exists for isEmpty in JSON');
     is($result->{"COALESCE(settings->>'\$.temp_data', '')"}, '', 'isEmpty converted correctly for JSON field');
 };
 
-# Интеграционные тесты с query_for_filtering
-subtest 'Integration with query_for_filtering' => sub {
-    my $result = $user->query_for_filtering(
-        user_id => 40092,
-        full_name => \'isEmpty',
-        email => \'isNotEmpty',
-        role => \'null',
-        active => \'true',
-    );
-
-    # Проверяем, что user_id обязательно присутствует
-    is($result->{user_id}, 40092, 'user_id is preserved');
-
-    # Проверяем наличие COALESCE полей, если они есть в структуре
-    my $has_coalesce_fields = 0;
-    for my $key (keys %$result) {
-        if ($key =~ /^COALESCE\(/) {
-            $has_coalesce_fields = 1;
-            last;
-        }
-    }
-
-    # Если поля не прошли через фильтр структуры, это нормально
-    # Главное что prepare_query_for_filtering отработал корректно
-    ok(1, 'Integration test completed - fields filtered by structure as expected');
-
-    # Тестируем напрямую prepare_query_for_filtering
-    my $prepared = prepare_query_for_filtering({
-        user_id => 40092,
-        full_name => \'isEmpty',
-        email => \'isNotEmpty',
-        role => \'isNull',
-        manager_id => \'isNotNull',
-        active => \'true',
-    });
-
-    cmp_deeply(
-        $prepared,
-        {
-            user_id => 40092,
-            "--COALESCE(full_name, '')" => '',
-            "--COALESCE(email, '')" => { '!=' => '' },
-            role => undef,
-            manager_id => { '!=' => undef },
-            active => 1,
-        },
-        'prepare_query_for_filtering works correctly with all special values including isNull/isNotNull'
-    );
-};
-
-# Дополнительный тест для проверки обработки --COALESCE ключей в query_for_filtering
-subtest '--COALESCE keys handling in query_for_filtering' => sub {
-    # Создаем тестовый объект с известной структурой
+subtest '--COALESCE keys handling in query_for_filtering with mock' => sub {
     my $test_obj = bless {}, 'TestClass';
 
-    # Мокаем методы
     no warnings 'redefine';
     local *TestClass::can = sub {
         my ($self, $method) = @_;
@@ -453,27 +300,116 @@ subtest '--COALESCE keys handling in query_for_filtering' => sub {
         };
     };
 
-    # Наследуем query_for_filtering от Core::Sql::Data
     @TestClass::ISA = ('Core::Sql::Data');
 
-    # Тестируем обработку --COALESCE ключей
     my $result = $test_obj->query_for_filtering(
         full_name => \'isEmpty',
         email => \'isNotEmpty',
         user_id => 123,
     );
 
-    # Проверяем, что --COALESCE ключи корректно обрабатываются (префикс -- удаляется)
     ok(exists $result->{"COALESCE(full_name, '')"}, 'COALESCE key for full_name exists (-- prefix removed)');
     ok(exists $result->{"COALESCE(email, '')"}, 'COALESCE key for email exists (-- prefix removed)');
     is($result->{"COALESCE(full_name, '')"}, '', 'isEmpty converts to empty string');
     cmp_deeply($result->{"COALESCE(email, '')"}, { '!=' => '' }, 'isNotEmpty converts correctly');
     is($result->{user_id}, 123, 'Regular field passed through');
-};# Тест для проверки Template функций (интеграционный тест)
-subtest 'Template functions integration' => sub {
-    # Тестируем, что Template функции возвращают правильные скалярные ссылки
+};
 
-    # Симулируем Template функции
+subtest 'query_for_filtering with mock user object' => sub {
+    {
+        package MockSHMUser;
+        use parent -norequire, 'Core::Sql::Data';
+        sub table { 'users' }
+        sub structure {
+            return {
+                user_id   => { type => 'number', key => 1 },
+                full_name => { type => 'text' },
+                settings  => { type => 'json' },
+            };
+        }
+    }
+
+    my $user = bless {}, 'MockSHMUser';
+
+    cmp_deeply(
+        $user->query_for_filtering(
+            user_id   => 40092,
+            full_name => "%hello%",
+            alien     => 'strange',
+        ),
+        {
+            user_id   => 40092,
+            full_name => { '-like' => '%hello%' },
+        },
+        'alien field filtered out, full_name gets -like',
+    );
+
+    cmp_deeply(
+        $user->query_for_filtering(
+            user_id   => 40092,
+            full_name => { -not_like => "%hello%" },
+        ),
+        {
+            user_id   => 40092,
+            full_name => { '-not_like' => '%hello%' },
+        },
+        '-not_like passed through unchanged',
+    );
+
+    cmp_deeply(
+        $user->query_for_filtering(
+            user_id  => 40092,
+            settings => 'a.b',
+        ),
+        {
+            user_id                       => 40092,
+            q/JSON_EXTRACT(settings, '$.a.b')/ => { '!=' => undef },
+        },
+        'JSON path existence check (a.b)',
+    );
+
+    cmp_deeply(
+        $user->query_for_filtering(
+            user_id  => 40092,
+            settings => '!a.b',
+        ),
+        {
+            user_id                       => 40092,
+            q/JSON_EXTRACT(settings, '$.a.b')/ => { '=' => undef },
+        },
+        'JSON path non-existence check (!a.b)',
+    );
+
+    cmp_deeply(
+        $user->query_for_filtering(
+            user_id  => 40092,
+            settings => { 'a.b' => 1, 'c' => { '>' => 2 } },
+        ),
+        {
+            user_id              => 40092,
+            q/settings->>'$.a.b'/ => 1,
+            q/settings->>'$.c'/   => { '>' => 2 },
+        },
+        'JSON value comparisons (a.b and c)',
+    );
+
+    cmp_deeply(
+        $user->query_for_filtering( alien => 'strange' ),
+        {},
+        'only unknown fields returns empty hash',
+    );
+
+    my $result = $user->query_for_filtering(
+        user_id   => 40092,
+        full_name => \'isEmpty',
+        email     => \'isNotEmpty',
+        role      => \'null',
+        active    => \'true',
+    );
+    is( $result->{user_id}, 40092, 'user_id preserved when mixed with special-value fields' );
+};
+
+subtest 'Template functions integration' => sub {
     my $lt = sub { return \('lt:' . ($_[0] // '')) };
     my $gt = sub { return \('gt:' . ($_[0] // '')) };
     my $between = sub {
@@ -485,7 +421,6 @@ subtest 'Template functions integration' => sub {
     my $isPositive = sub { return \'isPositive' };
     my $isNegative = sub { return \'isNegative' };
 
-    # Тестируем возвращаемые значения
     my $lt_result = $lt->(18);
     my $gt_result = $gt->(100);
     my $between_result = $between->(10, 50);
@@ -493,36 +428,27 @@ subtest 'Template functions integration' => sub {
     my $isPositive_result = $isPositive->();
     my $isNegative_result = $isNegative->();
 
-    # Проверяем типы и содержимое
     is(ref $lt_result, 'SCALAR', 'lt() returns scalar reference');
     is($$lt_result, 'lt:18', 'lt() contains correct value');
-
     is(ref $gt_result, 'SCALAR', 'gt() returns scalar reference');
     is($$gt_result, 'gt:100', 'gt() contains correct value');
-
     is(ref $between_result, 'SCALAR', 'between() returns scalar reference');
     is($$between_result, 'between:10:50', 'between() contains correct value');
-
     is(ref $isEmpty_result, 'SCALAR', 'isEmpty() returns scalar reference');
     is($$isEmpty_result, 'isEmpty', 'isEmpty() contains correct value');
-
     is(ref $isPositive_result, 'SCALAR', 'isPositive() returns scalar reference');
     is($$isPositive_result, 'isPositive', 'isPositive() contains correct value');
-
     is(ref $isNegative_result, 'SCALAR', 'isNegative() returns scalar reference');
     is($$isNegative_result, 'isNegative', 'isNegative() contains correct value');
 
-    # Тестируем интеграцию с prepare_query_for_filtering
-    my $template_filter = {
+    my $processed = prepare_query_for_filtering({
         age => $lt_result,
         score => $gt_result,
         rating => $between_result,
         name => $isEmpty_result,
         balance => $isPositive_result,
         debt => $isNegative_result,
-    };
-
-    my $processed = prepare_query_for_filtering($template_filter);
+    });
 
     cmp_deeply(
         $processed,

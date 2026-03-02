@@ -82,6 +82,25 @@ jobs:
         EOF
         cat app/version.json
 
+    - name: Build Core for tests
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        load: true
+        target: core
+        platforms: linux/amd64
+        tags: shm-core:test
+        cache-from: type=gha,scope=core
+        cache-to: type=gha,mode=max,scope=core
+
+    - name: Run unit tests
+      run: |
+        docker run --rm \
+          -v ${{ github.workspace }}/app:/app \
+          shm-core:test \
+          prove -r -j4 /app/t/unit/
+
     - name: Build and push API image
       uses: docker/build-push-action@v5
       with:
@@ -93,6 +112,8 @@ jobs:
           ${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.tag }}
           ${{ steps.version.outputs.push_latest == 'true' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || format('{0}-api:skip-minor-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
           ${{ steps.version.outputs.push_latest == 'true' && format('{0}-api:latest', env.IMAGE_NAME) || format('{0}-api:skip-latest-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
+        cache-from: type=gha,scope=api
+        cache-to: type=gha,mode=max,scope=api
 
     - name: Build and push Core image
       uses: docker/build-push-action@v5
@@ -105,6 +126,7 @@ jobs:
           ${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.tag }}
           ${{ steps.version.outputs.push_latest == 'true' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || format('{0}-core:skip-minor-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
           ${{ steps.version.outputs.push_latest == 'true' && format('{0}-core:latest', env.IMAGE_NAME) || format('{0}-core:skip-latest-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
+        cache-from: type=gha,scope=core
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1

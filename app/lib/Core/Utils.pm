@@ -26,6 +26,7 @@ our @EXPORT_OK = qw(
     parse_period
     sum_period
     add_date_time
+    add_period
     start_of_month
     start_of_day
     end_of_month
@@ -76,6 +77,7 @@ our @EXPORT_OK = qw(
     format_time_diff
     exec_local_file
     qrencode
+    ip_rate_limit
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -148,6 +150,28 @@ sub add_date_time {
     );
 
     return sprintf("%d-%.2d-%.2d %.2d:%.2d:%.2d", @ret[0..5] );
+}
+
+sub add_period {
+    my $date = shift || return;
+    my $period = shift || return;
+
+    # Парсим period (1d, 1m, 1y, 1H, 1M)
+    my ($num, $unit) = $period =~ /^(\d+)([dmyHM])$/;
+    return $date unless $num && $unit;
+
+    my %add_args = (
+        'd' => { day => $num },
+        'm' => { month => $num },
+        'y' => { year => $num },
+        'H' => { hour => $num },
+        'M' => { min => $num },
+    );
+
+    return add_date_time(
+        $date,
+        %{ $add_args{$unit} }
+    );
 }
 
 sub start_of_month {
@@ -461,7 +485,11 @@ sub shm_test_api {
     );
 
     use LWP::UserAgent ();
-    my $ua = LWP::UserAgent->new(timeout => 3);
+    state $cached_ua = LWP::UserAgent->new(
+        timeout => 3,
+        keep_alive => 4,
+    );
+    my $ua = $cached_ua;
 
     $ua->default_header('Content-Type' => 'application/json');
     $ua->default_header('login' => $args{login}) if $args{login};
@@ -942,6 +970,37 @@ sub trusted_ips {
     }
 
     return @ip_ranges;
+}
+
+sub ip_rate_limit {
+    my $key = shift;
+    my $rps = shift;
+    my %args = (
+        ip => get_user_ip(),
+        penalty => 0,
+        @_,
+    );
+
+    state $cache //= get_service('Core::System::Cache');
+    return undef unless $cache;
+
+    my ( $count, $interval ) = split('/', $rps);
+
+    return undef unless defined $count && $count =~ /^\d+$/;
+    return undef unless defined $interval && $interval =~ /^\d+$/ && $interval > 0;
+
+    my $full_key = "${key}:$args{ip}";
+    my $current = $cache->redis->incr( $full_key );
+
+    if ( $current == 1 || ( $args{penalty} && $current > $count ) ) {
+        $cache->redis->expire( $full_key, int($interval) );
+    }
+
+    if ( $current > $count ) {
+        return 1;
+    }
+
+    return 0;
 }
 
 1;

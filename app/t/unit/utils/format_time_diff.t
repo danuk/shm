@@ -1,11 +1,8 @@
 use v5.14;
 use utf8;
+use open ':std', ':encoding(UTF-8)';
 use Test::More;
 use Core::Utils qw(format_time_diff);
-
-# Настраиваем кодировку для корректного вывода
-#binmode(STDOUT, ':encoding(utf8)');
-#binmode(STDERR, ':encoding(utf8)');
 
 # Заметка: format_time_diff использует Date::Calc::N_Delta_YMDHMS для вычислений
 # и возвращает разность между текущим временем и переданной датой

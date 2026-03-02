@@ -4,6 +4,10 @@ use v5.14;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
+use Core::Utils qw(
+    now
+    add_period
+);
 
 sub job_prolongate {
     my $self = shift;
@@ -93,10 +97,12 @@ sub job_make_forecasts {
 
     return undef, { error => 'This task must be run under admin' } unless $self->user->authenticated->is_admin;
 
+    my $check_period;
     my %settings;
     if ( $task ) {
         $settings{days_before_notification} = $task->settings->{days} || $task->settings->{days_before_notification};
         $settings{blocked} = $task->settings->{blocked};
+        $check_period = $task->settings->{check_period};
     }
 
     my $spool = get_service('spool');
@@ -104,6 +110,17 @@ sub job_make_forecasts {
 
     my @affected;
     for my $u ( @$users ) {
+
+        if ( $check_period ) {
+            if ( my $last_check_date = $u->get_settings->{forecast}->{last_check_date} ) {
+                my $next_check_date = add_period( $last_check_date, $check_period );
+                if ( now() lt $next_check_date ) {
+                    $self->logger->info("Пропускаем forecast для " . $u->id . ": следующий forecast разрешен после $next_check_date");
+                    next;
+                }
+            }
+        }
+
         my $ret = $u->pays->forecast(
             $settings{days_before_notification} ? ( days => $settings{days_before_notification} ) : (),
             $settings{blocked} ? ( blocked => $settings{blocked} ) : (),
@@ -122,7 +139,13 @@ sub job_make_forecasts {
             },
         );
 
-        push @affected, $u->id,
+        push @affected, $u->id;
+
+        $u->set_settings({
+            forecast => {
+                last_check_date => now(),
+            },
+        });
     }
     return SUCCESS, { msg => 'successful', user_matches => \@affected };
 }

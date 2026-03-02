@@ -1,9 +1,13 @@
 package Core::Misc;
 
 use v5.14;
-use parent 'Core::Base';
-use Core::Base;
 use Core::Utils;
+# не используем Core::Base так как методы импортированные в нем перестают работать в misc
+
+sub new {
+    my $class = shift;
+    return bless {}, $class;
+}
 
 use vars qw($AUTOLOAD);
 sub AUTOLOAD {
@@ -12,10 +16,10 @@ sub AUTOLOAD {
     if ( $AUTOLOAD =~ /^.*::(\w+)$/ ) {
         my $method = $1;
 
-        if ( $self->can(sprintf('Core::Utils::%s', $method)) ) {
-            no strict 'refs';
+        no strict 'refs';
+        if ( defined &{"Core::Utils::$method"} ) {
             my $ret = &{"Core::Utils::$method"}( convert_template_args(@_) );
-            return $ret; # always return ref
+            return $ret;
         }
 
         return undef;
