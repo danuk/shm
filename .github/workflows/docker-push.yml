@@ -73,18 +73,24 @@ jobs:
           EOF
           cat app/version.json
 
-      - name: Build and push API
+      - name: Build Core for tests
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
-          target: api
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/shm-api:${{ steps.version.outputs.minor }}
-            ${{ steps.version.outputs.push_latest == 'true' && format('{0}/shm-api:latest', secrets.DOCKERHUB_USERNAME) || format('{0}/shm-api:skip-latest-{1}', secrets.DOCKERHUB_USERNAME, steps.version.outputs.rev) }}
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,mode=max,scope=api
+          push: false
+          load: true
+          target: core
+          platforms: linux/amd64
+          tags: shm-core:test
+          cache-from: type=gha,scope=core
+          cache-to: type=gha,mode=max,scope=core
+
+      - name: Run unit tests
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/app:/app \
+            shm-core:test \
+            prove -r -j4 /app/t/unit/
 
       - name: Build and push Core
         uses: docker/build-push-action@v5
@@ -97,4 +103,16 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:${{ steps.version.outputs.minor }}
             ${{ steps.version.outputs.push_latest == 'true' && format('{0}/shm-core:latest', secrets.DOCKERHUB_USERNAME) || format('{0}/shm-core:skip-latest-{1}', secrets.DOCKERHUB_USERNAME, steps.version.outputs.rev) }}
           cache-from: type=gha,scope=core
-          cache-to: type=gha,mode=max,scope=core
+
+      - name: Build and push API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          target: api
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/shm-api:${{ steps.version.outputs.minor }}
+            ${{ steps.version.outputs.push_latest == 'true' && format('{0}/shm-api:latest', secrets.DOCKERHUB_USERNAME) || format('{0}/shm-api:skip-latest-{1}', secrets.DOCKERHUB_USERNAME, steps.version.outputs.rev) }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
