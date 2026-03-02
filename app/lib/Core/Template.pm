@@ -51,6 +51,8 @@ sub init {
         @_,
     );
 
+    return $self if $ENV{SHM_TEST};
+
     $self->{file_mode} = 1 if -d $dir;
     return $self;
 }

@@ -53,6 +53,8 @@ subtest 'Test telegram.bot() with task' => sub {
     my $ret = $template_bot_task->parse( task => { foo => 2 } );
 
     is $ret, '[["task","2"]]';
+
+    $template_bot_task->delete();
 };
 
 subtest 'Test telegram.bot() with args' => sub {
@@ -66,6 +68,8 @@ subtest 'Test telegram.bot() with args' => sub {
     my $ret = $template_tg->parse();
 
     is $ret, '[["param","8"]]';
+
+    $template_tg->delete();
 };
 
 done_testing();

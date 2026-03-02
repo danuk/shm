@@ -343,7 +343,7 @@ sub execute_fork {
 
         # Use exec instead of do - works for both Perl scripts and binaries
         exec($script) or do {
-            print "Status: 500 Internal Server Error\r\n";
+            print "Status: 403 Forbidden\r\n";
             print "Content-Type: text/plain\r\n\r\n";
             print "Cannot exec $script: $!\n";
             POSIX::_exit(1);
