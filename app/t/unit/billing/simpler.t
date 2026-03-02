@@ -9,12 +9,6 @@ use Core::Billing::Simpler qw(
     calc_period_by_total
 );
 
-$ENV{SHM_TEST} = 1;
-
-use Core::System::ServiceManager qw( get_service );
-use SHM;
-my $us = SHM->new( user_id => 40092 );
-
 is( calc_end_date_by_months('2017-01-01 00:00:00', 1), '2017-01-30 23:59:59', 'Test calc_end_date_by_months 1');
 is( calc_end_date_by_months('2017-07-01 00:00:00', 1), '2017-07-30 23:59:59', 'Test calc_end_date_by_months 2');
 is( calc_end_date_by_months('2017-07-02 00:00:00', 1), '2017-07-31 23:59:59', 'Test calc_end_date_by_months 3');

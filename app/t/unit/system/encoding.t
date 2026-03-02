@@ -2,13 +2,9 @@ use v5.14;
 
 use Test::More;
 use Test::Deep;
-use Data::Dumper;
-use SHM;
 use Core::Utils qw(
     encode_json
 );
-
-my $user = SHM->new( user_id => 40092 );
 
 subtest 'Test encode_json()' => sub {
     my $s = 'привет';

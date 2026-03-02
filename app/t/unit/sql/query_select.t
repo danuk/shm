@@ -3,9 +3,6 @@ use utf8;
 
 use Test::More;
 use Core::Sql::Data qw/query_select/;
-use Core::System::ServiceManager qw( get_service );
-use SHM;
-my $user = SHM->new( user_id => 40092 );
 
 my @vars;
 
@@ -139,6 +136,25 @@ is query_select(
     where => { 'table.field' => 1 },
 ), "SELECT * FROM test WHERE ( ( user_id = ? AND table.field = ? ) )";
 
+# Mock объект — нужен только table и structure для JSON-резолвинга, БД не требуется
+my $user = bless {}, 'MockUser';
+{
+    no warnings 'redefine';
+    *MockUser::table     = sub { 'users' };
+    *MockUser::structure = sub {
+        return {
+            user_id  => { type => 'number', key => 1 },
+            settings => { type => 'json' },
+        };
+    };
+    *MockUser::can = sub {
+        my ($self, $method) = @_;
+        return 1 if $method eq 'structure' || $method eq 'table';
+        return UNIVERSAL::can($self, $method);
+    };
+    @MockUser::ISA = ('Core::Sql::Data');
+}
+
 is $user->query_select(
     vars => \@vars,
     user_id => 123,
@@ -156,3 +172,4 @@ is $user->query_select(
 ), q/SELECT * FROM users WHERE ( ( user_id = ? AND settings->>"$.cmd.test" = ? ) )/;
 
 done_testing();
+
