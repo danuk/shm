@@ -626,6 +626,51 @@ state $routes //= {
         },
     },
 },
+'/promo/created' => {
+    swagger => { tags => 'Промокоды' },
+    GET => {
+        controller => 'Promo',
+        method => 'api_created',
+        swagger => {
+            summary => 'Список промокодов, созданных пользователем',
+            responses => {
+                '200' => {
+                    content => {
+                        'application/json' => {
+                            schema => {
+                                type => 'object',
+                                properties => {
+                                    promo_code => {
+                                        type => 'string',
+                                    },
+                                    template_id => {
+                                        type => 'string',
+                                    },
+                                    created => {
+                                        type => 'string',
+                                        format => 'date-time',
+                                    },
+                                    expire => {
+                                        type => 'string',
+                                        format => 'date-time',
+                                    },
+                                    reusable => {
+                                        type => 'integer',
+                                        enum => [0, 1],
+                                    },
+                                    status => {
+                                        type => 'integer',
+                                        enum => [0, 1],
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+},
 '/promo/apply/*' => {
     swagger => { tags => 'Промокоды' },
     splat_to => 'code',

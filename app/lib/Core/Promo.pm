@@ -183,6 +183,46 @@ sub api_get {
     return @data;
 }
 
+sub api_created {
+    my $self = shift;
+
+    my @list = $self->list(
+        where => {
+            user_id => $self->user->id,
+        },
+        order => [
+            'id'      => 'asc',
+            'created' => 'asc',
+        ],
+    );
+
+    my %seen;
+    my @data;
+
+    foreach my $item (@list) {
+        next unless ref($item) eq 'HASH';
+
+        my $code = $item->{id} || next;
+        next if $seen{$code}++;
+
+        my $settings = $item->{settings} || {};
+
+        # Пропускаем записи использования reusable-промокодов (не корневые)
+        next if $item->{used} && $settings->{reusable};
+
+        push @data, {
+            promo_code  => $code,
+            template_id => $item->{template_id},
+            created     => $item->{created},
+            expire      => $item->{expire},
+            reusable    => $settings->{reusable} ? 1 : 0,
+            status      => exists $settings->{status} ? $settings->{status} : 1,
+        };
+    }
+
+    return @data;
+}
+
 sub api_apply {
     my $self = shift;
     my %args = (
