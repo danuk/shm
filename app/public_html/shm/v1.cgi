@@ -662,6 +662,11 @@ state $routes //= {
                                         type => 'integer',
                                         enum => [0, 1],
                                     },
+                                    used => {
+                                        type => 'integer',
+                                        enum => [0, 1],
+                                        description => 'Использован ли промокод (только для одноразовых, для reusable всегда 0)',
+                                    },
                                 },
                             },
                         },

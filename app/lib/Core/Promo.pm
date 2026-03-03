@@ -207,7 +207,6 @@ sub api_created {
 
         my $settings = $item->{settings} || {};
 
-        # Пропускаем записи использования reusable-промокодов (не корневые)
         next if $item->{used} && $settings->{reusable};
 
         push @data, {
@@ -217,6 +216,7 @@ sub api_created {
             expire      => $item->{expire},
             reusable    => $settings->{reusable} ? 1 : 0,
             status      => exists $settings->{status} ? $settings->{status} : 1,
+            used        => $settings->{reusable} ? 0 : ($item->{used} ? 1 : 0),
         };
     }
 
