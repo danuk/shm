@@ -520,8 +520,8 @@ sub report {
         return $self->srv('report');
     }
 
-    state $report ||= get_service('report');
-    return $report;
+    # do not use `state` for fastCGI
+    return get_service('report');
 }
 
 sub cache {

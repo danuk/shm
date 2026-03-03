@@ -59,7 +59,7 @@ sub cloud_request {
     unless ( $response->is_success ) {
         report->status( 400 ); # do not use 401 code because it reserves by Web
         my $err = $response->json_content ? $response->json_content->{error} : $response->decoded_content;
-        report->add_error( $err );
+        report->add_error( $err || 'ERROR' );
     }
 
     return $response;
@@ -113,7 +113,7 @@ sub get_user {
 
     unless ( $response->is_success ) {
         report->status( 400 );
-        report->add_error( $response->decoded_content );
+        report->add_error( $response->decoded_content || 'ERROR' );
         return undef;
     }
 
@@ -145,7 +145,7 @@ sub login_user {
         my $status_code = $response->code;
         $status_code = 400 if $status_code == 401; # do not use 401 code because it reserves by Web
         report->status( $status_code );
-        report->add_error( $error );
+        report->add_error( $error || 'ERROR' );
         return undef;
     }
 
@@ -223,7 +223,7 @@ sub proxy {
         my $status_code = $response->code;
         $status_code = 400 if $status_code == 401; # do not use 401 code because it reserves by Web
         report->status( $response->code );
-        report->add_error( $error );
+        report->add_error( $error || 'ERROR' );
         return undef;
     }
 

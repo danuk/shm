@@ -124,8 +124,8 @@ sub send {
 
 sub HTTP::Response::json_content {
     my $self = shift;
-    return decode_json( $self->decoded_content ) if $self->header('content-type') =~ m/application\/json/gi;
-    return undef;
+    return undef unless $self->header('content-type') =~ m/application\/json/gi;
+    return decode_json( $self->decoded_content );
 }
 
 sub http {
@@ -183,7 +183,7 @@ sub http {
     logger->dump( $response->request );
 
     # Декодирование UTF-8 для текстового контента
-    if (!$args{binary} && $response->is_success) {
+    if (!$args{binary}) {
         my $content = $response->decoded_content;
         if (!utf8::is_utf8($content)) {
             utf8::decode($content);
