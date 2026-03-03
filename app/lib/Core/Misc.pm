@@ -26,6 +26,13 @@ sub AUTOLOAD {
     };
 }
 
+# Override hash_merge (use args as it is)
+sub hash_merge {
+    my $self = shift;
+    no strict 'refs';
+    return &{"Core::Utils::hash_merge"}( @_ );
+}
+
 sub convert_template_args {
     my @ret;
     for ( @_ ) {
