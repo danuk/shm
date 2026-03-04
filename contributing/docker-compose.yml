@@ -5,8 +5,6 @@ services:
       dockerfile: ./Dockerfile
       target: api
     restart: always
-    links:
-      - core
     ports:
       - "8080:80"
     environment:
@@ -83,8 +81,6 @@ services:
       - ./shm-client/app:/app
     ports:
       - "8082:80"
-    links:
-      - api
   mysql:
     image: mysql:lts
     environment:
