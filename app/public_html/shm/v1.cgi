@@ -525,7 +525,7 @@ state $routes //= {
         controller => 'Promo',
         method => 'api_get',
         swagger => {
-            summary => 'Список использованных промокодов',
+            summary => 'Список промокодов пользователя',
             responses => {
                 '200' => {
                     content => {
@@ -534,11 +534,37 @@ state $routes //= {
                                 type => 'object',
                                 properties => {
                                     promo_code => {
-                                        type => 'string'
+                                        type => 'string',
+                                    },
+                                    created => {
+                                        type => 'string',
+                                        format => 'date-time',
+                                    },
+                                    expire => {
+                                        type => 'string',
+                                        format => 'date-time',
+                                    },
+                                    reusable => {
+                                        type => 'integer',
+                                        enum => [0, 1],
+                                    },
+                                    status => {
+                                        type => 'integer',
+                                        enum => [0, 1],
+                                    },
+                                    used => {
+                                        type => 'integer',
+                                        enum => [0, 1],
+                                        description => 'Использован ли промокод (только для одноразовых, для reusable всегда 0)',
                                     },
                                     used_date => {
                                         type => 'string',
-                                        format => 'date',
+                                        format => 'date-time',
+                                        description => 'Дата использования промокода',
+                                    },
+                                    used_by => {
+                                        type => 'integer',
+                                        description => 'ID пользователя, использовавшего промокод',
                                     },
                                 },
                             },

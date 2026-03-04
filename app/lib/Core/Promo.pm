@@ -166,18 +166,37 @@ sub api_get {
     my @list = $self->list(
         where => {
             user_id => $self->user->id,
-            used_by => $self->user->id,
         },
+        order => [
+            'id'      => 'asc',
+            'created' => 'asc',
+        ],
     );
 
+    my %seen;
     my @data;
+
     foreach my $item (@list) {
-        if (ref($item) eq 'HASH') {
-            push @data, {
-                promo_code => $item->{id},
-                used_date => $item->{used},
-            };
-        }
+        next unless ref($item) eq 'HASH';
+
+        my $code = $item->{id} || next;
+        next if $seen{$code}++;
+
+        my $settings = $item->{settings} || {};
+
+        # Пропускаем записи использования reusable-промокодов (не корневые)
+        next if $item->{used} && $settings->{reusable};
+
+        push @data, {
+            promo_code => $code,
+            created    => $item->{created},
+            expire     => $item->{expire},
+            reusable   => $settings->{reusable} ? 1 : 0,
+            status     => exists $settings->{status} ? $settings->{status} : 1,
+            used       => $settings->{reusable} ? 0 : ($item->{used} ? 1 : 0),
+            used_date  => $item->{used},
+            used_by    => $item->{used_by},
+        };
     }
 
     return @data;
