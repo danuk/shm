@@ -235,108 +235,6 @@ state $routes //= {
         swagger => { summary => 'Аутентификация пользователя с помощью Passkey' },
     },
 },
-# ниже роуты для удаления после реализации в админке
-'/user/password-auth/disable' => {
-    POST => {
-        controller => 'User',
-        method => 'api_disable_password_auth',
-    },
-},
-'/user/password-auth/enable' => {
-    POST => {
-        controller => 'User',
-        method => 'api_enable_password_auth',
-    },
-},
-'/user/password-auth/status' => {
-    GET => {
-        controller => 'User',
-        method => 'api_password_auth_status',
-    },
-},
-'/user/otp/enable' => {
-    POST => {
-        controller => 'OTP',
-        method => 'api_enable',
-        required => ['token'],
-    },
-},
-'/user/otp/disable' => {
-    POST => {
-        controller => 'OTP',
-        method => 'api_disable',
-        required => ['token'],
-    },
-},
-'/user/otp/verify' => {
-    POST => {
-        controller => 'OTP',
-        method => 'api_verify',
-        required => ['token'],
-    },
-},
-'/user/otp/status' => {
-    GET => {
-        controller => 'OTP',
-        method => 'api_status',
-    },
-},
-'/user/passkey/register/options' => {
-    POST => {
-        controller => 'Passkey',
-        method => 'api_register_options',
-    },
-},
-'/user/passkey/register/complete' => {
-    POST => {
-        controller => 'Passkey',
-        method => 'api_register_complete',
-        required => ['credential_id', 'response'],
-    },
-},
-'/user/passkey/list' => {
-    GET => {
-        controller => 'Passkey',
-        method => 'api_list',
-    },
-},
-'/user/passkey/delete' => {
-    POST => {
-        controller => 'Passkey',
-        method => 'api_delete',
-        required => ['credential_id'],
-    },
-},
-'/user/passkey/rename' => {
-    POST => {
-        controller => 'Passkey',
-        method => 'api_rename',
-        required => ['credential_id', 'name'],
-    },
-},
-'/user/passkey/status' => {
-    GET => {
-        controller => 'Passkey',
-        method => 'api_status',
-    },
-},
-# Public passkey auth
-'/user/passkey/auth/options/public' => {
-    POST => {
-        controller => 'Passkey',
-        method => 'api_auth_options_public',
-        skip_check_auth => 1,
-    },
-},
-'/user/passkey/auth/public' => {
-    POST => {
-        controller => 'Passkey',
-        method => 'api_auth_public',
-        skip_check_auth => 1,
-        required => ['credential_id', 'response'],
-    },
-},
-# выше роуты для удаления после реализации в админке
 '/user/passwd' => {
     swagger => { tags => 'Пользователи' },
     POST => {
@@ -347,38 +245,63 @@ state $routes //= {
     },
 },
 '/user/passwd/reset' => {
+    swagger => { tags => 'Пользователи' },
     POST => {
         controller => 'User',
         method => 'passwd_reset_request',
         skip_check_auth => 1,
+        swagger => { summary => 'Запрос на сброс пароля пользователя' },
     },
 },
 '/user/passwd/reset/verify' => {
+    swagger => { tags => 'Пользователи' },
     GET => {
         controller => 'User',
         method => 'passwd_reset_verify',
         required => ['token'],
         skip_check_auth => 1,
+        swagger => { summary => 'Проверка токена сброса пароля пользователя перед сменой пароля' },
     },
     POST => {
         controller => 'User',
         method => 'passwd_reset_verify',
         required => ['password', 'token'],
         skip_check_auth => 1,
+        swagger => { summary => 'Сменить пароль пользователя по токену сброса' },
     },
 },
-'/user/email/set' => {
+'/user/email' => {
+    swagger => { tags => 'Пользователи' },
     PUT => {
         controller => 'User',
         method => 'set_email',
         required => ['email'],
+        swagger => { summary => 'Установить email пользователя' },
     },
-},
-'/user/email/verify' => {
+    GET => {
+        controller => 'User',
+        method => 'get_email',
+        swagger => { summary => 'Получить email пользователя' },
+    },
     POST => {
         controller => 'User',
         method => 'verify_email',
         optional => ['email', 'code'],
+        swagger => { summary => 'Верификацировать email пользователя' },
+    },
+    DELETE => {
+        controller => 'User',
+        method => 'delete_email',
+        swagger => { summary => 'Удалить email пользователя' },
+    },
+},
+'/user/email/verify' => {
+    swagger => { tags => 'Пользователи' },
+    POST => {
+        controller => 'User',
+        method => 'verify_email',
+        optional => ['email', 'code'],
+        swagger => { summary => 'Верификация email пользователя' },
     },
 },
 '/user/service' => {

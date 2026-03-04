@@ -296,6 +296,8 @@ sub auth_api_safe {
 
     my $session_id = $user->gen_session->{id};
 
+    $user->set( last_login => now );
+
     return {
         id => $session_id,
     };
@@ -540,17 +542,26 @@ sub set_email {
         return { msg => 'is not email' };
     }
 
+    my $verified = 0;
     my $current_email = $self->user->emails;
     if ( $current_email && $current_email eq $args{email} ) {
-        return { msg => 'Successful' };
+        $verified = $self->get_settings->{email_verified} // 0;
     }
 
     $self->user->set_settings({
-        email_verified => 0,
+        email_verified => $verified,
         email => $args{email},
     });
 
     return { msg => 'Successful' };
+}
+
+sub get_email {
+    my $self = shift;
+    return {
+        email => $self->user->emails,
+        email_verified => $self->get_settings->{email_verified} // 0,
+    };
 }
 
 sub verify_email {
@@ -620,6 +631,17 @@ sub verify_email {
     }
 
     return { msg => 'Email or code required' };
+}
+
+sub delete_email {
+    my $self = shift;
+
+    $self->user->set_settings({
+        email => undef,
+        email_verified => 0,
+    });
+
+    return { msg => 'Successful' };
 }
 
 sub is_blocked {
@@ -1020,16 +1042,8 @@ sub list_for_api {
         $args{where}->{user_id} = $self->id;
     }
 
-    $args{fields} = join(',',
-        "*",
-        "settings->>'\$.email' AS email",
-        "settings->>'\$.email_verified' AS email_verified",
-    );
+    return $self->SUPER::list_for_api( %args );
 
-    my @result = $self->SUPER::list_for_api( %args );
-
-
-    return @result;
 }
 
 sub _list {
@@ -1066,7 +1080,7 @@ sub emails {
     my $self = shift;
 
     my %profile = $self->profile;
-    my $email = $profile{email} || $self->get_settings->{email} || $self->get_login;
+    my $email = $self->get_settings->{email} || $self->get_login || $profile{email};
 
     return is_email($email) ? $email : undef;
 }

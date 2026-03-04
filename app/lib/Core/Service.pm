@@ -289,10 +289,22 @@ sub price_list {
         my $cost = $list->{ $si }->{cost};
         my $discount = $list->{ $si }->{no_discount} ? 0 : $self->user->get_discount;
         my $cost_discount = $cost * $discount / 100;
+        my $bonus = $self->user->get_bonus;
+        my $limit_bonus_percent = $list->{ $si }->{config}->{limit_bonus_percent};
+        if ( $bonus > 0 && defined $limit_bonus_percent ) {
+            my $max_bonus = $cost * $limit_bonus_percent / 100;
+            $bonus = $max_bonus;
+        }
+        my $real_cost = $cost - $cost_discount - $bonus;
+        if ( $real_cost < 0 ) {
+            $bonus += $real_cost;
+            $real_cost = 0;
+        }
 
         $list->{ $si }->{discount} = $discount;
         $list->{ $si }->{cost_discount} = $cost_discount;
-        $list->{ $si }->{real_cost} = $cost - $cost_discount;
+        $list->{ $si }->{real_cost} = $real_cost;
+        $list->{ $si }->{cost_bonus} = $bonus;
     }
 
     return $list;
