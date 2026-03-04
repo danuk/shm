@@ -344,6 +344,11 @@ state $routes //= {
 },
 '/user/autopayment' => {
     swagger => { tags => 'Пользователи' },
+    GET => {
+        controller => 'User',
+        method => 'list_autopayments',
+        swagger => { summary => 'Список автоплатежей пользователя' },
+    },
     DELETE => {
         controller => 'User',
         method => 'delete_autopayment',
