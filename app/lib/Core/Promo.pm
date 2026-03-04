@@ -166,29 +166,6 @@ sub api_get {
     my @list = $self->list(
         where => {
             user_id => $self->user->id,
-            used_by => $self->user->id,
-        },
-    );
-
-    my @data;
-    foreach my $item (@list) {
-        if (ref($item) eq 'HASH') {
-            push @data, {
-                promo_code => $item->{id},
-                used_date => $item->{used},
-            };
-        }
-    }
-
-    return @data;
-}
-
-sub api_created {
-    my $self = shift;
-
-    my @list = $self->list(
-        where => {
-            user_id => $self->user->id,
         },
         order => [
             'id'      => 'asc',
@@ -207,16 +184,18 @@ sub api_created {
 
         my $settings = $item->{settings} || {};
 
+        # Пропускаем записи использования reusable-промокодов (не корневые)
         next if $item->{used} && $settings->{reusable};
 
         push @data, {
-            promo_code  => $code,
-            template_id => $item->{template_id},
-            created     => $item->{created},
-            expire      => $item->{expire},
-            reusable    => $settings->{reusable} ? 1 : 0,
-            status      => exists $settings->{status} ? $settings->{status} : 1,
-            used        => $settings->{reusable} ? 0 : ($item->{used} ? 1 : 0),
+            promo_code => $code,
+            created    => $item->{created},
+            expire     => $item->{expire},
+            reusable   => $settings->{reusable} ? 1 : 0,
+            status     => exists $settings->{status} ? $settings->{status} : 1,
+            used       => $settings->{reusable} ? 0 : ($item->{used} ? 1 : 0),
+            used_date  => $item->{used},
+            used_by    => $item->{used_by},
         };
     }
 
