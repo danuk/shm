@@ -173,22 +173,15 @@ sub api_get {
         ],
     );
 
-    my %seen;
     my @data;
-
     foreach my $item (@list) {
-        next unless ref($item) eq 'HASH';
-
-        my $code = $item->{id} || next;
-        next if $seen{$code}++;
-
         my $settings = $item->{settings} || {};
 
         # Пропускаем записи использования reusable-промокодов (не корневые)
         next if $item->{used} && $settings->{reusable};
 
         push @data, {
-            promo_code => $code,
+            promo_code => $item->{id},
             created    => $item->{created},
             expire     => $item->{expire},
             reusable   => $settings->{reusable} ? 1 : 0,
