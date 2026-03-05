@@ -232,7 +232,17 @@ sub parse {
     return $result;
 }
 
-sub show {
+sub used_from_http {
+    my $self = shift;
+    my $flag = shift;
+
+    if ( $flag ) {
+        $self->{used_from_http} = 1;
+    }
+    return $self->{used_from_http} || 0;
+}
+
+sub parse_for_api {
     my $self = shift;
     my %args = (
         id => undef,
@@ -248,6 +258,14 @@ sub show {
         return undef;
     }
 
+    if ( $template->get_settings->{deny_for_http_user} && !$self->user->is_admin ) {
+        logger->warning('Template is not allowed for http use by user');
+        report->add_error('Template is not allowed for http use by user');
+        return undef;
+    }
+
+    $template->used_from_http( 1 );
+
     if ( $args{do_not_parse} ) {
         return $template->get->{data};
     } else {
@@ -255,7 +273,7 @@ sub show {
     }
 }
 
-sub show_public {
+sub parse_public {
     my $self = shift;
     my %args = (
         id => undef,
@@ -275,7 +293,7 @@ sub show_public {
         return undef;
     }
 
-    return $self->show( %args, do_not_parse => 0 );
+    return $self->parse_for_api( %args, do_not_parse => 0 );
 }
 
 sub read_dir_recursive {

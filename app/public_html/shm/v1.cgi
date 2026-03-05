@@ -408,7 +408,7 @@ state $routes //= {
     swagger => { tags => 'Шаблоны' },
     GET => {
         controller => 'Template',
-        method => 'show',
+        method => 'parse_for_api',
         args => {
             format => 'plain',
         },
@@ -416,7 +416,7 @@ state $routes //= {
     },
     POST => {
         controller => 'Template',
-        method => 'show',
+        method => 'parse_for_api',
         skip_auto_parse_json => 1,
         args => {
             format => 'plain',
@@ -429,7 +429,7 @@ state $routes //= {
     GET => {
         user_id => 1,
         controller => 'Template',
-        method => 'show_public',
+        method => 'parse_for_public',
         args => {
             format => 'plain',
         },
@@ -438,7 +438,7 @@ state $routes //= {
     POST => {
         user_id => 1,
         controller => 'Template',
-        method => 'show_public',
+        method => 'parse_for_public',
         skip_auto_parse_json => 1,
         args => {
             format => 'plain',
@@ -1036,7 +1036,7 @@ state $routes //= {
     splat_to => 'id',
     GET => {
         controller => 'Template',
-        method => 'show',
+        method => 'parse_for_api',
         args => {
             format => 'plain',
             do_not_parse => 1,
