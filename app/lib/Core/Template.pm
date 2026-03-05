@@ -273,7 +273,7 @@ sub parse_for_api {
     }
 }
 
-sub parse_public {
+sub parse_for_public {
     my $self = shift;
     my %args = (
         id => undef,
