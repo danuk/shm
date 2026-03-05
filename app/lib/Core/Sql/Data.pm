@@ -568,6 +568,8 @@ sub add {
     my $self = shift;
     my %args = ( @_ );
 
+    $self->stats('add', \%args);
+
     $args{table}||= $self->table;
     my $table = delete $args{table};
 

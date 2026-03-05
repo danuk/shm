@@ -33,6 +33,7 @@ sub structure {
             type => 'number',
             required => 1,
             title => 'сумма платежа',
+            user_for_stats => 1,
         },
         date => {
             type => 'now',
