@@ -20,6 +20,7 @@ services:
       DEV: 1
       DEBUG: DEBUG
       TRUNCATE_DB_ON_START: 1
+      WORKERS_COUNT: 2
       TZ: Europe/Moscow
       LANG: C.UTF-8
       DB_NAME: shm-db
@@ -37,6 +38,9 @@ services:
         condition: service_healthy
   webdav:
     image: danuk/shm-webdav:latest
+    deploy:
+      mode: replicated
+      replicas: 0
     restart: always
     ports:
       - "8888:80"
