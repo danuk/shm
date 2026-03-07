@@ -43,6 +43,10 @@ my %doc_roots = (
     '/'                 => '/app/public_html',
 );
 
+if ( $ENV{LEGACY_PAYSYSTEMS_PATH} ) {
+    delete $doc_roots{'/shm/pay_systems'};
+}
+
 my @skip_logging = (
     qr{^/shm/healthcheck\.cgi},
 );

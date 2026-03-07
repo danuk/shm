@@ -21,6 +21,7 @@ services:
       DEBUG: DEBUG
       TRUNCATE_DB_ON_START: 1
       WORKERS_COUNT: 2
+      LEGACY_PAYSYSTEMS_PATH: 0
       TZ: Europe/Moscow
       LANG: C.UTF-8
       DB_NAME: shm-db
