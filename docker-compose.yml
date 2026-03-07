@@ -32,7 +32,7 @@ services:
     pull_policy: always
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 2
     restart: always
     environment:
       #DEBUG: ERROR
@@ -62,15 +62,12 @@ services:
     depends_on:
       - api
   client:
-    image: "danuk/shm-client:${CLIENT_VERSION}"
+    image: "danuk/shm-client-2:${CLIENT_VERSION}"
     pull_policy: always
     restart: always
     environment:
       SHM_HOST: http://api
-#    volumes:
-#      - ./styles-alternative.css:/app/assets/css/styles-alternative.css
-#      - ./head.html:/app/ssi/head.html
-#      - ./body.html:/app/ssi/body.html
+      SHM_BASE_PATH: /
     ports:
       - "${CLIENT_PORT}:80"
     depends_on:
@@ -92,13 +89,13 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
-  webdav:
-    image: "${SHM_REPO}/shm-webdav:latest"
-    restart: always
-    ports:
-      - "${WEBDAV_PORT}:80"
-    volumes:
-      - "shm-data:/app/data"
+#  webdav:
+#    image: "${SHM_REPO}/shm-webdav:latest"
+#    restart: always
+#    ports:
+#      - "${WEBDAV_PORT}:80"
+#    volumes:
+#      - "shm-data:/app/data"
   redis:
     image: redis:latest
     restart: always
