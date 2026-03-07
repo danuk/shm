@@ -37,6 +37,11 @@ sub startup {
 sub job_download_all_paystems {
     my $self = shift;
 
+    if ( $ENV{LEGACY_PAYSYSTEMS_PATH} ) {
+        logger->debug("Пропускаем скачивания платежных систем для легаси режима");
+        return undef;
+    }
+
     unless ( $self->get_auth_basic() ) {
         return undef;
     }
