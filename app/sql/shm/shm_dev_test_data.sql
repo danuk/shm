@@ -306,9 +306,9 @@ INSERT INTO `config` VALUES
 ("mail",    '{"from":"mail@domain.ru"}');
 
 INSERT INTO `spool` (id,status,user_id,event) VALUES
-(default,'PAUSED',1,'{"title":"prolongate services","kind":"Jobs","method":"job_prolongate","period":"60"}'),
-(default,'PAUSED',1,'{"title":"cleanup services","kind":"Jobs","method":"job_cleanup","period":"86400","settings":{"days":10}}'),
-(default,'PAUSED',1,'{"title":"send forecasts","kind":"Jobs","method":"job_make_forecasts","period":"86400"}')
+(default,'PAUSED',1,'{"title":"Сервис для продления услуг","kind":"Jobs","method":"job_prolongate","period":"60"}'),
+(default,'PAUSED',1,'{"title":"Сервис для чистки данных и услуг","kind":"Jobs","method":"job_cleanup","period":"86400"}'),
+(default,'PAUSED',1,'{"title":"Сервис отправки прогнозов оплат","kind":"Jobs","method":"job_make_forecasts","period":"86400"}')
 ;
 
 COMMIT;

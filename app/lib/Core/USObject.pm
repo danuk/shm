@@ -812,19 +812,19 @@ sub items {
 
 sub list_for_delete {
     my $self = shift;
-    my %args = (
-        days => 10,
-        @_,
-    );
 
-    return $self->_list(
+    my $days_blocked = cfg('billing')->{cleanup}->{ $self->kind }->{block} || 10;
+    my $days_wait_for_pay = cfg('billing')->{cleanup}->{ $self->kind }->{wait_for_pay} || 10;
+
+    return $self->items(
+        admin => 1,
         where => { -OR => [
                 {
                     parent => undef,
                     auto_bill => 1,
                     status => STATUS_BLOCK,
                     expire => {
-                        '<', \[ 'NOW() - INTERVAL ? DAY', $args{days} ],
+                        '<', \[ 'NOW() - INTERVAL ? DAY', $days_blocked ],
                     },
                 },
                 {
@@ -832,7 +832,7 @@ sub list_for_delete {
                     auto_bill => 1,
                     status => STATUS_WAIT_FOR_PAY,
                     created =>{
-                        '<', \[ 'NOW() - INTERVAL ? DAY', $args{days} ],
+                        '<', \[ 'NOW() - INTERVAL ? DAY', $days_wait_for_pay ],
                     },
                 },
             ],
@@ -1122,6 +1122,24 @@ sub add_period_by_money {
     $self->make_commands_by_event( EVENT_PROLONGATE );
 
     return 1;
+}
+
+sub cleanup {
+    my $self = shift;
+
+    my $arr = $self->list_for_delete();
+    for my $us ( @$arr ) {
+        logger->debug( sprintf("Cleanup us: %d %d %s %s",
+                $us->user_id,
+                $us->id,
+                $us->get_created,
+                $us->get_expire,
+            )
+        );
+        next unless $us->lock();
+        $us->delete;
+        $us->commit;
+    }
 }
 
 1;

@@ -31,18 +31,17 @@ sub add {
     return $self->SUPER::add( %args );
 }
 
-sub clean {
+sub cleanup {
     my $self = shift;
-    my %args = (
-        days => 30,
-        get_smart_args( @_ ),
-    );
+    my $days = cfg('billing')->{cleanup}->{ $self->kind } || 30;
 
-    $self->srv('console')->clean( days => $args{days} );
+    $self->srv('console')->cleanup( days => $days );
 
-    return $self->_delete( where => {
-        executed => { '<', \[ 'NOW() - INTERVAL ? DAY', 30 ] },
+    $self->_delete( where => {
+        executed => { '<', \[ 'NOW() - INTERVAL ? DAY', $days ] },
     });
+
+    return $self;
 }
 
 1;

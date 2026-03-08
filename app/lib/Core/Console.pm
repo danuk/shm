@@ -79,15 +79,15 @@ sub eof {
     return $self->get->{eof};
 }
 
-sub clean {
+sub cleanup {
     my $self = shift;
     my %args = (
         days => 30,
-        get_smart_args( @_ ),
+        @_,
     );
 
     return $self->_delete( where => {
-        start => { '<', \[ 'NOW() - INTERVAL ? DAY', 30 ] },
+        start => { '<', \[ 'NOW() - INTERVAL ? DAY', $args{days} ] },
     });
 }
 

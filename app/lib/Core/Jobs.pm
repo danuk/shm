@@ -69,24 +69,8 @@ sub job_cleanup {
     my $self = shift;
     my $task = shift;
 
-    my $days = $task->event_settings->{days} || 10;
-    my @arr = get_service('us')->list_for_delete( days => $days );;
-
-    for ( @arr ) {
-        say sprintf("%d %d %s %s",
-            $_->{user_id},
-            $_->{user_service_id},
-            $_->{created},
-            $_->{expire},
-        );
-
-        my $user = $self->user->id( $_->{user_id} );
-
-        my $us = $user->us->id( $_->{user_service_id} );
-        next unless $us->lock();
-        $us->delete;
-        $us->commit;
-    }
+    get_service('us')->cleanup();
+    get_service('SpoolHistory')->cleanup()->commit();
 
     return SUCCESS, { msg => 'successful' };
 }
