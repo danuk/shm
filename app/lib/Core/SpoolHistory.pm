@@ -33,7 +33,8 @@ sub add {
 
 sub cleanup {
     my $self = shift;
-    my $days = cfg('billing')->{cleanup}->{ $self->kind } || 30;
+    my $days = cfg('billing')->{cleanup}->{ $self->kind } // 30;
+    return $self unless $days;
 
     $self->srv('console')->cleanup( days => $days );
 

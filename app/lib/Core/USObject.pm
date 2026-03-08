@@ -813,30 +813,38 @@ sub items {
 sub list_for_delete {
     my $self = shift;
 
-    my $days_blocked = cfg('billing')->{cleanup}->{ $self->kind }->{block} || 10;
-    my $days_wait_for_pay = cfg('billing')->{cleanup}->{ $self->kind }->{wait_for_pay} || 10;
+    my $days_blocked = cfg('billing')->{cleanup}->{ $self->kind }->{block} // 10;
+    my $days_wait_for_pay = cfg('billing')->{cleanup}->{ $self->kind }->{wait_for_pay} // 10;
+
+    my @query;
+
+    if ( $days_blocked ) {
+        push @query, {
+            parent => undef,
+            auto_bill => 1,
+            status => STATUS_BLOCK,
+            expire => {
+                '<', \[ 'NOW() - INTERVAL ? DAY', $days_blocked ],
+            },
+        };
+    }
+
+    if ( $days_wait_for_pay ) {
+        push @query, {
+            parent => undef,
+            auto_bill => 1,
+            status => STATUS_WAIT_FOR_PAY,
+            created =>{
+                '<', \[ 'NOW() - INTERVAL ? DAY', $days_wait_for_pay ],
+            },
+        };
+    }
+
+    return [] unless @query;
 
     return $self->items(
         admin => 1,
-        where => { -OR => [
-                {
-                    parent => undef,
-                    auto_bill => 1,
-                    status => STATUS_BLOCK,
-                    expire => {
-                        '<', \[ 'NOW() - INTERVAL ? DAY', $days_blocked ],
-                    },
-                },
-                {
-                    parent => undef,
-                    auto_bill => 1,
-                    status => STATUS_WAIT_FOR_PAY,
-                    created =>{
-                        '<', \[ 'NOW() - INTERVAL ? DAY', $days_wait_for_pay ],
-                    },
-                },
-            ],
-        },
+        where => { -OR => \@query },
     );
 }
 
