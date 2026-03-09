@@ -639,26 +639,24 @@ sub stats {
         next unless exists $args->{$field};
 
         my $conf = $self->structure->{$field};
-        my $mode = $conf->{stats_mode} // 'asis';
+        my $mode = $conf->{stats_mode};
 
         my $value;
 
-        if ($mode eq 'inc') {
+        if ( $mode eq 'inc' ) {
 
             $value = 1;
 
-        } elsif ($mode eq 'diff') {
+        } elsif ( $mode eq 'diff' ) {
 
             my $method = "get_$field";
             my $current = $self->$method // 0;
             $value = $current + 0 - $args->{$field};
 
-        } elsif ($mode eq 'asis') {
+        } else {
 
             $value = $args->{$field};
 
-        } else {
-            next;
         }
 
         $self->srv('statistics')->add(
