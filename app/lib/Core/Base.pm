@@ -622,7 +622,7 @@ sub stats_fields {
     my @fields;
 
     for my $field (keys %$structure) {
-        push @fields, $field if $structure->{$field}->{user_for_stats};
+        push @fields, $field if $structure->{$field}->{use_for_stats};
     }
 
     return @fields;
@@ -638,9 +638,28 @@ sub stats {
 
         next unless exists $args->{$field};
 
-        my $value = $self->structure->{$field}->{count_for_stats}
-            ? 1
-            : $args->{$field};
+        my $conf = $self->structure->{$field};
+        my $mode = $conf->{stats_mode} // 'asis';
+
+        my $value;
+
+        if ($mode eq 'inc') {
+
+            $value = 1;
+
+        } elsif ($mode eq 'diff') {
+
+            my $method = "get_$field";
+            my $current = $self->$method // 0;
+            $value = $current + 0 - $args->{$field};
+
+        } elsif ($mode eq 'asis') {
+
+            $value = $args->{$field};
+
+        } else {
+            next;
+        }
 
         $self->srv('statistics')->add(
             $self->kind,
