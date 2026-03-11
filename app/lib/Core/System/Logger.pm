@@ -14,6 +14,9 @@ use Core::Utils qw(
 $SIG{__DIE__} = sub {
     my $error = shift;
 
+    # Don't log errors that are caught inside eval blocks
+    return if $^S;
+
     # 1. Проверяем, является ли ошибка объектом Template::Exception
     if (blessed($error) && $error->isa('Template::Exception')) {
         my $type = $error->type;

@@ -7,6 +7,7 @@ use utf8;
 use Core::Base;
 use Core::Const;
 
+use threads; # to prevent the message on aarch64 (ARM): Can't locate object method "tid" via package "threads"
 use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP qw();
 use Try::Tiny;
@@ -237,7 +238,7 @@ sub send_mail {
         $smtp_params{sasl_username} = $args{user}     if $args{user};
         $smtp_params{sasl_password} = $args{password} if $args{password};
 
-        my $transport = Email::Sender::Transport::SMTP->new(\%smtp_params);
+        my $transport = Email::Sender::Transport::SMTP->new( \%smtp_params );
 
         try {
             sendmail( $email, { transport => $transport });
