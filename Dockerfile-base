@@ -40,7 +40,7 @@ RUN apt-get update && apt-get install -y \
     libcrypt-jwt-perl \
     libmime-base32-perl \
     libmath-random-secure-perl \
-    libauthen-sasl-cyrus-perl \
+    libauthen-sasl-perl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/cache/apt/* \
