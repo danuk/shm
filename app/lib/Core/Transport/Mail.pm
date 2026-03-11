@@ -218,21 +218,26 @@ sub send_mail {
     unless ( $ENV{SHM_TEST} ) {
         my ( $host, $port ) = split(/:/, $args{host} );
 
-        my $ssl = 0;
+        my %smtp_params = (
+            host    => $host,
+            port    => $port || 25,
+            timeout => $args{timeout} || 30,
+            defined $args{ssl} ? ( ssl => $args{ssl} ) : (),
+            defined $args{starttls} ? ( starttls => $args{starttls} ) : (),
+        );
+
+        # Определяем тип шифрования
         if ( $port == 465 ) {
-            $ssl = 'ssl';
-        } elsif ( $port == 587 ) {
-            $ssl = 'starttls';
+            $smtp_params{ssl} //= 1;       # Прямой SSL/TLS
+        } elsif ( $port == 587 || $port == 25 ) {
+            $smtp_params{starttls} //= 1;  # Команда STARTTLS внутри сессии
         }
 
-        my $transport = Email::Sender::Transport::SMTP->new({
-          host => $host,
-          port => $port || 25,
-          ssl => $args{ssl} || $ssl,
-          timeout => $args{timeout} || 30,
-          $args{user} ? ( sasl_username => $args{user} ) : (),
-          $args{password} ? ( sasl_password => $args{password} ) : (),
-        });
+        # Добавляем авторизацию, если есть
+        $smtp_params{sasl_username} = $args{user}     if $args{user};
+        $smtp_params{sasl_password} = $args{password} if $args{password};
+
+        my $transport = Email::Sender::Transport::SMTP->new(\%smtp_params);
 
         try {
             sendmail( $email, { transport => $transport });
