@@ -41,6 +41,8 @@ sub structure {
             type => 'text',
             required => 1,
             title => 'логин',
+            use_for_stats => 1,
+            stats_mode => 'inc',
         },
         password => {
             type => 'text',

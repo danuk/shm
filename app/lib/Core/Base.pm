@@ -30,6 +30,7 @@ our @EXPORT = qw(
     cache
     get_smart_args
     first_item
+    stats
 );
 
 use vars qw($AUTOLOAD);
@@ -612,6 +613,58 @@ sub cfg {
 
     my $data = $obj->get_data || {};
     return wantarray ? %{ $data } : $data;
+}
+
+sub stats_fields {
+    my $self = shift;
+
+    my $structure = $self->structure;
+    my @fields;
+
+    for my $field (keys %$structure) {
+        push @fields, $field if $structure->{$field}->{use_for_stats};
+    }
+
+    return @fields;
+}
+
+sub stats {
+    my ($self, $action, $args) = @_;
+
+    my @fields = $self->stats_fields;
+    return unless @fields;
+
+    for my $field (@fields) {
+
+        next unless exists $args->{$field};
+
+        my $conf = $self->structure->{$field};
+        my $mode = $conf->{stats_mode};
+
+        my $value;
+
+        if ( $mode eq 'inc' ) {
+
+            $value = 1;
+
+        } elsif ( $mode eq 'diff' ) {
+
+            my $method = "get_$field";
+            my $current = $self->$method // 0;
+            $value = $current + 0 - $args->{$field};
+
+        } else {
+
+            $value = $args->{$field};
+
+        }
+
+        $self->srv('statistics')->add(
+            $self->kind,
+            $field,
+            $value
+        );
+    }
 }
 
 1;
