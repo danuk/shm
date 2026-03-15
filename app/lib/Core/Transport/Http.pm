@@ -152,7 +152,6 @@ sub http {
     my $ua = $ua_cache{$cache_key} //= LWP::UserAgent->new(
         agent => 'SHM',
         timeout => $args{timeout},
-        keep_alive => 4,
         ssl_opts => {
             verify_hostname => $args{verify_hostname},
         },
