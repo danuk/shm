@@ -60,6 +60,7 @@ sub send {
         to => $self->{to},
         subject => $self->{subject} || 'SHM',
         from_name => $self->{from_name} || 'SHM',
+        content_type => $self->{content_type},
         message => $message,
         %data,
     );
@@ -175,8 +176,11 @@ sub send_mail {
         subject => 'SHM',
         from_name => 'SHM',
         message => undef,
+        content_type => undef,
         @_,
     );
+
+    $args{content_type} ||= 'text/plain';
 
     return undef, {
         error => "Incorrect FROM address: $args{from}",
@@ -207,7 +211,7 @@ sub send_mail {
             Cc      => $args{cc} || "",
             BCc     => $args{bcc} || "",
             Subject => sprintf("=?UTF-8?B?%s?=", MIME::Base64::encode_base64($args{subject}, '')),
-            'Content-Type' => 'text/plain; charset=UTF-8',
+            'Content-Type' => "$args{content_type}; charset=UTF-8",
             'Content-Transfer-Encoding' => 'base64',
         ],
         body => MIME::Base64::encode_base64($args{message}, ""),
