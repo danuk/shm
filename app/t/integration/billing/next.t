@@ -171,4 +171,71 @@ subtest 'create test service with next (without payment)' => sub {
     is( $us->get_next, $next_next_service->id );
 };
 
+subtest 'allow_partial_renew: renew for partial period when insufficient funds' => sub {
+    Test::MockTime::set_fixed_time('2019-10-01T00:00:00Z');
+
+    my $partial_service = get_service('service')->add(
+        name        => 'allow_partial_renew service',
+        cost        => '100',
+        period      => 1,
+        category    => 'test',
+        no_discount => 1,
+        config      => { allow_partial_renew => 1 },
+    );
+
+    $user->set( balance => 100, credit => 0 );
+    my $us = create_service( service_id => $partial_service->id );
+
+    is( $us->get_status, 'ACTIVE',              'Service is active after creation' );
+    is( $us->get_expire, '2019-11-01 00:58:02', 'Expire after first full period' );
+    is( $user->get->{balance}, 0,               'Balance after full payment' );
+
+    # Время истечения, у пользователя только половина суммы
+    Test::MockTime::set_fixed_time('2019-11-02T00:00:00Z');
+    $user->set( balance => 50, credit => 0 );
+
+    $us->touch();
+
+    is( $us->get_status, 'ACTIVE',              'Service is active after partial renewal' );
+    is( $us->get_expire, '2019-11-17 00:58:01', 'Expire after partial period (16 days)' );
+    is( $us->wd->months,  '0.16',               'Withdraw has partial months (16 days)' );
+    is( $us->wd->total,   50,                   'Withdraw total equals available balance' );
+    is( $user->get->{balance}, 0,               'Balance fully consumed after partial renewal' );
+};
+
+subtest 'allow_partial_renew: renew for partial period with balance and bonus' => sub {
+    Test::MockTime::set_fixed_time('2019-10-01T00:00:00Z');
+
+    my $partial_service = get_service('service')->add(
+        name        => 'allow_partial_renew service with bonus',
+        cost        => '100',
+        period      => 1,
+        category    => 'test',
+        no_discount => 1,
+        config      => { allow_partial_renew => 1 },
+    );
+
+    $user->set( balance => 100, bonus => 0, credit => 0 );
+    my $us = create_service( service_id => $partial_service->id );
+
+    is( $us->get_status, 'ACTIVE',              'Service is active after creation' );
+    is( $us->get_expire, '2019-11-01 00:58:02', 'Expire after first full period' );
+    is( $user->get_balance, 0,                  'Balance after full payment' );
+
+    # Время истечения, у пользователя недостаточно денег, но есть бонусы
+    # баланс=30, бонусы=20, итого=50 -> 16 дней
+    Test::MockTime::set_fixed_time('2019-11-02T00:00:00Z');
+    $user->set( balance => 30, bonus => 20, credit => 0 );
+
+    $us->touch();
+
+    is( $us->get_status,       'ACTIVE',              'Service is active after partial renewal' );
+    is( $us->get_expire,       '2019-11-17 00:58:01', 'Expire after partial period (16 days)' );
+    is( $us->wd->months,       '0.16',                'Withdraw has partial months (16 days)' );
+    is( $us->wd->total,        30,                    'Withdraw total equals balance charged' );
+    is( $us->wd->get_bonus,    20,                    'Withdraw bonus equals bonus charged' );
+    is( $user->get_balance,    0,                     'Balance fully consumed after partial renewal' );
+    is( $user->get_bonus,      0,                     'Bonus fully consumed after partial renewal' );
+};
+
 done_testing();

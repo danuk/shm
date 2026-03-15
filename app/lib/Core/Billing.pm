@@ -183,6 +183,27 @@ sub add_withdraw_next {
         bonus => 0,
     );
 
+    # Если денег не хватает и установлен флаг продления на всю сумму, то вычисляем wd здесь
+    if ( $self->service->settings->{allow_partial_renew} ) {
+        my $pay = calc_payment( $self, $wd{total} );
+        unless ( $pay ) {
+            my $user = $self->user;
+            my $total = $user->get_balance;
+            my $bonus = calc_available_bonuses( $self, $user->get_bonus, $total );
+            my $months = calc_period_by_total(
+                $self->billing,
+                total => $total + $bonus,
+                cost => $wd->{cost},
+                period => $self->service->get_period,
+            );
+
+            if ( $months ne '0.0000' ) {
+                $wd{total}  = $total + $bonus;
+                $wd{months} = $months;
+            }
+        }
+    }
+
     return add_withdraw( $self, %wd );
 }
 
