@@ -528,7 +528,7 @@ sub html_escape {
 }
 
 sub encode_base64 {
-    return MIME::Base64::encode_base64( shift );
+    return MIME::Base64::encode_base64( shift, '' );
 }
 
 sub decode_base64 {
