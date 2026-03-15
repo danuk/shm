@@ -1080,9 +1080,17 @@ sub emails {
     my $self = shift;
 
     my %profile = $self->profile;
-    my $email = $self->get_settings->{email} || $self->get_login || $profile{email};
+    my @emails = (
+        $self->get_settings->{email},
+        $self->get_login,
+        $profile{email},
+    );
 
-    return is_email($email) ? $email : undef;
+    for ( @emails ) {
+        return $_ if is_email( $_ );
+    }
+
+    return undef;
 }
 
 sub referrals {
