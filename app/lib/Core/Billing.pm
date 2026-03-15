@@ -223,6 +223,51 @@ sub calc_withdraw {
     return %wd;
 }
 
+# принимает сумму в качестве аргумента
+# вычисляет доступные бонусы
+# проверяет возможность оплаты списания (баланс, бонусы, скидки и т.п.)
+# возвращает структуру в случае успеха: деньги и бонусы, 0 - в случае нехватки средств
+sub calc_payment {
+    my $self  = shift;
+    my $total = shift;
+
+    my $user  = $self->user;
+    my $bonus = calc_available_bonuses( $self, $user->get_bonus, $total );
+
+    my $check_total = $total;
+    my $root = $self->top_parent;
+    if ( $root->service->get_is_composite ) {
+        if ( $self->id == $root->id ) {
+            # I'm a root
+            $check_total = $self->wd_total_composite;
+        } else {
+            # I'm a child
+            return 0 unless $root->is_paid;
+        }
+    }
+
+    # Not enough money
+    return 0 if (
+                    $check_total > 0 &&
+                    $user->get_balance + $user->get_credit + $bonus < $check_total &&
+                    !$user->get_can_overdraft &&
+                    !$self->get_pay_in_credit );
+
+    if ( $bonus >= $total ) {
+        $bonus = $total;
+        $total = 0;
+    } else {
+        $total -= $bonus;
+    }
+
+    return {
+        bonus => $bonus,
+        total => $total,
+    };
+}
+
+# метод пробует оплатить списание
+# списывает деньги и бонусы с баланса и возвращает статус
 sub is_pay {
     my $self = shift;
 
@@ -238,45 +283,15 @@ sub is_pay {
     # Already withdraw
     return 1 if $wd->get_withdraw_date;
 
-    my $user = $self->user;
-    my $balance = $user->get_balance + $user->get_credit;
-    my $bonus = calc_available_bonuses( $self, $user->get_bonus, $wd->get_total );
-    my $total = $wd->get_total;
+    my $pay = calc_payment( $self, $wd->get_total ) or return 0;
+    my ( $bonus, $total ) = @{$pay}{qw( bonus total )};
 
-    my $root = $self->top_parent;
-    if ( $root->service->get_is_composite ) {
-        if ( $self->id == $root->id ) {
-            # I'm a root
-            $total = $self->wd_total_composite;
-        } else {
-            # I'm a child
-            return 0 unless $root->is_paid;
-        }
-    }
-
-    # Not enough money
-    return 0 if (
-                    $total > 0 &&
-                    $balance + $bonus < $total &&
-                    !$user->get_can_overdraft &&
-                    !$self->get_pay_in_credit );
-
-    # refresh total after composite services
-    $total = $wd->get_total;
-
-    if ( $bonus >= $total ) {
-        $bonus = $total;
-        $total = 0;
-    } else {
-        $total -= $bonus;
-    }
-
-    $user->set_bonus( bonus => -$bonus, comment => { withdraw_id => $wd->id } );
-    $user->set_balance( balance => -$total );
+    $self->user->set_bonus( bonus => -$bonus, comment => { withdraw_id => $wd->id } );
+    $self->user->set_balance( balance => -$total );
 
     $wd->set(
-        bonus => $bonus,
-        total => $total,
+        bonus         => $bonus,
+        total         => $total,
         withdraw_date => now,
     );
 
