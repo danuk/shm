@@ -47,7 +47,7 @@ sub init {
         @_,
     );
 
-    $self->{server} = 'https://api.telegram.org';
+    $self->{server} = $self->config->{server} || 'https://api.telegram.org';
     state $cached_ua = LWP::UserAgent->new(
         timeout => 10,
         keep_alive => 4,  # Reuse TCP connections to api.telegram.org
@@ -60,7 +60,7 @@ sub init {
 }
 
 sub config {
-    return get_service('config')->data_by_name('telegram') || {};
+    return cfg('telegram') || {};
 }
 
 sub user_tg_settings {
