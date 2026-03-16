@@ -89,7 +89,8 @@ sub parse {
         get_smart_args( @_ ),
     );
 
-    my $data = $args{data} || $self->data || return '';
+    my $source = $args{data} ? \$args{data} : $self->id;
+    return '' unless $source;
 
     my (
         $pay_id,
@@ -201,19 +202,23 @@ sub parse {
     # Cache Template objects — they are stateless and safe to reuse across requests
     state %tt_cache;
     my $cache_key = $args{START_TAG} . '|' . $args{END_TAG};
-    my $template = $tt_cache{$cache_key} //= Template->new({
-        START_TAG => quotemeta( $args{START_TAG} ),
-        END_TAG   => quotemeta( $args{END_TAG} ),
-        ANYCASE => 1,
-        INTERPOLATE  => 0,
-        PRE_CHOMP => 1,
-        EVAL_PERL => 1,
-        INCLUDE_PATH => 'data/templates',
-        #LOAD_TEMPLATES => [ $provider1 ],
-    });
+    my $template = $tt_cache{$cache_key} //= do {
+        my %tt_config = (
+            START_TAG   => quotemeta( $args{START_TAG} ),
+            END_TAG     => quotemeta( $args{END_TAG} ),
+            ANYCASE     => 1,
+            INTERPOLATE => 0,
+            PRE_CHOMP   => 1,
+            EVAL_PERL   => 1,
+        );
+        Template->new({
+            %tt_config,
+            LOAD_TEMPLATES => [ Core::Template::Provider->new( \%tt_config ) ],
+        });
+    };
 
     my $result = "";
-    unless ($template->process( \$data, $vars, \$result )) {
+    unless ($template->process( $source, $vars, \$result )) {
         my $err = "Template render error: " . $template->error();
         logger->error( $err );
         report->add_error( $err );
@@ -267,7 +272,7 @@ sub parse_for_api {
     $template->used_from_http( 1 );
 
     if ( $args{do_not_parse} ) {
-        return $template->get->{data};
+        return $template->get_data;
     } else {
         return scalar $template->parse( %args );
     }
@@ -518,6 +523,30 @@ sub _delete {
     unlink $template;
     unlink $settings;
     return 1;
+}
+
+package Core::Template::Provider;
+
+use parent 'Template::Provider';
+use Template::Constants ':status';
+use Core::System::ServiceManager qw( get_service );
+
+# Загружает шаблон по имени из БД или файлов через Core::Template сервис
+sub _load {
+    my ( $self, $name ) = @_;
+
+    # Scalar refs are inline templates — delegate to base class
+    return $self->SUPER::_load( $name ) if ref $name eq 'SCALAR';
+
+    $name =~ s{^\./}{};
+    my $tpl = get_service('template', _id => $name ) || return ( undef, STATUS_DECLINED );
+
+    return {
+        name => $name,
+        text => $tpl->get_data,
+        time => time(),
+        load => time(),
+    };
 }
 
 1;
