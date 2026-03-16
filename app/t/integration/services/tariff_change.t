@@ -114,5 +114,52 @@ subtest 'Check ACTIVE -> ACTIVE' => sub {
     is ( $user->balance, 100 );
 };
 
+subtest 'Check WAIT_FOR_PAY -> ACTIVE with allow_partial_period' => sub {
+    $user->set( balance => 50, credit => 0 );
+
+    my $us = $service->reg(
+        service_id => $service->id,
+    );
+
+    is( $us->service_id, $service->id );
+    is( $us->status, STATUS_WAIT_FOR_PAY );
+
+    $us->change( service_id => $service_next->id, allow_partial_period => 1 );
+
+    is( $us->service_id, $service_next->id );
+    is( $us->status, STATUS_ACTIVE );
+    is( $us->withdraw->total, 50 );
+    isnt( $us->withdraw->months, '0.0000' );
+    is( $user->balance, 0 );
+};
+
+subtest 'Check BLOCK -> ACTIVE with allow_partial_period' => sub {
+    $user->set( balance => 200, credit => 0 );
+
+    my $us = $service->reg(
+        service_id => $service->id,
+    );
+
+    is( $us->status, STATUS_ACTIVE );
+    is( $user->balance, 0 );
+
+    $user->set( balance => -200, credit => 0 );
+    $us->change( service_id => $service_next->id );
+
+    is( $us->service_id, $service_next->id );
+    is( $us->status, STATUS_BLOCK );
+    is( $us->withdraw->total, $service_next->cost );
+    is( $user->balance, 0 );
+
+    $user->set( balance => 50, credit => 0 );
+    $us->change( service_id => $service_next->id, allow_partial_period => 1 );
+
+    is( $us->service_id, $service_next->id );
+    is( $us->status, STATUS_ACTIVE );
+    is( $us->withdraw->total, 50 );
+    isnt( $us->withdraw->months, '0.0000' );
+    is( $user->balance, 0 );
+};
+
 done_testing();
 

@@ -184,24 +184,8 @@ sub add_withdraw_next {
     );
 
     # Если денег не хватает и установлен флаг продления на всю сумму, то вычисляем wd здесь
-    if ( $self->service->settings->{allow_partial_renew} ) {
-        my $pay = calc_payment( $self, $wd{total} );
-        unless ( $pay ) {
-            my $user = $self->user;
-            my $total = $user->get_balance;
-            my $bonus = calc_available_bonuses( $self, $user->get_bonus, $total );
-            my $months = calc_period_by_total(
-                $self->billing,
-                total => $total + $bonus,
-                cost => $wd->{cost},
-                period => $self->service->get_period,
-            );
-
-            if ( $months ne '0.0000' ) {
-                $wd{total}  = $total + $bonus;
-                $wd{months} = $months;
-            }
-        }
+    if ( $self->service->settings->{allow_partial_period} ) {
+        apply_partial_period( $self, \%wd, $self->service->get_period );
     }
 
     return add_withdraw( $self, %wd );
@@ -436,6 +420,10 @@ sub prolongate {
 
 sub switch_to_next_service {
         my $us = shift;
+        my %args = (
+            allow_partial_period => 0,
+            @_,
+        );
 
         my $new_service_id = $us->get_next;
         unless ( $new_service_id ) {
@@ -451,6 +439,10 @@ sub switch_to_next_service {
 
         my %wd = calc_withdraw( $us->billing, $service->get );
         delete @wd{ qw/ create_date end_date withdraw_date user_service_id / };
+
+        if ( $args{allow_partial_period} ) {
+            apply_partial_period( $us, \%wd, $service->get_period );
+        }
 
         my $wd_id;
         my $wd = $us->withdraw;
@@ -604,6 +596,30 @@ sub calc_period_by_total {
 
     no strict 'refs';
     return &{"Core::Billing::${billing}::calc_period_by_total"}( @_ );
+}
+
+sub apply_partial_period {
+    my $us     = shift;
+    my $wd_ref = shift;
+    my $period = shift;
+
+    my $pay = calc_payment( $us, $wd_ref->{total} );
+    return if $pay;
+
+    my $user  = $us->user;
+    my $total = $user->get_balance;
+    my $bonus = calc_available_bonuses( $us, $user->get_bonus, $total );
+    my $months = calc_period_by_total(
+        $us->billing,
+        total  => $total + $bonus,
+        cost   => $wd_ref->{cost},
+        period => $period,
+    );
+
+    if ( $months ne '0.0000' ) {
+        $wd_ref->{total}  = $total + $bonus;
+        $wd_ref->{months} = $months;
+    }
 }
 
 sub calc_available_bonuses {

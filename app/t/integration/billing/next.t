@@ -171,16 +171,16 @@ subtest 'create test service with next (without payment)' => sub {
     is( $us->get_next, $next_next_service->id );
 };
 
-subtest 'allow_partial_renew: renew for partial period when insufficient funds' => sub {
+subtest 'allow_partial_period: renew for partial period when insufficient funds' => sub {
     Test::MockTime::set_fixed_time('2019-10-01T00:00:00Z');
 
     my $partial_service = get_service('service')->add(
-        name        => 'allow_partial_renew service',
+        name        => 'allow_partial_period service',
         cost        => '100',
         period      => 1,
         category    => 'test',
         no_discount => 1,
-        config      => { allow_partial_renew => 1 },
+        config      => { allow_partial_period => 1 },
     );
 
     $user->set( balance => 100, credit => 0 );
@@ -203,16 +203,16 @@ subtest 'allow_partial_renew: renew for partial period when insufficient funds' 
     is( $user->get->{balance}, 0,               'Balance fully consumed after partial renewal' );
 };
 
-subtest 'allow_partial_renew: renew for partial period with balance and bonus' => sub {
+subtest 'allow_partial_period: renew for partial period with balance and bonus' => sub {
     Test::MockTime::set_fixed_time('2019-10-01T00:00:00Z');
 
     my $partial_service = get_service('service')->add(
-        name        => 'allow_partial_renew service with bonus',
+        name        => 'allow_partial_period service with bonus',
         cost        => '100',
         period      => 1,
         category    => 'test',
         no_discount => 1,
-        config      => { allow_partial_renew => 1 },
+        config      => { allow_partial_period => 1 },
     );
 
     $user->set( balance => 100, bonus => 0, credit => 0 );

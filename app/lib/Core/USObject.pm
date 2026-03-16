@@ -903,6 +903,7 @@ sub change {
     my %args = (
         service_id => undef,
         finish_active => 1,
+        allow_partial_period => 0,
         get_smart_args( @_ ),
     );
 
@@ -917,7 +918,9 @@ sub change {
     $self->set( next => $service->id );
 
     if ( $self->get_status eq STATUS_WAIT_FOR_PAY || $self->get_status eq STATUS_BLOCK ) {
-        Core::Billing::switch_to_next_service( $self );
+        Core::Billing::switch_to_next_service( $self,
+            allow_partial_period => $args{allow_partial_period},
+        );
     } elsif ( $self->get_status eq STATUS_ACTIVE ) {
         $self->finish if $args{finish_active};
     } else {
