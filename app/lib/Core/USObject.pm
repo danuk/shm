@@ -363,9 +363,13 @@ sub billing {
 sub touch {
     my $self = shift;
     my $e = shift || EVENT_PROLONGATE;
+    my %args = (
+        allow_partial_period => 0,
+        get_smart_args( @_ ),
+    );
 
     switch_user( $self->get_user_id );
-    return $self->process_service_recursive( $e );
+    return $self->process_service_recursive( $e, %args );
 }
 
 sub touch_api {
@@ -927,7 +931,7 @@ sub change {
         return undef;
     }
 
-    $self->touch;
+    $self->touch( EVENT_PROLONGATE, %args );
     return 1;
 }
 

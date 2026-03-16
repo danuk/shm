@@ -94,15 +94,17 @@ sub create_service_recursive {
 sub process_service_recursive {
     my $service = shift;
     my $event = shift || EVENT_PROLONGATE;
+    my %args = @_;
 
     return undef unless ref $service;
 
-    if ( $event = process_service( $service, $event ) ) {
+    if ( $event = process_service( $service, $event, %args ) ) {
         logger->info('Process service: '. $service->id . ", Result: [$event]" );
         for my $child ( @{$service->children} ) {
             process_service_recursive(
                 $service->id( $child->id ),
                 $event,
+                %args,
             );
         }
         $service->event( $event );
@@ -120,6 +122,7 @@ sub process_service_recursive {
 sub process_service {
     my $self = shift;
     my $event = shift;
+    my %args = @_;
 
     logger->info('Process service: '. $self->id . ", Event: [$event]" );
 
@@ -159,7 +162,7 @@ sub process_service {
         return undef;
     }
 
-    return prolongate( $self );
+    return prolongate( $self, %args );
 }
 
 sub add_withdraw {
@@ -352,6 +355,7 @@ sub prolongate {
     my $self = shift;
     my %args = (
         force => 0,
+        allow_partial_period => 0,
         @_,
     );
 
@@ -384,7 +388,7 @@ sub prolongate {
     if ( $self->withdraw->paid && $self->get_next == -1 ) {
         return remove( $self );
     } elsif ( $self->withdraw->paid && $self->get_next ) {
-        unless (switch_to_next_service( $self )) {
+        unless (switch_to_next_service( $self, %args )) {
             logger->error( "Failed to switch to next service for user service: " . $self->id );
             return undef;
         }
@@ -440,7 +444,7 @@ sub switch_to_next_service {
         my %wd = calc_withdraw( $us->billing, $service->get );
         delete @wd{ qw/ create_date end_date withdraw_date user_service_id / };
 
-        if ( $args{allow_partial_period} ) {
+        if ( $args{allow_partial_period} || $service->settings->{allow_partial_period} ) {
             apply_partial_period( $us, \%wd, $service->get_period );
         }
 
