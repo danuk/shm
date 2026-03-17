@@ -539,6 +539,7 @@ sub _load {
     return $self->SUPER::_load( $name ) if ref $name eq 'SCALAR';
 
     $name =~ s{^\./}{};
+    $name =~ s{\.tpl$}{};
     my $tpl = get_service('template', _id => $name ) || return ( undef, STATUS_DECLINED );
 
     return {

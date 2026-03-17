@@ -282,7 +282,10 @@ sub execute_do {
     if (my $config = Core::System::ServiceManager::is_registered('config')) {
         my $dbh = $config->local('dbh');
         $config->{config}->{local} = {};
-        $config->local('dbh', $dbh) if $dbh;
+        if ( $dbh ) {
+            $dbh->commit(); # end transactions
+            $config->local('dbh', $dbh);
+        }
     }
 }
 
