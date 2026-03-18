@@ -19,7 +19,6 @@ my %args = (
     event => {
         title => 'test mail',
         kind => 'Transport::Mail',
-        method => 'send',
         settings => {
             subject => 'Тестовое письмо из SHM',
             message => 'Это тестовое письмо отправленное из SHM',
