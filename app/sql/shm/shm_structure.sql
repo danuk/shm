@@ -229,6 +229,7 @@ CREATE TABLE `users` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `partner_id` int(11) DEFAULT NULL,
   `login` char(64) NOT NULL,
+  `login2` char(64) DEFAULT NULL,
   `password` char(64) DEFAULT NULL,
   `type` tinyint(4) DEFAULT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -249,7 +250,8 @@ CREATE TABLE `users` (
   `create_act` tinyint(4) DEFAULT NULL,
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`user_id`),
-  UNIQUE KEY `users_uniq` (`login`)
+  UNIQUE KEY `users_uniq` (`login`),
+  UNIQUE KEY `users_uniq_login2` (`login2`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `withdraw_history`;
