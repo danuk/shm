@@ -42,6 +42,12 @@ sub structure {
             required => 1,
             title => 'логин',
         },
+        login2 => {
+            type => 'text',
+            required => 0,
+            default => undef,
+            title => 'логин (дополнительный)',
+        },
         password => {
             type => 'text',
             required => 1,
