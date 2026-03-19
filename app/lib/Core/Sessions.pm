@@ -45,7 +45,6 @@ sub add {
 
     my $session_id = $self->SUPER::add( %args );
 
-    $self->_delete_expired;
     $self->res->{id} = $session_id;
 
     return $session_id;
@@ -73,7 +72,7 @@ sub validate {
     return $session;
 }
 
-sub _delete_expired {
+sub cleanup {
     my $self = shift;
 
     $self->_delete(
@@ -81,12 +80,11 @@ sub _delete_expired {
             updated => { '<', \[ 'NOW() - INTERVAL ? DAY', 3 ] },
         },
     );
+    return $self;
 }
 
 sub delete {
     my $self = shift;
-
-    $self->_delete_expired;
     $self->SUPER::delete( @_ );
 }
 
@@ -114,12 +112,6 @@ sub delete_all {
             user_id => $self->SUPER::user_id,
         },
     );
-}
-
-sub user_id {
-    my $self = shift;
-
-    return $self->res->{user_id};
 }
 
 1;
