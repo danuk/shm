@@ -154,9 +154,23 @@ sub do {
     return $res eq '0E0' ? 0 : $res;
 }
 
+sub add_post_commit_callback {
+    my $self = shift;
+    my $cb   = shift;
+    push @{ get_service('config')->local->{_post_commit_callbacks} ||= [] }, $cb;
+}
+
 sub commit {
     my $self = shift;
-    return $self->dbh->commit unless $ENV{SHM_TEST};
+    return if $ENV{SHM_TEST};
+    my $result = $self->dbh->commit;
+
+    my $callbacks = delete get_service('config')->local->{_post_commit_callbacks};
+    for my $cb ( @{ $callbacks || [] } ) {
+        eval { $cb->() };
+        logger->warning("Post-commit callback failed: $@") if $@;
+    }
+    return $result;
 }
 
 sub rollback {
