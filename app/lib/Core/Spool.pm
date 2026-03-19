@@ -102,7 +102,8 @@ sub add {
     }
 
     my $res = $self->SUPER::add( %args );
-    $self->wake_workers();
+    my $spool = $self;
+    $self->add_post_commit_callback( sub { $spool->wake_workers() } );
     return $res;
 }
 
