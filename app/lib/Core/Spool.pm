@@ -101,7 +101,19 @@ sub add {
         $args{event}{task_id} ||= $task_id;
     }
 
-    return $self->SUPER::add( %args );
+    my $res = $self->SUPER::add( %args );
+    $self->wake_workers();
+    return $res;
+}
+
+sub wake_workers {
+    my $self = shift;
+    my ($id) = $self->dbh->selectrow_array(
+        "SELECT id FROM information_schema.processlist
+        WHERE info LIKE 'SELECT SLEEP(%'
+        ORDER BY time DESC LIMIT 1"
+    );
+    $self->dbh->do("KILL QUERY $id") if $id;
 }
 
 # формирует и выдает список задач для исполнения

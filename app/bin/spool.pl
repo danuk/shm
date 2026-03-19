@@ -20,6 +20,9 @@ $user->dbh->{RaiseError} = 1;
 # Core::System::ServiceManager::setup();
 
 my $task;
+my $request_count = 0;
+my $max_requests = 10000;
+my $random_factor = int rand(11);
 
 say "SHM spool started at: " . localtime;
 
@@ -33,6 +36,7 @@ for (;;) {
 
             if ( ref $task ) {
                 $task_exists = 1;
+                $request_count++;
                 say encode_json_perl( $task );
             }
         } catch {
@@ -50,7 +54,17 @@ for (;;) {
         unregister_all();
     } while defined $task;
 
-    sleep 1 unless $task_exists;
+    if ( $request_count >= $max_requests ) {
+        say "SHM spool restarting after $request_count requests at: " . localtime;
+        exec $0 or die "Cannot restart: $!";
+    }
+
+    unless ($task_exists) {
+        $user->dbh->selectrow_array(
+            "SELECT SLEEP(?)",
+            undef, 10 + $random_factor
+        );
+    }
 }
 
 exit 0;
