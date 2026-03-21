@@ -293,14 +293,16 @@ sub price_list {
         my $limit_bonus_percent = $list->{ $si }->{config}->{limit_bonus_percent};
         if ( $bonus > 0 && defined $limit_bonus_percent ) {
             my $max_bonus = $cost * $limit_bonus_percent / 100;
-            $bonus = $max_bonus;
+            $bonus = $bonus > $max_bonus ? $max_bonus : $bonus;
         }
         my $real_cost = $cost - $cost_discount - $bonus;
         if ( $real_cost < 0 ) {
             $bonus += $real_cost;
             $real_cost = 0;
         }
+        my $partial_renew = $list->{ $si }->{config}->{allow_partial_renew};
 
+        $list->{ $si }->{partial_renew} = $partial_renew;
         $list->{ $si }->{discount} = $discount;
         $list->{ $si }->{cost_discount} = $cost_discount;
         $list->{ $si }->{real_cost} = $real_cost;
