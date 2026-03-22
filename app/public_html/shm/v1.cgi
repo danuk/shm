@@ -57,6 +57,13 @@ state $routes //= {
         skip_check_auth => 1,
     },
 },
+'/user/captcha' => {
+    GET => {
+        controller      => 'User',
+        method          => 'gen_captcha',
+        skip_check_auth => 1,
+    },
+},
 '/user' => {
     swagger => { tags => 'Пользователи' },
     GET => {
