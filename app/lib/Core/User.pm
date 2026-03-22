@@ -728,6 +728,52 @@ sub validate_attributes {
     return $report->is_success;
 }
 
+sub gen_captcha {
+    my $self = shift;
+
+    my $a  = int( rand(9) ) + 1;
+    my $b  = int( rand(9) ) + 1;
+    my $op = int( rand(2) ) ? '+' : '-';
+    ( $a, $b ) = ( $b, $a ) if $op eq '-' && $b > $a;
+
+    my $answer    = $op eq '+' ? $a + $b : $a - $b;
+    my $timestamp = time();
+    my $secret    = cfg('billing')->{captcha_secret} // 'shm_captcha_default_key';
+
+    my $sig   = hmac_sha1( "$answer|$timestamp", $secret );
+    my $token = encode_base64url( "$answer|$timestamp|$sig" );
+    $token =~ s/=+$//;
+
+    return {
+        question => "$a $op $b",
+        token    => $token,
+    };
+}
+
+sub verify_captcha {
+    my $self = shift;
+    my %args = (
+        token  => undef,
+        answer => undef,
+        @_,
+    );
+
+    return 0 unless defined $args{token} && defined $args{answer};
+
+    my $raw = eval { decode_base64url( $args{token} ) };
+    return 0 if $@ || !$raw;
+
+    my ( $stored_answer, $timestamp, $sig ) = split /\|/, $raw, 3;
+    return 0 unless defined $stored_answer && defined $timestamp && defined $sig;
+    return 0 if time() - $timestamp > 300;  # 5 minute expiry
+
+    my $secret   = cfg('billing')->{captcha_secret} // 'shm_captcha_default_key';
+    my $expected = hmac_sha1( "$stored_answer|$timestamp", $secret );
+    return 0 unless $sig eq $expected;
+
+    return int($stored_answer) == int($args{answer}) ? 1 : 0;
+}
+
 sub reg_api_safe {
     my $self = shift;
     my %args = (
@@ -742,6 +788,17 @@ sub reg_api_safe {
         report->status( 403 );
         report->add_error("Registration of new users is prohibited");
         return undef;
+    }
+
+    if ( cfg('billing')->{allow_user_register_captcha} ) {
+        unless ( $self->verify_captcha(
+            token  => $args{captcha_token},
+            answer => $args{captcha_answer},
+        ) ) {
+            report->status( 403 );
+            report->add_error('Invalid captcha');
+            return undef;
+        }
     }
 
     $self->set_user_fail_attempt( 'reg_api_safe', 3600 ); # 5 regs/hour
