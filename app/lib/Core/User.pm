@@ -379,6 +379,46 @@ sub set_new_passwd {
     return $new_password;
 }
 
+sub render_mail_text {
+    my $self = shift;
+    my %args = (
+        text => '',
+        vars => {},
+        @_,
+    );
+
+    my $text = defined $args{text} ? $args{text} : '';
+    my %vars = %{ $args{vars} || {} };
+
+    $text =~ s/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/defined $vars{$1} ? $vars{$1} : ''/ge;
+
+    return $text;
+}
+
+sub send_mail_message {
+    my $self = shift;
+    my %args = (
+        to => undef,
+        subject => undef,
+        message => undef,
+        @_,
+    );
+
+    return $self->srv('spool')->add(
+        event => {
+            title => 'send verify code',
+            name => 'SYSTEM',
+            server_gid => cfg('mail')->{server_gid} || GROUP_ID_MAIL,
+        },
+        settings => {
+            to => $args{to},
+            subject => $args{subject},
+            message => $args{message},
+            cfg('mail')->{from} ? ( from => cfg('mail')->{from} ) : (),
+        },
+    );
+}
+
 sub gen_session {
     my $self = shift;
     my %args = (
@@ -446,8 +486,7 @@ sub passwd_reset_request {
             return { msg => 'User is blocked' };
         }
 
-        my $config = get_service('config');
-        my $use_for_reset_password = $config->data_by_name('cli')->{use_for_reset_password};
+        my $use_for_reset_password = cfg('cli')->{use_for_reset_password};
 
         if ( $use_for_reset_password ) {
             my $token = passgen( 35 );
@@ -458,23 +497,31 @@ sub passwd_reset_request {
                 reset_password_verify_expires => $expires,
             });
 
-            my $project_name = $config->data_by_name('company')->{name} || 'SHM';
-            my $subject = "$project_name - Сброс пароля";
-            my $url = $config->data_by_name('cli')->{url};
+            my $project_name = cfg('company')->{name} || 'SHM';
+            my $url = cfg('cli')->{url};
             my $link = $url ? "$url?token=$token" : undef;
-            my $message = "Ваша ссылка для сброса пароля: $link\n\nСсылка действительна в течение часа.";
+            my %mail_vars = (
+                token => $token,
+                link => $link || '',
+                url => $url || '',
+                email => $args{email} || '',
+                project_name => $project_name,
+            );
 
-            $self->srv('spool')->add(
-                event => {
-                    title => 'send verify code',
-                    name => 'SYSTEM',
-                    server_gid => GROUP_ID_MAIL,
-                },
-                settings => {
-                    to => $args{email},
-                    subject => $subject,
-                    message => $message,
-                },
+            my $subject = $self->render_mail_text(
+                text => cfg('mail')->{reset_password}->{subject} || "$project_name - Сброс пароля",
+                vars => \%mail_vars,
+            );
+
+            my $message = $self->render_mail_text(
+                text => cfg('mail')->{reset_password}->{message} || "Ваша ссылка для сброса пароля: {{ link }}\n\nСсылка действительна в течение часа.",
+                vars => \%mail_vars,
+            );
+
+            $self->send_mail_message(
+                to => $args{email},
+                subject => $subject,
+                message => $message,
             );
         } else {
             $self->make_event( 'user_password_reset' );
@@ -590,21 +637,27 @@ sub verify_email {
             email_verify_expires => $expires,
         });
 
-        my $project_name = get_service('config')->data_by_name('company')->{name} || 'SHM';
-        my $subject = "$project_name - Код подтверждения email";
-        my $message = "Ваш код подтверждения: $code\n\nКод действителен 10 минут.";
+        my $project_name = cfg('company')->{name} || 'SHM';
+        my %mail_vars = (
+            code => $code,
+            email => $args{email},
+            project_name => $project_name,
+        );
 
-        $self->srv('spool')->add(
-            event => {
-                title => 'send verify code',
-                name => 'SYSTEM',
-                server_gid => GROUP_ID_MAIL,
-            },
-            settings => {
-                to => $args{email},
-                subject => $subject,
-                message => $message,
-            },
+        my $subject = $self->render_mail_text(
+            text => cfg('mail')->{email_verify}->{subject} || "$project_name - Код подтверждения email",
+            vars => \%mail_vars,
+        );
+
+        my $message = $self->render_mail_text(
+            text => cfg('mail')->{email_verify}->{message} || "Ваш код подтверждения: {{ code }}\n\nКод действителен 10 минут.",
+            vars => \%mail_vars,
+        );
+
+        $self->send_mail_message(
+            to => $args{email},
+            subject => $subject,
+            message => $message,
         );
 
         return { msg => 'Verification code sent' };
