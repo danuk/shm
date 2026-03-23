@@ -326,6 +326,25 @@ sub auth {
             password => $password,
         }
     );
+
+    unless ( $user_row ) {
+        if ( is_email( $args{login} ) ) {
+            my ( $email_user_row ) = $self->_list(
+                where => {
+                    sprintf('%s->>"$.%s"', 'settings', 'email') => $args{login},
+                },
+                limit => 1,
+            );
+            if ( $email_user_row ) {
+                my $email_password = $self->crypt_password(
+                    salt     => $email_user_row->{login},
+                    password => $args{password},
+                );
+                $user_row = $email_user_row if $email_password eq $email_user_row->{password};
+            }
+        }
+    }
+
     unless ( $user_row ) {
         return undef;
     }
