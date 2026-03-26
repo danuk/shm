@@ -300,7 +300,7 @@ sub price_list {
             $bonus += $real_cost;
             $real_cost = 0;
         }
-        my $partial_renew = $list->{ $si }->{config}->{allow_partial_renew};
+        my $partial_renew = $list->{ $si }->{config}->{allow_partial_period};
 
         $list->{ $si }->{partial_renew} = $partial_renew;
         $list->{ $si }->{discount} = $discount;
