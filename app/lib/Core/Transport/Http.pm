@@ -146,16 +146,24 @@ sub http {
 
     my $method = uc $args{method};
 
-    # Cache UA per timeout+verify_hostname combination
+    my $http_proxy  = $ENV{HTTP_PROXY}  || $ENV{http_proxy}  || '';
+    my $https_proxy = $ENV{HTTPS_PROXY} || $ENV{https_proxy} || '';
+
+    # Cache UA per timeout+verify_hostname+proxy combination
     state %ua_cache;
-    my $cache_key = join('|', $args{timeout}, $args{verify_hostname} // 0);
-    my $ua = $ua_cache{$cache_key} //= LWP::UserAgent->new(
-        agent => 'SHM',
-        timeout => $args{timeout},
-        ssl_opts => {
-            verify_hostname => $args{verify_hostname},
-        },
-    );
+    my $cache_key = join('|', $args{timeout}, $args{verify_hostname} // 0, $http_proxy, $https_proxy);
+    my $ua = $ua_cache{$cache_key} //= do {
+        my $ua = LWP::UserAgent->new(
+            agent => 'SHM',
+            timeout => $args{timeout},
+            ssl_opts => {
+                verify_hostname => $args{verify_hostname},
+            },
+        );
+        $ua->proxy('http',  $http_proxy)  if $http_proxy;
+        $ua->proxy('https', $https_proxy) if $https_proxy;
+        $ua;
+    };
 
     if ($method eq 'GET') {
         my $uri = URI->new($args{url});
