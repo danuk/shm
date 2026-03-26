@@ -48,10 +48,17 @@ sub init {
     );
 
     $self->{server} = $self->config->{server} || 'https://api.telegram.org';
-    state $cached_ua = LWP::UserAgent->new(
-        timeout => 10,
-        keep_alive => 4,  # Reuse TCP connections to api.telegram.org
-    );
+
+    my $http_proxy  = $ENV{HTTPS_PROXY} || $ENV{https_proxy} || $ENV{HTTP_PROXY} || $ENV{http_proxy} || '';
+    state %ua_cache;
+    my $cached_ua = $ua_cache{$http_proxy} //= do {
+        my $ua = LWP::UserAgent->new(
+            timeout => 10,
+            keep_alive => 4,  # Reuse TCP connections to api.telegram.org
+        );
+        $ua->proxy('https', $http_proxy) if $http_proxy;
+        $ua;
+    };
     $self->{lwp} = $cached_ua;
     $self->{webhook} = 0;
     $self->{deny_answer_direct} = 1;
