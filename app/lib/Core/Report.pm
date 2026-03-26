@@ -8,6 +8,8 @@ use Core::Base;
 *error = \&add_error;
 *warning = \&add_error;
 
+sub _id {}; # всегда один экземляр для всех
+
 sub add_error {
     my $self = shift;
     my @msg = @_;
