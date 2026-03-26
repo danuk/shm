@@ -6,6 +6,7 @@ use Test::More;
 use Test::Deep;
 
 $ENV{SHM_TEST} = 1;
+$ENV{DEBUG} = '';
 
 use Core::System::ServiceManager qw( get_service );
 
