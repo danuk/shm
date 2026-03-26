@@ -7,6 +7,8 @@ use Test::Deep;
 use HTTP::Response;
 use Core::Transport::Http; # monkey-patches HTTP::Response::json_content
 
+$ENV{DEBUG} = '';
+
 sub make_response {
     my %args = (
         code         => 200,

@@ -319,7 +319,7 @@ sub decode_json {
 
     my $json;
     eval{ $json = JSON->new->latin1->relaxed->decode( $data ) } or do {
-        get_service('logger')->error("Incorrect JSON field for decode: " . $data);
+        get_service('logger')->warning("Incorrect JSON field for decode: " . $data);
     };
 
     return $json;
@@ -385,7 +385,7 @@ sub encode_json_perl {
 
     my $json;
     eval{ $json = JSON->new->canonical->pretty( $args{pretty} )->encode( obj_to_json $data ) } or do {
-        get_service('logger')->error("Incorrect JSON data for encode: " . $data);
+        get_service('logger')->warning("Incorrect JSON data for encode: " . $data);
     };
 
     return $json;
@@ -402,7 +402,7 @@ sub encode_json {
 
     my $json;
     eval{ $json = JSON->new->latin1->canonical->pretty( $args{pretty} )->encode( encode_utf8($data) ) } or do {
-        get_service('logger')->error("Incorrect JSON data for encode: " . $data);
+        get_service('logger')->warning("Incorrect JSON data for encode: " . $data);
     };
 
     return $json;
