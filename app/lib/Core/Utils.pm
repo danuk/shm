@@ -731,13 +731,31 @@ sub uuid_gen {
     return $uuid;
 }
 
+sub _get_cors_origin {
+    my $origin = $ENV{HTTP_ORIGIN} // '';
+    return '' unless $origin;
+
+    my @allowed;
+    eval {
+        my $config = get_service('config');
+        my $data = $config->get_data if $config;
+        @allowed = @{ $data->{cors}->{allowed_origins} || [] } if $data;
+    };
+
+    for my $allowed (@allowed) {
+        return $origin if $origin eq $allowed;
+    }
+
+    return '';
+}
+
 sub print_header {
     my %args = (
         status => 200,
         type => 'application/json',
         charset => 'utf-8',
-        'Access-Control-Allow-Origin' => "$ENV{HTTP_ORIGIN}",
-        'Access-Control-Allow-Credentials' => 'true',
+        'Access-Control-Allow-Origin' => _get_cors_origin(),
+        'Access-Control-Allow-Credentials' => _get_cors_origin() ? 'true' : 'false',
         @_,
     );
 

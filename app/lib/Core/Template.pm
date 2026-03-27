@@ -209,7 +209,7 @@ sub parse {
             ANYCASE     => 1,
             INTERPOLATE => 0,
             PRE_CHOMP   => 1,
-            EVAL_PERL   => 1,
+            EVAL_PERL   => 0,
         );
         Template->new({
             %tt_config,

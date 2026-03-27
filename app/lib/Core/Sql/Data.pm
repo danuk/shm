@@ -277,7 +277,10 @@ sub query_for_order {
     my $field = exists $structure{ $args{sort_field} } ? $args{sort_field} : $self->get_table_key;
     return undef unless $field;
 
-    return [ $field => $args{sort_direction} ];
+    my $direction = lc($args{sort_direction} // 'desc');
+    $direction = 'desc' unless $direction =~ /^(asc|desc)$/;
+
+    return [ $field => $direction ];
 }
 
 sub prepare_query_for_filtering {
