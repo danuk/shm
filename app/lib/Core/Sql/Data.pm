@@ -271,6 +271,9 @@ sub query_for_order {
         @_,
     );
 
+    return undef unless $args{sort_direction};
+    return undef unless uc( $args{sort_direction} ) =~ /^(ASC|DESC)$/;
+
     return undef unless $self->can('structure');
     my %structure = %{ $self->structure };
 
@@ -288,14 +291,17 @@ sub prepare_query_for_filtering {
     my %result;
 
     for my $field (keys %$data) {
+        next if $field =~ /^--/;  # reject user-supplied raw SQL markers
         my $value = $data->{$field};
 
         if (ref $value eq 'SCALAR') {
             if ($$value eq 'isEmpty') {
                 # Поле пустое (NULL или пустая строка)
+                next unless is_safe_identifier( $field );
                 $result{"--COALESCE($field, '')"} = '';
             } elsif ($$value eq 'isNotEmpty') {
                 # Поле не пустое
+                next unless is_safe_identifier( $field );
                 $result{"--COALESCE($field, '')"} = { '!=' => '' };
             } elsif ($$value eq 'isNull') {
                 # Поле равно NULL
@@ -384,6 +390,7 @@ sub query_for_filtering {
                 if ( ref $args->{ $key } eq 'HASH' ) {
                     # Check value in the key in a json object
                     for my $json_key ( keys %{ $args->{ $key } } ) {
+                        next unless is_safe_identifier( $json_key, allow_dots => 1 );
                         my $json_value = $args->{ $key }->{ $json_key };
                         my $field_path = sprintf("%s->>'\$.%s'", $key, $json_key);
 
@@ -418,9 +425,13 @@ sub query_for_filtering {
                     }
                     # Check exists key in a json object
                     elsif ( $args->{ $key }=~s/^\!// ) {
-                        $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args->{ $key }) } = { '=', undef };
+                        if ( is_safe_identifier( $args->{ $key }, allow_dots => 1 ) ) {
+                            $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args->{ $key }) } = { '=', undef };
+                        }
                     } else {
-                        $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args->{ $key }) } = { '!=', undef };
+                        if ( is_safe_identifier( $args->{ $key }, allow_dots => 1 ) ) {
+                            $where{ sprintf("JSON_EXTRACT(%s, '\$.%s')", $key, $args->{ $key }) } = { '!=', undef };
+                        }
                     }
                 }
             } else {  # for type=(`text`, `now`, ``, ...)
@@ -690,6 +701,16 @@ sub list_for_api {
 
     my $method = $args{admin} ? '_list' : 'list';
 
+    # Validate fields against structure to prevent SELECT injection
+    my $fields;
+    if ( $args{fields} && $args{fields} ne '*' && $self->can('structure') ) {
+        my %structure = %{ $self->structure };
+        my @safe = grep { exists $structure{$_} } split /\s*,\s*/, $args{fields};
+        $fields = @safe ? join(', ', map { "`$_`" } @safe) : undef;
+    } elsif ( $args{fields} ) {
+        $fields = $args{fields};
+    }
+
     my $where = {
         %{ $self->query_for_filtering( %{ $args{filter} || {} } ) || {} },
         %{ $args{where} || {} },
@@ -697,13 +718,16 @@ sub list_for_api {
 
     my $order = $self->query_for_order( %args );
 
+    # Validate range field against structure to prevent WHERE injection
     my $range;
     if ( $args{field} && $args{start} && $args{stop} ) {
-        $range = { field => $args{field}, start => $args{start}, stop => $args{stop} };
+        if ( !$self->can('structure') || exists $self->structure->{ $args{field} } ) {
+            $range = { field => $args{field}, start => $args{start}, stop => $args{stop} };
+        }
     }
 
     my @ret = $self->$method(
-        $args{fields} ? ( fields => $args{fields} ) : (),
+        $fields ? ( fields => $fields ) : (),
         $range ? ( range => $range ) : (),
         limit => $args{limit},
         offset => $args{offset},
@@ -788,6 +812,19 @@ sub get_table_key {
 sub res_by_arr {
     my $self = shift;
     return $self->{res} ? [ keys %{ $self->{res} } ] : [];
+}
+
+sub is_safe_identifier {
+    my $str  = shift;
+    my %opts = (
+        allow_dots => 0,
+        @_,
+    );
+
+    my $re = $opts{allow_dots}
+        ? qr/^[A-Za-z_][A-Za-z0-9_.]*$/
+        : qr/^[A-Za-z_][A-Za-z0-9_]*$/;
+    return $str =~ $re;
 }
 
 sub quote {
@@ -900,7 +937,11 @@ sub query_select {
 
     if ( $args{order} ) {
         $query .= ' ORDER BY ';
-        $query .= join(',', map( "`".$args{order}->[$_*2]."` ".$args{order}->[$_*2+1], 0..scalar(@{ $args{order} })/2-1) );
+        $query .= join(',', map {
+            my $dir = uc( $args{order}->[$_*2+1] // '' );
+            $dir = 'ASC' unless $dir eq 'ASC' || $dir eq 'DESC';
+            "`".$args{order}->[$_*2]."` $dir"
+        } 0..scalar(@{ $args{order} })/2-1);
     }
 
     if ( $args{limit} ) {

@@ -718,6 +718,9 @@ sub dots_str_to_sql {
     my $field = shift @arr;
     return undef unless @arr;
 
+    return undef unless $field =~ /^[A-Za-z_][A-Za-z0-9_]*$/;
+    return undef if grep { !/^[A-Za-z_][A-Za-z0-9_]*$/ } @arr;
+
     return {
         field => $field,
         name => join('_', $field, @arr),

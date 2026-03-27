@@ -109,7 +109,7 @@ is query_select(
     vars => \@vars,
     table => 'user_services',
     order => [ a => 'desc', b => 'asc' ],
-), "SELECT * FROM user_services ORDER BY `a` desc,`b` asc";
+), "SELECT * FROM user_services ORDER BY `a` DESC,`b` ASC";
 
 is query_select(
     undef,
