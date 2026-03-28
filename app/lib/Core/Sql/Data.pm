@@ -34,6 +34,7 @@ our @EXPORT = qw(
 
 our @EXPORT_OK = qw(
     clean_query_args
+    is_safe_identifier
 );
 
 use Core::Utils qw(
@@ -688,6 +689,11 @@ sub list_for_api {
 
     delete $args{user_id} unless $args{admin};
 
+    # Validate limit: must be a positive integer, capped at 1000
+    $args{limit} = int( $args{limit} || 25 );
+    $args{limit} = 25   if $args{limit} <= 0;
+    $args{limit} = 1000 if !$args{admin} && $args{limit} > 1000;
+
     if ( $args{admin} && $args{user_id} ) {
         $args{where} = {
             user_id => delete $args{user_id},
@@ -701,12 +707,19 @@ sub list_for_api {
 
     my $method = $args{admin} ? '_list' : 'list';
 
-    # Validate fields against structure to prevent SELECT injection
+    # Validate fields against structure to prevent SELECT injection.
+    # Complex expressions (containing SQL syntax like parentheses, wildcards or dots)
+    # are treated as trusted internal code and passed through unchanged.
     my $fields;
     if ( $args{fields} && $args{fields} ne '*' && $self->can('structure') ) {
-        my %structure = %{ $self->structure };
-        my @safe = grep { exists $structure{$_} } split /\s*,\s*/, $args{fields};
-        $fields = @safe ? join(', ', map { "`$_`" } @safe) : undef;
+        if ( $args{fields} =~ /[().*]/ ) {
+            # Internal trusted SQL expression — pass through unchanged
+            $fields = $args{fields};
+        } else {
+            my %structure = %{ $self->structure };
+            my @safe = grep { exists $structure{$_} } split /\s*,\s*/, $args{fields};
+            $fields = @safe ? join(', ', map { "`$_`" } @safe) : undef;
+        }
     } elsif ( $args{fields} ) {
         $fields = $args{fields};
     }

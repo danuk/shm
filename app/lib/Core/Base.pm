@@ -183,8 +183,8 @@ sub limit {
         return delete $self->{limit}, delete $self->{offset};
     }
 
-    $self->{limit} = $limit;
-    $self->{offset} = $offset;
+    $self->{limit} = int $limit;
+    $self->{offset} = int $offset;
 
     return $self;
 }
