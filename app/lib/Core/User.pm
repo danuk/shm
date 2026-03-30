@@ -614,6 +614,10 @@ sub set_email {
         email => $args{email},
     });
 
+    unless ( $self->user->get_login2 ) {
+        $self->user->set( login2 => $args{email} );
+    }
+
     return { msg => 'Successful' };
 }
 
