@@ -614,8 +614,6 @@ sub set_email {
         email => $args{email},
     });
 
-    $self->user->set( login2 => $args{email} );
-
     return { msg => 'Successful' };
 }
 
