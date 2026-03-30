@@ -334,20 +334,19 @@ sub auth {
     );
 
     unless ( $user_row ) {
-        if ( is_email( $args{login} ) ) {
-            my ( $email_user_row ) = $self->_list(
-                where => {
-                    sprintf('%s->>"$.%s"', 'settings', 'email') => $args{login},
-                },
-                limit => 1,
-            );
-            if ( $email_user_row ) {
-                my $email_password = $self->crypt_password(
-                    salt     => $email_user_row->{login},
-                    password => $args{password},
-                );
-                $user_row = $email_user_row if $email_password eq $email_user_row->{password};
+        my ( $login2_user_row ) = $self->_list(
+            where => {
+                login2 => $args{login},
+                password => $password,
             }
+        );
+
+        if ( $login2_user_row ) {
+            my $login2_password = $self->crypt_password(
+                salt     => $login2_user_row->{login},
+                password => $args{password},
+            );
+            $user_row = $login2_user_row if $password eq $login2_user_row->{password};
         }
     }
 
@@ -624,6 +623,8 @@ sub set_email {
         email_verified => $verified,
         email => $args{email},
     });
+
+    $self->user->set( login2 => $args{email} );
 
     return { msg => 'Successful' };
 }
@@ -1217,6 +1218,7 @@ sub emails {
     my %profile = $self->profile;
     my @emails = (
         $self->get_settings->{email},
+        $self->get_login2,
         $self->get_login,
         $profile{email},
     );
