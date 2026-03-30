@@ -689,9 +689,11 @@ sub list_for_api {
 
     delete $args{user_id} unless $args{admin};
 
-    # Validate limit: must be a positive integer, capped at 1000
-    $args{limit} = int( $args{limit} || 25 );
-    $args{limit} = 25   if $args{limit} <= 0;
+    # Validate limit: must be a positive integer, capped at 1000 for non-admins.
+    # Admins may pass limit=0 to request all rows (no LIMIT clause).
+    $args{limit} = int( $args{limit} // 25 );
+    $args{limit} = 25   if $args{limit} < 0;
+    $args{limit} = 25   if $args{limit} == 0 && !$args{admin};
     $args{limit} = 1000 if !$args{admin} && $args{limit} > 1000;
 
     if ( $args{admin} && $args{user_id} ) {
