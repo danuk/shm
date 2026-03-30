@@ -321,18 +321,26 @@ sub auth {
 
     return undef unless $args{login} || $args{password};
 
+    my ( $user_row ) = $self->_list(
+        where => {
+            -OR => [
+                { login => $args{login} },
+                { login2 => $args{login} },
+            ],
+        },
+        limit => 1,
+    );
+
+    unless ( $user_row ) {
+        return undef;
+    }
+
     my $password = $self->crypt_password(
-        salt => $args{login},
+        salt => $user_row->{login},
         password => $args{password},
     );
 
-    my ( $user_row ) = $self->_list(
-        where => {
-            login => $args{login},
-            password => $password,
-        }
-    );
-    unless ( $user_row ) {
+    unless ( $password eq $user_row->{password} ) {
         return undef;
     }
 
@@ -1198,6 +1206,7 @@ sub emails {
     my %profile = $self->profile;
     my @emails = (
         $self->get_settings->{email},
+        $self->get_login2,
         $self->get_login,
         $profile{email},
     );
