@@ -84,7 +84,7 @@ sub get_rp_id {
 
     return $ENV{PASSKEY_RP_ID} if $ENV{PASSKEY_RP_ID};
 
-    my $host = $ENV{HTTP_HOST} || 'localhost';
+    my $host = $ENV{HTTP_X_FORWARDED_HOST} || cfg('cli')->{url} || $ENV{HTTP_HOST} || 'localhost';
     $host =~ s/:\d+$//;
     return $host;
 }
