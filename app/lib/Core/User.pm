@@ -321,36 +321,26 @@ sub auth {
 
     return undef unless $args{login} || $args{password};
 
+    my ( $user_row ) = $self->_list(
+        where => {
+            -OR => [
+                { login => $args{login} },
+                { login2 => $args{login} },
+            ],
+        },
+        limit => 1,
+    );
+
+    unless ( $user_row ) {
+        return undef;
+    }
+
     my $password = $self->crypt_password(
-        salt => $args{login},
+        salt => $user_row->{login},
         password => $args{password},
     );
 
-    my ( $user_row ) = $self->_list(
-        where => {
-            login => $args{login},
-            password => $password,
-        }
-    );
-
-    unless ( $user_row ) {
-        my ( $login2_user_row ) = $self->_list(
-            where => {
-                login2 => $args{login},
-                password => $password,
-            }
-        );
-
-        if ( $login2_user_row ) {
-            my $login2_password = $self->crypt_password(
-                salt     => $login2_user_row->{login},
-                password => $args{password},
-            );
-            $user_row = $login2_user_row if $password eq $login2_user_row->{password};
-        }
-    }
-
-    unless ( $user_row ) {
+    unless ( $password eq $user_row->{password} ) {
         return undef;
     }
 
