@@ -626,6 +626,15 @@ sub apply_partial_period {
     }
 }
 
+
+# Calculates the bonus amount available for payment, subject to limit_bonus_percent.
+#
+# | limit_bonus_percent | total  | Result                       |
+# |---------------------|--------|------------------------------|
+# | not set             | any    | $bonus (full bonuses)        |
+# | 100                 | any    | $bonus (full bonuses)        |
+# | < 100               | <= 0   | 0  (no base for percentage)  |
+# | < 100               | > 0    | $total * percent / 100       |
 sub calc_available_bonuses {
     my $us = shift;
     my $bonus = shift;
@@ -633,16 +642,19 @@ sub calc_available_bonuses {
 
     return 0 unless $us;
     return 0 if $bonus <= 0;
-    return 0 if $total <= 0;
 
     my $limit_bonus_percent = $us->service->config->{limit_bonus_percent};
+
+    # Without a limit (or with a full 100% limit), bonuses are available regardless of total.
     return $bonus unless length $limit_bonus_percent;
+    return $bonus if int($limit_bonus_percent) >= 100;
+
+    # With a partial limit, bonuses are capped as a percentage of total.
+    # A zero or negative total means nothing to cover, so no bonuses apply.
+    return 0 if $total <= 0;
 
     my $max_bonus_amount = $total * int($limit_bonus_percent) / 100;
-
-    if ( $bonus > $max_bonus_amount ) {
-        $bonus = $max_bonus_amount;
-    }
+    $bonus = $max_bonus_amount if $bonus > $max_bonus_amount;
 
     return sprintf("%.2f", $bonus) + 0;
 }
