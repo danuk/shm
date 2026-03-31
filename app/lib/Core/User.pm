@@ -1235,13 +1235,13 @@ sub referrals {
 sub referrals_count {
     my $self = shift;
 
-    my @count = $self->_list(
-        where => {
-            partner_id => $self->id,
-        },
+    my ($count) = $self->dbh->selectrow_array(
+        "SELECT COUNT(*) FROM users WHERE partner_id = ?",
+        undef,
+        $self->id,
     );
 
-    return scalar @count;
+    return $count || 0;
 }
 
 sub switch {
