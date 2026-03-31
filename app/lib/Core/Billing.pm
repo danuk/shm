@@ -18,7 +18,7 @@ our @EXPORT = qw(
 );
 
 use Core::Const;
-use Core::Utils qw(now string_to_utime utime_to_string start_of_month end_of_month parse_date days_in_months);
+use Core::Utils qw(now string_to_utime utime_to_string start_of_month end_of_month parse_date days_in_months round);
 use Time::Local 'timelocal_nocheck';
 
 use base qw( Core::System::Service );
@@ -224,7 +224,7 @@ sub calc_withdraw {
     $wd{discount}||= get_service_discount( %wd );
     $wd{discount} = 0 if $service{no_discount};
 
-    $wd{total} = sprintf("%.2f", ( $wd{total} - $wd{total} * $wd{discount} / 100 ) * $wd{qnt} );
+    $wd{total} = round( ( $wd{total} - $wd{total} * $wd{discount} / 100 ) * $wd{qnt} );
 
     $wd{total} -= $wd{bonus};
 
@@ -656,7 +656,7 @@ sub calc_available_bonuses {
     my $max_bonus_amount = $total * int($limit_bonus_percent) / 100;
     $bonus = $max_bonus_amount if $bonus > $max_bonus_amount;
 
-    return sprintf("%.2f", $bonus) + 0;
+    return round( $bonus );
 }
 
 1;

@@ -20,6 +20,7 @@ use Core::Utils qw(
     parse_period
     days_in_months
     now
+    round
 );
 use Time::Local 'timelocal_nocheck';
 
@@ -88,7 +89,7 @@ sub calc_total_by_date_range {
     }
 
     return {
-        total => sprintf("%.2f", $total ),
+        total => round( $total ),
         months => calc_months_between_dates(\%start, \%stop),
     };
 }

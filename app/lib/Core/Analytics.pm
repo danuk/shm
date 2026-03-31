@@ -5,7 +5,7 @@ use utf8;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
-use Core::Utils qw(now decode_json);
+use Core::Utils qw(now decode_json round);
 
 sub table { return 'users' };
 
@@ -83,9 +83,9 @@ sub revenue {
     ", undef, @params);
 
     my $result = {
-        total_revenue => sprintf("%.2f", $total_revenue),
+        total_revenue => round($total_revenue),
         payments_count => $payments_count,
-        avg_payment => sprintf("%.2f", $avg_payment),
+        avg_payment => round($avg_payment),
     };
 
     $self->cache->set($cache_key, $result, 3600);  # кеш на 1 час
@@ -206,7 +206,7 @@ sub revenue_by_day {
 
     # Обеспечиваем корректные типы данных для JSON
     for my $row (@$rows) {
-        $row->{revenue} = sprintf("%.2f", $row->{revenue} || 0);
+        $row->{revenue} = round($row->{revenue} || 0);
         $row->{count} = int($row->{count} || 0);
     }
 
@@ -256,7 +256,7 @@ sub revenue_by_week {
 
     # Обеспечиваем корректные типы данных для JSON
     for my $row (@$rows) {
-        $row->{revenue} = sprintf("%.2f", $row->{revenue} || 0);
+        $row->{revenue} = round($row->{revenue} || 0);
         $row->{count} = int($row->{count} || 0);
     }
 
@@ -465,9 +465,9 @@ sub top_partners {
         ", undef, $row->{user_id});
 
         $row->{paying_referrals} = $paying || 0;
-        $row->{referrals_revenue} = sprintf("%.2f", $revenue || 0);
-        $row->{total_earned_bonuses} = sprintf("%.2f", $row->{total_earned_bonuses} || 0);
-        $row->{current_bonus} = sprintf("%.2f", $row->{current_bonus} || 0);
+        $row->{referrals_revenue} = round($revenue || 0);
+        $row->{total_earned_bonuses} = round($row->{total_earned_bonuses} || 0);
+        $row->{current_bonus} = round($row->{current_bonus} || 0);
     }
 
     $self->cache->set_json($cache_key, $rows, 3600);
@@ -594,7 +594,7 @@ sub renewal_metrics {
     my $result = {
         total_services => $total_services || 0,
         renewed_services => $renewed_services || 0,
-        renewal_rate => sprintf("%.2f", $renewal_rate),
+        renewal_rate => round($renewal_rate),
         avg_service_lifetime_days => sprintf("%.1f", $avg_lifetime_days || 0),
         period_months => $args{months},
     };
@@ -830,7 +830,7 @@ sub billing_efficiency {
 
     my $result = {
         pending_withdraws => $pending_withdraws || 0,
-        pending_amount => sprintf("%.2f", $pending_amount || 0),
+        pending_amount => round($pending_amount || 0),
         avg_payment_delay_hours => sprintf("%.1f", $avg_pay_delay_hours || 0),
         services_waiting_for_pay => $waiting_for_pay || 0,
         services_blocked => $blocked_services || 0,
@@ -884,9 +884,9 @@ sub ltv {
     ");
 
     my $result = {
-        avg_payments_per_user => sprintf("%.2f", $avg_payments_per_user || 0),
-        avg_payment_amount => sprintf("%.2f", $avg_payment_amount || 0),
-        avg_ltv => sprintf("%.2f", $avg_ltv || 0),
+        avg_payments_per_user => round($avg_payments_per_user || 0),
+        avg_payment_amount => round($avg_payment_amount || 0),
+        avg_ltv => round($avg_ltv || 0),
         avg_customer_lifetime_months => sprintf("%.1f", $avg_customer_lifetime_months || 0),
     };
 
@@ -952,7 +952,7 @@ sub receivables {
     ", {Slice => {}});
 
     my $result = {
-        total_debt => sprintf("%.2f", $total_debt || 0),
+        total_debt => round($total_debt || 0),
         debtors_count => $debtors_count || 0,
         top_debtors => $debtors,
         debt_aging => $debt_aging,
@@ -1145,9 +1145,9 @@ sub charges_by_day {
 
     # Обеспечиваем корректные типы данных для JSON
     for my $row (@$rows) {
-        $row->{total_charged} = sprintf("%.2f", $row->{total_charged} || 0);
-        $row->{bonuses_used} = sprintf("%.2f", $row->{bonuses_used} || 0);
-        $row->{net_charged} = sprintf("%.2f", $row->{net_charged} || 0);
+        $row->{total_charged} = round($row->{total_charged} || 0);
+        $row->{bonuses_used} = round($row->{bonuses_used} || 0);
+        $row->{net_charged} = round($row->{net_charged} || 0);
         $row->{transactions} = int($row->{transactions} || 0);
     }
 
@@ -1198,9 +1198,9 @@ sub charges_by_week {
 
     # Обеспечиваем корректные типы данных для JSON
     for my $row (@$rows) {
-        $row->{total_charged} = sprintf("%.2f", $row->{total_charged} || 0);
-        $row->{bonuses_used} = sprintf("%.2f", $row->{bonuses_used} || 0);
-        $row->{net_charged} = sprintf("%.2f", $row->{net_charged} || 0);
+        $row->{total_charged} = round($row->{total_charged} || 0);
+        $row->{bonuses_used} = round($row->{bonuses_used} || 0);
+        $row->{net_charged} = round($row->{net_charged} || 0);
         $row->{transactions} = int($row->{transactions} || 0);
     }
 
@@ -1316,13 +1316,13 @@ sub bonus_metrics {
         : 0;
 
     my $result = {
-        total_bonuses => sprintf("%.2f", $total_bonuses),
-        partner_bonuses => sprintf("%.2f", $partner_bonuses),
+        total_bonuses => round($total_bonuses),
+        partner_bonuses => round($partner_bonuses),
         partner_percent => sprintf("%.1f", $partner_percent),
-        used_bonuses => sprintf("%.2f", $used_bonuses),
-        total_revenue => sprintf("%.2f", $total_revenue),
-        bonus_load_percent => sprintf("%.2f", $bonus_load_percent),
-        bonus_debt => sprintf("%.2f", $bonus_debt),
+        used_bonuses => round($used_bonuses),
+        total_revenue => round($total_revenue),
+        bonus_load_percent => round($bonus_load_percent),
+        bonus_debt => round($bonus_debt),
         debt_share_percent => sprintf("%.1f", $debt_share_percent),
     };
 
@@ -1493,9 +1493,9 @@ sub overview {
         active_paying_users => $active_paying_users || 0,
         total_services => $total_services || 0,
         active_services => $active_services || 0,
-        total_revenue => sprintf("%.2f", $total_revenue || 0),
-        total_balance => sprintf("%.2f", $total_balance || 0),
-        total_bonus => sprintf("%.2f", $total_bonus || 0),
+        total_revenue => round($total_revenue || 0),
+        total_balance => round($total_balance || 0),
+        total_bonus => round($total_bonus || 0),
     };
 
     $self->cache->set_json($cache_key, $result, 1800);

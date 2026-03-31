@@ -83,37 +83,37 @@ subtest 'get_value method with modifiers' => sub {
 subtest 'from method with modifiers (convert from foreign currency to base)' => sub {
     # USD без модификаторов: 100 * 75.50 = 7550.00
     my $result_usd = $currency->from('USD', 100);
-    is($result_usd, '7550.00', 'from USD: 100 USD = 7550.00 RUB (no modifier)');
+    is($result_usd, 7550, 'from USD: 100 USD = 7550.00 RUB (no modifier)');
 
     # EUR с numeric модификатором: 100 * (85.25 + 5.0) = 100 * 90.25 = 9025.00
     my $result_eur = $currency->from('EUR', 100);
-    is($result_eur, '9025.00', 'from EUR: 100 EUR = 9025.00 RUB (numeric modifier)');
+    is($result_eur, 9025, 'from EUR: 100 EUR = 9025.00 RUB (numeric modifier)');
 
     # GBP с percent модификатором: 100 * (95.75 + 95.75 * 10%) = 100 * 105.325 = 10532.50
     my $result_gbp = $currency->from('GBP', 100);
-    is($result_gbp, '10532.50', 'from GBP: 100 GBP = 10532.50 RUB (percent modifier)');
+    is($result_gbp, 10532.5, 'from GBP: 100 GBP = 10532.50 RUB (percent modifier)');
 
     # CNY с fixed модификатором: 100 * 12.50 = 1250.00
     my $result_cny = $currency->from('CNY', 100);
-    is($result_cny, '1250.00', 'from CNY: 100 CNY = 1250.00 RUB (fixed modifier)');
+    is($result_cny, 1250, 'from CNY: 100 CNY = 1250.00 RUB (fixed modifier)');
 };
 
 subtest 'to method with modifiers (convert from base currency to foreign)' => sub {
     # USD без модификаторов: 7550 / 75.50 = 100.00
     my $result_usd = $currency->to('USD', 7550);
-    is($result_usd, '100.00', 'to USD: 7550 RUB = 100.00 USD (no modifier)');
+    is($result_usd, 100, 'to USD: 7550 RUB = 100.00 USD (no modifier)');
 
     # EUR с numeric модификатором: 9025 / 90.25 = 100.00
     my $result_eur = $currency->to('EUR', 9025);
-    is($result_eur, '100.00', 'to EUR: 9025 RUB = 100.00 EUR (numeric modifier)');
+    is($result_eur, 100, 'to EUR: 9025 RUB = 100.00 EUR (numeric modifier)');
 
     # GBP с percent модификатором: 10532.50 / 105.325 = 100.00
     my $result_gbp = $currency->to('GBP', 10532.50);
-    is($result_gbp, '100.00', 'to GBP: 10532.50 RUB = 100.00 GBP (percent modifier)');
+    is($result_gbp, 100, 'to GBP: 10532.50 RUB = 100.00 GBP (percent modifier)');
 
     # CNY с fixed модификатором: 1250 / 12.50 = 100.00
     my $result_cny = $currency->to('CNY', 1250);
-    is($result_cny, '100.00', 'to CNY: 1250 RUB = 100.00 CNY (fixed modifier)');
+    is($result_cny, 100, 'to CNY: 1250 RUB = 100.00 CNY (fixed modifier)');
 };
 
 subtest 'edge cases for modifiers' => sub {

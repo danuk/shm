@@ -3,10 +3,12 @@ package Core::Cloud::Currency;
 use v5.14;
 use parent 'Core::Cloud';
 use Core::Base;
-use POSIX qw(floor ceil);
 use Core::Utils qw(
     encode_json
     decode_json
+    round_up
+    round_down
+    round
 );
 
 sub currencies {
@@ -131,7 +133,7 @@ sub from {
     return undef unless $value;
 
     my $total = $amount * $value;
-    return sprintf( "%.2f", $total );
+    return round( $total );
 }
 
 sub to {
@@ -143,7 +145,7 @@ sub to {
     return undef unless $value;
 
     my $total = $amount / $value;
-    return sprintf( "%.2f", $total );
+    return round( $total );
 }
 
 sub system_currency {
@@ -167,7 +169,7 @@ sub convert {
     my $to_currency = uc $args{to} || $system_currency;
     my $amount = $args{amount};
 
-    return sprintf("%.2f", $amount) if $from_currency eq $to_currency;
+    return round( $amount ) if $from_currency eq $to_currency;
 
     my $from_value = $self->get_value($from_currency);
     my $to_value = $self->get_value($to_currency);
@@ -180,15 +182,15 @@ sub convert {
     # Асимметричное округление для защиты от потерь при обратной конвертации
     if ($from_currency eq $system_currency) {
         # Конвертируем ИЗ системной валюты - округляем вверх
-        return sprintf("%.2f", ceil($converted_amount * 100) / 100);
+        return round_up( $converted_amount );
     }
     elsif ($to_currency eq $system_currency) {
         # Конвертируем В системную валюту - округляем вниз
-        return sprintf("%.2f", floor($converted_amount * 100) / 100);
+        return round_down( $converted_amount );
     }
     else {
         # Конвертация между не-системными валютами - обычное округление
-        return sprintf("%.2f", $converted_amount);
+        return round( $converted_amount );
     }
 }
 

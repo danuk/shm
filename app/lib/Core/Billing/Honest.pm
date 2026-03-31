@@ -27,6 +27,7 @@ use Core::Utils qw(
     parse_period
     days_in_months
     now
+    round
 );
 use Time::Local 'timelocal_nocheck';
 use Time::DaysInMonth;
@@ -65,7 +66,7 @@ sub calc_month_cost {
 
     return {    start => $start_date,
                 stop => $stop_date,
-                total => sprintf("%.2f", $total )
+                total => round( $total )
     };
 }
 
@@ -143,7 +144,7 @@ sub calc_total_by_date_range {
     }
 
     return {
-        total => sprintf("%.2f", $total ),
+        total => round( $total ),
         months => calc_months_between_dates(\%start, \%stop),
     };
 }

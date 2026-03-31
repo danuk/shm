@@ -78,6 +78,9 @@ our @EXPORT_OK = qw(
     exec_local_file
     qrencode
     ip_rate_limit
+    round_up
+    round_down
+    round
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -1004,6 +1007,26 @@ sub ip_rate_limit {
     }
 
     return 0;
+}
+
+# Rounds a monetary value up to 2 decimal places (ceiling).
+sub round_up {
+    my $val = shift;
+    use POSIX qw(ceil);
+    return ceil( $val * 100 ) / 100;
+}
+
+# Rounds a monetary value down to 2 decimal places (floor).
+sub round_down {
+    my $val = shift;
+    use POSIX qw(floor);
+    return floor( $val * 100 ) / 100;
+}
+
+# Rounds a monetary value to 2 decimal places (nearest, half up).
+sub round {
+    my $val = shift;
+    return int( $val * 100 + 0.5 ) / 100;
 }
 
 1;

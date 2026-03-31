@@ -9,6 +9,7 @@ use Core::Utils qw(
     passgen
     switch_user
     sum_period
+    round
 );
 
 use Core::Billing;
@@ -1108,7 +1109,7 @@ sub add_period_by_money {
     return undef unless $self->withdraw;
     my %wd = $self->withdraw->get;
 
-    my $cost = sprintf("%.2f", ( $wd{cost} - $wd{cost} * $wd{discount} / 100 ));
+    my $cost = round( $wd{cost} - $wd{cost} * $wd{discount} / 100 );
 
     my $period = Core::Billing::calc_period_by_total(
         $self->billing,

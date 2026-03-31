@@ -43,7 +43,7 @@ cmp_deeply( calc_total_by_date_range(
         cost            => '900',
     ),
     {
-        total => '30.00',
+        total => 30,
         months => '0.0100',
     }
 ,'calc_total_by_date_range (one day without one second)');
@@ -54,7 +54,7 @@ cmp_deeply( calc_total_by_date_range(
         cost            => '900',
     ),
     {
-        total => '30.00',
+        total => 30,
         months => '0.0100',
     }
 ,'calc_total_by_date_range (one day)');
@@ -65,7 +65,7 @@ cmp_deeply( calc_total_by_date_range(
         cost            => '900',
     ),
     {
-        total => '10.00',
+        total => 10,
         months => '0.0008',
     }
 ,'calc_total_by_date_range (third part of day)');
@@ -76,7 +76,7 @@ cmp_deeply( calc_total_by_date_range(
         cost            => '1000',
     ),
     {
-        total => '1000.00',
+        total => 1000,
         months => '1.0000',
     }
 ,'calc_total_by_date_range (30 days)');
@@ -87,7 +87,7 @@ cmp_deeply( calc_total_by_date_range(
         cost            => '1000',
     ),
     {
-        total => '2000.00',
+        total => 2000,
         months => '2.0000',
     }
 ,'calc_total_by_date_range (60 days)');
@@ -98,7 +98,7 @@ cmp_deeply( calc_total_by_date_range(
         cost            => '1000',
     ),
     {
-        total => '1000.00',
+        total => 1000,
         months => '1.0000',
     }
 ,'calc_total_by_date_range (30 days in other months)');
@@ -109,7 +109,7 @@ cmp_deeply( calc_total_by_date_range(
         cost            => '1000',
     ),
     {
-        total => '1033.33',
+        total => 1033.33,
         months => '1.0100',
     }
 ,'calc_total_by_date_range (31 day)');
@@ -120,7 +120,7 @@ cmp_deeply( calc_total_by_date_range(
         cost            => '3100',
     ),
     {
-        total => '9713.33',
+        total => 9713.33,
         months => '3.0400',
     }
 ,'calc_total_by_date_range (jump to next year)');
@@ -132,7 +132,7 @@ cmp_deeply( calc_total_by_date_range(
         period     => 0.01,
     ),
     {
-        total => '900.00',
+        total => 900,
         months => '1.0000',
     }
 ,'calc_total_by_date_range (with period)');
@@ -144,7 +144,7 @@ cmp_deeply( calc_total_by_date_range(
         period     => 0.0001,
     ),
     {
-        total => '721.00',
+        total => 721,
         months => '1.0001',
     }
 ,'calc_total_by_date_range (with period)');
@@ -156,7 +156,7 @@ cmp_deeply( calc_total_by_date_range(
         period     => 1,
     ),
     {
-        total => '0.00',
+        total => 0,
         months => '1.0001',
     }
 ,'calc_total_by_date_range (calc zero cost)');
