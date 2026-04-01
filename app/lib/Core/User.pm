@@ -1235,13 +1235,19 @@ sub referrals {
 sub referrals_count {
     my $self = shift;
 
-    my @count = $self->_list(
+    my $ret = $self->count(
+        fields => [''],
         where => {
             partner_id => $self->id,
         },
     );
 
-    return scalar @count;
+    return $ret->{rows_count};
+}
+
+sub api_referrals {
+    my $self = shift;
+    return { total => $self->referrals_count };
 }
 
 sub switch {
