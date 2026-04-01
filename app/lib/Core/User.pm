@@ -1245,6 +1245,11 @@ sub referrals_count {
     return $ret->{rows_count};
 }
 
+sub api_referrals {
+    my $self = shift;
+    return { total => $self->referrals_count };
+}
+
 sub switch {
     my $self = shift;
     my $user_id = shift;

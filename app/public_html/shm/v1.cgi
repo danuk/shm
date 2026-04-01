@@ -82,6 +82,14 @@ state $routes //= {
         swagger => { summary => 'Изменить пользователя' },
     },
 },
+'/user/referrals' => {
+    swagger => { tags => 'Пользователи' },
+    GET => {
+        controller => 'User',
+        method => 'api_referrals',
+        swagger => { summary => 'Получение количество рефералов' },
+    },
+},
 '/user/auth' => {
     swagger => { tags => 'Пользователи' },
     POST => {
