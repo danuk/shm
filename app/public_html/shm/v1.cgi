@@ -71,6 +71,7 @@ state $routes //= {
     GET => {
         controller => 'User',
         swagger => { summary => 'Получение пользователя' },
+        params => {},
     },
     PUT => {
         controller => 'User',
