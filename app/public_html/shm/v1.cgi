@@ -58,10 +58,12 @@ state $routes //= {
     },
 },
 '/user/captcha' => {
+    swagger => { tags => 'Капча' },
     GET => {
         controller      => 'User',
         method          => 'gen_captcha',
         skip_check_auth => 1,
+        swagger => { summary => 'Получение капчи' },
     },
 },
 '/user' => {
