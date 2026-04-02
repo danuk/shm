@@ -236,12 +236,17 @@ sub list_for_api {
         @_,
     );
 
+    if ( $args{service_id} && !$args{admin} ) {
+        my $service = $self->id( $args{service_id } ) || return undef;
+        return undef unless $args{admin} || $service->price_list_check_allow_to_order;
+    }
+
     unless ( $args{filter} && $args{filter}->{deleted} ) {
         $args{where} = { deleted => 0 };
     }
 
     if ( $args{admin} && $args{parent} ) {
-        if ( my $service = get_service('service', _id => $args{parent} ) ) {
+        if ( my $service = $self->id( $args{parent} ) ) {
             $args{where} = { service_id => { -in => [ map $_->{service_id}, @{ $service->subservices } ] } };
         }
     }
