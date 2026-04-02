@@ -105,44 +105,39 @@ sub gen_swagger_json {
                 push @request_params, get_request_params( $splat_id, $structure, in => 'path', required => 1 );
             }
 
-            my @required = @{ $info->{$method}->{required} || [] };
+            my %route_params = %{ $info->{$method}->{params} || {} };
 
             # Request section
             if ( $method eq 'GET' || $method eq 'DELETE' ) {
-                for ( @required ) {
-                    push @request_params, get_request_params( $_, $structure, required => 1 );
+                for my $param_name ( sort keys %route_params ) {
+                    my $required = $route_params{$param_name}->{required} ? 1 : 0;
+                    my $schema = get_swagger_properties_by_route_params( $param_name, $route_params{$param_name}, $structure );
+                    push @request_params, {
+                        name => $param_name,
+                        in => 'query',
+                        required => $required,
+                        schema => $schema,
+                    };
                 };
 
-                # for ( @{ $info->{$method}->{optional} || [] } ) {
-                #     push @request_params, get_request_params( $_, $structure );
-                # }
-
-                if ( $args{admin_mode} && !$info->{$method}->{method} ) {
-                    for ('user_id') {
-                        next unless exists $structure->{$_};
-                        push @request_params, get_request_params( $_, $structure );
-                    }
-                }
-
-                # push @request_params, get_pagination_params() if $method ne 'DELETE';
-
-            } elsif ( exists $info->{$method}->{required} && # required может быть и пустым
-                $info->{$method}->{method} &&
+            } elsif ( exists $info->{$method}->{params} &&
                 !$info->{$method}->{only_text_plain}
             ) {
-                # add required fields to requestBody
-                my $schema = {};
-                for ( @required ) {
-                    $schema->{ $_ } = get_swagger_properties( $_, $structure );
-                    delete $schema->{ $_ }->{readOnly}; # always show required field
+                # add fields from route params to requestBody
+                my %schema;
+                my @required;
+                for my $param_name ( sort keys %route_params ) {
+                    $schema{$param_name} = get_swagger_properties_by_route_params( $param_name, $route_params{$param_name}, $structure );
+                    push @required, $param_name if $route_params{$param_name}->{required};
                 }
+
                 $json{paths}{$route}{ lc $method}{requestBody} = {
                     content => {
                         'application/json' => {
                             schema => {
                                 type => 'object',
-                                required => [$_],
-                                properties => $schema,
+                                @required ? ( required => \@required ) : (),
+                                properties => \%schema,
                             }
                         },
                     }
@@ -258,6 +253,14 @@ sub get_swagger_field_type {
 
     if ( $field eq 'number' ) {
         $type = 'number';
+    } elsif ( $field eq 'integer' ) {
+        $type = 'integer';
+    } elsif ( $field eq 'boolean' ) {
+        $type = 'boolean';
+    } elsif ( $field eq 'string' ) {
+        $type = 'string';
+    } elsif ( $field eq 'email' ) {
+        $type = 'string';
     } elsif ( $field eq 'json' ) {
         $type = 'object';
     } elsif ( $field eq 'text' ) {
@@ -265,6 +268,37 @@ sub get_swagger_field_type {
     }
 
     return $type;
+}
+
+sub get_swagger_properties_by_route_params {
+    my $field = shift;
+    my $rule = shift || {};
+    my $structure = shift || {};
+
+    my %schema = (
+        $structure->{$field} ? %{ get_swagger_properties( $field, $structure ) } : (),
+    );
+
+    # request schemas should not include read/write access flags from response model
+    delete $schema{readOnly};
+    delete $schema{writeOnly};
+
+    if ( exists $rule->{type} ) {
+        $schema{type} = get_swagger_field_type( $rule->{type} ) || $rule->{type} || 'string';
+    }
+    $schema{type} ||= 'string';
+    $schema{format} = 'email' if ( $rule->{type} || '' ) eq 'email';
+
+    $schema{minimum} = $rule->{min} if exists $rule->{min};
+    $schema{maximum} = $rule->{max} if exists $rule->{max};
+    $schema{minLength} = $rule->{min_length} if exists $rule->{min_length};
+    $schema{maxLength} = $rule->{max_length} if exists $rule->{max_length};
+    $schema{pattern} = $rule->{pattern} if exists $rule->{pattern};
+    $schema{enum} = $rule->{enum} if exists $rule->{enum};
+    $schema{description} = $rule->{description} if exists $rule->{description};
+    $schema{default} = $rule->{default} if exists $rule->{default};
+
+    return \%schema;
 }
 
 sub gen_swagger_def {
