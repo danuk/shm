@@ -191,6 +191,7 @@ sub passwd_reset_verify {
 
     my $token = $args{token};
 
+    # TODO
     my ( $user ) = $self->_list(
         where => {
             sprintf('%s->>"$.%s"', 'settings', 'reset_password_verify_token') => $token,
