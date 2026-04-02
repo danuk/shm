@@ -44,12 +44,13 @@ sub structure {
             type => 'text',
             title => 'логин',
             default => '',
+            description => 'логин для авторизации',
         },
         password => {
             type => 'text',
             hide_for_user => 1,
             title => 'пароль',
-            description => 'пароль в зашифровнном виде',
+            description => 'пароль пользователя',
         },
         type => {
             type => 'number',
@@ -587,7 +588,8 @@ sub reg_api_safe {
     my $self = shift;
     my %args = (
         login => undef,
-        password => undef,
+        login_type => 'login',
+        password => passgen(16),
         partner_id => undef,
         @_,
     );
@@ -620,6 +622,7 @@ sub reg_api_safe {
 
     return $self->reg(
         $args{login} ? ( login => $args{login} ) : (),
+        $args{login_type} ? ( login_type => $args{login_type} ) : (),
         $args{password} ? ( password => $args{password} ) : (),
         $args{partner_id} ? ( partner_id => $args{partner_id} ) : (),
     );
@@ -652,6 +655,13 @@ sub reg {
     }
 
     if ( $args{login} ) {
+        if ( $args{login_type} eq 'email' ) {
+            unless ( is_email( $args{login} ) ) {
+                get_service('report')->add_error("Incorrect email address");
+                return undef;
+            }
+        }
+
         my $ret = $user->logins->add( login => $args{login}, type => $args{login_type} );
         unless ( $ret ) {
             get_service('report')->add_error("Can't create login");
