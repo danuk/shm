@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     libdata-validate-email-perl \
     libdata-validate-ip-perl \
     libdigest-sha-perl \
+    libdigest-hmac-perl \
     libscalar-util-numeric-perl \
     libtemplate-perl \
     libtemplate-plugin-dbi-perl \
@@ -41,6 +42,8 @@ RUN apt-get update && apt-get install -y \
     libmime-base32-perl \
     libmath-random-secure-perl \
     libauthen-sasl-perl \
+    libio-socket-ssl-perl \
+    libnet-ssleay-perl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/cache/apt/* \
