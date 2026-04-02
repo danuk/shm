@@ -113,9 +113,9 @@ sub gen_swagger_json {
                     push @request_params, get_request_params( $_, $structure, required => 1 );
                 };
 
-                for ( @{ $info->{$method}->{optional} || [] } ) {
-                    push @request_params, get_request_params( $_, $structure );
-                }
+                # for ( @{ $info->{$method}->{optional} || [] } ) {
+                #     push @request_params, get_request_params( $_, $structure );
+                # }
 
                 if ( $args{admin_mode} && !$info->{$method}->{method} ) {
                     for ('user_id') {
@@ -124,7 +124,7 @@ sub gen_swagger_json {
                     }
                 }
 
-                push @request_params, get_pagination_params() if $method ne 'DELETE';
+                # push @request_params, get_pagination_params() if $method ne 'DELETE';
 
             } elsif ( exists $info->{$method}->{required} && # required может быть и пустым
                 $info->{$method}->{method} &&
