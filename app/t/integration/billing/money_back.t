@@ -215,4 +215,71 @@ subtest 'Moneyback with bonuses' => sub {
     #say Dumper( $user->bonus->list );
 };
 
+subtest 'Moneyback with bonuses when money covers used period' => sub {
+    $user->set( balance => 500, bonus => 500 );
+
+    is($user->get_balance, 500);
+    is($user->get_bonus, 500);
+
+    my $service = get_service('service')->add(
+        name => 'test service',
+        cost => 900,
+        period => 3,
+        category => 'test',
+        no_discount => 1,
+    );
+
+    Test::MockTime::set_fixed_time('2022-01-01T00:00:00Z');
+
+    my $us = create_service(
+        service_id => $service->id,
+        months => 3,
+    );
+
+    my $wd = $us->withdraw;
+    cmp_deeply( scalar $wd->get,
+        {
+              user_id => 40092,
+              bonus => 500,
+              months => 3,
+              qnt => 1,
+              discount => 0,
+              create_date => '2022-01-01 00:00:00',
+              withdraw_date => '2022-01-01 00:00:00',
+              end_date => '2022-03-31 23:59:59',
+              cost => 900,
+              total => 400,
+              user_service_id => $us->id,
+              service_id => $service->id,
+              withdraw_id => $wd->id,
+          }
+    , 'Check withdraw');
+
+    Test::MockTime::set_fixed_time('2022-02-01T00:00:00Z');
+    $us->set( expire => now );
+
+    money_back( $us );
+
+    cmp_deeply( scalar $wd->get,
+        {
+              user_id => 40092,
+              bonus => 0,
+              months => '1.00',
+              qnt => 1,
+              discount => 0,
+              create_date => '2022-01-01 00:00:00',
+              withdraw_date => '2022-01-01 00:00:00',
+              end_date => '2022-02-01 00:00:00',
+              cost => 900,
+              total => 300,
+              user_service_id => $us->id,
+              service_id => $service->id,
+              withdraw_id => $wd->id,
+        }
+    , 'Check withdraw after money back');
+
+    is($user->get_balance, 200, 'Check balance after money back');
+    is($user->get_bonus, 500, 'Check bonuses after money back');
+};
+
 done_testing();

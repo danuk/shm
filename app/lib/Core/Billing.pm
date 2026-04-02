@@ -559,6 +559,8 @@ sub money_back {
     } else {
         $delta_money = $wd{total} - $calc->{total};
         $wd{total} = $calc->{total};
+        $delta_bonus = $wd{bonus};
+        $wd{bonus} = 0;
     }
 
     $wd{months}   = $calc->{months};
