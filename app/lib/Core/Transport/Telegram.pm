@@ -1309,6 +1309,8 @@ sub web_auth {
     my %args = (
         profile   => 'telegram_bot',
         register_if_not_exists => 0,
+        bind_to_profile => 0,
+        user_id => undef,
         @_,
     );
 
@@ -1350,6 +1352,33 @@ sub web_auth {
     if (time - $in{auth_date} > 86400) {
         report->error("Telegram auth data too old");
         return undef;
+    }
+
+    if ( $args{user_id} && $self->user->id($args{user_id}) ) {
+        switch_user( $args{user_id} );
+        if ( $args{bind_to_profile} ) {
+            my $settings = $self->user->settings->{telegram} || {};
+            if ( !$settings->{user_id} ) {
+                $self->user->set_json(
+                    'settings', {
+                        telegram => {
+                            user_id    => $in{id},
+                            username   => $in{username},
+                            login      => $in{username},
+                            first_name => $in{first_name} || '',
+                            last_name  => $in{last_name}  || '',
+                            chat_id    => $in{id},
+                            $profile   => {
+                                chat_id => $in{id},
+                                status  => 'member',
+                            },
+                        },
+                    },
+                );
+            } else {
+                return { error => 'Уже привязан к Telegram' };
+            }
+        }
     }
 
     my $chat_id = $in{id};
