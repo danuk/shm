@@ -77,10 +77,23 @@ state $routes //= {
         method => 'reg_api_safe',
         skip_check_auth => 1,
         required => ['login','password'],
+        params => {
+            login => { type => 'string', required => 1, min_length => 1, max_length => 64 },
+            password => { type => 'string', required => 0, min_length => 10, max_length => 128 },
+            login2 => { type => 'string', required => 0, min_length => 1, max_length => 64 },
+            full_name => { type => 'string', required => 0, min_length => 1, max_length => 64 },
+            phone => { type => 'string', required => 0, min_length => 1, max_length => 16 },
+            partner_id => { type => 'integer' },
+        },
         swagger => { summary => 'Регистрация пользователя' },
     },
     POST => {
         controller => 'User',
+        params => {
+            login    => { type => 'string', required => 0, min_length => 1, max_length => 64 },
+            login2   => { type => 'string', required => 0, min_length => 1, max_length => 64 },
+            email =>    { type => 'email', max_length => 254 },
+        },
         swagger => { summary => 'Изменить пользователя' },
     },
 },
@@ -99,6 +112,11 @@ state $routes //= {
         method => 'auth_api_safe',
         skip_check_auth => 1,
         required => ['login','password'],
+        params => {
+            login    => { type => 'string', required => 1, min_length => 1, max_length => 64 },
+            login2   => { type => 'string', required => 0, min_length => 1, max_length => 64 },
+            password => { type => 'string', required => 1, min_length => 1, max_length => 128 },
+        },
         args => {
             format => 'json',
         },
@@ -259,6 +277,9 @@ state $routes //= {
         controller => 'User',
         method => 'passwd',
         required => ['password'],
+        params => {
+            password => { type => 'string', required => 1, min_length => 6, max_length => 128 },
+        },
     },
 },
 '/user/passwd/reset' => {
@@ -277,6 +298,9 @@ state $routes //= {
         method => 'passwd_reset_verify',
         required => ['token'],
         skip_check_auth => 1,
+        params => {
+            token => { type => 'string', required => 1, min_length => 8, max_length => 256 },
+        },
         swagger => { summary => 'Проверка токена сброса пароля пользователя перед сменой пароля' },
     },
     POST => {
@@ -284,6 +308,10 @@ state $routes //= {
         method => 'passwd_reset_verify',
         required => ['password', 'token'],
         skip_check_auth => 1,
+        params => {
+            password => { type => 'string', required => 1, min_length => 6, max_length => 128 },
+            token    => { type => 'string', required => 1, min_length => 8, max_length => 256 },
+        },
         swagger => { summary => 'Сменить пароль пользователя по токену сброса' },
     },
 },
@@ -293,6 +321,9 @@ state $routes //= {
         controller => 'User',
         method => 'set_email',
         required => ['email'],
+        params => {
+            email => { type => 'email', required => 1, max_length => 254 },
+        },
         swagger => { summary => 'Установить email пользователя' },
     },
     GET => {
@@ -326,11 +357,19 @@ state $routes //= {
     GET => {
         controller => 'USObject',
         optional => ['user_service_id'],
+        params => {
+            user_service_id => { type => 'integer', min => 1 },
+            limit           => { type => 'integer', min => 1, max => 1000 },
+            offset          => { type => 'integer', min => 0 },
+        },
         swagger => { summary => 'Список услуг пользователя' },
     },
     DELETE => {
         controller => 'USObject',
         required => ['user_service_id'],
+        params => {
+            user_service_id => { type => 'integer', required => 1, min => 1 },
+        },
         swagger => { summary => 'Удалить услугу пользователя' },
     },
 },
@@ -340,6 +379,9 @@ state $routes //= {
         controller => 'USObject',
         method => 'block_force',
         required => ['user_service_id'],
+        params => {
+            user_service_id => { type => 'integer', required => 1, min => 1 },
+        },
         swagger => { summary => 'Остановить услугу пользователя' },
     },
 },
@@ -349,6 +391,10 @@ state $routes //= {
         controller => 'USObject',
         method => 'change',
         required => ['user_service_id','service_id'],
+        params => {
+            user_service_id => { type => 'integer', required => 1, min => 1 },
+            service_id      => { type => 'integer', required => 1, min => 1 },
+        },
         swagger => { summary => 'Сменить тариф' },
     },
 },
@@ -410,6 +456,9 @@ state $routes //= {
         controller => 'USObject',
         method => 'create_for_api_safe',
         required => ['service_id'],
+        params => {
+            service_id => { type => 'integer', required => 1, min => 1 },
+        },
         swagger => { summary => 'Регистрация услуги' },
     },
 },
@@ -419,6 +468,9 @@ state $routes //= {
         swagger => { summary => 'Информация об услуге' },
         controller => 'Service',
         required => ['service_id'],
+        params => {
+            service_id => { type => 'integer', required => 1, min => 1 },
+        },
     },
 },
 '/template/*' => {
@@ -690,21 +742,38 @@ state $routes //= {
     swagger => { tags => 'Пользователи' },
     GET => {
         controller => 'User',
+        params => {
+            user_id => { type => 'integer', min => 1 },
+            limit   => { type => 'integer', min => 1, max => 10000 },
+            offset  => { type => 'integer', min => 0 },
+        },
         swagger => { summary => 'Список клиентов' },
     },
     PUT => {
         controller => 'User',
         required => ['login','password'],
+        params => {
+            login    => { type => 'string', required => 1, min_length => 1, max_length => 64 },
+            password => { type => 'string', required => 1, min_length => 6, max_length => 128 },
+            email    => { type => 'email',  max_length => 254 },
+        },
         swagger => { summary => 'Создать клиента' },
     },
     POST => {
         controller => 'User',
         required => ['user_id'],
+        params => {
+            user_id => { type => 'integer', required => 1, min => 1 },
+            email   => { type => 'email',   max_length => 254 },
+        },
         swagger => { summary => 'Изменить клиента' },
     },
     DELETE => {
         controller => 'User',
         required => ['user_id'],
+        params => {
+            user_id => { type => 'integer', required => 1, min => 1 },
+        },
         swagger => { summary => 'Удалить клиента' },
     },
 },
@@ -714,6 +783,10 @@ state $routes //= {
         controller => 'User',
         method => 'passwd',
         required => ['user_id','password'],
+        params => {
+            user_id  => { type => 'integer', required => 1, min => 1 },
+            password => { type => 'string',  required => 1, min_length => 6, max_length => 128 },
+        },
         swagger => { summary => 'Сменить пароль клиенту' },
     },
 },
@@ -723,6 +796,10 @@ state $routes //= {
         controller => 'User',
         method => 'payment',
         required => ['user_id','money'],
+        params => {
+            user_id => { type => 'integer', required => 1, min => 1 },
+            money   => { type => 'number',  required => 1 },
+        },
         swagger => { summary => 'Зачислить деньги клиенту' },
     },
 },
@@ -827,6 +904,11 @@ state $routes //= {
         controller => 'USObject',
         method => 'set_status_manual',
         required => ['user_id','user_service_id','status'],
+        params => {
+            user_id         => { type => 'integer', required => 1, min => 1 },
+            user_service_id => { type => 'integer', required => 1, min => 1 },
+            status          => { type => 'integer', required => 1, enum => [0, 1, 2, 3] },
+        },
         swagger => { summary => 'Сменить статус услуги клиента' },
     },
 },
@@ -836,6 +918,10 @@ state $routes //= {
         controller => 'USObject',
         method => 'block_force',
         required => ['user_id','user_service_id'],
+        params => {
+            user_id         => { type => 'integer', required => 1, min => 1 },
+            user_service_id => { type => 'integer', required => 1, min => 1 },
+        },
         swagger => { summary => 'Остановить услугу клиента' },
     },
 },
@@ -845,6 +931,10 @@ state $routes //= {
         controller => 'USObject',
         method => 'activate_force',
         required => ['user_id','user_service_id'],
+        params => {
+            user_id         => { type => 'integer', required => 1, min => 1 },
+            user_service_id => { type => 'integer', required => 1, min => 1 },
+        },
         swagger => { summary => 'Возобновить услугу клиента' },
     },
 },
@@ -854,6 +944,10 @@ state $routes //= {
         controller => 'USObject',
         method => 'touch_api',
         required => ['user_id','user_service_id'],
+        params => {
+            user_id         => { type => 'integer', required => 1, min => 1 },
+            user_service_id => { type => 'integer', required => 1, min => 1 },
+        },
         swagger => { summary => 'Обработать услугу' },
     },
 },
@@ -863,6 +957,11 @@ state $routes //= {
         controller => 'USObject',
         method => 'change',
         required => ['user_id','user_service_id','service_id'],
+        params => {
+            user_id         => { type => 'integer', required => 1, min => 1 },
+            user_service_id => { type => 'integer', required => 1, min => 1 },
+            service_id      => { type => 'integer', required => 1, min => 1 },
+        },
         swagger => { summary => 'Сменить тариф услуги клиента' },
     },
 },
@@ -872,6 +971,10 @@ state $routes //= {
         controller => 'USObject',
         method => 'api_spool_commands',
         required => ['user_id','user_service_id'],
+        params => {
+            user_id         => { type => 'integer', required => 1, min => 1 },
+            user_service_id => { type => 'integer', required => 1, min => 1 },
+        },
         swagger => { summary => 'Получить список текущих задач для услуги клиента' },
     },
 },
@@ -881,6 +984,9 @@ state $routes //= {
         controller => 'User',
         method => 'gen_session',
         required => ['user_id'],
+        params => {
+            user_id => { type => 'integer', required => 1, min => 1 },
+        },
         args => {
             format => 'json',
         },
@@ -1452,7 +1558,7 @@ state $routes //= {
 
 };
 
-$routes->{'/swagger.json'} = {
+$routes->{'/swagger.json'} //= {
     GET => {
         controller => 'Swagger',
         method => 'gen_swagger_json',
@@ -1464,7 +1570,7 @@ $routes->{'/swagger.json'} = {
     },
 };
 
-$routes->{'/swagger_admin.json'} = {
+$routes->{'/swagger_admin.json'} //= {
     GET => {
         controller => 'Swagger',
         method => 'gen_swagger_json',
@@ -1485,6 +1591,16 @@ for my $uri ( keys %{ $routes } ) {
         $router->connect( sprintf("%s:%s", $method, $uri), $routes->{$uri}->{$method} );
     }
 }
+
+# # Common parameters validated on every request regardless of route-level params.
+# # Route-level params override these rules for specific fields.
+# state $common_params //= {
+#     id     => { type => 'integer', min => 1 },
+#     start  => { type => 'string',  pattern => '^\d{4}-\d{2}-\d{2}' },
+#     stop   => { type => 'string',  pattern => '^\d{4}-\d{2}-\d{2}' },
+#     limit  => { type => 'integer', min => 1, max => 10000 },
+#     filter => { type => 'object' },
+# };
 
 my $uri = $ENV{PATH_INFO};
 our %in;
@@ -1540,6 +1656,14 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
                 exit 0;
             }
         }
+    }
+
+    my %schema = %{ $p->{params} || {} };
+    my %allowed_input_fields = map { $_ => 1 } ( keys %schema, @{ $p->{required} || [] }, @{ $p->{optional} || [] }, 'dry_run' );
+    if ( my $err = validate_params( \%schema, \%args, \%in, \%allowed_input_fields ) ) {
+        print_header( status => 400 );
+        print_json( { status => 400, error => $err } );
+        exit 0;
     }
 
     my $service = get_service( $p->{controller} );
@@ -1755,6 +1879,94 @@ sub get_service_id {
         exit 0;
     }
     return $service_id;
+}
+
+# Validate %args against a params schema defined in the route.
+# Schema format (per field):
+#   type         => 'integer' | 'number' | 'string' | 'email' | 'boolean'
+#   required     => 1   (field must be present and non-empty)
+#   min / max    => numeric bounds (for integer/number)
+#   min_length   => minimum string length
+#   max_length   => maximum string length
+#   pattern      => regex the value must match (string)
+#   enum         => arrayref of allowed values
+#
+# Returns undef on success, or an error string on the first failing field.
+sub validate_params {
+    my ( $schema, $args, $in, $allowed_input_fields ) = @_;
+
+    # If route defines params/required/optional, reject any unknown input field.
+    if ( $allowed_input_fields && keys %{ $allowed_input_fields } ) {
+        for my $field ( sort keys %{ $in || {} } ) {
+            next if $allowed_input_fields->{ $field };
+            return sprintf( "Unknown field: %s", $field );
+        }
+    }
+
+    for my $field ( sort keys %{ $schema } ) {
+        my $rule  = $schema->{ $field };
+        my $value = $args->{ $field };
+        my $type  = $rule->{type} // 'string';
+
+        # presence check
+        if ( $rule->{required} && ( !defined $value || $value eq '' ) ) {
+            return sprintf( "Field required: %s", $field );
+        }
+
+        # Skip remaining checks only when field is truly absent.
+        # Empty string is treated as provided value and must be validated.
+        next unless defined $value;
+
+        # type coercion / check
+        if ( $type eq 'integer' ) {
+            return sprintf( "Field '%s' must be an integer", $field )
+                unless $value =~ /^-?\d+$/;
+            return sprintf( "Field '%s' must be >= %s", $field, $rule->{min} )
+                if defined $rule->{min} && $value < $rule->{min};
+            return sprintf( "Field '%s' must be <= %s", $field, $rule->{max} )
+                if defined $rule->{max} && $value > $rule->{max};
+        }
+        elsif ( $type eq 'number' ) {
+            return sprintf( "Field '%s' must be a number", $field )
+                unless $value =~ /^-?(?:\d+\.?\d*|\.\d+)$/;
+            return sprintf( "Field '%s' must be >= %s", $field, $rule->{min} )
+                if defined $rule->{min} && $value < $rule->{min};
+            return sprintf( "Field '%s' must be <= %s", $field, $rule->{max} )
+                if defined $rule->{max} && $value > $rule->{max};
+        }
+        elsif ( $type eq 'boolean' ) {
+            return sprintf( "Field '%s' must be 0 or 1", $field )
+                unless $value =~ /^[01]$/;
+        }
+        elsif ( $type eq 'email' ) {
+            return sprintf( "Field '%s' must be a valid email address", $field )
+                unless $value =~ /\@/ && length($value) <= 254;
+        }
+        elsif ( $type eq 'object' ) {
+            return sprintf( "Field '%s' must be an object", $field )
+                unless ref($value) eq 'HASH';
+        }
+        elsif ( $type eq 'string' ) {
+            if ( defined $rule->{min_length} && length($value) < $rule->{min_length} ) {
+                return sprintf( "Field '%s' must be at least %d characters", $field, $rule->{min_length} );
+            }
+            if ( defined $rule->{max_length} && length($value) > $rule->{max_length} ) {
+                return sprintf( "Field '%s' must be at most %d characters", $field, $rule->{max_length} );
+            }
+            if ( defined $rule->{pattern} && $value !~ /$rule->{pattern}/ ) {
+                return sprintf( "Field '%s' has an invalid format", $field );
+            }
+        }
+
+        # enum check (applicable to any type)
+        if ( my $enum = $rule->{enum} ) {
+            my %allowed = map { $_ => 1 } @{ $enum };
+            return sprintf( "Field '%s' must be one of: %s", $field, join(', ', @{ $enum }) )
+                unless $allowed{ $value };
+        }
+    }
+
+    return undef;
 }
 
 # exit 0;

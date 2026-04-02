@@ -761,7 +761,7 @@ sub reg_api_safe {
     my $self = shift;
     my %args = (
         login => undef,
-        password => undef,
+        password => passgen(16),
         partner_id => undef,
         @_,
     );
