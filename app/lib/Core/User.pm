@@ -604,6 +604,22 @@ sub set_email {
         return { msg => 'is not email' };
     }
 
+    my ( $existing ) = $self->_list(
+        where => {
+            user_id => { '!=' => $self->id },
+            -OR => [
+                { login  => $args{email} },
+                { login2 => $args{email} },
+                { sprintf('%s->>"$.%s"', 'settings', 'email') => $args{email} },
+            ],
+        },
+        limit => 1,
+    );
+
+    if ( $existing ) {
+        return { msg => 'already in use' };
+    }
+
     my $verified = 0;
     my $current_email = $self->user->emails;
     if ( $current_email && $current_email eq $args{email} ) {
