@@ -10,6 +10,7 @@ use Core::Utils qw(
     parse_args
     encode_json
     decode_json
+    is_email
     switch_user
     blessed
     print_header
@@ -1941,7 +1942,7 @@ sub validate_params {
         }
         elsif ( $type eq 'email' ) {
             return sprintf( "Field '%s' must be a valid email address", $field )
-                unless $value =~ /\@/ && length($value) <= 254;
+                unless is_email($value) && length($value) <= 254;
         }
         elsif ( $type eq 'object' ) {
             return sprintf( "Field '%s' must be an object", $field )
