@@ -1357,6 +1357,10 @@ sub web_auth {
     if ( $args{user_id} && $self->user->id($args{user_id}) ) {
         switch_user( $args{user_id} );
         if ( $args{bind_to_profile} ) {
+            my $login2 = $in{username} ? $in{username} : '@' . $in{id};
+            unless ( $self->user->get_login2 ) {
+                $self->user->set( login2 => $login2 );
+            }
             my $settings = $self->user->settings->{telegram} || {};
             if ( !$settings->{user_id} ) {
                 $self->user->set_json(
@@ -1375,8 +1379,9 @@ sub web_auth {
                         },
                     },
                 );
+                return { msg => 'Successfully bound to Telegram' };
             } else {
-                return { error => 'Уже привязан к Telegram' };
+                return { error => 'Already bound to Telegram' };
             }
         }
     }
