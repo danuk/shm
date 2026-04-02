@@ -388,7 +388,7 @@ sub set_new_passwd {
         @_,
     );
 
-    return undef if $user->is_admin;
+    return undef if $self->is_admin;
 
     my $new_password = passgen( $args{len} );
     $self->passwd( password => $new_password );
