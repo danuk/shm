@@ -385,10 +385,11 @@ sub set_new_passwd {
     my $self = shift;
     my %args = (
         len => 10,
+        admin => 0,
         @_,
     );
 
-    return undef if $self->is_admin;
+    return undef if $self->is_admin && !$args{admin};
 
     my $new_password = passgen( $args{len} );
     $self->passwd( password => $new_password );
