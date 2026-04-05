@@ -226,6 +226,7 @@ sub task_send {
         task => $task,
         vars => {
             tg => sub { $self },
+            telegram => sub { $self },
             tg_api => sub{ $self->tg_api( @_ ) },
             response => sub { $self->response },
         },
@@ -973,6 +974,7 @@ sub get_script {
         task => $self->{task} || undef,
         vars => {
             tg => sub { $self },
+            telegram => sub { $self },
             cmd => $cmd,
             message => $self->message,
             response => sub { $self->response },
