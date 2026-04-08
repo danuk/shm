@@ -162,6 +162,8 @@ sub reg_user {
     my %args = (
         login => undef,
         password => undef,
+        captcha_token => undef,
+        captcha_answer => undef,
         @_,
     );
 
@@ -171,6 +173,8 @@ sub reg_user {
         content => {
             login    => $args{login},
             password => $args{password},
+            captcha_token => $args{captcha_token},
+            captcha_answer => $args{captcha_answer},
         },
     );
 
