@@ -9,12 +9,13 @@ our @EXPORT_OK = qw(
     verify_captcha
 );
 
+use Core::Base qw(cfg);
 use Core::Utils qw(
     encode_base64
     encode_base64url
     decode_base64url
 );
-use Digest::SHA qw(hmac_sha1);
+use Digest::SHA qw(hmac_sha1 sha256_hex);
 use Math::Random::Secure qw(rand);
 
 sub gen_captcha {
@@ -29,8 +30,9 @@ sub gen_captcha {
     my $timestamp = time();
     my $secret    = cfg('billing')->{captcha_secret} // 'shm_captcha_default_key';
 
-    my $sig   = hmac_sha1( "$answer|$timestamp", $secret );
-    my $token = encode_base64url( "$answer|$timestamp|$sig" );
+    my $answer_hash = sha256_hex( "$answer|$secret" );
+    my $sig   = hmac_sha1( "$answer_hash|$timestamp", $secret );
+    my $token = encode_base64url( "$answer_hash|$timestamp|$sig" );
     $token =~ s/=+$//;
 
     my $question = "$a $op $b = ?";
@@ -55,15 +57,23 @@ sub verify_captcha {
     my $raw = eval { decode_base64url( $args{token} ) };
     return 0 if $@ || !$raw;
 
-    my ( $stored_answer, $timestamp, $sig ) = split /\|/, $raw, 3;
-    return 0 unless defined $stored_answer && defined $timestamp && defined $sig;
+    my ( $stored_answer_hash, $timestamp, $sig ) = split /\|/, $raw, 3;
+    return 0 unless defined $stored_answer_hash && defined $timestamp && defined $sig;
     return 0 if time() - $timestamp > 300;  # 5 minute expiry
 
     my $secret   = cfg('billing')->{captcha_secret} // 'shm_captcha_default_key';
-    my $expected = hmac_sha1( "$stored_answer|$timestamp", $secret );
-    return 0 unless $sig eq $expected;
+    my $expected = hmac_sha1( "$stored_answer_hash|$timestamp", $secret );
 
-    return int($stored_answer) == int($args{answer}) ? 1 : 0;
+    # Constant-time comparison to prevent timing attacks
+    return 0 unless length($sig) == length($expected);
+    my $diff = 0;
+    for my $i ( 0 .. length($sig) - 1 ) {
+        $diff |= ord( substr($sig, $i, 1) ) ^ ord( substr($expected, $i, 1) );
+    }
+    return 0 if $diff;
+
+    my $answer_hash = sha256_hex( "$args{answer}|$secret" );
+    return $stored_answer_hash eq $answer_hash ? 1 : 0;
 }
 
 sub gen_captcha_svg {
