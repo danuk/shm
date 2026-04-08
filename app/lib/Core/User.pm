@@ -610,19 +610,7 @@ sub set_email {
         return { msg => 'is not email' };
     }
 
-    my ( $existing ) = $self->_list(
-        where => {
-            user_id => { '!=' => $self->id },
-            -OR => [
-                { login  => $args{email} },
-                { login2 => $args{email} },
-                { sprintf('%s->>"$.%s"', 'settings', 'email') => $args{email} },
-            ],
-        },
-        limit => 1,
-    );
-
-    if ( $existing ) {
+    if ( $self->check_exists_logins( login => $args{email}, exclude_user_id => $self->id ) ) {
         return { msg => 'already in use' };
     }
 
@@ -796,6 +784,12 @@ sub reg_api_safe {
         }
     }
 
+    if ( $self->check_exists_logins( login => $args{login} ) ) {
+        report->status( 409 );
+        report->add_error('Login already in use');
+        return undef;
+    }
+
     $self->set_user_fail_attempt( 'reg_api_safe', 3600 ); # 5 regs/hour
 
     return $self->reg(
@@ -840,6 +834,35 @@ sub reg {
     $user->make_event( 'registered' );
 
     return scalar $user->get;
+}
+
+sub check_exists_logins {
+    my $self = shift;
+    my %args = (
+        login => undef,
+        exclude_user_id => undef,
+        @_,
+    );
+
+    my %where = (
+        -OR => [
+            { login  => $args{login} },
+            { login2 => $args{login} },
+            { sprintf('%s->>"$.%s"', 'settings', 'email') => $args{login} },
+        ],
+    );
+
+    # Исключаем текущего пользователя при проверке, чтобы можно было сохранять email, совпадающий с login
+    if ( $args{exclude_user_id} ) {
+        $where{user_id} = { '!=' => $args{exclude_user_id} };
+    }
+
+    my ( $existing ) = $self->_list(
+        where => \%where,
+        limit => 1,
+    );
+
+    return $existing ? 1 : 0;
 }
 
 sub services {
