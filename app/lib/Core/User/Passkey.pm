@@ -82,6 +82,9 @@ sub get_enabled {
 sub get_rp_id {
     my $self = shift;
 
+    my $rp_id = cfg('passkey')->{rp_id};
+    return $rp_id if $rp_id;
+
     return $ENV{PASSKEY_RP_ID} if $ENV{PASSKEY_RP_ID};
 
     my $host = $ENV{HTTP_X_FORWARDED_HOST} || cfg('cli')->{url} || $ENV{HTTP_HOST} || 'localhost';
