@@ -1,4 +1,4 @@
-package Core::OTP;
+package Core::User::OTP;
 
 use v5.14;
 

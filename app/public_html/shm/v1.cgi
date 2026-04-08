@@ -144,24 +144,24 @@ state $routes //= {
 '/user/otp' => {
     swagger => { tags => 'OTP' },
     GET => {
-        controller => 'OTP',
+        controller => 'User::OTP',
         method => 'api_status',
         swagger => { summary => 'Статус OTP' },
     },
     POST => {
-        controller => 'OTP',
+        controller => 'User::OTP',
         method => 'api_verify',
         required => ['token'],
         swagger => { summary => 'Проверка OTP' },
     },
     PUT => {
-        controller => 'OTP',
+        controller => 'User::OTP',
         method => 'api_enable',
         required => ['token'],
         swagger => { summary => 'Включение OTP' },
     },
     DELETE => {
-        controller => 'OTP',
+        controller => 'User::OTP',
         method => 'api_disable',
         required => ['token'],
         swagger => { summary => 'Отключение OTP' },
@@ -170,7 +170,7 @@ state $routes //= {
 '/user/otp/setup' => {
     swagger => { tags => 'OTP' },
     POST => {
-        controller => 'OTP',
+        controller => 'User::OTP',
         method => 'api_setup',
         swagger => {
             summary => 'Настройка OTP',
@@ -205,12 +205,12 @@ state $routes //= {
 '/user/passkey/register' => {
     swagger => { tags => 'Passkey Регистрация' },
     GET => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_register_options',
         swagger => { summary => 'Получить параметры регистрации Passkey' },
     },
     POST => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_register_complete',
         required => ['credential_id', 'response'],
         swagger => { summary => 'Завершить регистрацию Passkey' },
@@ -219,18 +219,18 @@ state $routes //= {
 '/user/passkey' => {
     swagger => { tags => 'Passkey Настройки' },
     GET => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_list',
         swagger => { summary => 'Список зарегистрированных Passkey' },
     },
     POST => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_rename',
         required => ['credential_id', 'name'],
         swagger => { summary => 'Переименовать зарегистрированный Passkey по идентификатору' },
     },
     DELETE => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_delete',
         required => ['credential_id'],
         swagger => { summary => 'Удалить зарегистрированный Passkey по идентификатору' },
@@ -239,13 +239,13 @@ state $routes //= {
 '/user/auth/passkey' => {
     swagger => { tags => 'Passkey Аутентификация' },
     GET => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_auth_options_public',
         skip_check_auth => 1,
         swagger => { summary => 'Получить параметры публичной аутентификации Passkey' },
     },
     POST => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_auth_public',
         skip_check_auth => 1,
         required => ['credential_id', 'response'],
