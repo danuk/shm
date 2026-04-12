@@ -10,7 +10,60 @@ env:
   IMAGE_NAME: danuk/shm
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag format and branch restrictions
+        run: |
+          # Get the tag name
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          echo "Tag: $TAG_NAME"
+
+          # Tag must start with a digit
+          if [[ ! "$TAG_NAME" =~ ^[0-9] ]]; then
+            echo "❌ ERROR: Tag '$TAG_NAME' does not start with a digit"
+            echo "Tags must start with a digit (e.g., 1.0.0, 2.10.1), not with 'v' or other prefix"
+
+            # Delete invalid tag from remote
+            echo "🗑️ Deleting invalid tag from origin..."
+            git push origin --delete "refs/tags/$TAG_NAME" || true
+
+            exit 1
+          fi
+
+          # Get the commit hash for this tag
+          COMMIT_HASH=$(git rev-list -n 1 "$TAG_NAME")
+          echo "Commit: $COMMIT_HASH"
+
+          # Check if tag has a prefix/suffix (contains dash followed by letters)
+          if [[ "$TAG_NAME" =~ -[a-zA-Z]+ ]]; then
+            echo "✅ Tag has suffix (e.g., -beta, -rc, -alpha) - allowed from any branch"
+          else
+            echo "Tag has no suffix - checking if from release branch"
+
+            # Tags without suffix only allowed from release branch
+            if git merge-base --is-ancestor "$COMMIT_HASH" origin/release 2>/dev/null; then
+              echo "✅ Tag '$TAG_NAME' is from release branch - allowed"
+            else
+              echo "❌ ERROR: Tag '$TAG_NAME' has no suffix and is NOT from release branch"
+              echo "Tags without suffix (e.g., 1.0.0, 2.10.1) are only allowed from 'release' branch"
+              echo "Use -beta, -rc, or -alpha suffix for tags from other branches"
+
+              # Delete invalid tag from remote
+              echo "🗑️ Deleting invalid tag from origin..."
+              git push origin --delete "refs/tags/$TAG_NAME" || true
+
+              exit 1
+            fi
+          fi
+
   build:
+    needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -53,22 +106,29 @@ jobs:
         VERSION_STRING="${TAG}-${REV}"
         echo "version_string=${VERSION_STRING}" >> $GITHUB_OUTPUT
 
-        # Check if tag is from master branch - more reliable method
-        IS_MASTER="false"
-        if git merge-base --is-ancestor HEAD origin/master 2>/dev/null; then
-          # Tag is an ancestor of master
-          BRANCH=$(git branch -r --contains HEAD | grep -E 'origin/master$' | head -n1)
+        # Extract tag suffix (e.g., 'beta' from '2.10.1-beta')
+        TAG_SUFFIX=""
+        if [[ "$TAG" =~ -([a-zA-Z]+)$ ]]; then
+          TAG_SUFFIX="${BASH_REMATCH[1]}"
+        fi
+        echo "tag_suffix=${TAG_SUFFIX}" >> $GITHUB_OUTPUT
+
+        # Check if tag is from release branch - more reliable method
+        IS_RELEASE="false"
+        if git merge-base --is-ancestor HEAD origin/release 2>/dev/null; then
+          # Tag is an ancestor of release
+          BRANCH=$(git branch -r --contains HEAD | grep -E 'origin/release$' | head -n1)
           if [ -n "$BRANCH" ]; then
-            IS_MASTER="true"
-            echo "Tag is from master branch - will push 'latest' tag"
+            IS_RELEASE="true"
+            echo "Tag is from release branch - will push 'latest' tag"
           fi
         fi
 
-        if [ "$IS_MASTER" = "false" ]; then
-          echo "Tag is NOT from master branch - will NOT push 'latest' tag"
+        if [ "$IS_RELEASE" = "false" ]; then
+          echo "Tag is NOT from release branch - will push 'beta' tag instead"
         fi
 
-        echo "push_latest=${IS_MASTER}" >> $GITHUB_OUTPUT
+        echo "is_release=${IS_RELEASE}" >> $GITHUB_OUTPUT
         echo "Building version: ${VERSION_STRING}"
 
     - name: Create version.json
@@ -109,9 +169,9 @@ jobs:
         push: true
         target: api
         tags: |
-          ${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.tag }}
-          ${{ steps.version.outputs.push_latest == 'true' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || format('{0}-api:skip-minor-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
-          ${{ steps.version.outputs.push_latest == 'true' && format('{0}-api:latest', env.IMAGE_NAME) || format('{0}-api:skip-latest-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
+          ${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.tag) }}
+          ${{ steps.version.outputs.is_release == 'true' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
+          ${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.is_release == 'true' ? 'latest' : steps.version.outputs.tag_suffix) }}
         cache-from: type=gha,scope=api
         cache-to: type=gha,mode=max,scope=api
 
@@ -123,9 +183,9 @@ jobs:
         push: true
         target: core
         tags: |
-          ${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.tag }}
-          ${{ steps.version.outputs.push_latest == 'true' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || format('{0}-core:skip-minor-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
-          ${{ steps.version.outputs.push_latest == 'true' && format('{0}-core:latest', env.IMAGE_NAME) || format('{0}-core:skip-latest-{1}', env.IMAGE_NAME, steps.version.outputs.rev) }}
+          ${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.tag) }}
+          ${{ steps.version.outputs.is_release == 'true' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
+          ${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.is_release == 'true' ? 'latest' : steps.version.outputs.tag_suffix) }}
         cache-from: type=gha,scope=core
 
     - name: Create GitHub Release
@@ -138,14 +198,18 @@ jobs:
           ## Docker Images Built
 
           ### API Image
-          - `${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.tag }}`${{ steps.version.outputs.push_latest == 'true' && format('\n          - `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}${{ steps.version.outputs.push_latest == 'true' && format('\n          - `{0}-api:latest`', env.IMAGE_NAME) || '' }}
+          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) || '' }}
+          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) }}
+          - `${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.is_release == 'true' ? 'latest' : steps.version.outputs.tag_suffix }}`
 
           ### Core Image
-          - `${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.tag }}`${{ steps.version.outputs.push_latest == 'true' && format('\n          - `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}${{ steps.version.outputs.push_latest == 'true' && format('\n          - `{0}-core:latest`', env.IMAGE_NAME) || '' }}
+          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) || '' }}
+          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) }}
+          - `${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.is_release == 'true' ? 'latest' : steps.version.outputs.tag_suffix }}`
 
           **Version:** `${{ steps.version.outputs.version_string }}`
           **Git Revision:** `${{ steps.version.outputs.rev }}`
-          ${{ steps.version.outputs.push_latest != 'true' && '**Note:** This release is from a non-master branch. Minor version and latest tags were not created.' || '' }}
+          ${{ steps.version.outputs.is_release != 'true' && format('**Note:** This release is from a non-release branch. Only {0} tags are created.', steps.version.outputs.tag_suffix) || '' }}
 
           ## What's Changed
 

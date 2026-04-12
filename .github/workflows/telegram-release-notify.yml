@@ -46,7 +46,7 @@ jobs:
             echo "is_manual=true" >> $GITHUB_OUTPUT
             echo "✅ Ручной запуск - отправим уведомление"
           else
-            # Проверяем, что тег был создан из master ветки
+            # Проверяем, что тег был создан из release ветки
             # Получаем последний тег
             TAG_NAME=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
@@ -62,15 +62,15 @@ jobs:
 
             echo "Тег ${TAG_NAME} содержится в ветках: ${BRANCHES}"
 
-            if echo "$BRANCHES" | grep -q "^master$"; then
+            if echo "$BRANCHES" | grep -q "^release$"; then
               echo "should_notify=true" >> $GITHUB_OUTPUT
               echo "is_manual=false" >> $GITHUB_OUTPUT
               echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
-              echo "✅ Тег ${TAG_NAME} создан из master ветки - отправим уведомление"
+              echo "✅ Тег ${TAG_NAME} создан из release ветки - отправим уведомление"
             else
               echo "should_notify=false" >> $GITHUB_OUTPUT
               echo "is_manual=false" >> $GITHUB_OUTPUT
-              echo "⏭️ Тег ${TAG_NAME} НЕ из master ветки (${BRANCHES}) - пропускаем уведомление"
+              echo "⏭️ Тег ${TAG_NAME} НЕ из release ветки (${BRANCHES}) - пропускаем уведомление"
             fi
           fi
 
@@ -93,7 +93,7 @@ jobs:
             echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
             echo "name=Release $TAG_NAME" >> $GITHUB_OUTPUT
             echo "prerelease=false" >> $GITHUB_OUTPUT
-            echo "body=Автоматический релиз из master ветки" >> $GITHUB_OUTPUT
+            echo "body=Автоматический релиз из release ветки" >> $GITHUB_OUTPUT
           fi
 
       - name: Форматирование сообщения для Telegram
@@ -206,10 +206,10 @@ jobs:
         if: steps.check_conditions.outputs.is_manual == 'true'
         run: |
           echo "🧪 Это был тестовый запуск, выполненный вручную"
-          echo "В продакшене этот workflow будет запускаться автоматически после сборки релиза из master ветки"
+          echo "В продакшене этот workflow будет запускаться автоматически после сборки релиза из release ветки"
 
       - name: Информация о пропуске
         if: steps.check_conditions.outputs.should_notify == 'false'
         run: |
-          echo "⏭️ Уведомление пропущено - релиз не из master ветки"
-          echo "Уведомления отправляются только для релизов из master ветки (с тегом latest)"
+          echo "⏭️ Уведомление пропущено - релиз не из release ветки"
+          echo "Уведомления отправляются только для релизов из release ветки (тегов без суффиксов)"
