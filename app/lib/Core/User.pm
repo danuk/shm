@@ -891,6 +891,11 @@ sub spool_history {
     return $self->srv('SpoolHistory');
 }
 
+sub mail {
+    my $self = shift;
+    return $self->srv('Transport::Mail');
+}
+
 sub set {
     my $self = shift;
     my %args = (
