@@ -1312,7 +1312,7 @@ sub web_auth {
         profile   => 'telegram_bot',
         register_if_not_exists => 0,
         bind_to_profile => 0,
-        user_id => undef,
+        uid => undef,
         @_,
     );
 
@@ -1356,8 +1356,8 @@ sub web_auth {
         return undef;
     }
 
-    if ( $args{user_id} && $self->user->id($args{user_id}) ) {
-        switch_user( $args{user_id} );
+    if ( $args{uid} && $self->user->id($args{uid}) ) {
+        switch_user( $args{uid} );
         if ( $args{bind_to_profile} ) {
             my $login2 = $in{username} ? $in{username} : '@' . $in{id};
             unless ( $self->user->get_login2 ) {
