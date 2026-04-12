@@ -171,7 +171,7 @@ jobs:
         tags: |
           ${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.tag) }}
           ${{ steps.version.outputs.is_release == 'true' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
-          ${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.is_release == 'true' ? 'latest' : steps.version.outputs.tag_suffix) }}
+          ${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix) }}
         cache-from: type=gha,scope=api
         cache-to: type=gha,mode=max,scope=api
 
@@ -185,7 +185,7 @@ jobs:
         tags: |
           ${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.tag) }}
           ${{ steps.version.outputs.is_release == 'true' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
-          ${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.is_release == 'true' ? 'latest' : steps.version.outputs.tag_suffix) }}
+          ${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix) }}
         cache-from: type=gha,scope=core
 
     - name: Create GitHub Release
@@ -200,12 +200,12 @@ jobs:
           ### API Image
           ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) || '' }}
           ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) }}
-          - `${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.is_release == 'true' ? 'latest' : steps.version.outputs.tag_suffix }}`
+          - `${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix }}`
 
           ### Core Image
           ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) || '' }}
           ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) }}
-          - `${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.is_release == 'true' ? 'latest' : steps.version.outputs.tag_suffix }}`
+          - `${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix }}`
 
           **Version:** `${{ steps.version.outputs.version_string }}`
           **Git Revision:** `${{ steps.version.outputs.rev }}`
