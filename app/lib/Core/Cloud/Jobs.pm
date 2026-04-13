@@ -19,18 +19,6 @@ sub ps_file_name {
 sub startup {
     my $self = shift;
 
-    unless ( -d PAY_SYSTEM_DIR ) {
-        mkdir PAY_SYSTEM_DIR, 0755 or logger->error("Can't create directory " . PAY_SYSTEM_DIR . ": $!");
-    }
-
-    my @dir_stat = stat(PAY_SYSTEM_DIR);
-    unless ( ($dir_stat[2] & 07777) == 0755 ) {
-        chmod 0755, PAY_SYSTEM_DIR or logger->error("Can't chmod " . PAY_SYSTEM_DIR . ": $!");
-    }
-    unless ( $dir_stat[4] == 33 && $dir_stat[5] == 33 ) {
-        chown 33, 33, PAY_SYSTEM_DIR or logger->error("Can't chown " . PAY_SYSTEM_DIR . ": $!");
-    }
-
     $self->job_download_all_paystems();
 }
 
@@ -44,6 +32,18 @@ sub job_download_all_paystems {
 
     unless ( $self->get_auth_basic() ) {
         return undef;
+    }
+
+    unless ( -d PAY_SYSTEM_DIR ) {
+        mkdir PAY_SYSTEM_DIR, 0755 or logger->error("Can't create directory " . PAY_SYSTEM_DIR . ": $!");
+    }
+
+    my @dir_stat = stat(PAY_SYSTEM_DIR);
+    unless ( ($dir_stat[2] & 07777) == 0755 ) {
+        chmod 0755, PAY_SYSTEM_DIR or logger->error("Can't chmod " . PAY_SYSTEM_DIR . ": $!");
+    }
+    unless ( $dir_stat[4] == 33 && $dir_stat[5] == 33 ) {
+        chown 33, 33, PAY_SYSTEM_DIR or logger->error("Can't chown " . PAY_SYSTEM_DIR . ": $!");
     }
 
     my $config = get_service('config', _id => 'pay_systems');
@@ -108,6 +108,10 @@ sub job_download_paystem {
 
     if ( $response->code == 403 || $response->code == 404 ) {
         return SUCCESS, { error => $response->decoded_content  };
+    }
+
+    if ( $response->code == 429 ) {
+        return undef, { error => $response->decoded_content  };
     }
 
     unless ( $response->is_success ) {
