@@ -550,12 +550,23 @@ sub money_back {
     my ($delta_money, $delta_bonus) = (0, 0);
 
     if ($calc->{total} > $wd{total}) {
+        my $paid_money = $wd{total};
+        my $paid_bonus = $wd{bonus};
+
         $delta_money = $wd{total};
         $wd{total} = 0;
 
-        $delta_bonus = $calc->{total} > $wd{bonus} ? $wd{bonus} : $calc->{total};
-        $wd{bonus} -= $delta_bonus;
-        $wd{bonus} = 0 if $wd{bonus} < 0;
+        if ( $paid_money <= 0 ) {
+            # If payment was only with bonuses, keep only the used part in bonus
+            # and return the rest to the user.
+            my $used_bonus = $calc->{total} > $paid_bonus ? $paid_bonus : $calc->{total};
+            $wd{bonus} = $used_bonus;
+            $delta_bonus = $paid_bonus - $used_bonus;
+        } else {
+            $delta_bonus = $calc->{total} > $wd{bonus} ? $wd{bonus} : $calc->{total};
+            $wd{bonus} -= $delta_bonus;
+            $wd{bonus} = 0 if $wd{bonus} < 0;
+        }
     } else {
         $delta_money = $wd{total} - $calc->{total};
         $wd{total} = $calc->{total};

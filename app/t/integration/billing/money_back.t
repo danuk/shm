@@ -282,4 +282,43 @@ subtest 'Moneyback with bonuses when money covers used period' => sub {
     is($user->get_bonus, 500, 'Check bonuses after money back');
 };
 
+subtest 'Moneyback shortly after full bonus payment' => sub {
+    $user->set( balance => 0, bonus => 500 );
+
+    is($user->get_balance, 0);
+    is($user->get_bonus, 500);
+
+    my $service = get_service('service')->add(
+        name => 'test service',
+        cost => 199,
+        period => 1,
+        category => 'test',
+        no_discount => 1,
+    );
+
+    Test::MockTime::set_fixed_time('2022-03-01T00:00:00Z');
+
+    my $us = create_service(
+        service_id => $service->id,
+        months => 1,
+    );
+
+    is($user->get_bonus, 301);
+
+    my $wd = $us->withdraw;
+    is( $wd->get->{total}, 0, 'All paid by bonuses (no money part)' );
+    is( $wd->get->{bonus}, 199, 'Bonus part charged in full' );
+
+    Test::MockTime::set_fixed_time('2022-03-02T00:00:00Z');
+    $us->set( expire => now );
+
+    money_back( $us );
+
+    is($user->get_bonus, 493.58, 'Most bonuses are returned to user');
+
+    my $wd_after = $wd->get;
+    is( $wd_after->{total}, 0, 'All paid by bonuses (no money part)' );
+    is( $wd_after->{bonus}, 6.42);
+};
+
 done_testing();
