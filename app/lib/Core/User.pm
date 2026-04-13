@@ -467,91 +467,73 @@ sub passwd_reset_request {
         @_,
     );
 
-    my $user;
+    my $email;
+    if ( is_email($args{email}) ) {
+       $email = $args{email};
+    }
 
-    if ( $args{login} ) {
-        ( $user ) = $self->_list(
+    my $existing_user = $self->check_exists_logins( login => $args{login} || $email );
+    my $user_id = $existing_user ? $existing_user->{user_id} : undef;
+
+    if ( !$user_id && $email ) {
+        my $profile = get_service("profile");
+        my ( $profile_data ) = $profile->_list(
             where => {
-                login => $args{login},
+                sprintf('%s->>"$.%s"', 'data', 'email') => $email,
             },
             limit => 1,
         );
+        $user_id = $profile_data->{user_id} if $profile_data;
     }
 
-    if ( !$user && $args{email} && is_email($args{email}) ) {
-        ( $user ) = $self->_list(
-            where => {
-                sprintf('%s->>"$.%s"', 'settings', 'email') => $args{email},
-            },
-            limit => 1,
-        );
+    return { msg => 'User not found' } unless $user_id;
 
-        unless ( $user ) {
-            my $profile = get_service("profile");
-            my ( $profile_data ) = $profile->_list(
-                where => {
-                    sprintf('%s->>"$.%s"', 'data', 'email') => $args{email},
-                },
-                limit => 1,
-            );
-            if ( $profile_data ) {
-                $user = { user_id => $profile_data->{user_id} };
-            }
-        }
+    $self = $self->id( $user_id );
+    if ( $self->is_blocked ) {
+        return { msg => 'User is blocked' };
     }
 
-    if ( $user ) {
-        $self = $self->id( $user->{user_id} );
-
-        if ( $self->is_blocked ) {
-            return { msg => 'User is blocked' };
-        }
-
-        my $use_for_reset_password = cfg('cli')->{use_for_reset_password};
-
-        if ( $use_for_reset_password ) {
-            my $token = passgen( 35 );
-            my $expires = time() + 3600;
-
-            $self->user->set_settings({
-                reset_password_verify_token => $token,
-                reset_password_verify_expires => $expires,
-            });
-
-            my $project_name = cfg('company')->{name} || 'SHM';
-            my $url = cfg('cli')->{url};
-            my $link = $url ? "$url?token=$token" : undef;
-            my %mail_vars = (
-                token => $token,
-                link => $link || '',
-                url => $url || '',
-                email => $args{email} || '',
-                project_name => $project_name,
-            );
-
-            my $subject = $self->render_mail_text(
-                text => cfg('mail')->{reset_password}->{subject} || "$project_name - Сброс пароля",
-                vars => \%mail_vars,
-            );
-
-            my $message = $self->render_mail_text(
-                text => cfg('mail')->{reset_password}->{message} || "Ваша ссылка для сброса пароля: {{ link }}\n\nСсылка действительна в течение часа.",
-                vars => \%mail_vars,
-            );
-
-            $self->send_mail_message(
-                to => $args{email},
-                subject => $subject,
-                message => $message,
-            );
-        } else {
-            $self->make_event( 'user_password_reset' );
-        }
-
+    unless ( cfg('cli')->{use_for_reset_password} ) {
+        $self->make_event( 'user_password_reset' );
         return { msg => 'Successful' };
     }
 
-    return { msg => 'User not found' };
+    my $token = passgen( 35 );
+    my $expires = time() + 3600;
+
+    $self->user->set_settings({
+        reset_password_verify_token => $token,
+        reset_password_verify_expires => $expires,
+    });
+
+    my $project_name = cfg('company')->{name} || 'SHM';
+    my $url = cfg('cli')->{url};
+    my $link = $url ? "$url?token=$token" : undef;
+    my %mail_vars = (
+        token => $token,
+        link => $link || '',
+        url => $url || '',
+        email => $args{email} || '',
+        project_name => $project_name,
+    );
+
+    my $subject = $self->render_mail_text(
+        text => cfg('mail')->{reset_password}->{subject} || "$project_name - Сброс пароля",
+        vars => \%mail_vars,
+    );
+
+    my $message = $self->render_mail_text(
+        text => cfg('mail')->{reset_password}->{message} || "Ваша ссылка для сброса пароля: {{ link }}\n\nСсылка действительна в течение часа.",
+        vars => \%mail_vars,
+    );
+
+    $self->send_mail_message(
+        to => $args{email},
+        subject => $subject,
+        message => $message,
+    );
+
+    return { msg => 'Successful' };
 }
 
 sub passwd_reset_verify {
@@ -857,12 +839,12 @@ sub check_exists_logins {
         $where{user_id} = { '!=' => $args{exclude_user_id} };
     }
 
-    my ( $existing ) = $self->_list(
+    my ( $user ) = $self->_list(
         where => \%where,
         limit => 1,
     );
 
-    return $existing ? 1 : 0;
+    return $user;
 }
 
 sub services {
