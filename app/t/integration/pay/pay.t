@@ -60,6 +60,43 @@ subtest 'Make new payment and check last' => sub {
     is( scalar @spool, 0 );
 };
 
+subtest 'Idempotent payment by uniq_key' => sub {
+    $spool->_delete();
+
+    my $uniq_key = sprintf('idempotency-%d', time);
+
+    my $first = $user->payment(
+        money => 11,
+        pay_system_id => 'test',
+        comment => { idempotent => 1 },
+        uniq_key => $uniq_key,
+    );
+
+    ok( $first->{id}, 'First payment created' );
+
+    $spool->process_all();
+    $spool->_delete();
+
+    my $second = $user->payment(
+        money => 999,
+        pay_system_id => 'test',
+        comment => { idempotent => 2 },
+        uniq_key => $uniq_key,
+    );
+
+    is( $second->{id}, $first->{id}, 'Second call returned existing payment' );
+    is( $second->{money}, $first->{money}, 'Money value kept from first payment' );
+    is( $second->{uniq_key}, $uniq_key, 'uniq_key matches' );
+
+    my @same_key_payments = $user->pays->list(
+        where => { uniq_key => $uniq_key },
+    );
+    is( scalar @same_key_payments, 1, 'Only one payment exists for uniq_key' );
+
+    my @events = $spool->list;
+    is( scalar @events, 0, 'No new spool event for duplicate uniq_key' );
+};
+
 subtest 'Make new payment when us is locked' => sub {
     $spool->_delete();
 

@@ -991,6 +991,18 @@ sub payment {
     }
 
     my $pays = $self->pays;
+
+    if ( defined $args{uniq_key} && $args{uniq_key} ne '' ) {
+        my ( $exists ) = $pays->_list(
+            where => {
+                user_id => $self->id,
+                uniq_key => $args{uniq_key},
+            },
+            limit => 1,
+        );
+        return scalar $pays->id( $exists->{id} )->get if $exists;
+    }
+
     my $pay_id;
     unless ( $pay_id = $pays->add( %args ) ) {
         get_service('report')->add_error("Can't make a payment");
