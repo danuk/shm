@@ -708,6 +708,14 @@ state $routes //= {
         swagger => { summary => 'Удалить клиента' },
     },
 },
+'/admin/user/search' => {
+    swagger => { tags => 'Пользователи' },
+    GET => {
+        controller => 'User',
+        method => 'api_search_for_admins',
+        swagger => { summary => 'Поиск клиентов' },
+    },
+},
 '/admin/user/passwd' => {
     swagger => { tags => 'Пользователи' },
     POST => {

@@ -1488,4 +1488,53 @@ sub api_password_auth_status {
     };
 }
 
+sub api_search_for_admins {
+    my $self = shift;
+    my %args = (
+        admin => 0,
+        limit => 25,
+        offset => 0,
+        text => '',
+        @_,
+    );
+
+    return $self->list_for_api() unless $args{admin};
+
+    my $text = $args{text} // '';
+    $text =~ s/^\s+//;
+    $text =~ s/\s+$//;
+
+    return $self->list_for_api(%args) unless length $text;
+
+    # Keep the same list API guardrails for limit.
+    $args{limit} = int( $args{limit} // 25 );
+    $args{limit} = 25   if $args{limit} < 0;
+    $args{limit} = 25   if $args{limit} == 0 && !$args{admin};
+    $args{limit} = 1000 if !$args{admin} && $args{limit} > 1000;
+
+    my @or_where = (
+        { login => { '-like' => "%$text%" } },
+        { login2 => { '-like' => "%$text%" } },
+        { full_name => { '-like' => "%$text%" } },
+        { phone => { '-like' => "%$text%" } },
+        { sprintf('CAST(%s AS CHAR)', 'settings') => { '-like' => "%$text%" } },
+    );
+
+    push @or_where, { user_id => int($text) } if $text =~ /^\d+$/;
+
+    my %where = (
+        -OR => \@or_where,
+    );
+
+    my $order = $self->query_for_order(%args);
+
+    return $self->_list(
+        limit => $args{limit},
+        offset => $args{offset},
+        calc => 1,
+        where => \%where,
+        $order ? ( order => $order ) : (),
+    );
+}
+
 1;
