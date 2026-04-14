@@ -16,9 +16,8 @@ sub AUTOLOAD {
     if ( $AUTOLOAD =~ /^.*::(\w+)$/ ) {
         my $method = $1;
 
-        no strict 'refs';
-        if ( defined &{"Core::Utils::$method"} ) {
-            my $ret = &{"Core::Utils::$method"}( convert_template_args(@_) );
+        if ( my $code = Core::Utils->can( $method ) ) {
+            my $ret = $code->( convert_template_args(@_) );
             return $ret;
         }
 
