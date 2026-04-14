@@ -14,6 +14,8 @@ use List::Util qw(
     uniq
 );
 
+use Digest::SHA qw(hmac_sha256 hmac_sha256_hex sha256_hex sha256 sha512_hex hmac_sha512_hex sha512 hmac_sha512);
+
 use base qw(Exporter);
 
 our @EXPORT = qw(
@@ -81,6 +83,7 @@ our @EXPORT_OK = qw(
     round_up
     round_down
     round
+    hmac_sha256 hmac_sha256_hex sha256_hex sha256 sha512_hex hmac_sha512_hex sha512 hmac_sha512
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
