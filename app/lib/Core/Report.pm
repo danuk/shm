@@ -35,6 +35,23 @@ sub status {
     return $self->{status};
 }
 
+sub headers {
+    my $self = shift;
+    my $headers = shift;
+
+    $self->{headers} ||= {};
+
+    if ( ref $headers eq 'HASH' ) {
+        $self->{headers} = $headers;
+    }
+
+    if ( my $status = $self->status ) {
+        $self->{headers}->{status} = $status;
+    }
+
+    return wantarray ? %{ $self->{headers} } : $self->{headers};
+}
+
 sub errors {
     my $self = shift;
     my $ret = $self->{errors} ? delete $self->{errors} : [];
