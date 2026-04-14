@@ -1660,10 +1660,11 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     my $report = get_service('report');
     unless ( $report->is_success || $p->{skip_errors} ) {
-        my $status = $report->status || 400;
-        print_header( status => $status );
+        my %headers = $report->headers;
+        $headers{status} ||= 400;
+        print_header( %headers );
         my ( $err_msg ) = $report->errors;
-        print_json( { status => $status, error => $err_msg } );
+        print_json( { status => $headers{status}, error => $err_msg } );
         exit 0;
     }
 

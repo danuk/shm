@@ -31,4 +31,15 @@ is_deeply scalar $report->errors, [
 is $report->is_success, 1, 'Check report status: success';
 is_deeply scalar $report->errors, [], 'Check for empty records after get multiple errors';
 
+$report->status(409);
+$report->headers({ 'X-Test-Header' => 'ok' });
+
+my $headers = $report->headers;
+is $headers->{status}, 409, 'Report headers include status from report';
+is $headers->{'X-Test-Header'}, 'ok', 'Report headers preserve custom values';
+
+my %headers = $report->headers;
+is $headers{status}, 409, 'Report headers in list context include status';
+is $headers{'X-Test-Header'}, 'ok', 'Report headers in list context preserve custom values';
+
 done_testing();
