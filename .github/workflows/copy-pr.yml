@@ -1,0 +1,33 @@
+name: Copy PR to internal branch
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: copy-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  copy-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create or update internal branch
+        run: |
+          BRANCH="review/pr-${{ github.event.pull_request.number }}"
+          git fetch --no-tags --prune "${{ github.event.pull_request.head.repo.clone_url }}" "${{ github.event.pull_request.head.ref }}"
+          git checkout -B "$BRANCH" FETCH_HEAD
+          git push --force-with-lease origin "$BRANCH"
+
