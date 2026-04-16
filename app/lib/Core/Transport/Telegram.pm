@@ -81,7 +81,7 @@ sub user_tg_settings {
     return $self->{user_tg_settings} if $self->{user_tg_settings};
 
     my $data = $self->user->settings->{telegram} || {};
-    my $profile = $data->{ $self->{profile} } || {};
+    my $profile = $data->{ $self->profile_name } || {};
 
     $data = { %{$data}, %{$profile} };
 
@@ -142,7 +142,7 @@ sub profile {
     my $self = shift;
     my $name = shift;
 
-    return $self->{profile} unless $name;
+    return $self->profile_name unless $name;
 
     my $config = $self->config;
 
@@ -161,6 +161,8 @@ sub profile {
     return $self;
 }
 
+sub profile_name { shift->{profile} };
+
 # for templates (always return array ref)
 sub profiles {
     my $self = shift;
@@ -173,7 +175,7 @@ sub user_profiles {
     my @profiles;
     my $user_profiles = $self->user->settings->{telegram} || {};
 
-    if ( my $profile = $self->{profile} ) {
+    if ( my $profile = $self->profile_name ) {
         push @profiles, $profile;
     } else {
         for ( keys %$user_profiles ) {
@@ -359,7 +361,7 @@ sub bot {
         return undef;
     }
 
-    $self->profile( $template_id ) unless $self->{profile};
+    $self->profile( $template_id ) unless $self->profile_name;
 
     unless ( $self->chat_id ) {
         logger->error('chat_id не найден');
@@ -538,7 +540,7 @@ sub http {
         if ( $response->code == 403 ) {
             $self->user->set_settings({
                 telegram => {
-                    $self->{profile} => {
+                    $self->profile_name() => {
                         status => 'kicked',
                     },
                 }
@@ -649,7 +651,7 @@ sub auth {
                 language_code => $tg_user->{language_code},
                 is_premium => $tg_user->{is_premium},
                 chat_id => $self->chat_id, # for backward compatible
-                $self->{profile} => {
+                $self->profile_name() => {
                     chat_id => $self->chat_id,
                     status => 'member',
                 },
@@ -658,18 +660,6 @@ sub auth {
     ) if $self->message->{chat}->{type} eq 'private';
 
     return $self->user;
-}
-
-sub deleteMessage {
-    my $self = shift;
-    my %args = (
-        message_id => undef,
-        @_,
-    );
-
-    return $self->http( 'deleteMessage',
-        data => \%args,
-    );
 }
 
 sub tg_user {
@@ -802,7 +792,7 @@ sub process_message {
         return {} unless $user;
         $user->set_settings({
             telegram => {
-                $self->{profile} => {
+                $self->profile_name() => {
                     status => $my_chat_member->{new_chat_member}->{status},
                 },
             }
@@ -1149,7 +1139,7 @@ sub shmRegister {
                 language_code => $tg_user->{language_code},
                 is_premium => $tg_user->{is_premium},
                 chat_id => $self->chat_id, # for backward compatible
-                $self->{profile} => {
+                $self->profile_name() => {
                     chat_id => $self->chat_id,
                     status => 'member',
                 },
@@ -1344,7 +1334,7 @@ sub web_auth {
     my @arr = map { "$_=$in{$_}" } sort keys %in;
     my $data_check_string = join("\n", @arr);
 
-    my $token = $self->config->{ $args{profile} }->{token} // $self->config->{token};
+    my $token = $self->config->{ $profile }->{token} // $self->config->{token};
     use Digest::SHA qw(sha256 hmac_sha256_hex);
     my $secret_key = sha256( $token );
 
