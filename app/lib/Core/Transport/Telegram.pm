@@ -70,6 +70,11 @@ sub config {
     return cfg('telegram') || {};
 }
 
+sub tg_settings {
+    my $self = shift;
+    return $self->config->{ $self->profile_name } || {};
+}
+
 sub user_tg_settings {
     my $self = shift;
 
@@ -610,7 +615,7 @@ sub find_user_by_tg {
 sub get_shm_login {
     my $self = shift;
     my $tg_user_id = shift;
-    my $prefix = $self->user_tg_settings->{login_prefix} || '@';
+    my $prefix = $self->tg_settings->{login_prefix} || '@';
 
     return sprintf( "%s%s", $prefix, $tg_user_id );
 }
