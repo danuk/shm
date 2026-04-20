@@ -59,7 +59,7 @@ sub send {
     my ( $status, $response ) = $self->send_mail(
         host => $self->{host},
         from => $self->{from},
-        to => $self->{to},
+        to => $self->{to} || $self->user->email,
         subject => $self->{subject} || 'SHM',
         from_name => $self->{from_name} || 'SHM',
         content_type => $self->{content_type},
@@ -118,20 +118,17 @@ sub task_send {
     my $config = get_service("config", _id => 'mail');
     $config = $config ? $config->get_data : {};
 
-    $settings{from} //= $config->{from};
+    $settings{from} ||= $config->{from};
     unless ( $settings{from} ) {
         return undef, {
             error => "From undefined",
         }
     }
 
-    $settings{from_name} //= $config->{from_name};
-    $settings{subject} //= $config->{subject};
-    $settings{to} //= delete $settings{bcc};
+    $settings{from_name} ||= $config->{from_name};
+    $settings{subject} ||= $config->{subject};
+    $settings{to} ||= delete $settings{bcc} || $self->user->email;
 
-    if ( my $email = get_service('user')->emails ) {
-        $settings{to} = $email;
-    }
     unless ( $settings{to} ) {
         return SUCCESS, {
             error => "User email undefined. For test email set `bcc` in server",
