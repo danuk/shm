@@ -38,11 +38,13 @@ sub send {
 
     my $server_group = get_service('ServerGroups', _id => $self->{server_gid} );
     unless ( $server_group ) {
+        $self->logger->error("Server group not exists:", $self->{server_gid});
         return undef;
     }
 
     my ( $server ) = $server_group->get_servers();
     unless ( $server ) {
+        $self->logger->error("Server not found in server group:", $self->{server_gid});
         return undef;
     }
 
@@ -64,7 +66,16 @@ sub send {
         message => $message,
         %data,
     );
-    return $status;
+
+    if ( ref $response eq 'HASH' ) {
+        if ( $response->{error} ) {
+            $self->logger->error( $response->{error} );
+        } else {
+            $self->logger->debug( $response );
+        }
+    }
+
+    return $status, $response;
 }
 
 sub task_send {
