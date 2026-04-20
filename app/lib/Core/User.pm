@@ -1221,6 +1221,13 @@ sub emails {
     return undef;
 }
 
+sub email {
+    my $self = shift;
+
+    my ( $email ) = $self->emails;
+    return $email;
+}
+
 sub referrals {
     my $self = shift;
 
