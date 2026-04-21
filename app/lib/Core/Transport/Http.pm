@@ -156,6 +156,7 @@ sub http {
         my $ua = LWP::UserAgent->new(
             agent => 'SHM',
             timeout => $args{timeout},
+            keep_alive => 4,  # Reuse TCP connections
             ssl_opts => {
                 verify_hostname => $args{verify_hostname},
             },

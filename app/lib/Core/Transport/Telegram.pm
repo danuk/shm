@@ -7,7 +7,6 @@ use utf8;
 use Core::Base;
 use Core::Const;
 use Core::System::ServiceManager qw( get_service logger );
-use LWP::UserAgent ();
 use Core::Utils qw(
     switch_user
     encode_utf8
@@ -49,21 +48,16 @@ sub init {
 
     $self->{server} = $self->config->{server} || 'https://api.telegram.org';
 
-    my $http_proxy  = $ENV{HTTPS_PROXY} || $ENV{https_proxy} || $ENV{HTTP_PROXY} || $ENV{http_proxy} || '';
-    state %ua_cache;
-    my $cached_ua = $ua_cache{$http_proxy} //= do {
-        my $ua = LWP::UserAgent->new(
-            timeout => 10,
-            keep_alive => 4,  # Reuse TCP connections to api.telegram.org
-        );
-        $ua->proxy('https', $http_proxy) if $http_proxy;
-        $ua;
-    };
-    $self->{lwp} = $cached_ua;
+    $self->{http_transport} = get_service('Transport::Http');
     $self->{webhook} = 0;
     $self->{deny_answer_direct} = 1;
 
     return $self;
+}
+
+sub http_transport {
+    my $self = shift;
+    return $self->{http_transport} ||= get_service('Transport::Http');
 }
 
 sub config {
@@ -524,10 +518,11 @@ sub http {
         }
     }
 
-    my $response = $self->{lwp}->$method(
-        sprintf('%s/bot%s/%s', $self->{server}, $self->token, $url ),
-        Content_Type => $args{content_type},
-        Content => encode_utf8( $content ),
+    my $response = $self->http_transport->http(
+        method => $method,
+        url => sprintf('%s/bot%s/%s', $self->{server}, $self->token, $url ),
+        content_type => $args{content_type},
+        content => encode_utf8( $content ),
     );
 
     logger->dump('Send to TG API', $response->request );
@@ -1441,8 +1436,9 @@ sub set_webhook {
 
     my $method = delete $args{method};
 
-    my $delete_webhook = $self->{lwp}->get(
-        sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->{server}, $args{token}),
+    my $delete_webhook = $self->http_transport->http(
+        method => 'get',
+        url => sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->{server}, $args{token}),
     );
 
     my $bot = $args{template_id};
@@ -1459,10 +1455,11 @@ sub set_webhook {
         ]
     };
 
-    my $set_webhook = $self->{lwp}->$method(
-        sprintf('%s/bot%s/setWebhook', $self->{server}, $args{token}),
-        Content_Type => $args{content_type},
-        Content => encode_json( $content ),
+    my $set_webhook = $self->http_transport->http(
+        method => $method,
+        url => sprintf('%s/bot%s/setWebhook', $self->{server}, $args{token}),
+        content_type => $args{content_type},
+        content => encode_json( $content ),
     );
 
     logger->dump('Send to TG', $set_webhook->request );
