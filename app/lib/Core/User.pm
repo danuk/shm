@@ -597,7 +597,7 @@ sub set_email {
     }
 
     my $verified = 0;
-    my $current_email = $self->user->emails;
+    my $current_email = $self->user->email;
     if ( $current_email && $current_email eq $args{email} ) {
         $verified = $self->get_settings->{email_verified} // 0;
     }
@@ -617,7 +617,7 @@ sub set_email {
 sub get_email {
     my $self = shift;
     return {
-        email => $self->user->emails,
+        email => $self->user->email,
         email_verified => $self->get_settings->{email_verified} // 0,
     };
 }
@@ -635,7 +635,7 @@ sub verify_email {
             return { msg => 'is not email' };
         }
 
-        my $current_email = $self->user->emails;
+        my $current_email = $self->user->email;
         unless ( $current_email && $args{email} eq $current_email ) {
             return { msg => 'Email mismatch. Use the email shown in your profile.' };
         }
