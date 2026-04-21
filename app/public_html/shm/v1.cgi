@@ -89,7 +89,7 @@ state $routes //= {
     GET => {
         controller => 'User',
         method => 'api_referrals',
-        swagger => { summary => 'Получение количество рефералов' },
+            swagger => { summary => 'Получение количества рефералов' },
     },
 },
 '/user/auth' => {
@@ -304,7 +304,7 @@ state $routes //= {
         controller => 'User',
         method => 'verify_email',
         optional => ['email', 'code'],
-        swagger => { summary => 'Верификацировать email пользователя' },
+        swagger => { summary => 'Верифицировать email пользователя' },
     },
     DELETE => {
         controller => 'User',
@@ -623,7 +623,7 @@ state $routes //= {
     },
     PUT => {
         controller => 'Service',
-        swagger => { summary => 'Создать услуг' },
+        swagger => { summary => 'Создать услугу' },
     },
     POST => {
         controller => 'Service',
@@ -1167,7 +1167,7 @@ state $routes //= {
         controller => 'Config',
         method => 'api_delete_value',
         required => ['value'],
-        swagger => { summary => 'Удалить значение или обьект внутри объекта конфига' },
+        swagger => { summary => 'Удалить значение или объект внутри объекта конфига' },
     },
 },
 '/admin/console' => {
@@ -1365,7 +1365,7 @@ state $routes //= {
             format => 'json',
         },
         swagger => {
-            summary => 'Авторизация через Telegram Widjet',
+            summary => 'Авторизация через Telegram Widget',
              responses => {
                 '200' => {
                     content => {
