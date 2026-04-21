@@ -826,25 +826,40 @@ sub check_exists_logins {
         @_,
     );
 
-    my %where = (
+    my %where_by_login = (
         -OR => [
             { login  => $args{login} },
             { login2 => $args{login} },
-            { sprintf('%s->>"$.%s"', 'settings', 'email') => $args{login} },
         ],
     );
 
     # Исключаем текущего пользователя при проверке, чтобы можно было сохранять email, совпадающий с login
     if ( $args{exclude_user_id} ) {
-        $where{user_id} = { '!=' => $args{exclude_user_id} };
+        $where_by_login{user_id} = { '!=' => $args{exclude_user_id} };
     }
 
     my ( $user ) = $self->_list(
-        where => \%where,
+        where => \%where_by_login,
+        limit => 1,
+    );
+    return $user if $user;
+
+    return undef unless is_email( $args{login} );
+
+    my %where_by_email = (
+        sprintf('%s->>"$.%s"', 'settings', 'email') => $args{login},
+    );
+
+    if ( $args{exclude_user_id} ) {
+        $where_by_email{user_id} = { '!=' => $args{exclude_user_id} };
+    }
+
+    my ( $user_by_email ) = $self->_list(
+        where => \%where_by_email,
         limit => 1,
     );
 
-    return $user;
+    return $user_by_email;
 }
 
 sub services {
