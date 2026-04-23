@@ -231,20 +231,35 @@ sub send_mail {
     unless ( $ENV{SHM_TEST} ) {
         my ( $host, $port ) = split(/:/, $args{host} );
 
+        # Empty string means "not set" (common for UI forms); let port defaults decide.
+        my $ssl = defined $args{ssl} && $args{ssl} ne '' ? $args{ssl} : undef;
+        my $starttls = defined $args{starttls} && $args{starttls} ne '' ? $args{starttls} : undef;
+
+        # Email::Sender::Transport::SMTP expects TLS mode via `ssl`:
+        #   ssl => 'ssl'      for direct TLS
+        #   ssl => 'starttls' for STARTTLS upgrade
+        my $tls_mode;
+        if ( defined $ssl ) {
+            $tls_mode = $ssl ? 'ssl' : '';
+        } elsif ( defined $starttls ) {
+            $tls_mode = $starttls ? 'starttls' : '';
+        }
+
+        # Auto-select TLS mode by port only when no explicit flags were provided.
+        unless ( defined $ssl || defined $starttls ) {
+            if ( $port == 465 ) {
+                $tls_mode = 'ssl';
+            } elsif ( $port == 587 || $port == 25 ) {
+                $tls_mode = 'starttls';
+            }
+        }
+
         my %smtp_params = (
             host    => $host,
             port    => $port || 25,
             timeout => $args{timeout} || 30,
-            defined $args{ssl} ? ( ssl => $args{ssl} ) : (),
-            defined $args{starttls} ? ( starttls => $args{starttls} ) : (),
+            $tls_mode ? ( ssl => $tls_mode ) : (),
         );
-
-        # Определяем тип шифрования
-        if ( $port == 465 ) {
-            $smtp_params{ssl} //= 1;       # Прямой SSL/TLS
-        } elsif ( $port == 587 || $port == 25 ) {
-            $smtp_params{starttls} //= 1;  # Команда STARTTLS внутри сессии
-        }
 
         # Добавляем авторизацию, если есть
         $smtp_params{sasl_username} = $args{user}     if $args{user};
