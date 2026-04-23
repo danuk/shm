@@ -7,6 +7,7 @@ use Core::Const;
 use Core::Utils qw( any );
 
 sub table { return 'servers_groups' };
+sub dbh { my $self = shift; $self->{_autocommit_dbh} ||= $self->dbh_new( AutoCommit => 1 ); return $self->{_autocommit_dbh} };
 
 sub structure {
     return {
