@@ -7,7 +7,8 @@ services:
       TRUSTED_IPS: ""
       ENABLE_RATE_LIMIT: "${ENABLE_RATE_LIMIT:-false}"
     depends_on:
-      - core
+      core:
+        condition: service_healthy
   core:
     image: "${SHM_REPO}/shm-core:${CORE_VERSION}"
     pull_policy: always
@@ -60,7 +61,8 @@ services:
     ports:
       - "${ADMIN_PORT}:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
   client:
     image: "danuk/shm-client-2:${CLIENT_VERSION}"
     pull_policy: always
