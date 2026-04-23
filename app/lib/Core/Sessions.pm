@@ -6,6 +6,7 @@ use Core::Base;
 use Core::Utils qw( now );
 
 sub table { return 'sessions' };
+sub dbh { my $self = shift; $self->{_autocommit_dbh} ||= $self->dbh_new( AutoCommit => 1 ); return $self->{_autocommit_dbh} };
 
 sub table_allow_insert_key { return 1 };
 

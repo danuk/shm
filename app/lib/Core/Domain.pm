@@ -25,6 +25,7 @@ sub load_registrator {
 }
 
 sub table { return 'domains' };
+sub dbh { my $self = shift; $self->{_autocommit_dbh} ||= $self->dbh_new( AutoCommit => 1 ); return $self->{_autocommit_dbh} };
 
 sub structure {
     return {
