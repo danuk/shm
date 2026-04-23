@@ -335,10 +335,8 @@ sub delete {
         return;
     }
 
-    $args{where} = {
-        id => $args{id},
-        user_id => $self->user_id,
-    };
+    $args{where} = { id => $args{id} };
+    $args{where}{user_id} = $self->user_id unless $self->user->is_admin;
 
     return $self->SUPER::delete( %args );
 }
