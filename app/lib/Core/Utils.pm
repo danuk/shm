@@ -59,6 +59,9 @@ our @EXPORT_OK = qw(
     hash_merge
     blessed
     get_random_value
+    random_bytes
+    random_base64url
+    jwt_decode
     to_query_string
     dots_str_to_sql
     uuid_gen
@@ -549,6 +552,11 @@ sub decode_base64url {
     return MIME::Base64::decode_base64url( shift );
 }
 
+sub jwt_decode {
+    require Crypt::JWT;
+    return Crypt::JWT::decode_jwt(@_);
+}
+
 sub hash_merge {
     my ($left, @right) = @_;
     $left = {} if ref $left ne 'HASH';
@@ -703,14 +711,38 @@ sub get_random_value {
     }
 }
 
+sub random_bytes {
+    my $len = shift;
+    $len = 32 unless defined $len;
+    $len = int($len);
+    return '' if $len < 1;
+
+    my $bytes = '';
+    if ( open my $fh, '<:raw', '/dev/urandom' ) {
+        my $read = read( $fh, $bytes, $len );
+        close $fh;
+        return $bytes if defined $read && $read == $len;
+    }
+
+    # Fallback for environments where /dev/urandom is unavailable.
+    return join('', map { chr(int(rand(256))) } 1..$len );
+}
+
+sub random_base64url {
+    my $len = shift;
+    $len = 32 unless defined $len;
+    return encode_base64url( random_bytes($len) );
+}
+
 sub to_query_string {
     my $data = shift;
-    return undef unless $data ne 'HASH';
+    return undef unless ref $data eq 'HASH';
 
-    use URI::Escape;
+    use URI::Escape qw( uri_escape_utf8 );
     my @ret;
-    for ( keys %$data ) {
-        push @ret, sprintf("%s=%s", $_, uri_escape_utf8( $data->{ $_ } ));
+    for my $k ( sort keys %$data ) {
+        my $v = defined $data->{ $k } ? $data->{ $k } : '';
+        push @ret, sprintf("%s=%s", uri_escape_utf8($k), uri_escape_utf8($v));
     }
     return join('&', @ret );
 }
