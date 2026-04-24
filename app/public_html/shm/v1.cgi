@@ -913,6 +913,46 @@ state $routes //= {
         },
     },
 },
+'/admin/token' => {
+    swagger => { tags => 'API Токены' },
+    GET => {
+        controller => 'Api::Tokens',
+        swagger => { summary => 'Список API токенов' },
+    },
+    PUT => {
+        controller => 'Api::Tokens',
+        args => { format => 'json' },
+        swagger => {
+            summary => 'Создать API токен (токен возвращается один раз)',
+            responses => {
+                '200' => {
+                    content => {
+                        'application/json' => {
+                            schema => {
+                                type => 'object',
+                                properties => {
+                                    id    => { type => 'number' },
+                                    token => { type => 'string' },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+    POST => {
+        controller => 'Api::Tokens',
+        required   => ['id'],
+        args => { format => 'json' },
+        swagger => { summary => 'Обновить API токен' },
+    },
+    DELETE => {
+        controller => 'Api::Tokens',
+        required   => ['id'],
+        swagger => { summary => 'Удалить API токен' },
+    },
+},
 '/admin/server' => {
     swagger => { tags => 'Сервера' },
     GET => {
@@ -1485,6 +1525,18 @@ $routes->{'/swagger_admin.json'} = {
     },
 };
 
+$routes->{'/admin/routes'} = {
+    swagger => { tags => 'Система' },
+    GET => {
+        controller => 'Swagger',
+        method => 'admin_routes_for_api',
+        args => {
+            routes => $routes,
+        },
+        swagger => { summary => 'Список всех admin API роутов' },
+    },
+};
+
 state $router //= Router::Simple->new();
 for my $uri ( keys %{ $routes } ) {
     for my $method ( 'GET','POST','PUT','DELETE' ) {
@@ -1525,6 +1577,16 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
             exit 0;
         }
         $admin_mode = 1;
+    }
+
+    if ( my $api_token = get_service('config')->local->{api_token} ) {
+        my $route = $uri;
+        $route =~ s{^/}{};
+        unless ( get_service('Api::Tokens')->check_scope( $api_token, $route, $ENV{REQUEST_METHOD} ) ) {
+            print_header( status => 403 );
+            print_json( { status => 403, error => "API token does not have permission" } );
+            exit 0;
+        }
     }
 
     my %args = (

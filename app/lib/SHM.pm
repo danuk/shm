@@ -27,6 +27,7 @@ use base qw(Exporter);
 
 our @EXPORT_OK = qw[
     validate_session
+    validate_bearer_token
     print_json
     trim
     print_header
@@ -85,6 +86,13 @@ sub new {
         return get_service('user')
     } elsif ( $args->{user_id} ) {
         $user_id = $args->{user_id};
+    } elsif ( $ENV{HTTP_AUTHORIZATION} && $ENV{HTTP_AUTHORIZATION} =~ /^Bearer\s+(\S+)$/i ) {
+        my $bearer_token = $1;
+        my $token_row = validate_bearer_token( token => $bearer_token );
+        print_not_authorized() unless $token_row;
+        $user_id = $token_row->{user_id};
+        # Store token row in local config so v1.cgi can check scopes
+        get_service('config')->local( 'api_token', $token_row );
     } elsif ( $ENV{HTTP_AUTHORIZATION} ) {
         my $auth = $ENV{HTTP_AUTHORIZATION};
         $auth =~s/^Basic\s+//;
@@ -159,6 +167,22 @@ sub db_connect {
     }
 
     $config->local('dbh', $dbh );
+}
+
+sub validate_bearer_token {
+    my %args = (
+        token => undef,
+        @_,
+    );
+
+    return undef unless $args{token};
+
+    my $token_row = get_service('Api::Tokens')->validate(
+        token => $args{token},
+    );
+    return undef unless $token_row;
+
+    return $token_row;
 }
 
 sub validate_session {

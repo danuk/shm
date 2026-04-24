@@ -176,6 +176,42 @@ sub gen_swagger_json {
     return \%json;
 }
 
+sub admin_routes_for_api {
+    my $self = shift;
+    my %args = (
+        routes => {},
+        @_,
+    );
+
+    my @routes;
+
+    while ( my ( $path, $info ) = each %{ $args{routes} } ) {
+        next unless $path =~ /^\/admin\//;
+
+        my $tags = $info->{swagger} && $info->{swagger}->{tags}
+            ? ( ref $info->{swagger}->{tags} ? $info->{swagger}->{tags} : [ $info->{swagger}->{tags} ] )
+            : [];
+
+        my @methods;
+        for my $http_method ( qw( GET PUT POST DELETE ) ) {
+            next unless $info->{$http_method};
+
+            my $route_info = $info->{$http_method};
+            push @methods, $http_method;
+        }
+
+        push @routes, {
+            path => $path,
+            tags => $tags,
+            methods => \@methods,
+        } if @methods;
+    }
+
+    @routes = sort { $a->{path} cmp $b->{path} } @routes;
+
+    return @routes;
+}
+
 sub get_swagger_schema {
     my $self = shift;
     my $controller = shift;
