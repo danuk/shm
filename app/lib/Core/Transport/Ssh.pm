@@ -68,7 +68,7 @@ sub exec {
         shell => $ENV{SHM_TEST} ? 'echo' : undef,
         stderr_to_stdout => 1,
         proxy_jump => undef,
-        @_,
+        get_smart_args( @_ ),
     );
 
     my $event_name = $args{event_name};
