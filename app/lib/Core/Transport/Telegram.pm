@@ -1772,7 +1772,7 @@ sub web_auth {
     if ( $args{uid} && $self->user->id($args{uid}) ) {
         switch_user( $args{uid} );
         if ( $args{bind_to_profile} ) {
-            my $login2 = $in{username} ? $in{username} : '@' . $in{id};
+            my $login2 = '@' . $in{id};
             unless ( $self->user->get_login2 ) {
                 $self->user->set( login2 => $login2 );
             }
