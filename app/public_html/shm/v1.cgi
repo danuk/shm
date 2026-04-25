@@ -1271,6 +1271,16 @@ state $routes //= {
             summary => 'Изменить настройки пользователя для Telegram бота',
         },
     },
+    DELETE => {
+        controller => 'Transport::Telegram',
+        method => 'api_delete_user_tg_settings',
+        args => {
+            format => 'json',
+        },
+        swagger => {
+            summary => 'Удалить (отвязать) Telegram аккаунт пользователя',
+        },
+    },
 },
 '/telegram/bot' => {
     POST => {

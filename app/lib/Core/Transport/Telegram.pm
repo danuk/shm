@@ -108,6 +108,24 @@ sub api_set_user_tg_settings {
     return $self->user->settings->{telegram} || {};
 }
 
+sub api_delete_user_tg_settings {
+    my $self = shift;
+
+    my $username = $self->user_tg_settings->{username};
+    my $login2 = $self->user->get_login2;
+
+    if ( defined $username && $username ne '' && defined $login2 && $login2 ne '' ) {
+        if ( $login2 eq $username || $login2 eq '@' . $username ) {
+            $self->user->set( login2 => undef );
+        }
+    }
+
+    $self->user->set_settings({
+        telegram => {},
+    });
+    return { msg => 'Telegram settings deleted successfully' };
+}
+
 # methods for Templates
 sub settings { shift->user_tg_settings };
 sub login { shift->user_tg_settings->{username} };
