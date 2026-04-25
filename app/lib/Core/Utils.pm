@@ -564,11 +564,25 @@ sub hash_merge {
     for my $right (@right) {
         next if ref $right ne 'HASH';
         for my $key (keys %$right) {
-            if (ref($right->{$key}) eq 'HASH' && ref($left->{$key}) eq 'HASH') {
-                $left->{$key} = hash_merge($left->{$key}, $right->{$key});
-            } else {
-                $left->{$key} = $right->{$key};
+            my $value = $right->{$key};
+
+            if ( !defined $value ) {
+                delete $left->{$key};
+                next;
             }
+
+            if ( ref($value) eq 'HASH' ) {
+                if ( !keys %{$value} ) {
+                    $left->{$key} = {};
+                    next;
+                }
+
+                my $base = ref($left->{$key}) eq 'HASH' ? $left->{$key} : {};
+                $left->{$key} = hash_merge($base, $value);
+                next;
+            }
+
+            $left->{$key} = $value;
         }
     }
     return $left;

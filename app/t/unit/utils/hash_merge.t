@@ -41,4 +41,24 @@ is_deeply($merged8, $h10, 'merge right empty');
 my $merged9 = hash_merge('', '');
 is_deeply($merged9, {}, 'merge empty');
 
+my $h12 = { a => 1, b => 2 };
+my $h13 = { b => undef };
+my $merged10 = hash_merge($h12, $h13);
+is_deeply($merged10, { a => 1 }, 'undef deletes top-level key');
+
+my $h14 = { a => { x => 1, y => 2 }, b => 3 };
+my $h15 = { a => { y => undef } };
+my $merged11 = hash_merge($h14, $h15);
+is_deeply($merged11, { a => { x => 1 }, b => 3 }, 'undef deletes nested key');
+
+my $h16 = { a => { x => 1, y => 2 }, b => 3 };
+my $h17 = { a => {} };
+my $merged12 = hash_merge($h16, $h17);
+is_deeply($merged12, { a => {}, b => 3 }, 'empty hash clears nested values but keeps key');
+
+my $h18 = { a => 5 };
+my $h19 = { a => {} };
+my $merged13 = hash_merge($h18, $h19);
+is_deeply($merged13, { a => {} }, 'empty hash replaces scalar with empty hash');
+
 done_testing;
