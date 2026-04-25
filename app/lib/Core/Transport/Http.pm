@@ -22,6 +22,7 @@ use HTTP::Request::Common qw(
 use URI;
 use URI::QueryParam;
 use CGI;
+use LWP::UserAgent;
 
 sub send {
     my $self = shift;
@@ -128,6 +129,36 @@ sub HTTP::Response::json_content {
     return decode_json( $self->decoded_content );
 }
 
+sub lwp {
+    my $self = shift;
+    my %args = (
+        timeout => 10,
+        keep_alive => 4,
+        verify_hostname => 1,
+        @_,
+    );
+
+    my $http_proxy  = $ENV{HTTP_PROXY}  || $ENV{http_proxy}  || '';
+    my $https_proxy = $ENV{HTTPS_PROXY} || $ENV{https_proxy} || '';
+
+    state %ua_cache;
+    my $cache_key = join('|', $args{timeout}, $args{verify_hostname} // 0, $http_proxy, $https_proxy);
+
+    return $ua_cache{$cache_key} //= do {
+        my $ua = LWP::UserAgent->new(
+            agent => 'SHM',
+            timeout => $args{timeout},
+            keep_alive => $args{keep_alive},
+            ssl_opts => {
+                verify_hostname => $args{verify_hostname},
+            },
+        );
+        $ua->proxy('http',  $http_proxy)  if $http_proxy;
+        $ua->proxy('https', $https_proxy) if $https_proxy;
+        $ua;
+    };
+}
+
 sub http {
     my $self = shift;
     my %args = (
@@ -138,6 +169,7 @@ sub http {
         content => '',
         verify_hostname => 1,
         timeout => 10,
+        keep_alive => 4,
         binary => 0,
         @_,
     );
@@ -146,25 +178,13 @@ sub http {
 
     my $method = uc $args{method};
 
-    my $http_proxy  = $ENV{HTTP_PROXY}  || $ENV{http_proxy}  || '';
-    my $https_proxy = $ENV{HTTPS_PROXY} || $ENV{https_proxy} || '';
-
-    # Cache UA per timeout+verify_hostname+proxy combination
-    state %ua_cache;
-    my $cache_key = join('|', $args{timeout}, $args{verify_hostname} // 0, $http_proxy, $https_proxy);
-    my $ua = $ua_cache{$cache_key} //= do {
-        my $ua = LWP::UserAgent->new(
-            agent => 'SHM',
-            timeout => $args{timeout},
-            keep_alive => 4,  # Reuse TCP connections
-            ssl_opts => {
-                verify_hostname => $args{verify_hostname},
-            },
-        );
-        $ua->proxy('http',  $http_proxy)  if $http_proxy;
-        $ua->proxy('https', $https_proxy) if $https_proxy;
-        $ua;
-    };
+    my $ua = $self->lwp(
+        %args{ qw(
+            timeout
+            keep_alive
+            verify_hostname
+        ) }
+    );
 
     if ($method eq 'GET') {
         my $uri = URI->new($args{url});
@@ -174,15 +194,17 @@ sub http {
     }
 
     my $content = $args{content};
-    if ( ref $content ) {
+    if ( ref $content && $args{content_type} !~ /form-data/i ) {
         $content = encode_json( $content );
     }
+
+    my $request_content = ref $content ? $content : encode_utf8( $content );
 
     no strict 'refs';
     my $response = $ua->request( &{$method}(
         $args{url},
         Content_Type => $args{content_type},
-        Content => encode_utf8( $content ),
+        Content => $request_content,
         %{ $args{headers} || {} },
     ));
 
