@@ -137,4 +137,131 @@ subtest 'Callback redirects to return_url on success' => sub {
     is( $ret->{session_id}, 'redirect-session', 'payload includes session_id' );
 };
 
+subtest 'Bind-to-profile stores login2 as @telegram_user_id' => sub {
+    package Local::BindUser;
+
+    sub new {
+        my $class = shift;
+        return bless {
+            login2 => undef,
+            settings => { telegram => {} },
+            set_calls => [],
+            set_json_calls => [],
+        }, $class;
+    }
+
+    sub id {
+        my ( $self, $uid ) = @_;
+        return $uid ? 1 : 0;
+    }
+
+    sub get_login2 {
+        my $self = shift;
+        return $self->{login2};
+    }
+
+    sub set {
+        my ( $self, %args ) = @_;
+        push @{ $self->{set_calls} }, { %args };
+        $self->{login2} = $args{login2} if exists $args{login2};
+        return 1;
+    }
+
+    sub settings {
+        my $self = shift;
+        return $self->{settings};
+    }
+
+    sub set_json {
+        my ( $self, $key, $value ) = @_;
+        push @{ $self->{set_json_calls} }, {
+            key => $key,
+            value => $value,
+        };
+        return 1;
+    }
+
+    package main;
+
+    my $fake_user = Local::BindUser->new;
+
+    local *Core::Transport::Telegram::user = sub { return $fake_user; };
+    local *Core::Utils::switch_user = sub { return 1; };
+    local *Core::Transport::Telegram::verify_telegram_oidc_id_token = sub {
+        return {
+            id => 123456,
+            preferred_username => 'telegram_login',
+            given_name => 'John',
+            family_name => 'Doe',
+            iat => time,
+        };
+    };
+
+    my $ret = $tg->web_auth(
+        uid => 40092,
+        bind_to_profile => 1,
+        profile => 'telegram_bot',
+        id_token => 'stub-token',
+    );
+
+    is( $ret->{msg}, 'Successfully bound to Telegram', 'bind returns success message' );
+    is( $fake_user->{login2}, '@123456', 'login2 saved as @telegram_user_id' );
+    isnt( $fake_user->{login2}, 'telegram_login', 'login2 is not Telegram username' );
+};
+
+subtest 'Unbind clears login2 when it contains telegram username' => sub {
+    package Local::DeleteTgUser;
+
+    sub new {
+        my $class = shift;
+        return bless {
+            login2 => 'telegram_login',
+            settings => {
+                telegram => {
+                    username => 'telegram_login',
+                    user_id => 123456,
+                },
+            },
+            set_calls => [],
+            set_settings_calls => [],
+        }, $class;
+    }
+
+    sub settings {
+        my $self = shift;
+        return $self->{settings};
+    }
+
+    sub get_login2 {
+        my $self = shift;
+        return $self->{login2};
+    }
+
+    sub set {
+        my ( $self, %args ) = @_;
+        push @{ $self->{set_calls} }, { %args };
+        $self->{login2} = $args{login2} if exists $args{login2};
+        return 1;
+    }
+
+    sub set_settings {
+        my ( $self, $patch ) = @_;
+        push @{ $self->{set_settings_calls} }, $patch;
+        $self->{settings}{telegram} = $patch->{telegram} if ref $patch eq 'HASH' && exists $patch->{telegram};
+        return 1;
+    }
+
+    package main;
+
+    my $fake_user = Local::DeleteTgUser->new;
+    local *Core::Transport::Telegram::user = sub { return $fake_user; };
+
+    my $ret = $tg->api_delete_user_tg_settings();
+
+    is( $ret->{msg}, 'Telegram settings deleted successfully', 'delete method returns success' );
+    ok( scalar @{ $fake_user->{set_calls} } >= 1, 'user->set was called to clear login2' );
+    is( $fake_user->{set_calls}[0]->{login2}, undef, 'login2 cleared when it matched telegram username' );
+    is_deeply( $fake_user->{settings}{telegram}, {}, 'telegram settings removed' );
+};
+
 done_testing();
