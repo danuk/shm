@@ -796,6 +796,38 @@ sub telegram_oidc_init {
     };
 }
 
+sub telegram_oidc_start_redirect {
+    my $self = shift;
+    my %args = @_;
+
+    my $payload = $self->telegram_oidc_init(%args);
+    return undef unless $payload;
+
+    my $auth_url = $payload->{auth_url};
+    unless ( $auth_url ) {
+        report->error('Telegram OIDC auth_url is empty');
+        return undef;
+    }
+
+    if ( $ENV{SHM_TEST} ) {
+        return {
+            status => 302,
+            redirect => $auth_url,
+            %{$payload},
+        };
+    }
+
+    print_header(
+        status => 302,
+        Location => $auth_url,
+    );
+    print_json({
+        status => 302,
+        redirect => $auth_url,
+    });
+    exit 0;
+}
+
 sub telegram_oidc_client_id {
     my $self = shift;
     my %args = (
