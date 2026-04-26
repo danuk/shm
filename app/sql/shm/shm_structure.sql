@@ -228,8 +228,8 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `partner_id` int(11) DEFAULT NULL,
-  `login` char(64) NOT NULL,
-  `login2` char(64) DEFAULT NULL,
+  `login` varchar(128) NOT NULL,
+  `login2` varchar(128) DEFAULT NULL,
   `password` char(64) DEFAULT NULL,
   `type` tinyint(4) DEFAULT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
