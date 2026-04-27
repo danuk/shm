@@ -146,6 +146,9 @@ sub db_connect {
                 return;
             }
             $existing->disconnect;
+            if ( my $myisam = delete $local->{dbh_myisam} ) {
+                $myisam->disconnect;
+            }
         }
     }
 
@@ -198,6 +201,9 @@ sub trim { my $str = shift; $str=~s/^\s+|\s+$//g; $str };
 sub DESTROY {
     my $dbh = get_service('config')->local->{dbh};
     $dbh->disconnect if $dbh;
+
+    my $dbh_myisam = get_service('config')->local->{dbh_myisam};
+    $dbh_myisam->disconnect if $dbh_myisam;
 }
 
 1;

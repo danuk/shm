@@ -6,7 +6,7 @@ use Core::Base;
 use Data::Validate::Domain qw/is_domain/;
 
 sub table { return 'dns_services' };
-sub dbh { my $self = shift; $self->{_autocommit_dbh} ||= $self->dbh_new( AutoCommit => 1, InactiveDestroy => 0 ); return $self->{_autocommit_dbh} };
+sub dbh { shift->dbh_myisam };
 
 sub structure {
     return {
