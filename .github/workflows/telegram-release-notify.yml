@@ -62,15 +62,15 @@ jobs:
 
             echo "Тег ${TAG_NAME} содержится в ветках: ${BRANCHES}"
 
-            if echo "$BRANCHES" | grep -q "^release$"; then
+            if echo "$BRANCHES" | grep -q "^master$"; then
               echo "should_notify=true" >> $GITHUB_OUTPUT
               echo "is_manual=false" >> $GITHUB_OUTPUT
               echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
-              echo "✅ Тег ${TAG_NAME} создан из release ветки - отправим уведомление"
+              echo "✅ Тег ${TAG_NAME} создан из master ветки - отправим уведомление"
             else
               echo "should_notify=false" >> $GITHUB_OUTPUT
               echo "is_manual=false" >> $GITHUB_OUTPUT
-              echo "⏭️ Тег ${TAG_NAME} НЕ из release ветки (${BRANCHES}) - пропускаем уведомление"
+              echo "⏭️ Тег ${TAG_NAME} НЕ из master ветки (${BRANCHES}) - пропускаем уведомление"
             fi
           fi
 
@@ -93,7 +93,7 @@ jobs:
             echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
             echo "name=Release $TAG_NAME" >> $GITHUB_OUTPUT
             echo "prerelease=false" >> $GITHUB_OUTPUT
-            echo "body=Автоматический релиз из release ветки" >> $GITHUB_OUTPUT
+            echo "body=Автоматический релиз из master ветки" >> $GITHUB_OUTPUT
           fi
 
       - name: Форматирование сообщения для Telegram

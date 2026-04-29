@@ -40,18 +40,18 @@ jobs:
           COMMIT_HASH=$(git rev-list -n 1 "$TAG_NAME")
           echo "Commit: $COMMIT_HASH"
 
-          # Check if tag has a prefix/suffix (contains dash followed by letters)
+          # Check if tag has a suffix (contains dash followed by letters)
           if [[ "$TAG_NAME" =~ -[a-zA-Z]+ ]]; then
             echo "✅ Tag has suffix (e.g., -beta, -rc, -alpha) - allowed from any branch"
           else
-            echo "Tag has no suffix - checking if from release branch"
+            echo "Tag has no suffix - checking if from master branch"
 
-            # Tags without suffix only allowed from release branch
-            if git merge-base --is-ancestor "$COMMIT_HASH" origin/release 2>/dev/null; then
-              echo "✅ Tag '$TAG_NAME' is from release branch - allowed"
+            # Tags without suffix only allowed from master branch
+            if git merge-base --is-ancestor "$COMMIT_HASH" origin/master 2>/dev/null; then
+              echo "✅ Tag '$TAG_NAME' is from master branch - allowed"
             else
-              echo "❌ ERROR: Tag '$TAG_NAME' has no suffix and is NOT from release branch"
-              echo "Tags without suffix (e.g., 1.0.0, 2.10.1) are only allowed from 'release' branch"
+              echo "❌ ERROR: Tag '$TAG_NAME' has no suffix and is NOT from master branch"
+              echo "Tags without suffix (e.g., 1.0.0, 2.10.1) are only allowed from 'master' branch"
               echo "Use -beta, -rc, or -alpha suffix for tags from other branches"
 
               # Delete invalid tag from remote
@@ -113,19 +113,18 @@ jobs:
         fi
         echo "tag_suffix=${TAG_SUFFIX}" >> $GITHUB_OUTPUT
 
-        # Check if tag is from release branch - more reliable method
+        # Check if tag is from master branch
         IS_RELEASE="false"
-        if git merge-base --is-ancestor HEAD origin/release 2>/dev/null; then
-          # Tag is an ancestor of release
-          BRANCH=$(git branch -r --contains HEAD | grep -E 'origin/release$' | head -n1)
+        if git merge-base --is-ancestor HEAD origin/master 2>/dev/null; then
+          BRANCH=$(git branch -r --contains HEAD | grep -E 'origin/master$' | head -n1)
           if [ -n "$BRANCH" ]; then
             IS_RELEASE="true"
-            echo "Tag is from release branch - will push 'latest' tag"
+            echo "Tag is from master branch - will push 'latest' tag"
           fi
         fi
 
         if [ "$IS_RELEASE" = "false" ]; then
-          echo "Tag is NOT from release branch - will push 'beta' tag instead"
+          echo "Tag is NOT from master branch - will push suffix tag instead"
         fi
 
         echo "is_release=${IS_RELEASE}" >> $GITHUB_OUTPUT
