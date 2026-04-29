@@ -26,6 +26,7 @@ our @EXPORT = qw(
     EVENT_NOT_ENOUGH_MONEY
     EVENT_CHANGED
     EVENT_CHANGED_TARIFF
+    EVENT_CHANGED_TICKET
 
     TASK_NEW
     TASK_SUCCESS
@@ -36,6 +37,19 @@ our @EXPORT = qw(
 
     GROUP_ID_LOCAL
     GROUP_ID_MAIL
+
+    TICKET_OPEN
+    TICKET_IN_PROGRESS
+    TICKET_WAITING
+    TICKET_CLOSED
+    TICKET_ARCHIVED
+    TICKET_LOW
+    TICKET_NORMAL
+    TICKET_HIGH
+    TICKET_URGENT
+    TICKET_SERVICE
+    TICKET_PAYMENT
+    TICKET_OTHER
 );
 
 use constant {
@@ -72,6 +86,7 @@ use constant {
     EVENT_ACTIVATE_FORCE => 'ACTIVATE FORCE',
     EVENT_CHANGED => 'CHANGED',
     EVENT_CHANGED_TARIFF => 'CHANGED_TARIFF',
+    EVENT_CHANGED_TICKET => 'CHANGED_TICKET',
 };
 
 use constant {
@@ -86,6 +101,21 @@ use constant {
 use constant {
     GROUP_ID_LOCAL => 1,
     GROUP_ID_MAIL => 2,
+};
+
+use constant {
+    TICKET_OPEN => 'open',
+    TICKET_IN_PROGRESS => 'in_progress',
+    TICKET_WAITING => 'waiting',
+    TICKET_CLOSED => 'closed',
+    TICKET_ARCHIVED => 'archived',
+    TICKET_LOW => 'low',
+    TICKET_NORMAL => 'normal',
+    TICKET_HIGH => 'high',
+    TICKET_URGENT => 'urgent',
+    TICKET_SERVICE => 'service',
+    TICKET_PAYMENT => 'payment',
+    TICKET_OTHER => 'other',
 };
 
 1;

@@ -399,6 +399,61 @@ state $routes //= {
         swagger => { summary => 'Платежные системы' },
     },
 },
+'/user/ticket' => {
+    swagger => { tags => 'Тикеты' },
+    GET => {
+        controller => 'Ticket',
+        method => 'api_list',
+        swagger => { summary => 'Список тикетов пользователя' },
+    },
+    PUT => {
+        controller => 'Ticket',
+        method => 'api_create',
+        swagger => { summary => 'Создать тикет' },
+    },
+},
+'/user/ticket/*' => {
+    swagger => { tags => 'Тикеты' },
+    splat_to => 'ticket_id',
+    GET => {
+        controller => 'Ticket',
+        method => 'api_get',
+        swagger => { summary => 'Получить тикет' },
+    },
+    POST => {
+        controller => 'Ticket',
+        method => 'api_message',
+        swagger => { summary => 'Добавить сообщение в тикет' },
+    },
+    DELETE => {
+        controller => 'Ticket',
+        method => 'api_close',
+        swagger => { summary => 'Закрыть тикет' },
+    },
+},
+'/user/media' => {
+    swagger => { tags => 'Медиа' },
+    PUT => {
+        controller => 'Media',
+        method => 'api_upload',
+        required => ['name', 'data'],
+        swagger => { summary => 'Загрузить файл (данные в base64)' },
+    },
+},
+'/user/media/*' => {
+    swagger => { tags => 'Медиа' },
+    splat_to => 'id',
+    GET => {
+        controller => 'Media',
+        method => 'api_data',
+        args => { format => 'media' },
+        swagger => { summary => 'Скачать файл' },
+    },
+    DELETE => {
+        controller => 'Media',
+        swagger => { summary => 'Удалить файл' },
+    },
+},
 '/service/order' => {
     swagger => { tags => 'Услуги' },
     GET => {
@@ -1246,6 +1301,65 @@ state $routes //= {
         method => 'clear_cache',
     },
 },
+'/admin/ticket' => {
+    swagger => { tags => 'Тикеты (админ)' },
+    GET => {
+        controller => 'Ticket',
+        method => 'api_admin_list',
+        swagger => { summary => 'Список тикетов' },
+    },
+    PUT => {
+        controller => 'Ticket',
+        method => 'api_admin_create',
+        swagger => { summary => 'Создать тикет' },
+    },
+},
+'/admin/ticket/*' => {
+    swagger => { tags => 'Тикеты (админ)' },
+    splat_to => 'ticket_id',
+    GET => {
+        controller => 'Ticket',
+        method => 'api_admin_get',
+        swagger => { summary => 'Получить тикет' },
+    },
+    POST => {
+        controller => 'Ticket',
+        method => 'api_admin_update',
+        swagger => { summary => 'Изменить статус тикета или добавить сообщение' },
+    },
+    DELETE => {
+        controller => 'Ticket',
+        method => 'api_admin_delete',
+        swagger => { summary => 'Удалить тикет' },
+    },
+},
+'/admin/media' => {
+    swagger => { tags => 'Медиа' },
+    GET => {
+        controller => 'Media',
+        swagger => { summary => 'Список медиафайлов' },
+    },
+    PUT => {
+        controller => 'Media',
+        method => 'api_upload',
+        required => ['name', 'data'],
+        swagger => { summary => 'Загрузить файл (данные в base64)' },
+    },
+},
+'/admin/media/*' => {
+    swagger => { tags => 'Медиа' },
+    splat_to => 'id',
+    GET => {
+        controller => 'Media',
+        method => 'api_data',
+        args => { format => 'media' },
+        swagger => { summary => 'Скачать файл' },
+    },
+    DELETE => {
+        controller => 'Media',
+        swagger => { summary => 'Удалить файл' },
+    },
+},
 '/telegram/user' => {
     swagger => {
         tags => 'Telegram bot',
@@ -1811,6 +1925,18 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         for ( @data ) {
             unless ( ref ) {
                 utf8::encode($_);
+                print;
+            } else {
+                print encode_json( $_ );
+            }
+        }
+    } elsif ( $args{format} eq 'media' ) {
+        print_header( %headers,
+            type => 'application/octet-stream',
+            $args{filename} ? ('Content-Disposition' => "attachment; filename=$args{filename}") : (),
+        );
+        for ( @data ) {
+            unless ( ref ) {
                 print;
             } else {
                 print encode_json( $_ );
