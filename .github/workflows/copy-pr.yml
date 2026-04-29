@@ -30,4 +30,6 @@ jobs:
           git fetch --no-tags --prune "${{ github.event.pull_request.head.repo.clone_url }}" "${{ github.event.pull_request.head.ref }}"
           git checkout -B "$BRANCH" FETCH_HEAD
           git push --force-with-lease origin "$BRANCH"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
