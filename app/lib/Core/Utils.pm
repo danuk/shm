@@ -56,6 +56,7 @@ our @EXPORT_OK = qw(
     is_email
     is_host
     html_escape
+    html_unescape
     hash_merge
     blessed
     get_random_value
@@ -532,6 +533,24 @@ sub html_escape {
 
     my $chars = join '', keys %map;
     $data =~s/([$chars])/$map{$1}/g;
+
+    return $data;
+}
+
+sub html_unescape {
+    my $data = shift;
+
+    my %map = (
+        '&amp;'  => '&',
+        '&lt;'   => '<',
+        '&gt;'   => '>',
+        '&quot;' => '"',
+        '&#39;'  => "'",
+        '&#x2F;' => '/',
+    );
+
+    my $pattern = join '|', keys %map;
+    $data =~ s/($pattern)/$map{$1}/g;
 
     return $data;
 }

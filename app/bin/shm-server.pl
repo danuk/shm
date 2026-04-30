@@ -80,9 +80,22 @@ my $pm = FCGI::ProcManager->new({
 if ($> == 0) {  # if running as root
     my $uid_num = getpwnam($uid) or die "Cannot get uid for $uid: $!";
     my $gid_num = getgrnam($gid) or die "Cannot get gid for $gid: $!";
-    $) = $gid_num;  # set effective gid
+    $( = $gid_num;  # set real gid
+    $) = "$gid_num $gid_num";  # set effective and supplementary gids
+    $< = $uid_num;  # set real uid
     $> = $uid_num;  # set effective uid
     log_msg("Changed privileges to $uid:$gid ($uid_num:$gid_num)");
+}
+
+{
+    my @pw = getpwuid($>);
+    my $login = $pw[0] // $uid;
+    my $home = $pw[7] // '/tmp';
+
+    $ENV{USER} = $login;
+    $ENV{LOGNAME} = $login;
+    $ENV{HOME} = $home;
+    $ENV{SHELL} //= '/bin/sh';
 }
 
 # Create FCGI request object BEFORE forking

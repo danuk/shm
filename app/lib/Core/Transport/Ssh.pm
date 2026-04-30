@@ -12,6 +12,7 @@ use POSIX ":sys_wait_h";
 use POSIX 'setsid';
 use Core::Utils qw(
     html_escape
+    html_unescape
     is_host
     encode_utf8
 );
@@ -54,7 +55,7 @@ sub exec {
     my $self = shift;
     my %args = (
         host => undef,
-        port => 22,
+        port => undef,
         key_id => undef,
         server_id => undef,
         timeout => 10,
@@ -75,6 +76,26 @@ sub exec {
     if ( $args{task} && $args{task}->event ) {
         $event_name //= $args{task}->event->{name};
     }
+
+    if ( my $server_id = $args{server_id} ) {
+        my $server = get_service('server', _id => $server_id );
+        unless ( $server ) {
+            get_service('report')->add_error("Server not found: $server_id");
+            return undef, {
+                error => "Server not found: $server_id",
+            };
+        }
+
+        my %server = $server->get;
+        my $settings = $server{settings} || {};
+
+        $args{host} //= $server{host};
+        $args{port} //= $settings->{port};
+        $args{template_id} //= $settings->{template_id};
+        $args{key_id} //= $settings->{key_id};
+    }
+
+    $args{port} //= 22;
 
     my $host = get_ssh_host( $args{host} );
     unless ( $host ) {
@@ -154,6 +175,11 @@ sub exec {
     }
 
     $Net::OpenSSH::debug = ~0 if $ENV{DEBUG} eq 'DEBUG';
+
+    open my $stdin_null_fh, '<', '/dev/null' or return undef, {
+        error => "Can't open /dev/null for STDIN: $!",
+    };
+    local *STDIN = $stdin_null_fh;
 
     my $ret_code;
     my $ssh = Net::OpenSSH->new(
@@ -237,6 +263,9 @@ sub exec {
         logger->warning("SSH RET_CODE: $ret_code");
     }
 
+    $self->{pipeline_id} = $args{pipeline_id};
+    $self->{ret_code} = $ret_code;
+
     $ret_code //= 0;
     return ( $ret_code == 0 ) ? SUCCESS : FAIL, {
         server => {
@@ -249,6 +278,41 @@ sub exec {
         ret_code => $ret_code,
         pipeline_id => $args{pipeline_id},
     };
+}
+
+sub logs {
+    my $self = shift;
+    my $pipeline_id = shift || $self->{pipeline_id};
+
+    unless ( $pipeline_id ) {
+        logger->error('pipeline_id is required');
+        return undef;
+    }
+
+    my $console = get_service('console', _id => $pipeline_id );
+    unless ( $console ) {
+        logger->error("Logs not found for id: $pipeline_id");
+        return undef;
+    }
+
+    return $console->reload->{log};;
+}
+
+sub output {
+    my $self = shift;
+    my $pipeline_id = shift || $self->{pipeline_id};
+
+    my $logs = $self->logs( $pipeline_id );
+    $logs =~ s/\A[^\n]*\n+//;   # remove first line + trailing blank lines
+    $logs =~ s/\n+[^\n]*\z//;   # remove last line + leading blank lines
+    return html_unescape( $logs );
+}
+
+sub ret_code { shift->{ret_code} };
+
+sub is_success {
+    my $self = shift;
+    return $self->ret_code == 0 ? 1 : 0;
 }
 
 sub ssh_test {
