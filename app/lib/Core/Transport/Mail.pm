@@ -127,7 +127,7 @@ sub task_send {
 
     $settings{from_name} ||= $config->{from_name};
     $settings{subject} ||= $config->{subject};
-    $settings{to} ||= delete $settings{bcc} || $self->user->email;
+    $settings{to} ||= $self->user->email || delete $settings{bcc};
 
     unless ( $settings{to} ) {
         return SUCCESS, {
