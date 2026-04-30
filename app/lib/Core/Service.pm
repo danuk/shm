@@ -136,9 +136,9 @@ sub children {
         @_,
     );
 
-    if ( my @children = @{$args{ children } || []} ) {
+    if ( defined $args{children} ) {
         my @ret;
-        for ( @children ) {
+        for ( @{ $args{children} } ) {
             next if $_->{service_id} == $self->id;
             push @ret, {
                 service_id => $_->{service_id},
