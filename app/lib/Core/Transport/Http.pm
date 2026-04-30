@@ -195,20 +195,10 @@ sub http {
 
     my $content = $args{content};
     if ( ref $content && $args{content_type} !~ /form-data/i ) {
-        # JSON->utf8 always returns UTF-8 bytes (no utf8 flag) — avoids the
-        # double-encoding issue that JSON->latin1 + encode_utf8 can produce.
-        require JSON;
-        $content = JSON->new->utf8->canonical->encode( $content );
+        $content = encode_json( $content );
     }
 
-    # Ensure content is bytes before passing to HTTP::Request::Common
-    my $request_content;
-    if ( ref $content ) {
-        $request_content = $content;
-    } else {
-        $request_content = $content;
-        utf8::encode( $request_content ) if utf8::is_utf8( $request_content );
-    }
+    my $request_content = ref $content ? $content : encode_utf8( $content );
 
     no strict 'refs';
     my $response = $ua->request( &{$method}(
