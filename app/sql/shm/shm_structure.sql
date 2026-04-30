@@ -111,8 +111,7 @@ CREATE TABLE `pays_history` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
-DROP TABLE IF EXISTS `servers`;
-CREATE TABLE `servers` (
+CREATE TABLE IF NOT EXISTS `servers` (
   `server_id` int(11) NOT NULL AUTO_INCREMENT,
   `server_gid` int(11) DEFAULT NULL,
   `name` char(255) DEFAULT NULL,
@@ -291,8 +290,7 @@ CREATE TABLE `zones` (
   PRIMARY KEY (`zone_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
-DROP TABLE IF EXISTS `identities`;
-CREATE TABLE `identities` (
+CREATE TABLE IF NOT EXISTS `identities` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` char(64) NOT NULL,
   `private_key` text NOT NULL,
