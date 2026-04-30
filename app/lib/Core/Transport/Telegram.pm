@@ -518,6 +518,8 @@ sub http {
             next if $k eq 'document' || $k eq 'photo';
             if ( ref $data{$k} ) {
                 $data{$k} = encode_json( $data{$k} );
+            } elsif ( defined $data{$k} ) {
+                $data{$k} = encode_utf8( $data{$k} );
             }
         }
 
