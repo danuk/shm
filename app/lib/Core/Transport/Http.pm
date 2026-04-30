@@ -140,9 +140,10 @@ sub lwp {
 
     my $http_proxy  = $ENV{HTTP_PROXY}  || $ENV{http_proxy}  || '';
     my $https_proxy = $ENV{HTTPS_PROXY} || $ENV{https_proxy} || '';
+    my $no_proxy    = $ENV{NO_PROXY}    || $ENV{no_proxy}    || '';
 
     state %ua_cache;
-    my $cache_key = join('|', $args{timeout}, $args{verify_hostname} // 0, $http_proxy, $https_proxy);
+    my $cache_key = join('|', $args{timeout}, $args{verify_hostname} // 0, $http_proxy, $https_proxy, $no_proxy);
 
     return $ua_cache{$cache_key} //= do {
         my $ua = LWP::UserAgent->new(
@@ -155,6 +156,9 @@ sub lwp {
         );
         $ua->proxy('http',  $http_proxy)  if $http_proxy;
         $ua->proxy('https', $https_proxy) if $https_proxy;
+        if ( $no_proxy ) {
+            $ua->no_proxy( split /\s*,\s*/, $no_proxy );
+        }
         $ua;
     };
 }
