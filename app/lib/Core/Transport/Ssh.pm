@@ -91,7 +91,7 @@ sub exec {
 
         $args{host} //= $server{host};
         $args{port} //= $settings->{port};
-        $args{template_id} //= $settings->{template_id};
+        $args{template_id} //= $settings->{template_id} unless $args{cmd};
         $args{key_id} //= $settings->{key_id};
     }
 
