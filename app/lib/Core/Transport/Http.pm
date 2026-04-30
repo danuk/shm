@@ -198,7 +198,7 @@ sub http {
         $content = encode_json( $content );
     }
 
-    my $request_content = ref $content ? $content : encode_utf8( $content );
+    my $request_content = ref $content ? $content : ( utf8::is_utf8($content) ? encode_utf8($content) : $content );
 
     no strict 'refs';
     my $response = $ua->request( &{$method}(
