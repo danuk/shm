@@ -498,7 +498,7 @@ sub http {
     my $url = shift;
     my %args = (
         method => 'post',
-        content_type => 'application/json',
+        content_type => 'application/json; charset=utf-8',
         data => {},
         chat_id => $self->chat_id,
         @_,
@@ -895,7 +895,7 @@ sub telegram_oidc_exchange_code {
         return undef;
     }
 
-    use URI::Escape qw( uri_escape_utf8 );
+    use URI::Escape qw( uri_escape );
 
     my %form = (
         grant_type => 'authorization_code',
@@ -906,7 +906,7 @@ sub telegram_oidc_exchange_code {
     $form{code_verifier} = $args{code_verifier} if defined $args{code_verifier} && $args{code_verifier} ne '';
 
     my $content = join '&', map {
-        uri_escape_utf8($_) . '=' . uri_escape_utf8( defined $form{$_} ? $form{$_} : '' )
+        uri_escape($_) . '=' . uri_escape( defined $form{$_} ? $form{$_} : '' )
     } sort keys %form;
 
     my $credentials = encode_base64("$client_id:$client_secret", '');
