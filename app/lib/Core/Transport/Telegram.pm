@@ -1736,9 +1736,9 @@ sub web_auth {
         $in{last_name} = defined $claims->{family_name} ? $claims->{family_name} : ( $last_name || '' );
         $in{photo_url} = $claims->{picture} if defined $claims->{picture};
         $in{auth_date} = $claims->{iat} || time;
-    } elsif (grep { exists $args{$_} } qw(id auth_date hash)) {
+    } elsif (grep { defined $args{$_} } qw(id auth_date hash)) {
         for my $k (@parameters) {
-            $in{$k} = uri_unescape($args{$k}) if exists $args{$k};
+            $in{$k} = uri_unescape($args{$k}) if defined $args{$k};
         }
     } elsif ($args{query}) {
         for my $pair (split /&/, $args{query}) {
@@ -1760,7 +1760,7 @@ sub web_auth {
         my $hex = hmac_sha256_hex(encode_utf8($data_check_string), $secret_key);
 
         unless ($hex eq $hash) {
-            report->error('Telegram WebApp auth error');
+            report->error('Telegram auth error');
             $self->set_user_fail_attempt( 'web_auth', 3600, $self->telegram_ips ); # 5 fails/hour
             return undef;
         }
