@@ -2,7 +2,7 @@ package Core::User;
 
 use v5.14;
 
-use parent 'Core::Base';
+use parent 'Core::Base', 'Core::User::Passwd';
 use Core::Base;
 use Core::Utils qw(
     switch_user
@@ -23,9 +23,7 @@ use Core::User::Captcha qw(
 );
 use Core::Const;
 
-use Digest::SHA qw(sha1_hex);
 use MIME::Base32;
-use Math::Random::Secure qw(rand);
 
 sub table { return 'users' };
 
@@ -230,17 +228,6 @@ sub events {
     };
 }
 
-sub crypt_password {
-    my $self = shift;
-    my %args = (
-        salt => undef,
-        password => undef,
-        @_,
-    );
-
-    return sha1_hex( join '--', $args{salt}, $args{password} );
-}
-
 sub auth_api_safe {
     my $self = shift;
     my %args = (
@@ -339,17 +326,17 @@ sub auth {
         return undef;
     }
 
-    my $password = $self->crypt_password(
-        salt => $user_row->{login},
-        password => $args{password},
-    );
-
-    unless ( $password eq $user_row->{password} ) {
+    unless ( $self->verify_password( $args{password}, $user_row->{password}, $user_row->{login} ) ) {
         return undef;
     }
 
     my $user = $self->id( $user_row->{user_id} );
     return undef if $user->is_blocked;
+
+    # Auto-upgrade to current scheme ($N$) on successful login
+    if ( $user_row->{password} !~ /^\$\d+\$/ ) {
+        $user->set( password => $user->make_password( $args{password} ) );
+    }
 
     return $user;
 }
@@ -373,10 +360,7 @@ sub passwd {
         $user = get_service('user', _id => $args{user_id} );
     }
 
-    my $password = $user->crypt_password(
-        salt => $user->get_login,
-        password => $args{password},
-    );
+    my $password = $user->make_password( $args{password} );
 
     get_service('sessions')->delete_user_sessions( user_id => $self->user_id );
 
@@ -793,10 +777,7 @@ sub reg {
     $args{login} = lc( $args{login} );
     $args{settings}{ip} = get_user_ip();
 
-    my $password = $self->crypt_password(
-        salt => $args{login},
-        password => $args{password},
-    );
+    my $password = $self->make_password( $args{password} );
 
     my $partner_id = delete $args{partner_id} || get_cookies('partner_id');
     if ( $partner_id ) {
