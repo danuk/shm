@@ -160,7 +160,7 @@ sub send_mail {
 
     my $task = delete $args{task};
 
-    if ( $args{template_id} || $args{template_name} ) {
+    if ( !$args{message} && ( $args{template_id} || $args{template_name} ) ) {
         my $template;
         if ( $args{template_id} ) {
             $template = get_service('template', _id => $args{template_id} );
