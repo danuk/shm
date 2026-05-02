@@ -804,7 +804,7 @@ sub check_exists_logins {
     my %args = (
         login => undef,
         exclude_user_id => undef,
-        @_,
+        get_smart_args( @_ ),
     );
 
     my %where_by_login = (
