@@ -229,7 +229,7 @@ CREATE TABLE `users` (
   `partner_id` int(11) DEFAULT NULL,
   `login` varchar(128) NOT NULL,
   `login2` varchar(128) DEFAULT NULL,
-  `password` char(64) DEFAULT NULL,
+  `password` varchar(128) DEFAULT NULL,
   `type` tinyint(4) DEFAULT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `last_login` datetime DEFAULT NULL,
