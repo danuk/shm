@@ -39,17 +39,6 @@ sub structure {
             hide_for_user => 1,
             title => 'id партнера',
         },
-        login => {
-            type => 'text',
-            required => 1,
-            title => 'логин',
-        },
-        login2 => {
-            type => 'text',
-            required => 0,
-            default => undef,
-            title => 'логин (дополнительный)',
-        },
         password => {
             type => 'text',
             required => 1,
@@ -303,85 +292,42 @@ sub auth_api_safe {
 sub auth {
     my $self = shift;
     my %args = (
-        login => undef,
+        login    => undef,
         password => undef,
         @_,
     );
 
     $args{login} = lc( $args{login} );
+    return undef unless $args{login} && $args{password};
 
-    return undef unless $args{login} || $args{password};
-
-    my ( $user_row ) = $self->_list(
-        where => {
-            -OR => [
-                { login => $args{login} },
-                { login2 => $args{login} },
-            ],
-        },
-        limit => 1,
-    );
-
-    unless ( $user_row ) {
+    my $login = $self->logins->id( $args{login} );
+    unless ( $login ) {
         return undef;
     }
 
-    unless ( $self->verify_password( $args{password}, $user_row->{password}, $user_row->{login} ) ) {
+    my $self = $self->id( $login->user_id );
+    return undef if $self->is_blocked;
+
+    my $login_password = $login->get_password;
+    my $password = $login_password || $self->get_password;
+
+    unless ( $self->verify_password( $args{password}, $password, $login->get_login ) ) {
         return undef;
     }
-
-    my $user = $self->id( $user_row->{user_id} );
-    return undef if $user->is_blocked;
 
     # Auto-upgrade to current scheme ($N$) on successful login
-    if ( $user_row->{password} !~ /^\$\d+\$/ ) {
-        $user->set( password => $user->make_password( $args{password} ) );
+    if ( $password !~ /^\$\d+\$/ ) {
+        my $new_password = $self->make_password( $args{password} );
+        if ( $login_password ) {
+            $login->set_password( $new_password );
+        } else {
+            $self->set( password => $new_password );
+        }
     }
 
-    return $user;
-}
+    $self->{login} = $args{login}; # save login to object
 
-sub passwd {
-    my $self = shift;
-    my %args = (
-        password => undef,
-        @_,
-    );
-
-    my $report = get_service('report');
-    unless ( $args{password} ) {
-        $report->add_error('Password is empty');
-        return undef;
-    }
-
-    my $user = $self;
-
-    if ( $args{admin} && $args{user_id} ) {
-        $user = get_service('user', _id => $args{user_id} );
-    }
-
-    my $password = $user->make_password( $args{password} );
-
-    get_service('sessions')->delete_user_sessions( user_id => $self->user_id );
-
-    $user->set( password => $password );
-    return scalar $user->get;
-}
-
-sub set_new_passwd {
-    my $self = shift;
-    my %args = (
-        len => 10,
-        admin => 0,
-        @_,
-    );
-
-    return undef if $self->is_admin && !$args{admin};
-
-    my $new_password = passgen( $args{len} );
-    $self->passwd( password => $new_password );
-
-    return $new_password;
+    return $self;
 }
 
 sub render_mail_text {
@@ -443,128 +389,6 @@ sub gen_session {
     };
 }
 
-sub passwd_reset_request {
-    my $self = shift;
-    my %args = (
-        email => undef,
-        login => undef,
-        @_,
-    );
-
-    my $email;
-    if ( is_email($args{email}) ) {
-       $email = $args{email};
-    }
-
-    my $existing_user = $self->check_exists_logins( login => $args{login} || $email );
-    my $user_id = $existing_user ? $existing_user->{user_id} : undef;
-
-    if ( !$user_id && $email ) {
-        my $profile = get_service("profile");
-        my ( $profile_data ) = $profile->_list(
-            where => {
-                sprintf('%s->>"$.%s"', 'data', 'email') => $email,
-            },
-            limit => 1,
-        );
-        $user_id = $profile_data->{user_id} if $profile_data;
-    }
-
-    return { msg => 'User not found' } unless $user_id;
-
-    $self = $self->id( $user_id );
-    if ( $self->is_blocked ) {
-        return { msg => 'User is blocked' };
-    }
-
-    unless ( cfg('cli')->{use_for_reset_password} ) {
-        $self->make_event( 'user_password_reset' );
-        return { msg => 'Successful' };
-    }
-
-    my $token = passgen( 35 );
-    my $expires = time() + 3600;
-
-    $self->user->set_settings({
-        reset_password_verify_token => $token,
-        reset_password_verify_expires => $expires,
-    });
-
-    my $project_name = cfg('company')->{name} || 'SHM';
-    my $url = cfg('cli')->{url};
-    my $link = $url ? "$url?token=$token" : undef;
-    my %mail_vars = (
-        token => $token,
-        link => $link || '',
-        url => $url || '',
-        email => $args{email} || '',
-        project_name => $project_name,
-    );
-
-    my $subject = $self->render_mail_text(
-        text => cfg('mail')->{reset_password}->{subject} || "$project_name - Сброс пароля",
-        vars => \%mail_vars,
-    );
-
-    my $message = $self->render_mail_text(
-        text => cfg('mail')->{reset_password}->{message} || "Ваша ссылка для сброса пароля: {{ link }}\n\nСсылка действительна в течение часа.",
-        vars => \%mail_vars,
-    );
-
-    $self->send_mail_message(
-        to => $args{email},
-        subject => $subject,
-        message => $message,
-    );
-
-    return { msg => 'Successful' };
-}
-
-sub passwd_reset_verify {
-    my $self = shift;
-    my %args = (
-        token => undef,
-        password => undef,
-        @_,
-    );
-
-    my $token = $args{token};
-
-    my ( $user ) = $self->_list(
-        where => {
-            sprintf('%s->>"$.%s"', 'settings', 'reset_password_verify_token') => $token,
-        },
-        limit => 1,
-    );
-
-    unless ( $user ) {
-        return { msg => 'Invalid token' };
-    }
-
-    $self = $self->id( $user->{user_id} );
-
-    my $settings = $self->get_settings;
-    unless ( $settings->{reset_password_verify_token} && $settings->{reset_password_verify_token} eq $token ) {
-        return { msg => 'Invalid token' };
-    }
-
-    if ( $settings->{reset_password_verify_expires} && $settings->{reset_password_verify_expires} < time() ) {
-        return { msg => 'Token expired' };
-    }
-
-    unless ( $args{password} ) {
-        return { msg => 'Successful' };
-    }
-
-    delete $settings->{reset_password_verify_token};
-    delete $settings->{reset_password_verify_expires};
-    $self->set( settings => $settings );
-
-    $self->passwd( password => $args{password} );
-
-    return { msg => 'Password reset successful' };
-}
-
 sub set_email {
     my $self = shift;
     my %args = (
@@ -572,38 +396,39 @@ sub set_email {
         @_,
     );
 
-    unless ( is_email($args{email}) ) {
+    my $email  = lc( $args{email} );
+    unless ( is_email( $email ) ) {
         return { msg => 'is not email' };
     }
 
-    if ( $self->check_exists_logins( login => $args{email}, exclude_user_id => $self->id ) ) {
+    my $login = $self->logins->id( $email );
+    if ( $login ) {
         return { msg => 'already in use' };
     }
 
-    my $verified = 0;
-    my $current_email = $self->user->email;
-    if ( $current_email && $current_email eq $args{email} ) {
-        $verified = $self->get_settings->{email_verified} // 0;
-    }
-
-    $self->user->set_settings({
-        email_verified => $verified,
-        email => $args{email},
-    });
-
-    unless ( $self->user->get_login2 ) {
-        $self->user->set( login2 => $args{email} );
-    }
+    $self->logins->add(
+        login => $email,
+        settings => {
+            email => {
+                verified => 0,
+            },
+        },
+    );
 
     return { msg => 'Successful' };
 }
 
 sub get_email {
     my $self = shift;
-    return {
-        email => $self->user->email,
-        email_verified => $self->get_settings->{email_verified} // 0,
-    };
+
+    my ( $email_row ) = $self->logins->filter( settings => 'email' )->items;
+    if ( $email_row ) {
+        return {
+            email          => $email_row->get_login,
+            email_verified => $email_row->settings->{email}->{verified} // 0,
+        };
+    }
+    return {};
 }
 
 sub verify_email {
@@ -614,89 +439,110 @@ sub verify_email {
         @_,
     );
 
-    if ( $args{email} ) {
-        unless ( is_email($args{email}) ) {
-            return { msg => 'is not email' };
-        }
-
-        my $current_email = $self->user->email;
-        unless ( $current_email && $args{email} eq $current_email ) {
-            return { msg => 'Email mismatch. Use the email shown in your profile.' };
-        }
-
-        my $code = sprintf("%06d", int(rand(1000000)));
-        my $expires = time() + 600;
-
-        $self->user->set_settings({
-            email_verify_code => $code,
-            email_verify_expires => $expires,
-        });
-
-        my $project_name = cfg('company')->{name} || 'SHM';
-        my %mail_vars = (
-            code => $code,
-            email => $args{email},
-            project_name => $project_name,
-        );
-
-        my $subject = $self->render_mail_text(
-            text => cfg('mail')->{email_verify}->{subject} || "$project_name - Код подтверждения email",
-            vars => \%mail_vars,
-        );
-
-        my $message = $self->render_mail_text(
-            text => cfg('mail')->{email_verify}->{message} || "Ваш код подтверждения: {{ code }}\n\nКод действителен 10 минут.",
-            vars => \%mail_vars,
-        );
-
-        $self->send_mail_message(
-            to => $args{email},
-            subject => $subject,
-            message => $message,
-        );
-
-        return { msg => 'Verification code sent' };
+    my $email = lc( $args{email} );
+    unless ( is_email( $email ) ) {
+        return { msg => 'is not email' };
     }
 
-    if ( $args{code} ) {
-        my $settings = $self->get_settings;
+    my $login = $self->logins->id( $email );
+    unless ( $login ) {
+        return { msg => 'email not found' };
+    }
 
-        unless ( $args{code} eq $settings->{email_verify_code} ) {
-            return { msg => 'Invalid code' };
-        }
-
-        if ( $settings->{email_verify_expires} && $settings->{email_verify_expires} < time() ) {
-            return { msg => 'Code expired' };
-        }
-
-        delete $settings->{email_verify_code};
-        delete $settings->{email_verify_expires};
-        $settings->{email_verified} = 1;
-
-        $self->set( settings => $settings );
-
+    if ( $email->settings->{email}->{verified} ) {
         return { msg => 'Email verified successfully' };
     }
 
-    return { msg => 'Email or code required' };
+    return $args{code} ?
+        $self->email_verify_code_check( $login, $args{code} ) :
+        $self->email_verify_code_send( $login );
+}
+
+sub email_verify_code_send {
+    my $self = shift;
+    my $login = shift;
+
+    my $code = sprintf("%06d", int(rand(1000000)));
+    my $expires = time() + 600;
+
+    $login->set_settings(
+        email_verify => {
+            code => $code,
+            expires => $expires,
+        },
+    );
+
+    my $email = $login->get_login;
+
+    my $project_name = cfg('company')->{name} || 'SHM';
+    my %mail_vars = (
+        code => $code,
+        email => $email,
+        project_name => $project_name,
+    );
+
+    my $subject = $self->render_mail_text(
+        text => cfg('mail')->{email_verify}->{subject} || "$project_name - Код подтверждения email",
+        vars => \%mail_vars,
+    );
+
+    my $message = $self->render_mail_text(
+        text => cfg('mail')->{email_verify}->{message} || "Ваш код подтверждения: {{ code }}\n\nКод действителен 10 минут.",
+        vars => \%mail_vars,
+    );
+
+    $self->send_mail_message(
+        to => $email,
+        subject => $subject,
+        message => $message,
+    );
+
+    return { msg => 'Verification code sent' };
+}
+
+sub email_verify_code_check {
+    my $self = shift;
+    my $login = shift;
+    my $code = shift;
+
+    my $settings = $login->settings->{email_verify};
+    unless ( $settings ) {
+        return { msg => 'Code for email is not set' };
+    }
+
+    if ( $code ne $settings->{code} ) {
+        return { msg => 'Invalid code' };
+    }
+
+    if ( $settings->{expires} && $settings->{expires} < time() ) {
+        return { msg => 'Code expired' };
+    }
+
+    $login->set_settings(
+        email => {
+            verified => 1,
+        },
+        email_verify => undef,
+    );
+
+    return { msg => 'Email verified successfully' };
 }
 
 sub delete_email {
     my $self = shift;
+    my $email = shift;
 
-    $self->user->set_settings({
-        email => undef,
-        email_verified => 0,
-    });
+    my $login = $self->logins->id( $email );
+    unless ( $login ) {
+        return { msg => 'Email not found' };
+    }
+
+    $login->delete();
 
     return { msg => 'Successful' };
 }
 
-sub is_blocked {
-    my $self = shift;
-
-    return $self->get_block();
-}
+sub is_blocked { shift->get_block };
 
 sub validate_attributes {
     my $self = shift;
@@ -774,7 +620,6 @@ sub reg {
         get_smart_args( @_ ),
     );
 
-    $args{login} = lc( $args{login} );
     $args{settings}{ip} = get_user_ip();
 
     my $password = $self->make_password( $args{password} );
@@ -785,15 +630,20 @@ sub reg {
         delete $args{partner_id} if $partner_id == $self->id;
     }
 
-    my $user_id = $self->add( %args, password => $password );
-
-    unless ( $user_id ) {
-        get_service('report')->add_error('Login already exists');
+    my $user = $self->create( %args, password => $password );
+    unless ( $user ) {
+        get_service('report')->add_error("Can't create new user");
         return undef;
     }
 
+    if ( $args{login} ) {
+        my $ret = $user->logins->add( login => $args{login} );
+        unless ( $ret ) {
+            get_service('report')->add_error("Can't create login");
+            return undef;
+        }
+    }
 
-    my $user = $self->id( $user_id );
     $user->make_event( 'registered' );
 
     return scalar $user->get;
@@ -803,44 +653,14 @@ sub check_exists_logins {
     my $self = shift;
     my %args = (
         login => undef,
-        exclude_user_id => undef,
         @_,
     );
 
-    my %where_by_login = (
-        -OR => [
-            { login  => $args{login} },
-            { login2 => $args{login} },
-        ],
-    );
-
-    # Исключаем текущего пользователя при проверке, чтобы можно было сохранять email, совпадающий с login
-    if ( $args{exclude_user_id} ) {
-        $where_by_login{user_id} = { '!=' => $args{exclude_user_id} };
+    if ( my $login = $self->logins->id( $args{login} ) ) {
+        return scalar $login->get;
     }
 
-    my ( $user ) = $self->_list(
-        where => \%where_by_login,
-        limit => 1,
-    );
-    return $user if $user;
-
-    return undef unless is_email( $args{login} );
-
-    my %where_by_email = (
-        sprintf('%s->>"$.%s"', 'settings', 'email') => $args{login},
-    );
-
-    if ( $args{exclude_user_id} ) {
-        $where_by_email{user_id} = { '!=' => $args{exclude_user_id} };
-    }
-
-    my ( $user_by_email ) = $self->_list(
-        where => \%where_by_email,
-        limit => 1,
-    );
-
-    return $user_by_email;
+    return undef;
 }
 
 sub services {
@@ -1095,6 +915,7 @@ sub delete {
         Acts
         ActsData
         promo
+        User::Logins
     );
 
     get_service( $_, user_id => $self->id )->delete_all for @objects;
@@ -1199,19 +1020,29 @@ sub profile {
     return %{ $item->{data} || {} };
 }
 
+sub logins {
+    my $self = shift;
+    return $self->srv('User::Logins');
+}
+
+sub login {
+    my $self = shift;
+    return $self->{login}; # return user authenticated login
+}
+
 sub emails {
     my $self = shift;
 
-    my %profile = $self->profile;
+    my %profile    = $self->profile;
+    my @login_rows = $self->logins->list;
+
     my @emails = (
-        $self->get_settings->{email},
-        $self->get_login2,
-        $self->get_login,
+        ( map { $_->{login} } @login_rows ),
         $profile{email},
     );
 
     for ( @emails ) {
-        return $_ if is_email( $_ );
+        return $_ if defined $_ && is_email( $_ );
     }
 
     return undef;
@@ -1436,61 +1267,6 @@ sub partner {
     return $self->id( $partner_id );
 }
 
-sub is_password_auth_disabled {
-    my $self = shift;
-    return $self->get_settings->{password_auth_disabled} || 0;
-}
-
-sub api_disable_password_auth {
-    my $self = shift;
-
-    my $report = get_service('report');
-
-    my $passkey = get_service('User::Passkey');
-    unless ($passkey->get_enabled($self)) {
-        $report->add_error('PASSKEY_REQUIRED');
-        return undef;
-    }
-
-    my $settings = $self->get_settings;
-    $settings->{password_auth_disabled} = 1;
-
-    delete $settings->{otp};
-
-    $self->set(settings => $settings);
-
-    return {
-        success => 1,
-        password_auth_disabled => 1,
-    };
-}
-
-sub api_enable_password_auth {
-    my $self = shift;
-
-    my $settings = $self->get_settings;
-    delete $settings->{password_auth_disabled};
-    $self->set(settings => $settings);
-
-    return {
-        success => 1,
-        password_auth_disabled => 0,
-    };
-}
-
-sub api_password_auth_status {
-    my $self = shift;
-
-    my $passkey = get_service('User::Passkey');
-    my $otp = get_service('User::OTP');
-
-    return {
-        password_auth_disabled => $self->is_password_auth_disabled ? 1 : 0,
-        passkey_enabled => $passkey->get_enabled($self) ? 1 : 0,
-        otp_enabled => $otp->get_enabled($self) ? 1 : 0,
-    };
-}
-
 sub api_search_for_admins {
     my $self = shift;
     my %args = (
@@ -1515,21 +1291,28 @@ sub api_search_for_admins {
     $args{limit} = 25   if $args{limit} == 0 && !$args{admin};
     $args{limit} = 1000 if !$args{admin} && $args{limit} > 1000;
 
+    my $order = $self->query_for_order(%args);
+
+    # Find user_ids that have a matching login in the logins table
+    my $logins_svc = get_service('User::Logins');
+    my @matched_logins = $logins_svc->_list(
+        where => { login => { '-like' => "%$text%" } },
+    );
+    my @logins_user_ids = map { $_->{user_id} } @matched_logins;
+
     my @or_where = (
-        { login => { '-like' => "%$text%" } },
-        { login2 => { '-like' => "%$text%" } },
+        { login     => { '-like' => "%$text%" } },
         { full_name => { '-like' => "%$text%" } },
-        { phone => { '-like' => "%$text%" } },
+        { phone     => { '-like' => "%$text%" } },
         { sprintf('CAST(%s AS CHAR)', 'settings') => { '-like' => "%$text%" } },
     );
 
+    push @or_where, { user_id => { '-in' => \@logins_user_ids } } if @logins_user_ids;
     push @or_where, { user_id => int($text) } if $text =~ /^\d+$/;
 
     my %where = (
         -OR => \@or_where,
     );
-
-    my $order = $self->query_for_order(%args);
 
     return $self->_list(
         limit => $args{limit},

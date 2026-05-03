@@ -287,13 +287,20 @@ state $routes //= {
         swagger => { summary => 'Сменить пароль пользователя по токену сброса' },
     },
 },
+'/user/logins' => {
+    swagger => { tags => 'Пользователи' },
+    GET => {
+        controller => 'User::Logins',
+        swagger    => { summary => 'Список логинов пользователя' },
+    },
+},
 '/user/email' => {
     swagger => { tags => 'Пользователи' },
     PUT => {
         controller => 'User',
         method => 'set_email',
         required => ['email'],
-        swagger => { summary => 'Установить email пользователя' },
+        swagger => { summary => 'Привязать email пользователя' },
     },
     GET => {
         controller => 'User',
@@ -303,22 +310,15 @@ state $routes //= {
     POST => {
         controller => 'User',
         method => 'verify_email',
-        optional => ['email', 'code'],
+        required => ['email'],
+        optional => ['code'],
         swagger => { summary => 'Верифицировать email пользователя' },
     },
     DELETE => {
         controller => 'User',
         method => 'delete_email',
+        required => ['email'],
         swagger => { summary => 'Удалить email пользователя' },
-    },
-},
-'/user/email/verify' => {
-    swagger => { tags => 'Пользователи' },
-    POST => {
-        controller => 'User',
-        method => 'verify_email',
-        optional => ['email', 'code'],
-        swagger => { summary => 'Верификация email пользователя' },
     },
 },
 '/user/service' => {
@@ -714,6 +714,24 @@ state $routes //= {
         controller => 'User',
         method => 'api_search_for_admins',
         swagger => { summary => 'Поиск клиентов' },
+    },
+},
+'/admin/user/logins' => {
+    swagger => { tags => 'Пользователи' },
+    GET => {
+        controller => 'User::Logins',
+        swagger    => { summary => 'Список логинов клиента' },
+    },
+    PUT => {
+        controller => 'User::Logins',
+        required   => ['login'],
+        swagger    => { summary => 'Добавить логин клиенту' },
+    },
+    DELETE => {
+        controller => 'User::Logins',
+        method     => 'api_delete',
+        required   => ['login'],
+        swagger    => { summary => 'Удалить логин клиента' },
     },
 },
 '/admin/user/passwd' => {
