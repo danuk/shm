@@ -305,7 +305,8 @@ sub price_list {
         $list->{ $si }->{partial_renew} = $partial_renew;
         $list->{ $si }->{discount} = $discount;
         $list->{ $si }->{cost_discount} = $cost_discount;
-        $list->{ $si }->{real_cost} = $real_cost;
+        $list->{ $si }->{real_cost} = $cost - $cost_discount;
+        $list->{ $si }->{real_cost_with_bonuses} = $real_cost;
         $list->{ $si }->{cost_bonus} = $bonus;
     }
 
