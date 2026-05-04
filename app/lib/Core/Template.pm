@@ -138,6 +138,7 @@ sub parse {
         cache => sub { $self->srv('Core::System::Cache') },
         currency => sub { $self->srv('Cloud::Currency') },
         profile => sub { $self->srv('Profile') },
+        env => \%ENV,
         $args{event_name} ? ( event_name => uc $args{event_name} ) : (),
         %{ $args{vars} }, # do not move it upper. It allows to override promo end others
         request => sub {
