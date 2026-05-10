@@ -239,6 +239,36 @@ subtest 'prepare_query_for_filtering - nested JSON expressions' => sub {
     );
 };
 
+subtest 'prepare_query_for_filtering - recursive logical groups' => sub {
+    cmp_deeply(
+        prepare_query_for_filtering({
+            status => 1,
+            '-or' => {
+                balance => \'gt:1000',
+                settings => {
+                    vip => \'true',
+                },
+            },
+            '-and' => {
+                block => \'false',
+            },
+        }),
+        {
+            status => 1,
+            '-or' => {
+                balance => { '>' => '1000' },
+                settings => {
+                    vip => \'true',
+                },
+            },
+            '-and' => {
+                block => 0,
+            },
+        },
+        'Logical groups are prepared recursively and keep nested JSON hash payloads'
+    );
+};
+
 subtest 'query_for_filtering - nested JSON expressions with mock' => sub {
     my $test_obj = bless {}, 'TestJSONClass';
 
@@ -407,6 +437,45 @@ subtest 'query_for_filtering with mock user object' => sub {
         active    => \'true',
     );
     is( $result->{user_id}, 40092, 'user_id preserved when mixed with special-value fields' );
+};
+
+subtest 'query_for_filtering - OR with scalar refs and JSON values' => sub {
+    {
+        package MockFilterUser;
+        use parent -norequire, 'Core::Sql::Data';
+        sub table { 'users' }
+        sub structure {
+            return {
+                user_id  => { type => 'number', key => 1 },
+                status   => { type => 'number' },
+                block    => { type => 'number' },
+                balance  => { type => 'number' },
+                settings => { type => 'json' },
+            };
+        }
+    }
+
+    my $user = bless {}, 'MockFilterUser';
+
+    my $where = $user->query_for_filtering(
+        status => 1,
+        block  => 0,
+        '-or'  => {
+            balance  => \'gt:1000',
+            settings => { vip => \'true' },
+        },
+    );
+
+    is( $where->{status}, 1, 'status condition preserved' );
+    is( $where->{block}, 0, 'block condition preserved' );
+    cmp_deeply(
+        $where->{'-or'},
+        [
+            { balance => { '>' => '1000' } },
+            { q/settings->>'$.vip'/ => 1 },
+        ],
+        'OR group is converted into SQL::Abstract compatible conditions',
+    );
 };
 
 subtest 'Template functions integration' => sub {

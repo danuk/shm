@@ -307,6 +307,23 @@ sub prepare_query_for_filtering {
         next if $field =~ /^--/;  # reject user-supplied raw SQL markers
         my $value = $data->{$field};
 
+        # Recursively prepare logical groups so scalar refs like gt()/true
+        # are converted before SQL::Abstract receives nested conditions.
+        if ( $field =~ /^-(or|and)$/ ) {
+            if ( ref $value eq 'HASH' ) {
+                $result{$field} = prepare_query_for_filtering( $value );
+            } elsif ( ref $value eq 'ARRAY' ) {
+                my @items;
+                for my $item ( @{ $value } ) {
+                    if ( ref $item eq 'HASH' ) {
+                        push @items, prepare_query_for_filtering( $item );
+                    }
+                }
+                $result{$field} = \@items;
+            }
+            next;
+        }
+
         if (ref $value eq 'SCALAR') {
             if ($$value eq 'isEmpty') {
                 # Поле пустое (NULL или пустая строка)
@@ -454,8 +471,26 @@ sub query_for_filtering {
                     $where{ $key }{'-like'} = $args->{ $key };
                 }
             }
-        } elsif ( $key eq '-or' ) {
-            $where{ $key } = $args->{ $key };
+        } elsif ( $key eq '-or' || $key eq '-and' ) {
+            my $logic_value = $args->{ $key };
+
+            if ( ref $logic_value eq 'HASH' ) {
+                my $nested = $self->query_for_filtering( %{ $logic_value } );
+                my @conditions;
+                for my $nested_key ( sort keys %{ $nested || {} } ) {
+                    push @conditions, { $nested_key => $nested->{ $nested_key } };
+                }
+                $where{ $key } = \@conditions if @conditions;
+            }
+            elsif ( ref $logic_value eq 'ARRAY' ) {
+                my @conditions;
+                for my $item ( @{ $logic_value } ) {
+                    next unless ref $item eq 'HASH';
+                    my $nested = $self->query_for_filtering( %{ $item } );
+                    push @conditions, $nested if %{ $nested || {} };
+                }
+                $where{ $key } = \@conditions if @conditions;
+            }
         }
     }
 
