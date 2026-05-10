@@ -225,7 +225,7 @@ sub send_mail {
             'Content-Type' => "$args{content_type}; charset=UTF-8",
             'Content-Transfer-Encoding' => 'base64',
         ],
-        body => MIME::Base64::encode_base64($args{message}, ""),
+        body => MIME::Base64::encode_base64($args{message}, "\n"),
     );
 
     my $err;
