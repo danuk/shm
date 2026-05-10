@@ -12,6 +12,7 @@ use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP qw();
 use Try::Tiny;
 use MIME::Base64 qw(encode_base64);
+use MIME::Words qw(encode_mimewords);
 use Core::Utils qw(
     is_email
     encode_utf8
@@ -215,13 +216,25 @@ sub send_mail {
 
     %args = %{ encode_utf8( \%args ) };
 
+    my $encoded_from_name = encode_mimewords(
+        $args{from_name} // '',
+        Charset  => 'UTF-8',
+        Encoding => 'B',
+    );
+
+    my $encoded_subject = encode_mimewords(
+        $args{subject} // '',
+        Charset  => 'UTF-8',
+        Encoding => 'B',
+    );
+
     my $email = Email::Simple->create(
         header => [
-            From    => sprintf("=?UTF-8?B?%s?= <%s>", MIME::Base64::encode_base64($args{from_name}, ''), $args{from} ),
+            From    => sprintf("%s <%s>", $encoded_from_name, $args{from} ),
             To      => $args{to},
             Cc      => $args{cc} || "",
             BCc     => $args{bcc} || "",
-            Subject => sprintf("=?UTF-8?B?%s?=", MIME::Base64::encode_base64($args{subject}, '')),
+            Subject => $encoded_subject,
             'Content-Type' => "$args{content_type}; charset=UTF-8",
             'Content-Transfer-Encoding' => 'base64',
         ],
