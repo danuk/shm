@@ -175,7 +175,16 @@ sub process_one { # for spool.pl
     switch_user( $task->{user_id } );
 
     if ( my $usi = $task->{settings}->{user_service_id} ) {
-        if ( my $us = get_service('us', _id => $usi ) ) {
+        my $us = get_service('us', _id => $usi );
+        unless ( $us ) {
+            $spool->finish_task(
+                status => TASK_SUCCESS,
+                response => { error => "User service is not exists" },
+            );
+            return $spool;
+        }
+
+        if ( $task->{event}->{name} ne EVENT_CHANGED ) {
             unless ( $us->lock ) {
                 $spool->retry_task(
                     status => TASK_DELAYED,
@@ -183,12 +192,6 @@ sub process_one { # for spool.pl
                 );
                 return $spool;
             }
-        } else {
-            $spool->finish_task(
-                status => TASK_SUCCESS,
-                response => { error => "User service is not exists" },
-            );
-            return $spool;
         }
     }
 
