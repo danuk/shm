@@ -100,20 +100,40 @@ is( $us_child->status, 'ACTIVE' );
 is( $us->get_expire, '2019-06-02 23:25:08');
 is( $us_child->get_expire, '2019-06-02 23:25:08');
 
-is( get_service('service')->price_list->{ $service->id }->{cost}, 120 );
-
-is( get_service('service')->price_list->{ $service->id }->{discount}, 0 );
-is( get_service('service')->price_list->{ $service->id }->{real_cost}, 120 );
+my $price = get_service('service')->price_list->{ $service->id };
+is( $price->{cost}, 120 );
+is( $price->{discount}, 0 );
+is( $price->{real_cost}, 120 );
+is( $price->{real_cost_with_bonuses}, 120 );
 
 $user->set( discount => 10 );
-is( get_service('service')->price_list->{ $service->id }->{discount}, 0 );
-is( get_service('service')->price_list->{ $service->id }->{real_cost}, 120 );
+$price = get_service('service')->price_list->{ $service->id };
+is( $price->{discount}, 0 );
+is( $price->{real_cost}, 120 );
+is( $price->{real_cost_with_bonuses}, 120 );
 
 $service->set( no_discount => 0);
-is( get_service('service')->price_list->{ $service->id }->{discount}, 10 );
-is( get_service('service')->price_list->{ $service->id }->{real_cost}, 108 );
+$price = get_service('service')->price_list->{ $service->id };
+is( $price->{discount}, 10 );
+is( $price->{real_cost}, 108 );
+is( $price->{real_cost_with_bonuses}, 108 );
 
 $service->set( is_composite => 0 );
-is( get_service('service')->price_list->{ $service->id }->{cost}, 100 );
+$price = get_service('service')->price_list->{ $service->id };
+is( $price->{cost}, 100 );
+
+$service->set( config => { limit_bonus_percent => 30 } );
+$user->set( discount => 50, bonus => 99, balance => 0 );
+$price = get_service('service')->price_list->{ $service->id };
+is( $price->{cost_bonus}, 15, 'Bonus cap is based on discounted total' );
+is( $price->{real_cost}, 50, 'Real cost is before bonus application' );
+is( $price->{real_cost_with_bonuses}, 35, 'Real cost with bonuses uses discounted total for bonus cap calculation' );
+
+$user->set( discount => 0 );
+$user->set( balance => 100 );
+$price = get_service('service')->price_list->{ $service->id };
+is( $price->{cost_bonus}, 30, 'Available bonus is capped by limit_bonus_percent' );
+is( $price->{real_cost}, 100, 'Real cost is before bonus application' );
+is( $price->{real_cost_with_bonuses}, 70, 'Real cost with bonuses uses only available bonus amount' );
 
 done_testing();
