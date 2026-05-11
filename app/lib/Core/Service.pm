@@ -5,6 +5,9 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
 use Core::Billing ();
+use Core::Utils qw(
+    decode_json
+);
 
 sub table { return 'services' };
 
@@ -255,34 +258,67 @@ sub list_for_api {
 sub price_list_items {
     my $self = shift;
     my %args = (
+        service_id => undef,
         filter => {},
         @_,
     );
 
-    my $items = $self->items(
-        where => {
+    my $where = {};
+    my $ids;
+
+    if ( defined $args{service_id} ) {
+        $where = { service_id => $args{service_id} };
+    } elsif ( my $template_id = cfg('billing')->{price_list_template_id} ) {
+        my $template = $self->srv('template', _id => $template_id);
+        unless ($template) {
+            logger->error("Can't get price_list. Template $template_id not found");
+            return ();
+        }
+
+        $ids = decode_json( $template->parse() );
+        unless (ref $ids eq 'ARRAY') {
+            logger->error("Can't get price_list. Template doesn't return array of services ids");
+            return ();
+        }
+        $where = { service_id => { '-in' => $ids } };
+    } else {
+        $where = {
             %{ $self->query_for_filtering( %{ $args{filter} || {} } ) },
             $args{category} ? ( category => { -like => $args{category} } ) : (),
             allow_to_order => 1,
-            deleted => 0,
-        },
-    );
+        };
+    }
+
+    $where->{deleted} = 0;
+    my $items = $self->items( where => $where );
+
+    # Preserve template priority order for service ids from IN list.
+    if ($ids) {
+        my %items_by_id = map { $_->id => $_ } @{ $items || [] };
+        return grep { defined } map { $items_by_id{$_} } @$ids;
+    }
 
     return @{ $items || [] };
+}
+
+sub price_list_check_allow_to_order {
+    my $self = shift;
+    return grep { $_->id == $self->id } $self->price_list_items;
 }
 
 sub price_list {
     my $self = shift;
     my %args = (
+        service_id => undef,
         filter => {},
         get_smart_args(@_),
     );
 
-    my $list = {};
+    my @list;
     for my $service ( $self->price_list_items( %args ) ) {
         my $si = $service->id;
         my $row = $service->get;
-        next if $service->config->{order_only_once} && $service->was_ever_provided;
+        next if $service->config->{order_only_once} && $service->is_ever_used;
 
         my $cost = $service->is_composite ? $service->cost_composite() : $row->{cost};
         my $discount = $row->{no_discount} ? 0 : $self->user->get_discount;
@@ -310,30 +346,53 @@ sub price_list {
         $row->{real_cost_with_bonuses} = $real_cost;
         $row->{cost_bonus} = $bonus;
 
-        $list->{ $si } = $row;
+        push @list, $row;
     }
 
-    return $list;
+    return @list;
 }
 
-sub was_ever_provided {
+sub is_ever_used {
     my $self = shift;
 
-    my @wd = $self->user->withdraws->list(
-        where => { service_id => $self->id },
+    my $list = $self->us->list(
+        where => {
+            service_id => $self->id,
+         },
         limit => 1,
     );
-    return scalar @wd ? 1 : 0;
+    return $list ? 1 : 0;
+}
+
+sub was_previously_used {
+    my $self = shift;
+
+    my $list = $self->us->list(
+        where => {
+            service_id => $self->id,
+            status => STATUS_REMOVED,
+         },
+        limit => 1,
+    );
+    return $list ? 1 : 0;
+}
+
+sub is_currently_used {
+    my $self = shift;
+
+    my $list = $self->us->list(
+        where => {
+            service_id => $self->id,
+            status => {'!=', STATUS_REMOVED},
+         },
+        limit => 1,
+    );
+    return $list ? 1 : 0;
 }
 
 sub api_price_list {
     my $self = shift;
-
-    my $list = $self->price_list( @_ );
-
-    my @ret;
-    push @ret, $list->{ $_ } for keys %$list;
-    return @ret;
+    return $self->price_list( @_ );
 }
 
 # legacy: for backward compatible

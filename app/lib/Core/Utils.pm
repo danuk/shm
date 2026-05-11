@@ -93,7 +93,7 @@ our @EXPORT_OK = qw(
 use Core::System::ServiceManager qw( get_service delete_service );
 use Time::DaysInMonth;
 use JSON qw//;
-use Scalar::Util qw(blessed);
+use Scalar::Util qw(blessed looks_like_number);
 use File::Temp;
 use Data::Validate::Email qw(is_email);
 use Data::Validate::Domain qw(is_domain);
@@ -1095,6 +1095,117 @@ sub round_down {
 sub round {
     my $val = shift;
     return int( $val * 100 + 0.5 ) / 100;
+}
+
+# Extracts values of a given key from an array of hashes or blessed objects.
+# Usage in templates: misc.pluck(list, 'foo')
+sub pluck {
+    my ( $list, $key ) = @_;
+    return [] unless ref $list eq 'ARRAY' && defined $key;
+    my @result;
+    for my $item ( @$list ) {
+        if ( blessed $item ) {
+            push @result, $item->$key();
+        } elsif ( ref $item eq 'HASH' && exists $item->{$key} ) {
+            push @result, $item->{$key};
+        } elsif ( blessed $item && exists $item->{$key} ) {
+            push @result, $item->{$key};
+        }
+    }
+    return \@result;
+}
+
+# Sorts array of hashes or blessed objects by multiple fields.
+# Usage in templates: misc.sort_by_keys(list, 'foo' => 'asc', 'bar' => 'desc')
+sub sort_by_keys {
+    my ( $list, @fields ) = @_;
+    return [] unless ref $list eq 'ARRAY';
+
+    my @specs = _normalize_sort_fields( @fields );
+    return [ @$list ] unless @specs;
+
+    my @sorted = sort {
+        for my $spec ( @specs ) {
+            my $key = $spec->{key};
+            my $reverse = $spec->{direction} eq 'desc' ? 1 : 0;
+
+            my $av = _get_sort_value( $a, $key );
+            my $bv = _get_sort_value( $b, $key );
+
+            # Keep undefined values at the end for both asc and desc.
+            my $cmp_undef = _compare_undef( $av, $bv );
+            if ( $cmp_undef ) {
+                return $cmp_undef;
+            }
+
+            my $cmp;
+            if ( looks_like_number($av) && looks_like_number($bv) ) {
+                $cmp = $av <=> $bv;
+            } else {
+                $cmp = "$av" cmp "$bv";
+            }
+
+            next if $cmp == 0;
+            return $reverse ? -$cmp : $cmp;
+        }
+        return 0;
+    } @$list;
+
+    return \@sorted;
+}
+
+sub _normalize_sort_fields {
+    my @fields = @_;
+    return () unless @fields;
+
+    if ( @fields == 1 && ref $fields[0] eq 'HASH' ) {
+        @fields = %{ $fields[0] };
+    }
+
+    my @specs;
+    while ( @fields >= 2 ) {
+        my $key = shift @fields;
+        my $direction = shift @fields;
+        next unless defined $key && $key ne '';
+
+        push @specs, {
+            key => $key,
+            direction => _normalize_direction( $direction ),
+        };
+    }
+
+    return @specs;
+}
+
+sub _normalize_direction {
+    my ( $direction ) = @_;
+    $direction = lc( $direction // 'asc' );
+    return $direction eq 'desc' ? 'desc' : 'asc';
+}
+
+sub _compare_undef {
+    my ( $av, $bv ) = @_;
+    return 0 if defined $av && defined $bv;
+    return 0 if !defined $av && !defined $bv;
+    return 1 if !defined $av;
+    return -1;
+}
+
+sub _get_sort_value {
+    my ( $item, $key ) = @_;
+
+    return undef unless defined $item;
+
+    if ( blessed $item ) {
+        my $ret = eval { $item->$key() };
+        return $ret unless $@;
+    } elsif ( ref $item eq 'HASH' && exists $item->{$key} ) {
+        return $item->{$key};
+    } elsif ( blessed $item && exists $item->{$key} ) {
+        return $item->{$key};
+    }
+
+    return undef;
 }
 
 1;
