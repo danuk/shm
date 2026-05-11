@@ -4,6 +4,7 @@ use v5.14;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
+use Core::Billing ();
 
 sub table { return 'services' };
 
@@ -273,21 +274,23 @@ sub price_list {
             next;
         }
 
+        my $service = $self->id( $si );
         if ( $list->{ $si }->{is_composite} ) {
-            my $service = $self->id( $si );
             $list->{ $si }->{cost} = $service->cost_composite();
         }
 
         my $cost = $list->{ $si }->{cost};
         my $discount = $list->{ $si }->{no_discount} ? 0 : $self->user->get_discount;
         my $cost_discount = $cost * $discount / 100;
-        my $bonus = $self->user->get_bonus;
-        my $limit_bonus_percent = $list->{ $si }->{config}->{limit_bonus_percent};
-        if ( $bonus > 0 && defined $limit_bonus_percent ) {
-            my $max_bonus = $cost * $limit_bonus_percent / 100;
-            $bonus = $bonus > $max_bonus ? $max_bonus : $bonus;
-        }
-        my $real_cost = $cost - $cost_discount - $bonus;
+        my $total = $cost - $cost_discount;
+
+        my $bonus = Core::Billing::calc_available_bonuses(
+            $service,
+            $self->user->get_bonus,
+            $total,
+        );
+
+        my $real_cost = $total - $bonus;
         if ( $real_cost < 0 ) {
             $bonus += $real_cost;
             $real_cost = 0;
@@ -348,7 +351,6 @@ sub categories {
 
 sub settings {
     my $self = shift;
-
     return $self->config || {};
 }
 
