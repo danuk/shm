@@ -176,7 +176,7 @@ sub forecast {
         );
 
         my $total = $wd_forecast{total};
-        my $calc_bonuses = Core::Billing::calc_available_bonuses( $us, $bonus, $total );
+        my $calc_bonuses = Core::Billing::calc_available_bonuses( $us->service, $bonus, $total );
         if ( $calc_bonuses >= $total ) {
             $total = 0;
         } else {
