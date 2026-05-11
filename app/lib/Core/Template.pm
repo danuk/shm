@@ -6,6 +6,7 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
 use Template;
+use Template::Stash;
 use File::Find qw(find);
 use File::Basename;
 use File::Path qw(make_path);
@@ -200,6 +201,25 @@ sub parse {
         # Constants from Core::Const (automatically loaded directly)
         %{ _get_constants() },
     };
+
+    state $vmethods_registered;
+    unless ( $vmethods_registered ) {
+        my %list_vmethods = (
+            sort_by_key => sub {
+                my ( $list, @args ) = @_;
+                return Core::Utils::sort_by_keys( $list, @args );
+            },
+            pluck => sub {
+                my ( $list, @args ) = @_;
+                return Core::Utils::pluck( $list, @args );
+            },
+        );
+
+        Template::Stash->define_vmethod( list => $_ => $list_vmethods{$_} )
+            for keys %list_vmethods;
+
+        $vmethods_registered = 1;
+    }
 
     # Cache Template objects — they are stateless and safe to reuse across requests
     state %tt_cache;

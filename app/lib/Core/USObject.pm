@@ -704,6 +704,8 @@ sub service {
     return get_service('service', _id => $self->get_service_id);
 }
 
+*services = \&service;
+
 sub make_expired {
     my $self = shift;
 
@@ -956,8 +958,7 @@ sub create {
 
     unless ( get_service('user')->authenticated->is_admin ) {
         if ( $args{check_allow_to_order} ) {
-            my $allowed_services_list = $service->price_list;
-            unless ( exists $allowed_services_list->{ $args{service_id} } ) {
+            unless ( $service->price_list_check_allow_to_order ) {
                 report->status( 403 );
                 report->add_error('The service is prohibited for registration' );
                 return undef;
