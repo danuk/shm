@@ -240,7 +240,7 @@ sub calc_payment {
     my $total = shift;
 
     my $user  = $self->user;
-    my $bonus = calc_available_bonuses( $self, $user->get_bonus, $total );
+    my $bonus = calc_available_bonuses( $self->service, $user->get_bonus, $total );
 
     my $check_total = $total;
     my $root = $self->top_parent;
@@ -625,7 +625,7 @@ sub apply_partial_period {
 
     my $user  = $us->user;
     my $total = $user->get_balance;
-    my $bonus = calc_available_bonuses( $us, $user->get_bonus, $total );
+    my $bonus = calc_available_bonuses( $us->service, $user->get_bonus, $total );
     my $months = calc_period_by_total(
         $us->billing,
         total  => $total + $bonus,
@@ -649,14 +649,14 @@ sub apply_partial_period {
 # | < 100               | <= 0   | 0  (no base for percentage)  |
 # | < 100               | > 0    | $total * percent / 100       |
 sub calc_available_bonuses {
-    my $us = shift;
+    my $service = shift;
     my $bonus = shift;
     my $total = shift;
 
-    return 0 unless $us;
+    return 0 unless ref $service;
     return 0 if $bonus <= 0;
 
-    my $limit_bonus_percent = $us->service->config->{limit_bonus_percent};
+    my $limit_bonus_percent = $service->config->{limit_bonus_percent};
 
     # Without a limit (or with a full 100% limit), bonuses are available regardless of total.
     return $bonus unless length $limit_bonus_percent;
