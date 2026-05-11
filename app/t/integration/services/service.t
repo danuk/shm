@@ -29,6 +29,25 @@ is ( $si->{cost}, 100 );
 $si = $service->add( name => 'TEST', cost => 123, category => 'new' )->get;
 is ( $si->{name}, 'TEST', 'Check create new service' );
 
+subtest 'price_list_check_allow_to_order' => sub {
+    my $available = get_service('service')->add(
+        name => 'ALLOW ORDER TEST',
+        cost => 10,
+        category => 'new',
+        allow_to_order => 1,
+    );
+
+    my $unavailable = get_service('service')->add(
+        name => 'DISALLOW ORDER TEST',
+        cost => 10,
+        category => 'new',
+        allow_to_order => 0,
+    );
+
+    ok( $available->price_list_check_allow_to_order, 'Service with allow_to_order=1 is present in price list items' );
+    ok( !$unavailable->price_list_check_allow_to_order, 'Service with allow_to_order=0 is absent in price list items' );
+};
+
 is_deeply( scalar $service->categories, [
     'web_tariff_lock',
     'web_tariff',
