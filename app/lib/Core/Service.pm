@@ -252,14 +252,14 @@ sub list_for_api {
     return @arr;
 }
 
-sub price_list {
+sub price_list_items {
     my $self = shift;
     my %args = (
         filter => {},
-        get_smart_args(@_),
+        @_,
     );
 
-    my $list = $self->list(
+    my $items = $self->items(
         where => {
             %{ $self->query_for_filtering( %{ $args{filter} || {} } ) },
             $args{category} ? ( category => { -like => $args{category} } ) : (),
@@ -268,19 +268,24 @@ sub price_list {
         },
     );
 
-    for my $si ( keys %$list ) {
-        if ( $list->{ $si }->{config}->{order_only_once} && $self->was_ever_provided( $si ) ) {
-            delete $list->{ $si };
-            next;
-        }
+    return @{ $items || [] };
+}
 
-        my $service = $self->id( $si );
-        if ( $list->{ $si }->{is_composite} ) {
-            $list->{ $si }->{cost} = $service->cost_composite();
-        }
+sub price_list {
+    my $self = shift;
+    my %args = (
+        filter => {},
+        get_smart_args(@_),
+    );
 
-        my $cost = $list->{ $si }->{cost};
-        my $discount = $list->{ $si }->{no_discount} ? 0 : $self->user->get_discount;
+    my $list = {};
+    for my $service ( $self->price_list_items( %args ) ) {
+        my $si = $service->id;
+        my $row = $service->get;
+        next if $service->config->{order_only_once} && $service->was_ever_provided;
+
+        my $cost = $service->is_composite ? $service->cost_composite() : $row->{cost};
+        my $discount = $row->{no_discount} ? 0 : $self->user->get_discount;
         my $cost_discount = $cost * $discount / 100;
         my $total = $cost - $cost_discount;
 
@@ -295,14 +300,17 @@ sub price_list {
             $bonus += $real_cost;
             $real_cost = 0;
         }
-        my $partial_renew = $list->{ $si }->{config}->{allow_partial_period};
+        my $partial_renew = $row->{config}->{allow_partial_period};
 
-        $list->{ $si }->{partial_renew} = $partial_renew;
-        $list->{ $si }->{discount} = $discount;
-        $list->{ $si }->{cost_discount} = $cost_discount;
-        $list->{ $si }->{real_cost} = $cost - $cost_discount;
-        $list->{ $si }->{real_cost_with_bonuses} = $real_cost;
-        $list->{ $si }->{cost_bonus} = $bonus;
+        $row->{partial_renew} = $partial_renew;
+        $row->{cost} = $cost;
+        $row->{discount} = $discount;
+        $row->{cost_discount} = $cost_discount;
+        $row->{real_cost} = $cost - $cost_discount;
+        $row->{real_cost_with_bonuses} = $real_cost;
+        $row->{cost_bonus} = $bonus;
+
+        $list->{ $si } = $row;
     }
 
     return $list;
@@ -310,10 +318,9 @@ sub price_list {
 
 sub was_ever_provided {
     my $self = shift;
-    my $service_id = shift;
 
-    my @wd = get_service('wd')->list(
-        where => { service_id => $service_id },
+    my @wd = $self->user->withdraws->list(
+        where => { service_id => $self->id },
         limit => 1,
     );
     return scalar @wd ? 1 : 0;
