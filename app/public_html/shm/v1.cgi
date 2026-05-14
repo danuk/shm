@@ -1756,6 +1756,9 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     if ( $ENV{REQUEST_METHOD} eq 'GET' ) {
         @data = $service->$method( %args );
+        if ( scalar(@data) == 1 && ref $data[0] eq 'ARRAY' ) {
+            @data = @{ $data[0] };
+        }
         %info = (
             items => $service->found_rows(),
             limit => $in{limit} || 25,
