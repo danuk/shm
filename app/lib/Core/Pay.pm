@@ -321,7 +321,8 @@ sub paysystems {
         };
     }
 
-    return sort { $b->{weight} <=> $a->{weight} } @ret;
+    my @sorted = sort { $b->{weight} <=> $a->{weight} } @ret;
+    return \@sorted; # always return ref for templates (wantarray is not suitable for templates)
 }
 
 1;
