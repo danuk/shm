@@ -777,8 +777,10 @@ sub telegram_oidc_init {
     cache->set_json( $self->telegram_oidc_state_cache_key($state), $ctx, $args{ttl} );
 
     use URI::Escape qw( uri_escape );
+    my $oidc_server = $self->telegram_oidc_server( profile => $args{profile} );
     my $auth_url = sprintf(
-        'https://oauth.telegram.org/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s&nonce=%s&code_challenge=%s&code_challenge_method=S256',
+        '%s/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s&nonce=%s&code_challenge=%s&code_challenge_method=S256',
+        $oidc_server,
         uri_escape($client_id),
         uri_escape($redirect_uri),
         uri_escape($args{scope}),
@@ -868,6 +870,28 @@ sub telegram_oidc_client_secret {
         || $config->{oidc_client_secret};
 }
 
+sub telegram_oidc_server {
+    my $self = shift;
+    my %args = (
+        profile => 'telegram_bot',
+        @_,
+    );
+
+    my $profile = $args{profile};
+    my $config = $self->config;
+    my $profile_cfg = $config->{$profile} || {};
+
+    my $server = $profile_cfg->{oidc_server}
+        || $profile_cfg->{oauth_server}
+        || $config->{oidc_server}
+        || $config->{oauth_server}
+        || 'https://oauth.telegram.org';
+
+    $server =~ s{/*$}{};
+
+    return $server;
+}
+
 sub telegram_oidc_exchange_code {
     my $self = shift;
     my %args = (
@@ -913,7 +937,7 @@ sub telegram_oidc_exchange_code {
 
     my $response = $self->http_transport->http(
         method => 'post',
-        url => 'https://oauth.telegram.org/token',
+        url => $self->telegram_oidc_server( profile => $args{profile} ) . '/token',
         content_type => 'application/x-www-form-urlencoded',
         headers => {
             Accept => 'application/json',
@@ -941,6 +965,10 @@ sub telegram_oidc_exchange_code {
 
 sub telegram_oidc_jwks {
     my $self = shift;
+    my %args = (
+        profile => 'telegram_bot',
+        @_,
+    );
 
     state $cache = {
         fetched_at => 0,
@@ -954,7 +982,7 @@ sub telegram_oidc_jwks {
 
     my $response = $self->http_transport->http(
         method => 'get',
-        url => 'https://oauth.telegram.org/.well-known/jwks.json',
+        url => $self->telegram_oidc_server( profile => $args{profile} ) . '/.well-known/jwks.json',
     );
     unless ( $response->is_success ) {
         report->error('Telegram OIDC jwks request failed');
@@ -997,7 +1025,7 @@ sub verify_telegram_oidc_id_token {
         return undef;
     }
 
-    my $jwks = $self->telegram_oidc_jwks;
+    my $jwks = $self->telegram_oidc_jwks( profile => $args{profile} );
     my @keys = grep { ref $_ eq 'HASH' && ( !$kid || ( $_->{kid} || '' ) eq $kid ) } @{ $jwks || [] };
     @keys = @{ $jwks || [] } unless @keys;
 
