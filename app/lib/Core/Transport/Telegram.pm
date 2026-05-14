@@ -55,12 +55,14 @@ sub init {
         @_,
     );
 
-    $self->{server} = $self->config->{server} || 'https://api.telegram.org';
     $self->{webhook} = 0;
     $self->{deny_answer_direct} = 1;
 
     return $self;
 }
+
+sub telegram_server { shift->config->{server} || 'https://api.telegram.org' };
+sub telegram_oauth_server { shift->config->{oauth_server} || 'https://oauth.telegram.org' };
 
 sub http_transport {
     my $self = shift;
@@ -547,7 +549,7 @@ sub http {
 
     my $response = $self->http_transport->http(
         method => $method,
-        url => sprintf('%s/bot%s/%s', $self->{server}, $self->token, $url ),
+        url => sprintf('%s/bot%s/%s', $self->telegram_server, $self->token, $url ),
         content_type => $args{content_type},
         content => $content,
     );
@@ -778,7 +780,8 @@ sub telegram_oidc_init {
 
     use URI::Escape qw( uri_escape );
     my $auth_url = sprintf(
-        'https://oauth.telegram.org/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s&nonce=%s&code_challenge=%s&code_challenge_method=S256',
+        '%s/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s&nonce=%s&code_challenge=%s&code_challenge_method=S256',
+        $self->telegram_oauth_server,
         uri_escape($client_id),
         uri_escape($redirect_uri),
         uri_escape($args{scope}),
@@ -913,7 +916,7 @@ sub telegram_oidc_exchange_code {
 
     my $response = $self->http_transport->http(
         method => 'post',
-        url => 'https://oauth.telegram.org/token',
+        url => $self->telegram_oauth_server . '/token',
         content_type => 'application/x-www-form-urlencoded',
         headers => {
             Accept => 'application/json',
@@ -954,7 +957,7 @@ sub telegram_oidc_jwks {
 
     my $response = $self->http_transport->http(
         method => 'get',
-        url => 'https://oauth.telegram.org/.well-known/jwks.json',
+        url => $self->telegram_oauth_server . '/.well-known/jwks.json',
     );
     unless ( $response->is_success ) {
         report->error('Telegram OIDC jwks request failed');
@@ -1950,7 +1953,7 @@ sub set_webhook {
 
     my $delete_webhook = $self->http_transport->http(
         method => 'get',
-        url => sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->{server}, $args{token}),
+        url => sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->telegram_server, $args{token}),
     );
 
     my $bot = $args{template_id};
@@ -1969,7 +1972,7 @@ sub set_webhook {
 
     my $set_webhook = $self->http_transport->http(
         method => $method,
-        url => sprintf('%s/bot%s/setWebhook', $self->{server}, $args{token}),
+        url => sprintf('%s/bot%s/setWebhook', $self->telegram_server, $args{token}),
         content_type => $args{content_type},
         content => encode_json( $content ),
     );
