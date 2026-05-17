@@ -325,4 +325,6 @@ sub paysystems {
     return \@sorted; # always return ref for templates (wantarray is not suitable for templates)
 }
 
+sub api_paysystems { @{ shift->paysystems } };
+
 1;

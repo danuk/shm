@@ -395,7 +395,7 @@ state $routes //= {
     swagger => { tags => 'Платежи' },
     GET => {
         controller => 'Pay',
-        method => 'paysystems',
+        method => 'api_paysystems',
         swagger => { summary => 'Платежные системы' },
     },
 },
