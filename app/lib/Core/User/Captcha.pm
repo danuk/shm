@@ -81,38 +81,214 @@ sub gen_captcha_svg {
 
     my $width  = 200;
     my $height = 70;
+    my $pixel_size = 3;
 
-    my @chars = split //, $text;
+    my %font_pixels = (
+        '0' => [
+            '00111',
+            '11001',
+            '10101',
+            '10101',
+            '10101',
+            '11001',
+            '00111',
+        ],
+        '1' => [
+            '00010',
+            '00110',
+            '00010',
+            '00010',
+            '00010',
+            '00010',
+            '00111',
+        ],
+        '2' => [
+            '01110',
+            '10001',
+            '00001',
+            '00100',
+            '01000',
+            '10000',
+            '11111',
+        ],
+        '3' => [
+            '11110',
+            '00001',
+            '00001',
+            '01110',
+            '00001',
+            '00001',
+            '11110',
+        ],
+        '4' => [
+            '00100',
+            '01100',
+            '10100',
+            '10001',
+            '11111',
+            '00001',
+            '00001',
+        ],
+        '5' => [
+            '11111',
+            '10000',
+            '10000',
+            '11110',
+            '00001',
+            '00001',
+            '11110',
+        ],
+        '6' => [
+            '01110',
+            '10000',
+            '10000',
+            '11110',
+            '10001',
+            '10001',
+            '01110',
+        ],
+        '7' => [
+            '11111',
+            '00001',
+            '00001',
+            '00010',
+            '00100',
+            '01000',
+            '10000',
+        ],
+        '8' => [
+            '01110',
+            '10001',
+            '10001',
+            '01110',
+            '10001',
+            '10001',
+            '01110',
+        ],
+        '9' => [
+            '01110',
+            '10001',
+            '10001',
+            '01111',
+            '00001',
+            '00001',
+            '01110',
+        ],
+        '+' => [
+            '00000',
+            '00100',
+            '00100',
+            '11111',
+            '00100',
+            '00100',
+            '00000',
+        ],
+        '-' => [
+            '00000',
+            '00000',
+            '00000',
+            '11111',
+            '00000',
+            '00000',
+            '00000',
+        ],
+        ' ' => [
+            '00000',
+            '00000',
+            '00000',
+            '00000',
+            '00000',
+            '00000',
+            '00000',
+        ],
+        '=' => [
+            '00000',
+            '11111',
+            '00000',
+            '11111',
+            '00000',
+            '00000',
+            '00000',
+        ],
+        '?' => [
+            '01110',
+            '10001',
+            '00001',
+            '00110',
+            '00100',
+            '00000',
+            '00100',
+        ],
+    );
+
     my $chars_svg = '';
-    my $x = 15;
 
-    for my $ch ( @chars ) {
-        my $y      = 35 + int( rand(20) ) - 10;
-        my $rotate = int( rand(30) ) - 15;
-        my $size   = 24 + int( rand(8) );
-        my @fonts  = ('monospace', 'serif', 'sans-serif');
-        my $font   = $fonts[ int( rand( scalar @fonts ) ) ];
-        $chars_svg .= sprintf(
-            '<text x="%d" y="%d" font-size="%d" font-family="%s" fill="#333" transform="rotate(%d %d %d)">%s</text>',
-            $x, $y, $size, $font, $rotate, $x, $y, $ch eq '&' ? '&amp;' : $ch,
+    # Предварительный расчет ширины для центрирования
+    my @all_chars = split //, $text;
+    my $char_count = 0;
+    for my $ch (@all_chars) {
+        $char_count++ if exists $font_pixels{$ch};
+    }
+    my $total_width = $char_count * 15 + ($char_count - 1) * 8;
+    my $x_offset = ($width - $total_width) / 2;
+    if ($x_offset < 5) { $x_offset = 5; }
+
+    for my $ch ( split //, $text ) {
+        next unless exists $font_pixels{$ch};
+
+        my @rows = @{ $font_pixels{$ch} };
+        my $y_offset = 20 + int( rand(10) );
+        my $rotate_angle = int( rand(40) ) - 20;
+
+        my $noise_x = int( rand(4) ) - 2;
+        my $noise_y = int( rand(4) ) - 2;
+
+        for my $row_idx ( 0 .. @rows - 1 ) {
+            my $row = $rows[$row_idx];
+            for my $col_idx ( 0 .. length($row) - 1 ) {
+                if ( substr($row, $col_idx, 1) eq '1' ) {
+                    my $px = $x_offset + $col_idx * $pixel_size + $noise_x;
+                    my $py = $y_offset + $row_idx * $pixel_size + $noise_y;
+
+                    my @colors = ('#222', '#333', '#444', '#555');
+                    my $color = $colors[ int( rand( scalar @colors ) ) ];
+                    my $opacity = 0.6 + rand(0.4);
+
+                    $chars_svg .= sprintf(
+                        '<rect x="%d" y="%d" width="%d" height="%d" fill="%s" opacity="%.2f" '
+                        . 'transform="rotate(%d %d %d)"/>',
+                        $px, $py, $pixel_size - 1, $pixel_size - 1, $color, $opacity,
+                        $rotate_angle, $x_offset + $col_idx * $pixel_size / 2, $y_offset + $row_idx * $pixel_size / 2,
+                    );
+                }
+            }
+        }
+
+        $x_offset += 15 + int( rand(3) );
+    }
+
+    my $noise_svg = '';
+    for ( 1 .. 20 ) {
+        my $nx = int( rand($width) );
+        my $ny = int( rand($height) );
+        my $nr = 1 + int( rand(3) );
+        my @noise_colors = ('#e5e5e5', '#efefef', '#e0e0e0', '#ddd');
+        $noise_svg .= sprintf(
+            '<circle cx="%d" cy="%d" r="%d" fill="%s" opacity="0.4"/>',
+            $nx, $ny, $nr, $noise_colors[ int( rand( scalar @noise_colors ) ) ],
         );
-        $x += $ch eq ' ' ? 10 : 18 + int( rand(5) );
     }
 
     my $lines_svg = '';
-    for ( 1 .. 4 ) {
-        my ($x1, $y1, $x2, $y2) = ( int(rand($width)), int(rand($height)), int(rand($width)), int(rand($height)) );
-        my @colors = ('#999','#aaa','#bbb','#888');
+    for ( 1 .. 8 ) {
+        my $x1 = int( rand($width) );
+        my $y1 = int( rand($height) );
+        my $x2 = int( rand($width) );
+        my $y2 = int( rand($height) );
         $lines_svg .= sprintf(
-            '<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="1"/>',
-            $x1, $y1, $x2, $y2, $colors[ int(rand(scalar @colors)) ],
+            '<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#ddd" stroke-width="1" opacity="0.3"/>',
+            $x1, $y1, $x2, $y2,
         );
-    }
-
-    my $dots_svg = '';
-    for ( 1 .. 30 ) {
-        my ($cx, $cy) = ( int(rand($width)), int(rand($height)) );
-        $dots_svg .= sprintf( '<circle cx="%d" cy="%d" r="1" fill="#aaa"/>', $cx, $cy );
     }
 
     my $svg = sprintf(
@@ -121,7 +297,7 @@ sub gen_captcha_svg {
         . '%s%s%s'
         . '</svg>',
         $width, $height, $width, $height,
-        $lines_svg, $dots_svg, $chars_svg,
+        $noise_svg, $lines_svg, $chars_svg,
     );
 
     return encode_base64( $svg, '' );
