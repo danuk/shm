@@ -744,6 +744,7 @@ sub telegram_oidc_init {
         scope => 'openid profile',
         register_if_not_exists => 0,
         bind_to_profile => 0,
+        bind_only_if_new => 0,
         uid => undef,
         ttl => 600,
         @_,
@@ -771,6 +772,7 @@ sub telegram_oidc_init {
         ( defined $args{return_url} ? ( return_url => $args{return_url} ) : () ),
         register_if_not_exists => $args{register_if_not_exists} ? 1 : 0,
         bind_to_profile => $args{bind_to_profile} ? 1 : 0,
+        bind_only_if_new => $args{bind_only_if_new} ? 1 : 0,
         ( defined $args{uid} ? ( uid => $args{uid} ) : () ),
     };
 
@@ -1680,6 +1682,7 @@ sub web_auth {
         profile   => 'telegram_bot',
         register_if_not_exists => 0,
         bind_to_profile => 0,
+        bind_only_if_new => 0,
         uid => undef,
         @_,
     );
@@ -1774,6 +1777,13 @@ sub web_auth {
     if ( $args{uid} && $self->user->id($args{uid}) ) {
         switch_user( $args{uid} );
         if ( $args{bind_to_profile} ) {
+            if ( $args{bind_only_if_new} ) {
+                my $existing_user = $self->find_user_by_tg( \%in );
+                if ( $existing_user && $existing_user->{user_id} ne $args{uid} ) {
+                    return { error => 'Telegram account already exists' };
+                }
+            }
+
             my $login2 = '@' . $in{id};
             unless ( $self->user->get_login2 ) {
                 $self->user->set( login2 => $login2 );
@@ -1851,6 +1861,7 @@ sub web_auth_callback {
         profile => 'telegram_bot',
         register_if_not_exists => 0,
         bind_to_profile => 0,
+        bind_only_if_new => 0,
         @_,
     );
 
@@ -1865,6 +1876,7 @@ sub web_auth_callback {
             $args{return_url} //= $ctx->{return_url} if defined $ctx->{return_url};
             $args{register_if_not_exists} = $ctx->{register_if_not_exists} if !$args{register_if_not_exists} && defined $ctx->{register_if_not_exists};
             $args{bind_to_profile} = $ctx->{bind_to_profile} if !$args{bind_to_profile} && defined $ctx->{bind_to_profile};
+            $args{bind_only_if_new} = $ctx->{bind_only_if_new} if !$args{bind_only_if_new} && defined $ctx->{bind_only_if_new};
             $args{uid} //= $ctx->{uid} if defined $ctx->{uid};
 
             cache->delete( $self->telegram_oidc_state_cache_key( $args{state} ) );
@@ -1885,6 +1897,11 @@ sub web_auth_callback {
         %query = (
             tg_status => 'success',
             session_id => $result->{session_id},
+        );
+    } elsif ( ref $result eq 'HASH' && $result->{error} eq 'Telegram account already exists' ) {
+        %query = (
+            tg_status => 'already_exists',
+            error => $result->{error} || 'Telegram account already exists',
         );
     } elsif ( ref $result eq 'HASH' && ( $result->{error} || '' ) =~ /Already\s+bound/i ) {
         %query = (

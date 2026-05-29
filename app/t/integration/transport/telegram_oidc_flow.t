@@ -72,6 +72,7 @@ subtest 'Callback restores context by state and consumes it' => sub {
         profile => 'telegram_bot',
         redirect_uri => 'https://example.com/shm/v1/telegram/web/callback',
         register_if_not_exists => 1,
+        bind_only_if_new => 1,
     );
 
     my $captured;
@@ -92,6 +93,7 @@ subtest 'Callback restores context by state and consumes it' => sub {
     ok( $captured->{code_verifier}, 'code_verifier restored from cache' );
     is( $captured->{nonce}, $init->{nonce}, 'nonce restored from cache' );
     is( $captured->{register_if_not_exists}, 1, 'register_if_not_exists restored from cache' );
+    is( $captured->{bind_only_if_new}, 1, 'bind_only_if_new restored from cache' );
 
     my $cache_key = $tg->telegram_oidc_state_cache_key( $init->{state} );
     ok( !defined $fake_cache->get_json( $cache_key ), 'state context deleted after callback' );
@@ -135,6 +137,34 @@ subtest 'Callback redirects to return_url on success' => sub {
     like( $ret->{redirect}, qr/session_id=redirect-session/, 'redirect contains session_id' );
     is( $ret->{tg_status}, 'success', 'payload tg_status is success' );
     is( $ret->{session_id}, 'redirect-session', 'payload includes session_id' );
+};
+
+subtest 'Callback redirects with tg_status=already_exists' => sub {
+    my $init = $tg->telegram_oidc_init(
+        profile => 'telegram_bot',
+        redirect_uri => 'https://example.com/shm/v1/telegram/web/callback',
+        return_url => 'https://example.com/lk/profile',
+        register_if_not_exists => 0,
+        bind_to_profile => 1,
+        bind_only_if_new => 1,
+    );
+
+    local *Core::Transport::Telegram::web_auth = sub {
+        return {
+            tg_status => 'already_exists',
+            error => 'Telegram account already exists',
+        };
+    };
+
+    my $ret = $tg->web_auth_callback(
+        state => $init->{state},
+        code => 'auth_code_already_exists',
+    );
+
+    is( $ret->{status}, 302, 'redirect status is 302' );
+    like( $ret->{redirect}, qr/tg_status=already_exists/, 'redirect contains tg_status=already_exists' );
+    like( $ret->{redirect}, qr/error=Telegram%20account%20already%20exists/, 'redirect contains already_exists error' );
+    is( $ret->{error}, 'Telegram account already exists', 'bind returns already_exists error' );
 };
 
 subtest 'Bind-to-profile stores login2 as @telegram_user_id' => sub {
@@ -207,6 +237,82 @@ subtest 'Bind-to-profile stores login2 as @telegram_user_id' => sub {
     is( $ret->{msg}, 'Successfully bound to Telegram', 'bind returns success message' );
     is( $fake_user->{login2}, '@123456', 'login2 saved as @telegram_user_id' );
     isnt( $fake_user->{login2}, 'telegram_login', 'login2 is not Telegram username' );
+};
+
+subtest 'Bind-only-if-new rejects binding existing Telegram account' => sub {
+    package Local::BindUserExisting;
+
+    sub new {
+        my $class = shift;
+        return bless {
+            login2 => undef,
+            settings => { telegram => {} },
+            set_calls => [],
+            set_json_calls => [],
+        }, $class;
+    }
+
+    sub id {
+        my ( $self, $uid ) = @_;
+        return $uid ? 1 : 0;
+    }
+
+    sub get_login2 {
+        my $self = shift;
+        return $self->{login2};
+    }
+
+    sub set {
+        my ( $self, %args ) = @_;
+        push @{ $self->{set_calls} }, { %args };
+        $self->{login2} = $args{login2} if exists $args{login2};
+        return 1;
+    }
+
+    sub settings {
+        my $self = shift;
+        return $self->{settings};
+    }
+
+    sub set_json {
+        my ( $self, $key, $value ) = @_;
+        push @{ $self->{set_json_calls} }, {
+            key => $key,
+            value => $value,
+        };
+        return 1;
+    }
+
+    package main;
+
+    my $fake_user = Local::BindUserExisting->new;
+
+    local *Core::Transport::Telegram::user = sub { return $fake_user; };
+    local *Core::Utils::switch_user = sub { return 1; };
+    local *Core::Transport::Telegram::verify_telegram_oidc_id_token = sub {
+        return {
+            id => 123456,
+            preferred_username => 'telegram_login',
+            given_name => 'John',
+            family_name => 'Doe',
+            iat => time,
+        };
+    };
+    local *Core::Transport::Telegram::find_user_by_tg = sub {
+        return { user_id => 777 };
+    };
+
+    my $ret = $tg->web_auth(
+        uid => 40092,
+        bind_to_profile => 1,
+        bind_only_if_new => 1,
+        profile => 'telegram_bot',
+        id_token => 'stub-token',
+    );
+
+    is( $ret->{error}, 'Telegram account already exists', 'bind returns already_exists error' );
+    is( scalar @{ $fake_user->{set_calls} }, 0, 'does not update user login2' );
+    is( scalar @{ $fake_user->{set_json_calls} }, 0, 'does not bind telegram settings' );
 };
 
 subtest 'Unbind clears login2 when it contains telegram username' => sub {
