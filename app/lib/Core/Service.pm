@@ -352,42 +352,48 @@ sub price_list {
     return @list;
 }
 
+sub us {
+    my $self = shift;
+    return $self->srv('USObject');
+}
+
 sub is_ever_used {
     my $self = shift;
 
-    my $list = $self->us->list(
+    my @list = $self->us->list(
         where => {
             service_id => $self->id,
+            status => 'ANY', # allow any status
          },
         limit => 1,
     );
-    return $list ? 1 : 0;
+    return @list ? 1 : 0;
 }
 
 sub was_previously_used {
     my $self = shift;
 
-    my $list = $self->us->list(
+    my @list = $self->us->list(
         where => {
             service_id => $self->id,
             status => STATUS_REMOVED,
          },
         limit => 1,
     );
-    return $list ? 1 : 0;
+    return @list ? 1 : 0;
 }
 
 sub is_currently_used {
     my $self = shift;
 
-    my $list = $self->us->list(
+    my @list = $self->us->list(
         where => {
             service_id => $self->id,
             status => {'!=', STATUS_REMOVED},
          },
         limit => 1,
     );
-    return $list ? 1 : 0;
+    return @list ? 1 : 0;
 }
 
 sub api_price_list {

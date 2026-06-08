@@ -117,6 +117,7 @@ sub _list {
     ) {
         $args{where}{status} //= {'!=', STATUS_REMOVED};
     }
+    delete $args{where}{status} if $args{where}{status} eq 'ANY';
     return $self->SUPER::_list( %args );
 }
 
