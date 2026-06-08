@@ -314,13 +314,15 @@ sub parse_for_public {
         return undef;
     }
 
-    unless ( $template->get_settings->{allow_public} ) {
+    my $settings = $template->get_settings || {};
+
+    unless ( $settings->{allow_public} ) {
         logger->warning("Template not public");
         report->add_error('Permission denied: template is not public');
         return undef;
     }
 
-    return $self->parse_for_api( %args, do_not_parse => 0 );
+    return $self->parse_for_api( %args, do_not_parse => $settings->{no_parse} );
 }
 
 sub read_dir_recursive {
