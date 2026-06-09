@@ -354,33 +354,24 @@ sub price_list {
 
 sub us {
     my $self = shift;
-    return $self->srv('USObject');
+    return $self->srv('us');
+}
+
+sub wd {
+    my $self = shift;
+    return $self->srv('wd');
 }
 
 sub is_ever_used {
     my $self = shift;
 
-    my @list = $self->us->list(
+    my @list = $self->wd->list(
         where => {
             service_id => $self->id,
-            status => 'ANY', # allow any status
          },
         limit => 1,
     );
-    return @list ? 1 : 0;
-}
-
-sub was_previously_used {
-    my $self = shift;
-
-    my @list = $self->us->list(
-        where => {
-            service_id => $self->id,
-            status => STATUS_REMOVED,
-         },
-        limit => 1,
-    );
-    return @list ? 1 : 0;
+    return scalar @list ? 1 : 0;
 }
 
 sub is_currently_used {
@@ -393,7 +384,14 @@ sub is_currently_used {
          },
         limit => 1,
     );
-    return @list ? 1 : 0;
+    return scalar @list ? 1 : 0;
+}
+
+sub was_previously_used {
+    my $self = shift;
+
+    return 0 if $self->is_currently_used;
+    return $self->is_ever_used;
 }
 
 sub api_price_list {
