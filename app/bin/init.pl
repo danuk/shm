@@ -12,6 +12,7 @@ use version;
 use JSON::PP;
 
 my $sql = Core::Sql::Data->new;
+my $migration_boundary_version = version->parse('0.2.17');
 
 my $version;
 my $version_prefix;
@@ -76,13 +77,22 @@ if ( $ENV{TRUNCATE_DB_ON_START} || $tables_count == 0 ) {
         next if version->parse( $nv ) > version->parse( $version );
 
         say "Applying migration for version: $nv ...";
-        if ( version->parse( $nv ) > version->parse( '0.2.17' ) ) {
-            import_sql_file( $dbh, "$nv.sql" );
-        } else {
-            eval `cat $nv`;
-        }
+        eval {
+            if ( version->parse( $nv ) > $migration_boundary_version ) {
+                import_sql_file( $dbh, "$nv.sql" );
+            } else {
+                run_legacy_migration( $nv );
+            }
+            1;
+        } or do {
+            my $error = $@ || "Unknown migration error";
+            chomp $error;
+            eval { $dbh->rollback(); };
+            die "Migration for version '$nv' failed: $error\n";
+        };
+
         $config->set_value( { version => $nv . $version_prefix } );
-        $dbh->commit();
+        $dbh->commit() or die "Commit failed after migration '$nv': " . ( $dbh->errstr // 'unknown error' ) . "\n";
         say "done"
     }
 
@@ -105,9 +115,23 @@ sub import_sql_file {
 
     my @sql = sql_split( $data );
 
-    for ( @sql ) {
-        $dbh->do( $_ );
+    for my $statement ( @sql ) {
+        my $res = $dbh->do( $statement );
+        die "SQL execution failed in '$file': " . ( $dbh->errstr // 'unknown error' ) . "\nStatement: $statement\n"
+            unless defined $res;
     }
+}
+
+sub run_legacy_migration {
+    my $file = shift;
+
+    my $legacy_code = read_file( $file )
+        or die "Can't read legacy migration file: $file\n";
+
+    my $ok = eval $legacy_code;
+    die "Legacy migration '$file' failed: $@\n" if $@;
+
+    return $ok;
 }
 
 sub sql_split {

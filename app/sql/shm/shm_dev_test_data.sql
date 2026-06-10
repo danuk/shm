@@ -1,7 +1,7 @@
 BEGIN;
 SET FOREIGN_KEY_CHECKS = 0;
 
-INSERT INTO `acts` VALUES
+INSERT IGNORE INTO `acts` VALUES
 (default,40092,'2015-01-31 23:59:59',NULL),
 (default,40092,'2015-02-28 23:59:59',NULL),
 (default,40092,'2015-03-31 23:59:59',NULL),
@@ -9,11 +9,11 @@ INSERT INTO `acts` VALUES
 (default,40092,'2015-05-31 23:59:59',NULL),
 (default,40092,'2015-06-30 23:59:59',NULL);
 
-INSERT INTO `acts_data` VALUES
+INSERT IGNORE INTO `acts_data` VALUES
 (default,195,40092,16,19,2662,455.00,'19# Продление домена в зоне .NET: ipcalc.net','2015-10-12 00:00:01','2016-10-12 00:00:00'),
 (default,435,40092,11,2946,3518,590.00,'2946# Регистрация домена в зоне .RU: umci.ru','2016-07-29 12:36:06','2017-07-29 12:36:05');
 
-INSERT INTO `discounts` VALUES
+INSERT IGNORE INTO `discounts` VALUES
 (default,'1 месяц',1,0,NULL),
 (default,'3 месяца',3,10,NULL),
 (default,'6 месяцев',6,15,NULL),
@@ -21,7 +21,7 @@ INSERT INTO `discounts` VALUES
 (default,'2 года',24,30,NULL),
 (default,'3 года',36,40,NULL);
 
-INSERT INTO `dns_services` VALUES
+INSERT IGNORE INTO `dns_services` VALUES
 (default,12,'ri','A',0,'195.91.217.35',0),
 (default,12,'on','A',0,'95.84.154.134',0),
 (default,12,'ns1','A',0,'195.91.217.35',0),
@@ -83,7 +83,7 @@ INSERT INTO `dns_services` VALUES
 (default,328,'@','A',0,'95.85.10.40',0),
 (default,328,'www','A',0,'95.85.10.40',0);
 
-INSERT INTO `domains` VALUES
+INSERT IGNORE INTO `domains` VALUES
 (6,40092,'danuk.ru','2017-01-01 00:00:00',0,NULL,NULL,16),
 (7,40092,'ipcalc.net','2017-01-02 00:00:00',0,NULL,NULL,19),
 (33,40094,'ya.ru','2017-01-03 00:00:00',0,NULL,NULL,210),
@@ -101,7 +101,7 @@ INSERT INTO `domains` VALUES
 (210,40094,'gpb1.ya.ru','2017-01-15 00:00:00',0,33,NULL,210),
 (211,40094,'gpb2.ya.ru','2017-01-16 00:00:00',0,33,NULL,210);
 
-INSERT INTO `domains_services` VALUES
+INSERT IGNORE INTO `domains_services` VALUES
 (default,6,101,'2017-09-23 23:54:04'),
 (default,7,101,'2017-09-23 23:54:04'),
 (default,33,1872,'2017-09-23 23:54:04'),
@@ -124,16 +124,16 @@ INSERT INTO `domains_services` VALUES
 (default,6,2951,'2017-11-05 17:40:33'),
 (default,150,1871,'2017-09-23 23:54:23');
 
-INSERT INTO `pays_history` VALUES
+INSERT IGNORE INTO `pays_history` VALUES
 (default,40092,'manual',455.00,'2014-10-02 14:05:39',NULL,NULL),
 (default,40092,'manual',455.00,'2016-01-04 20:33:35',NULL,NULL);
 
-INSERT INTO `servers` VALUES
+INSERT IGNORE INTO `servers` VALUES
 (1,1,'test server1 (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,25,1,'{\"key_id\": 1, \"host_name\": \"host1.domain.ru\", \"template_id\": \"bash_script_example\"}'),
 (2,1,'test server2 (local)','ssh','ssm@127.0.0.1','127.0.0.1',100,0,0,0,1,'{\"key_id\": 1, \"host_name\": \"host2.domain.ru\", \"template_id\": \"bash_script_example\"}'),
 (25,5,'mail-1','mail','127.0.0.1:25',NULL,100,0,0,0,1,NULL);
 
-INSERT INTO `servers_groups` VALUES
+INSERT IGNORE INTO `servers_groups` VALUES
 (1,'Сервера Web хостинга','ssh','random',NULL),
 (2,'Сервера MySQL хостинга','ssh','random',NULL),
 (3,'Сервера Mail хостинга','ssh','random',NULL),
@@ -142,7 +142,7 @@ INSERT INTO `servers_groups` VALUES
 (default,'Email уведомления','mail','random',NULL),
 (default,'Telegram уведомления','telegram','random',NULL);
 
-INSERT INTO `services` VALUES
+INSERT IGNORE INTO `services` VALUES
 (1,'Тариф \"Почтовый\" (${QUOTA} мб)',75,1,'web_tariff_lock','[{"service_id":8}]',NULL,NULL,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL,0,0),
 (2,'Тариф MIN (${QUOTA} мб)',100,1,'web_tariff','[{"service_id":8},{"service_id":5},{"service_id":29}]',NULL,1,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL,0,0),
 (4,'Тариф MAX (${QUOTA} мб)',200,1,'web_tariff','[{"service_id":5},{"service_id":8},{"service_id":29}]',NULL,1,NULL,NULL,1,NULL,'Тарифный план включает в себя набор услуг. Все услуги, включенные в тарифный план, полностью зависят от статуса тарифа.',NULL,NULL,0,0),
@@ -159,7 +159,7 @@ INSERT INTO `services` VALUES
 (111,'Web хостинг (${QUOTA} мб)',0,1,'web',NULL,NULL,NULL,NULL,1,NULL,NULL,'Web хостинг - услуга, позволяющая размещать ваш WEB сайт на сервере хостинга. Вы можете размещать несколько сайтов на одной площадке.',NULL,NULL,0,0),
 (112,'Почта (${QUOTA} мб)',0,1,'mail',NULL,NULL,NULL,NULL,1,NULL,NULL,'Почта - услуга позволяет размещать почту на сервере для своих доменов',NULL,NULL,0,0);
 
-INSERT INTO `events` VALUES
+INSERT IGNORE INTO `events` VALUES
 (default,'UserService','User password reset','user_password_reset',3,'{\"category\": \"%\", \"template_id\": \"user_password_reset\"}'),
 (default,'UserService','Chanor web account','passwd',NULL,'{"category":"web","cmd":"www passwd w_{{ us.parent }}"}'),
 (default,'UserService','Notification of change password for web account','passwd',NULL,'{"category":"web","template":"web_pass_change","transport":"mail"}'),
@@ -174,7 +174,7 @@ INSERT INTO `events` VALUES
 (default,'UserService','Update dns','update',NULL,'{"category":"dns","cmd":"dns update","stdin":"{{ payload }}"}'),
 (default,'UserService','Test Docker command','create',1,'{"cmd":"ansible-playbook --extra-vars \'{{ us }}\'","transport":"docker"}');
 
-INSERT INTO `user_services` VALUES
+INSERT IGNORE INTO `user_services` VALUES
 (16,40092,63,1,3583,'2014-10-02 13:47:30','2017-09-22 14:51:26','INIT','ACTIVE',NULL,NULL,'{\"ns1\": \"ns1.viphost.ru\", \"ns2\": \"ns2.viphost.ru\", \"domain\": \"danuk.ru\", \"nic_id\": \"184677/NIC-D\\n\", \"punycode\": \"\", \"domain_id\": \"6\"}'),
 (17,40092,30,1,NULL,'2014-10-02 13:47:30',NULL,'INIT','ACTIVE',NULL,16,'{\"ns\": \"ns1.viphost.ru\", \"domain_id\": \"6\", \"server_id\": 1}'),
 (18,40092,31,1,NULL,'2014-10-02 13:47:30',NULL,'INIT','ACTIVE',NULL,16,'{\"ns\": \"ns2.viphost.ru\", \"master\": \"185.31.160.56\", \"domain_id\": \"6\", \"server_id\": 1}'),
@@ -232,14 +232,14 @@ INSERT INTO `user_services` VALUES
 (2951,40092,31,1,NULL,'2016-07-29 12:39:08',NULL,'INIT','ACTIVE',NULL,2949,'{\"ns\": \"ns2.biit.ru\", \"master\": \"185.31.160.56\", \"domain_id\": \"308\", \"server_id\": 1}');
 
 
-INSERT INTO `users` VALUES
+INSERT IGNORE INTO `users` VALUES
 (1,0,'admin',NULL,'0df78fa86a30eca0a918fdd21a94e238133ce7ab',0,NOW(),NULL,0,0,0.00,NULL,NULL,0,1,0,'Admin',0,0.00,NULL,NULL,NULL,NULL),
 (108,0,'',NULL,'',0,'2014-09-30 14:17:37',NULL,0,0,0.00,NULL,NULL,0,0,0,'Платеж',0,0.00,NULL,NULL,NULL,NULL),
 (40092,0,'danuk',NULL,'d8923baf143645690cc89db46e4611fb1066e1f0',0,'2014-09-30 14:17:37',NULL,0,-21.56,100000.00,NULL,NULL,0,0,0,'Фирсов Даниил Андреевич',0,0.00,NULL,NULL,NULL,'{\"telegram\": {\"chat_id\": 298002190}}'),
 (40093,0,'blocked',NULL,'',0,'2025-08-19 12:47:37',NULL,0,0,0,NULL,NULL,1,0,0,'Заблокированный',0,0.00,NULL,NULL,NULL,NULL),
 (40094,0,'ya',NULL,'1ad777afc152c9eaa13abb53283f8d47e8d453bb',0,'2014-10-02 14:45:43',NULL,0,30,100.00,NULL,NULL,0,0,NULL,'Пронин Дмитрий Борисович',0,0.00,NULL,NULL,NULL,NULL);
 
-INSERT INTO `withdraw_history` VALUES
+INSERT IGNORE INTO `withdraw_history` VALUES
 (3519,40092,'2016-07-29 12:39:08','2016-07-29 12:39:47','2017-07-29 12:39:46',590.00,0,11.80,12,578.20,11,1,2949),
 (3357,40094,'2016-02-15 21:55:29','2016-02-15 21:55:29',NULL,0.00,0,0.00,12,0.00,63,1,2801),
 (3583,40092,'2016-09-22 14:52:01','2016-09-22 14:51:27','2017-09-22 14:51:26',0.00,0,0.00,12,0.00,63,1,16),
@@ -247,7 +247,7 @@ INSERT INTO `withdraw_history` VALUES
 (3690,40094,'2016-12-31 21:24:01','2016-12-31 21:23:30','2017-01-31 21:23:29',0.00,0,0.00,1,0.00,2,1,1870),
 (3691,40092,'2017-01-01 00:00:01','2016-12-31 23:59:51','2017-01-31 23:59:50',123.45,0,0.00,1,123.45,110,1,99);
 
-INSERT INTO `zones` VALUES
+INSERT IGNORE INTO `zones` VALUES
 (1,'ru',1,'whois.ripn.net','No entries found for the selected',11,2,0,'domain_ru','client_ru',0,0,0),
 (2,'com',2,'whois.crsnic.net','No match for',13,2,0,'domain_rrp','client_rrp',1,1,0),
 (3,'net',3,'whois.crsnic.net','No match for',15,2,0,'domain_rrp','client_rrp',1,1,0),
@@ -279,9 +279,9 @@ INSERT INTO `zones` VALUES
 (29,'xxx',110,'whois.nic.xxx','NOT FOUND',175,3,0,'domain_epp_xxx','client_rrp',1,0,0),
 (30,'com.ru',8,'whois.nic.ru','No entries found for',198,3,0,'domain_com_ru','client_ru',0,0,0);
 
-INSERT INTO `identities` VALUES (1,'test','-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACA2vsTETNiEqL1/lTQ1g6yPY4ySTSyT8qdartx8QEagIAAAAJgnIEYDJyBG\nAwAAAAtzc2gtZWQyNTUxOQAAACA2vsTETNiEqL1/lTQ1g6yPY4ySTSyT8qdartx8QEagIA\nAAAEBdb6Bev05Mx82MT6nvoeWpi7MlPhbNWKue7GikhzXOFTa+xMRM2ISovX+VNDWDrI9j\njJJNLJPyp1qu3HxARqAgAAAAEEdlbmVyYXRlZCBieSBTSE0BAgMEBQ==\n-----END OPENSSH PRIVATE KEY-----\n','ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDa+xMRM2ISovX+VNDWDrI9jjJJNLJPyp1qu3HxARqAg Generated by SHM\n','MD5:2b:ae:29:8d:c2:84:c8:2a:64:ce:82:12:c0:52:22:2b Generated by SHM');
+INSERT IGNORE INTO `identities` VALUES (1,'test','-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACA2vsTETNiEqL1/lTQ1g6yPY4ySTSyT8qdartx8QEagIAAAAJgnIEYDJyBG\nAwAAAAtzc2gtZWQyNTUxOQAAACA2vsTETNiEqL1/lTQ1g6yPY4ySTSyT8qdartx8QEagIA\nAAAEBdb6Bev05Mx82MT6nvoeWpi7MlPhbNWKue7GikhzXOFTa+xMRM2ISovX+VNDWDrI9j\njJJNLJPyp1qu3HxARqAgAAAAEEdlbmVyYXRlZCBieSBTSE0BAgMEBQ==\n-----END OPENSSH PRIVATE KEY-----\n','ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDa+xMRM2ISovX+VNDWDrI9jjJJNLJPyp1qu3HxARqAg Generated by SHM\n','MD5:2b:ae:29:8d:c2:84:c8:2a:64:ce:82:12:c0:52:22:2b Generated by SHM');
 
-INSERT INTO `templates` VALUES
+INSERT IGNORE INTO `templates` VALUES
 ('web_tariff_create','Здравствуйте {{ user.full_name }}\n\nВы зарегистрировали новую услугу: {{ us.name }}\n\nДата истечения услуги: {{ us.expire }}\n\nСтоимость услуги: {{ us.service.cost }} руб.\n\n{{ IF us.child_by_category(\'web\') }}\nХостинг сайтов:\nХост: {{ us.child_by_category(\'web\').server.settings.host_name }}\nЛогин: {{ us.child_by_category(\'web\').settings.login }}\nПароль: {{ us.child_by_category(\'web\').settings.password }}\n{{ END }}\n\nЖелаем успехов.',NULL),
 ('forecast','Уважаемый {{ user.full_name }}\n\nУведомляем Вас о сроках действия услуг:\n\n{{ FOR item IN user.pays.forecast.items }}\n- Услуга: {{ item.name }}\n  Стоимость: {{ item.total }} руб.\n  {{ IF item.expire }}\n  Истекает: {{ item.expire }}\n  {{ END }}\n{{ END }}\n\n{{ IF user.pays.forecast.dept }}\nПогашение задолженности: {{ user.pays.forecast.dept }} руб.\n{{ END }}\n\nИтого к оплате: {{ user.pays.forecast.total }} руб.\n\nУслуги, которые не будут оплачены до срока их истечения, будут приостановлены.\n\nПодробную информацию по Вашим услугам Вы можете посмотреть в вашем личном кабинете: {{ config.api.url }}\n\nЭто письмо сформировано автоматически. Если оно попало к Вам по ошибке,\nпожалуйста, сообщите об этом нам: {{ config.mail.from }}',NULL),
 ('user_password_reset','Уважаемый клиент.\n\nВаш новый пароль: {{ user.set_new_passwd }}\n\nАдрес кабинета: {{ config.cli.url }}','{\"subject\": \"SHM - Восстановление пароля\"}'),
@@ -291,11 +291,11 @@ INSERT INTO `templates` VALUES
 ('yoomoney_template','<iframe src=\"https://yoomoney.ru/quickpay/shop-widget?writer=seller&targets=%D0%9E%D0%BF%D0%BB%D0%B0%D1%82%D0%B0%20%D0%BF%D0%BE%20%D0%B4%D0%BE%D0%B3%D0%BE%D0%B2%D0%BE%D1%80%D1%83%20{{ user.id }}&targets-hint=&default-sum=100&label={{ user.id }}&button-text=12&payment-type-choice=on&hint=&successURL=&quickpay=shop&account={{ config.pay_systems.yoomoney.account }}\" width=\"100%\" height=\"198\" frameborder=\"0\" allowtransparency=\"true\" scrolling=\"no\"></iframe>',NULL)
 ;
 
-INSERT INTO `profiles` VALUES
+INSERT IGNORE INTO `profiles` VALUES
 (1,'40092','{"name": "Даниил", "email": "email@domain.ru", "index":"1234567", "phone":"+7(123) 123-45-67"}',DEFAULT)
 ;
 
-INSERT INTO `config` VALUES
+INSERT IGNORE INTO `config` VALUES
 ("_shm", '{"version":"0.0.3", "cloud": {}}'),
 ("billing",'{"type": "Honest", "partner": {"income_percent": 20},"currency": "RUB"}'),
 ("company", '{"name":"My Company LTD"}'),
@@ -305,7 +305,7 @@ INSERT INTO `config` VALUES
 ("pay_systems",'{"manual":{"name":"Платеж","show_for_client":false},"yoomoney":{"name":"ЮMoney","account":"000000000000000","secret":"","template_id":"yoomoney_template","show_for_client":true}}'),
 ("mail",    '{"from":"mail@domain.ru"}');
 
-INSERT INTO `spool` (id,status,user_id,event) VALUES
+INSERT IGNORE INTO `spool` (id,status,user_id,event) VALUES
 (default,'PAUSED',1,'{"title":"Сервис для продления услуг","kind":"Jobs","method":"job_prolongate","period":"60"}'),
 (default,'PAUSED',1,'{"title":"Сервис для чистки данных и услуг","kind":"Jobs","method":"job_cleanup","period":"86400"}'),
 (default,'PAUSED',1,'{"title":"Сервис отправки прогнозов оплат","kind":"Jobs","method":"job_make_forecasts","period":"86400"}')
