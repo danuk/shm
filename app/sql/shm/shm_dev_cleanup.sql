@@ -1,0 +1,26 @@
+BEGIN;
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS `acts`;
+DROP TABLE IF EXISTS `acts_data`;
+DROP TABLE IF EXISTS `apps`;
+DROP TABLE IF EXISTS `discounts`;
+DROP TABLE IF EXISTS `dns_services`;
+DROP TABLE IF EXISTS `domains`;
+DROP TABLE IF EXISTS `domains_services`;
+DROP TABLE IF EXISTS `invoices`;
+DROP TABLE IF EXISTS `pays_history`;
+DROP TABLE IF EXISTS `servers_groups`;
+DROP TABLE IF EXISTS `services`;
+DROP TABLE IF EXISTS `events`;
+DROP TABLE IF EXISTS `spool`;
+DROP TABLE IF EXISTS `spool_history`;
+DROP TABLE IF EXISTS `user_services`;
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `withdraw_history`;
+DROP TABLE IF EXISTS `zones`;
+DROP TABLE IF EXISTS `console`;
+DROP TABLE IF EXISTS `profiles`;
+
+SET FOREIGN_KEY_CHECKS = 1;
+COMMIT;
