@@ -147,7 +147,7 @@ while ($request_count < $max_requests && $request->Accept() >= 0) {
         # Find appropriate script and path_info
         my ($script_filename, $script_path_info) = determine_script($request_uri);
 
-        if (-e $script_filename && -x $script_filename) {
+        if ($script_filename && -f $script_filename && -x $script_filename) {
             $req_start = time;
 
             # Execute CGI script
@@ -161,9 +161,9 @@ while ($request_count < $max_requests && $request->Accept() >= 0) {
         } else {
             print "Status: 404 Not Found\r\n";
             print "Content-Type: text/plain\r\n\r\n";
-            print "Not Found: $script_filename\n";
+            print "Not Found: " . ($script_filename || $request_uri) . "\n";
             unless ($skip_log) {
-                log_msg("404 - file not found or not executable: $script_filename");
+                log_msg("404 - file not found, not a regular executable file, or empty mapping: " . ($script_filename || $request_uri));
             }
         }
     };
@@ -213,6 +213,7 @@ sub determine_script {
             if (!$rest || $rest eq '/') {
                 return ("$target/index.cgi", '') if -e "$target/index.cgi";
                 return ($target, '') if -f $target;
+                return ('', '');
             }
 
             return ($target . $rest, '');
@@ -306,7 +307,7 @@ sub execute_do {
 sub execute_fork {
     my ($script) = @_;
 
-    if (!-e $script) {
+    if (!$script || !-f $script) {
         print "Status: 404 Not Found\r\n";
         print "Content-Type: text/plain\r\n\r\n";
         print "Script not found: $script\n";
@@ -365,9 +366,6 @@ sub execute_fork {
             open(STDIN, '<', '/dev/null') or warn "Cannot open /dev/null for STDIN: $!";
         }
 
-        $SIG{ALRM} = sub { POSIX::_exit(124) };
-        alarm($timeout);
-
         # Use exec instead of do - works for both Perl scripts and binaries
         exec($script) or do {
             print "Status: 403 Forbidden\r\n";
@@ -378,14 +376,45 @@ sub execute_fork {
     }
 
     # Parent: read child output from pipe and send to FastCGI client
+    # Bound the whole read/wait phase so a wedged child cannot block a worker forever.
     close($writer);
     my $output = '';
-    while (<$reader>) {
-        $output .= $_;
+    my $child_status;
+    my $timed_out = 0;
+    eval {
+        local $SIG{ALRM} = sub { die "CHILD_TIMEOUT\n" };
+        alarm($timeout);
+
+        while (<$reader>) {
+            $output .= $_;
+        }
+        waitpid($pid, 0);
+        $child_status = $? >> 8;
+
+        alarm(0);
+    };
+    if ($@) {
+        alarm(0);
+        if ($@ eq "CHILD_TIMEOUT\n") {
+            $timed_out = 1;
+            log_msg("Child timeout after ${timeout}s: $script (pid=$pid)");
+            kill 'TERM', $pid;
+            waitpid($pid, 0);
+            $child_status = 124;
+        } else {
+            log_msg("Parent pipe/read error for $script: $@");
+            $child_status = 1;
+        }
     }
     close($reader);
-    waitpid($pid, 0);
-    my $child_status = $? >> 8;
+
+    if ($timed_out) {
+        print "Status: 504 Gateway Timeout\r\n";
+        print "Content-Type: text/plain\r\n\r\n";
+        print "Script timeout\n";
+        return;
+    }
+
     my $out_len = length($output);
     log_msg("Error: child exit=$child_status, output=$out_len bytes") if $child_status != 0;
     if ($out_len > 0) {
