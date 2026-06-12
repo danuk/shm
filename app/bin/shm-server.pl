@@ -306,6 +306,13 @@ sub execute_do {
 sub execute_fork {
     my ($script) = @_;
 
+    if (!-e $script) {
+        print "Status: 404 Not Found\r\n";
+        print "Content-Type: text/plain\r\n\r\n";
+        print "Script not found: $script\n";
+        return;
+    }
+
     # Read request body before fork
     my $body = '';
     if ($ENV{CONTENT_LENGTH} && $ENV{CONTENT_LENGTH} > 0) {
