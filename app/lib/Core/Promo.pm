@@ -162,15 +162,19 @@ sub status { shift->settings->{status} };
 
 sub api_get {
     my $self = shift;
+    my %args = (
+        sort_field => 'created',
+        sort_direction => 'asc',
+        @_,
+    );
+
+    my $order = $self->query_for_order(%args);
 
     my @list = $self->list(
         where => {
             user_id => $self->user->id,
         },
-        order => [
-            'id'      => 'asc',
-            'created' => 'asc',
-        ],
+        $order ? ( order => $order ) : (),
     );
 
     my @data;
@@ -189,6 +193,11 @@ sub api_get {
             used       => $settings->{reusable} ? 0 : ($item->{used} ? 1 : 0),
             used_date  => $item->{used},
             used_by    => $item->{used_by},
+            settings   => {
+                public => {
+                    %{ $settings->{public} || {} },
+                },
+            }
         };
     }
 
