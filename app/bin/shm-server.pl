@@ -48,6 +48,7 @@ if ( $ENV{LEGACY_PAYSYSTEMS_PATH} ) {
 }
 
 my @skip_logging = (
+    qr{/healthcheck$},
     qr{^/shm/healthcheck\.cgi},
 );
 
@@ -193,6 +194,9 @@ sub determine_script {
 
     # Normalize: collapse multiple slashes into one
     $path =~ s{/+}{/}g;
+
+    # Ensure all routing checks see a canonical absolute path.
+    $path = "/$path" if $path !~ m{^/};
 
     # Try longest match first (most specific)
     foreach my $prefix (sort { length($b) <=> length($a) } keys %doc_roots) {
