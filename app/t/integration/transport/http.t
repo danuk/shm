@@ -18,16 +18,16 @@ subtest '' => sub {
 };
 
 subtest '' => sub {
-    my $response = $http->http(url => 'http://api');
-    is( $response->code, 403 );
-    like( $response->status_line, qr/403 Forbidden/ );
+    my $response = $http->http(url => 'http://api/shm/v1/user');
+    is( $response->code, 401 );
+    like( $response->status_line, qr/401 Unauthorized/ );
 };
 
 subtest '' => sub {
-    my $response = $http->http(url => 'http://api', method => 'GET');
+    my $response = $http->http(url => 'http://api/shm/v1/admin/user', method => 'GET');
     is( $response->is_success, '' );
-    is( $response->code, 403 );
-    like( $response->status_line, qr/403 Forbidden/ );
+    is( $response->code, 401 );
+    like( $response->status_line, qr/401 Unauthorized/ );
 };
 
 subtest '' => sub {

@@ -22,6 +22,13 @@ use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
 
 state $routes //= {
+'/healthcheck' => {
+    GET => {
+        controller => 'Test',
+        method => 'healthcheck',
+        skip_check_auth => 1,
+    },
+},
 '/test' => {
     GET => {
         controller => 'Test',

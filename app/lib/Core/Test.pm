@@ -4,6 +4,19 @@ use v5.14;
 use parent 'Core::Base';
 use Core::System::ServiceManager qw( %PROTECTED_SERVICES get_service logger );
 
+sub healthcheck {
+    my $self = shift;
+    my $result = 'FAIL';
+
+    if ( $self->dbh->ping ) {
+        $result = 'SUCCESS';
+    }
+
+    return {
+        result => 'SUCCESS',
+    };
+}
+
 sub list_for_api {
     my $self = shift;
 
