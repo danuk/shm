@@ -27,6 +27,7 @@ subtest 'Check promo' => sub {
           reusable => 0,
           status => 1,
           amount => 123, tariff => 1, foo => 'bar',
+          public => { foo => 1, bar => 2 },
         }
     );
 
@@ -113,5 +114,36 @@ subtest 'Check reusable promo' => sub {
     is ( $res, undef);
     is( $report->errors->[0]=~/has no remaining uses/, 1 );
 };
+
+  subtest 'Check api_get exposes only public settings' => sub {
+    $promo = $user->id( 1 )->srv('promo');
+    my $codes = $promo->generate(
+      template_id => 'template_promo',
+      code => 'TEST_API_GET_PUBLIC',
+      settings => {
+        length => 10,
+        count => 1,
+        quantity => 1,
+        reusable => 1,
+        status => 1,
+        amount => 123,
+        tariff => 1,
+        foo => 'bar',
+        public => { foo => 1, bar => 2 },
+      }
+    );
+
+    is( scalar @$codes, 1, 'created reusable promo for api_get check' );
+
+    my @list = $user->id( 1 )->srv('promo')->api_get;
+    my ($item) = grep { $_->{promo_code} eq 'TEST_API_GET_PUBLIC' } @list;
+
+    ok( $item, 'promo exists in api_get list' );
+    ok( exists $item->{settings}{public}{foo}, 'foo is exposed' );
+    ok( exists $item->{settings}{public}{bar}, 'bar is exposed' );
+    ok( !exists $item->{settings}{amount}, 'amount is not exposed' );
+    ok( !exists $item->{settings}{tariff}, 'tariff is not exposed' );
+    ok( !exists $item->{settings}{foo}, 'private foo is not exposed' );
+  };
 
 done_testing();

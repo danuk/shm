@@ -55,12 +55,14 @@ sub init {
         @_,
     );
 
-    $self->{server} = $self->config->{server} || 'https://api.telegram.org';
     $self->{webhook} = 0;
     $self->{deny_answer_direct} = 1;
 
     return $self;
 }
+
+sub telegram_server { shift->config->{server} || 'https://api.telegram.org' };
+sub telegram_oauth_server { shift->config->{oauth_server} || 'https://oauth.telegram.org' };
 
 sub http_transport {
     my $self = shift;
@@ -547,7 +549,7 @@ sub http {
 
     my $response = $self->http_transport->http(
         method => $method,
-        url => sprintf('%s/bot%s/%s', $self->{server}, $self->token, $url ),
+        url => sprintf('%s/bot%s/%s', $self->telegram_server, $self->token, $url ),
         content_type => $args{content_type},
         content => $content,
     );
@@ -559,7 +561,7 @@ sub http {
         my $message = $response->decoded_content;
         logger->error( $message );
 
-        if ( $response->code == 403 ) {
+        if ( $response->code == 403 && $message =~ /bot was blocked/ ) {
             $self->user->set_settings({
                 telegram => {
                     $self->profile_name() => {
@@ -744,6 +746,7 @@ sub telegram_oidc_init {
         scope => 'openid profile',
         register_if_not_exists => 0,
         bind_to_profile => 0,
+        bind_only_if_new => 0,
         uid => undef,
         ttl => 600,
         @_,
@@ -771,6 +774,7 @@ sub telegram_oidc_init {
         ( defined $args{return_url} ? ( return_url => $args{return_url} ) : () ),
         register_if_not_exists => $args{register_if_not_exists} ? 1 : 0,
         bind_to_profile => $args{bind_to_profile} ? 1 : 0,
+        bind_only_if_new => $args{bind_only_if_new} ? 1 : 0,
         ( defined $args{uid} ? ( uid => $args{uid} ) : () ),
     };
 
@@ -778,7 +782,8 @@ sub telegram_oidc_init {
 
     use URI::Escape qw( uri_escape );
     my $auth_url = sprintf(
-        'https://oauth.telegram.org/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s&nonce=%s&code_challenge=%s&code_challenge_method=S256',
+        '%s/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&state=%s&nonce=%s&code_challenge=%s&code_challenge_method=S256',
+        $self->telegram_oauth_server,
         uri_escape($client_id),
         uri_escape($redirect_uri),
         uri_escape($args{scope}),
@@ -913,7 +918,7 @@ sub telegram_oidc_exchange_code {
 
     my $response = $self->http_transport->http(
         method => 'post',
-        url => 'https://oauth.telegram.org/token',
+        url => $self->telegram_oauth_server . '/token',
         content_type => 'application/x-www-form-urlencoded',
         headers => {
             Accept => 'application/json',
@@ -954,7 +959,7 @@ sub telegram_oidc_jwks {
 
     my $response = $self->http_transport->http(
         method => 'get',
-        url => 'https://oauth.telegram.org/.well-known/jwks.json',
+        url => $self->telegram_oauth_server . '/.well-known/jwks.json',
     );
     unless ( $response->is_success ) {
         report->error('Telegram OIDC jwks request failed');
@@ -1680,6 +1685,7 @@ sub web_auth {
         profile   => 'telegram_bot',
         register_if_not_exists => 0,
         bind_to_profile => 0,
+        bind_only_if_new => 0,
         uid => undef,
         @_,
     );
@@ -1774,6 +1780,13 @@ sub web_auth {
     if ( $args{uid} && $self->user->id($args{uid}) ) {
         switch_user( $args{uid} );
         if ( $args{bind_to_profile} ) {
+            if ( $args{bind_only_if_new} ) {
+                my $existing_user = $self->find_user_by_tg( \%in );
+                if ( $existing_user && $existing_user->{user_id} ne $args{uid} ) {
+                    return { error => 'Telegram account already exists' };
+                }
+            }
+
             my $login2 = '@' . $in{id};
             unless ( $self->user->get_login2 ) {
                 $self->user->set( login2 => $login2 );
@@ -1851,6 +1864,7 @@ sub web_auth_callback {
         profile => 'telegram_bot',
         register_if_not_exists => 0,
         bind_to_profile => 0,
+        bind_only_if_new => 0,
         @_,
     );
 
@@ -1865,6 +1879,7 @@ sub web_auth_callback {
             $args{return_url} //= $ctx->{return_url} if defined $ctx->{return_url};
             $args{register_if_not_exists} = $ctx->{register_if_not_exists} if !$args{register_if_not_exists} && defined $ctx->{register_if_not_exists};
             $args{bind_to_profile} = $ctx->{bind_to_profile} if !$args{bind_to_profile} && defined $ctx->{bind_to_profile};
+            $args{bind_only_if_new} = $ctx->{bind_only_if_new} if !$args{bind_only_if_new} && defined $ctx->{bind_only_if_new};
             $args{uid} //= $ctx->{uid} if defined $ctx->{uid};
 
             cache->delete( $self->telegram_oidc_state_cache_key( $args{state} ) );
@@ -1885,6 +1900,11 @@ sub web_auth_callback {
         %query = (
             tg_status => 'success',
             session_id => $result->{session_id},
+        );
+    } elsif ( ref $result eq 'HASH' && $result->{error} eq 'Telegram account already exists' ) {
+        %query = (
+            tg_status => 'already_exists',
+            error => $result->{error} || 'Telegram account already exists',
         );
     } elsif ( ref $result eq 'HASH' && ( $result->{error} || '' ) =~ /Already\s+bound/i ) {
         %query = (
@@ -1950,7 +1970,7 @@ sub set_webhook {
 
     my $delete_webhook = $self->http_transport->http(
         method => 'get',
-        url => sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->{server}, $args{token}),
+        url => sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->telegram_server, $args{token}),
     );
 
     my $bot = $args{template_id};
@@ -1969,7 +1989,7 @@ sub set_webhook {
 
     my $set_webhook = $self->http_transport->http(
         method => $method,
-        url => sprintf('%s/bot%s/setWebhook', $self->{server}, $args{token}),
+        url => sprintf('%s/bot%s/setWebhook', $self->telegram_server, $args{token}),
         content_type => $args{content_type},
         content => encode_json( $content ),
     );

@@ -22,6 +22,13 @@ use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
 
 state $routes //= {
+'/healthcheck' => {
+    GET => {
+        controller => 'Test',
+        method => 'healthcheck',
+        skip_check_auth => 1,
+    },
+},
 '/test' => {
     GET => {
         controller => 'Test',
@@ -1385,6 +1392,7 @@ state $routes //= {
             profile => 'telegram_bot',
             register_if_not_exists => 0,
             bind_to_profile => 0,
+            bind_only_if_new => 0,
             uid => undef,
             query => undef,
             id => undef,
@@ -1432,6 +1440,7 @@ state $routes //= {
             scope => 'openid profile',
             register_if_not_exists => 0,
             bind_to_profile => 0,
+            bind_only_if_new => 0,
             uid => undef,
             ttl => 600,
         },
@@ -1476,6 +1485,7 @@ state $routes //= {
             scope => 'openid profile',
             register_if_not_exists => 0,
             bind_to_profile => 0,
+            bind_only_if_new => 0,
             uid => undef,
             ttl => 600,
         },
@@ -1512,6 +1522,7 @@ state $routes //= {
             profile => 'telegram_bot',
             register_if_not_exists => 0,
             bind_to_profile => 0,
+            bind_only_if_new => 0,
             uid => undef,
         },
         swagger => {
@@ -1879,7 +1890,6 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         print_header( %headers );
         print_json({
             TZ => $ENV{TZ},
-            version => get_service('config')->id( '_shm' )->get_data->{'version'},
             date => scalar localtime,
             %info,
             data => \@data,

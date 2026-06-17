@@ -4,6 +4,10 @@ use v5.14;
 use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
+use Core::Billing ();
+use Core::Utils qw(
+    decode_json
+);
 
 sub table { return 'services' };
 
@@ -251,79 +255,148 @@ sub list_for_api {
     return @arr;
 }
 
+sub price_list_items {
+    my $self = shift;
+    my %args = (
+        service_id => undef,
+        filter => {},
+        @_,
+    );
+
+    my $where = {};
+    my $ids;
+
+    if ( defined $args{service_id} ) {
+        $where = { service_id => $args{service_id} };
+    } elsif ( my $template_id = cfg('billing')->{price_list_template_id} ) {
+        my $template = $self->srv('template', _id => $template_id);
+        unless ($template) {
+            logger->error("Can't get price_list. Template $template_id not found");
+            return ();
+        }
+
+        $ids = decode_json( $template->parse() );
+        unless (ref $ids eq 'ARRAY') {
+            logger->error("Can't get price_list. Template doesn't return array of services ids");
+            return ();
+        }
+        $where = { service_id => { '-in' => $ids } };
+    } else {
+        $where = {
+            %{ $self->query_for_filtering( %{ $args{filter} || {} } ) },
+            $args{category} ? ( category => { -like => $args{category} } ) : (),
+            allow_to_order => 1,
+        };
+    }
+
+    $where->{deleted} = 0;
+    my $items = $self->items( where => $where );
+
+    # Preserve template priority order for service ids from IN list.
+    if ($ids) {
+        my %items_by_id = map { $_->id => $_ } @{ $items || [] };
+        return grep { defined } map { $items_by_id{$_} } @$ids;
+    }
+
+    return @{ $items || [] };
+}
+
+sub price_list_check_allow_to_order {
+    my $self = shift;
+    return grep { $_->id == $self->id } $self->price_list_items;
+}
+
 sub price_list {
     my $self = shift;
     my %args = (
+        service_id => undef,
         filter => {},
         get_smart_args(@_),
     );
 
-    my $list = $self->list(
-        where => {
-            %{ $self->query_for_filtering( %{ $args{filter} || {} } ) },
-            $args{category} ? ( category => { -like => $args{category} } ) : (),
-            allow_to_order => 1,
-            deleted => 0,
-        },
-    );
+    my @list;
+    for my $service ( $self->price_list_items( %args ) ) {
+        my $si = $service->id;
+        my $row = $service->get;
+        next if $service->config->{order_only_once} && $service->is_ever_used;
 
-    for my $si ( keys %$list ) {
-        if ( $list->{ $si }->{config}->{order_only_once} && $self->was_ever_provided( $si ) ) {
-            delete $list->{ $si };
-            next;
-        }
-
-        if ( $list->{ $si }->{is_composite} ) {
-            my $service = $self->id( $si );
-            $list->{ $si }->{cost} = $service->cost_composite();
-        }
-
-        my $cost = $list->{ $si }->{cost};
-        my $discount = $list->{ $si }->{no_discount} ? 0 : $self->user->get_discount;
+        my $cost = $service->is_composite ? $service->cost_composite() : $row->{cost};
+        my $discount = $row->{no_discount} ? 0 : $self->user->get_discount;
         my $cost_discount = $cost * $discount / 100;
-        my $bonus = $self->user->get_bonus;
-        my $limit_bonus_percent = $list->{ $si }->{config}->{limit_bonus_percent};
-        if ( $bonus > 0 && defined $limit_bonus_percent ) {
-            my $max_bonus = $cost * $limit_bonus_percent / 100;
-            $bonus = $bonus > $max_bonus ? $max_bonus : $bonus;
-        }
-        my $real_cost = $cost - $cost_discount - $bonus;
+        my $total = $cost - $cost_discount;
+
+        my $bonus = Core::Billing::calc_available_bonuses(
+            $service,
+            $self->user->get_bonus,
+            $total,
+        );
+
+        my $real_cost = $total - $bonus;
         if ( $real_cost < 0 ) {
             $bonus += $real_cost;
             $real_cost = 0;
         }
-        my $partial_renew = $list->{ $si }->{config}->{allow_partial_period};
+        my $partial_renew = $row->{config}->{allow_partial_period};
 
-        $list->{ $si }->{partial_renew} = $partial_renew;
-        $list->{ $si }->{discount} = $discount;
-        $list->{ $si }->{cost_discount} = $cost_discount;
-        $list->{ $si }->{real_cost} = $cost - $cost_discount;
-        $list->{ $si }->{real_cost_with_bonuses} = $real_cost;
-        $list->{ $si }->{cost_bonus} = $bonus;
+        $row->{partial_renew} = $partial_renew;
+        $row->{cost} = $cost;
+        $row->{discount} = $discount;
+        $row->{cost_discount} = $cost_discount;
+        $row->{real_cost} = $cost - $cost_discount;
+        $row->{real_cost_with_bonuses} = $real_cost;
+        $row->{cost_bonus} = $bonus;
+
+        push @list, $row;
     }
 
-    return $list;
+    return @list;
 }
 
-sub was_ever_provided {
+sub us {
     my $self = shift;
-    my $service_id = shift;
+    return $self->srv('us');
+}
 
-    my @wd = get_service('wd')->list(
-        where => { service_id => $service_id },
+sub wd {
+    my $self = shift;
+    return $self->srv('wd');
+}
+
+sub is_ever_used {
+    my $self = shift;
+
+    my @list = $self->wd->list(
+        where => {
+            service_id => $self->id,
+         },
         limit => 1,
     );
-    return scalar @wd ? 1 : 0;
+    return scalar @list ? 1 : 0;
+}
+
+sub is_currently_used {
+    my $self = shift;
+
+    my @list = $self->us->list(
+        where => {
+            service_id => $self->id,
+            status => {'!=', STATUS_REMOVED},
+         },
+        limit => 1,
+    );
+    return scalar @list ? 1 : 0;
+}
+
+sub was_previously_used {
+    my $self = shift;
+
+    return 0 if $self->is_currently_used;
+    return $self->is_ever_used;
 }
 
 sub api_price_list {
     my $self = shift;
-
-    my $list = $self->price_list( @_ );
-
-    my @ret;
-    push @ret, $list->{ $_ } for keys %$list;
-    return @ret;
+    return $self->price_list( @_ );
 }
 
 # legacy: for backward compatible
@@ -348,7 +421,6 @@ sub categories {
 
 sub settings {
     my $self = shift;
-
     return $self->config || {};
 }
 

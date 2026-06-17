@@ -6,6 +6,7 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Const;
 use Template;
+use Template::Stash;
 use File::Find qw(find);
 use File::Basename;
 use File::Path qw(make_path);
@@ -201,6 +202,25 @@ sub parse {
         %{ _get_constants() },
     };
 
+    state $vmethods_registered;
+    unless ( $vmethods_registered ) {
+        my %list_vmethods = (
+            sort_by_key => sub {
+                my ( $list, @args ) = @_;
+                return Core::Utils::sort_by_keys( $list, @args );
+            },
+            pluck => sub {
+                my ( $list, @args ) = @_;
+                return Core::Utils::pluck( $list, @args );
+            },
+        );
+
+        Template::Stash->define_vmethod( list => $_ => $list_vmethods{$_} )
+            for keys %list_vmethods;
+
+        $vmethods_registered = 1;
+    }
+
     # Cache Template objects — they are stateless and safe to reuse across requests
     state %tt_cache;
     my $cache_key = $args{START_TAG} . '|' . $args{END_TAG};
@@ -294,13 +314,15 @@ sub parse_for_public {
         return undef;
     }
 
-    unless ( $template->get_settings->{allow_public} ) {
+    my $settings = $template->get_settings || {};
+
+    unless ( $settings->{allow_public} ) {
         logger->warning("Template not public");
         report->add_error('Permission denied: template is not public');
         return undef;
     }
 
-    return $self->parse_for_api( %args, do_not_parse => 0 );
+    return $self->parse_for_api( %args, do_not_parse => $settings->{no_parse} );
 }
 
 sub read_dir_recursive {
