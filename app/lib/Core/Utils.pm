@@ -104,6 +104,7 @@ use Date::Calc qw(
     N_Delta_YMDHMS
     Today_and_Now
 );
+use Crypt::PRNG qw(random_bytes);
 
 our %in;
 our $is_header = 0;
@@ -742,23 +743,6 @@ sub get_random_value {
     } else {
         return $value;
     }
-}
-
-sub random_bytes {
-    my $len = shift;
-    $len = 32 unless defined $len;
-    $len = int($len);
-    return '' if $len < 1;
-
-    my $bytes = '';
-    if ( open my $fh, '<:raw', '/dev/urandom' ) {
-        my $read = read( $fh, $bytes, $len );
-        close $fh;
-        return $bytes if defined $read && $read == $len;
-    }
-
-    # Fallback for environments where /dev/urandom is unavailable.
-    return join('', map { chr(int(rand(256))) } 1..$len );
 }
 
 sub random_base64url {
