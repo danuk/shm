@@ -95,7 +95,12 @@ subtest 'Check create service' => sub {
     $spool->process_all();
 
     my $mysql_server_id = $us->child_by_category('mysql')->settings->{server_id};
-    is( $mysql_server_id == 1 || $mysql_server_id == 2, 1 );
+    my $mysql_group_id = 1;
+    my @group_servers = get_service('server')->servers_by_group_id( gid => $mysql_group_id );
+    my %group_server_ids = map { $_->{server_id} => 1 } @group_servers;
+
+    ok( defined $mysql_server_id, 'Check mysql server_id is defined after create' );
+    ok( $group_server_ids{$mysql_server_id}, 'Check mysql server_id belongs to mysql server group' );
     is( $us->get_status, STATUS_ACTIVE, 'Check status of service after the creation childs' );
 };
 

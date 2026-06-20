@@ -294,13 +294,29 @@ state $routes //= {
         swagger => { summary => 'Сменить пароль пользователя по токену сброса' },
     },
 },
+'/user/accounts' => {
+    swagger => { tags => 'Пользователи' },
+    GET => {
+        controller => 'User::Logins',
+        swagger    => { summary => 'Список аккаунтов пользователя' },
+    },
+    PUT => {
+        controller => 'User::Logins',
+    },
+    POST => {
+        controller => 'User::Logins',
+    },
+    DELETE => {
+        controller => 'User::Logins',
+    },
+},
 '/user/email' => {
     swagger => { tags => 'Пользователи' },
     PUT => {
         controller => 'User',
         method => 'set_email',
         required => ['email'],
-        swagger => { summary => 'Установить email пользователя' },
+        swagger => { summary => 'Привязать email пользователя' },
     },
     GET => {
         controller => 'User',
@@ -310,22 +326,15 @@ state $routes //= {
     POST => {
         controller => 'User',
         method => 'verify_email',
-        optional => ['email', 'code'],
+        required => ['email'],
+        optional => ['code'],
         swagger => { summary => 'Верифицировать email пользователя' },
     },
     DELETE => {
         controller => 'User',
         method => 'delete_email',
+        required => ['email'],
         swagger => { summary => 'Удалить email пользователя' },
-    },
-},
-'/user/email/verify' => {
-    swagger => { tags => 'Пользователи' },
-    POST => {
-        controller => 'User',
-        method => 'verify_email',
-        optional => ['email', 'code'],
-        swagger => { summary => 'Верификация email пользователя' },
     },
 },
 '/user/service' => {
@@ -701,7 +710,7 @@ state $routes //= {
     },
     PUT => {
         controller => 'User',
-        required => ['login','password'],
+        required => ['full_name'],
         swagger => { summary => 'Создать клиента' },
     },
     POST => {
@@ -721,6 +730,29 @@ state $routes //= {
         controller => 'User',
         method => 'api_search_for_admins',
         swagger => { summary => 'Поиск клиентов' },
+    },
+},
+'/admin/user/accounts' => {
+    swagger => { tags => 'Пользователи' },
+    GET => {
+        controller => 'User::Logins',
+        swagger    => { summary => 'Список аккаунтов' },
+    },
+    PUT => {
+        controller => 'User::Logins',
+        required   => ['user_id','login','type'],
+        swagger    => { summary => 'Добавить аккаунт' },
+    },
+    POST => {
+        controller => 'User::Logins',
+        required   => ['user_id','login','type'],
+        swagger    => { summary => 'Изменить аккаунт' },
+    },
+    DELETE => {
+        controller => 'User::Logins',
+        method     => 'api_delete',
+        required   => ['user_id','login','type'],
+        swagger    => { summary => 'Удалить аккаунт' },
     },
 },
 '/admin/user/passwd' => {
@@ -1923,7 +1955,14 @@ sub get_service_id {
         print_json( { status => 400, error => sprintf("`%s` not present", $service->get_table_key ) } );
         exit 0;
     }
-    return $service_id;
+
+    my @ids = ( $service_id );
+
+    if ( my $key2 = $service->get_table_key2 ) {
+        push @ids, $args{ $key2 };
+    }
+
+    return @ids;
 }
 
 # exit 0;
