@@ -78,6 +78,7 @@ our @EXPORT_OK = qw(
     notall
     none
     uniq
+    pluck
 
     uniq_by_key
     format_time_diff
