@@ -167,39 +167,55 @@ subtest 'Callback redirects with tg_status=already_exists' => sub {
     is( $ret->{error}, 'Telegram account already exists', 'bind returns already_exists error' );
 };
 
-subtest 'Bind-to-profile stores login2 as @telegram_user_id' => sub {
+subtest 'Bind-to-profile stores telegram settings' => sub {
+    package Local::FakeLogins;
+
+    sub new {
+        my $class = shift;
+        return bless {
+            add_calls => [],
+        }, $class;
+    }
+
+    sub id {
+        return undef;
+    }
+
+    sub add {
+        my ( $self, %args ) = @_;
+        push @{ $self->{add_calls} }, { %args };
+        return 1;
+    }
+
     package Local::BindUser;
 
     sub new {
         my $class = shift;
         return bless {
-            login2 => undef,
             settings => { telegram => {} },
-            set_calls => [],
             set_json_calls => [],
+            logins => Local::FakeLogins->new,
         }, $class;
     }
 
     sub id {
         my ( $self, $uid ) = @_;
-        return $uid ? 1 : 0;
-    }
-
-    sub get_login2 {
-        my $self = shift;
-        return $self->{login2};
-    }
-
-    sub set {
-        my ( $self, %args ) = @_;
-        push @{ $self->{set_calls} }, { %args };
-        $self->{login2} = $args{login2} if exists $args{login2};
-        return 1;
+        return $uid ? $self : undef;
     }
 
     sub settings {
         my $self = shift;
         return $self->{settings};
+    }
+
+    sub logins {
+        my $self = shift;
+        return $self->{logins};
+    }
+
+    sub set {
+        my ( $self, %args ) = @_;
+        return 1;
     }
 
     sub set_json {
@@ -217,6 +233,7 @@ subtest 'Bind-to-profile stores login2 as @telegram_user_id' => sub {
 
     local *Core::Transport::Telegram::user = sub { return $fake_user; };
     local *Core::Utils::switch_user = sub { return 1; };
+    local *Core::Transport::Telegram::find_user_by_tg = sub { return undef; };
     local *Core::Transport::Telegram::verify_telegram_oidc_id_token = sub {
         return {
             id => 123456,
@@ -235,8 +252,10 @@ subtest 'Bind-to-profile stores login2 as @telegram_user_id' => sub {
     );
 
     is( $ret->{msg}, 'Successfully bound to Telegram', 'bind returns success message' );
-    is( $fake_user->{login2}, '@123456', 'login2 saved as @telegram_user_id' );
-    isnt( $fake_user->{login2}, 'telegram_login', 'login2 is not Telegram username' );
+    is( scalar @{ $fake_user->{logins}->{add_calls} }, 1, 'telegram alias login created once' );
+    is( $fake_user->{logins}->{add_calls}[0]->{login}, '123456', 'telegram alias login value is user_id' );
+    is( scalar @{ $fake_user->{set_json_calls} }, 1, 'telegram settings stored once' );
+    is( $fake_user->{set_json_calls}[0]->{value}->{telegram}->{user_id}, 123456, 'telegram settings include user_id' );
 };
 
 subtest 'Bind-only-if-new rejects binding existing Telegram account' => sub {
@@ -245,33 +264,30 @@ subtest 'Bind-only-if-new rejects binding existing Telegram account' => sub {
     sub new {
         my $class = shift;
         return bless {
-            login2 => undef,
             settings => { telegram => {} },
-            set_calls => [],
             set_json_calls => [],
+            logins => Local::FakeLogins->new,
         }, $class;
     }
 
     sub id {
         my ( $self, $uid ) = @_;
-        return $uid ? 1 : 0;
-    }
-
-    sub get_login2 {
-        my $self = shift;
-        return $self->{login2};
-    }
-
-    sub set {
-        my ( $self, %args ) = @_;
-        push @{ $self->{set_calls} }, { %args };
-        $self->{login2} = $args{login2} if exists $args{login2};
-        return 1;
+        return $uid ? $self : undef;
     }
 
     sub settings {
         my $self = shift;
         return $self->{settings};
+    }
+
+    sub logins {
+        my $self = shift;
+        return $self->{logins};
+    }
+
+    sub set {
+        my ( $self, %args ) = @_;
+        return 1;
     }
 
     sub set_json {
@@ -310,25 +326,39 @@ subtest 'Bind-only-if-new rejects binding existing Telegram account' => sub {
         id_token => 'stub-token',
     );
 
-    is( $ret->{error}, 'Telegram account already exists', 'bind returns already_exists error' );
-    is( scalar @{ $fake_user->{set_calls} }, 0, 'does not update user login2' );
-    is( scalar @{ $fake_user->{set_json_calls} }, 0, 'does not bind telegram settings' );
+    is( $ret->{error}, 'Telegram account already exists', 'bind_only_if_new rejects existing telegram binding' );
+    is( scalar @{ $fake_user->{logins}->{add_calls} }, 0, 'telegram alias login is not created on reject' );
+    is( scalar @{ $fake_user->{set_json_calls} }, 0, 'telegram settings are not changed on reject' );
 };
 
-subtest 'Unbind clears login2 when it contains telegram username' => sub {
+subtest 'Unbind clears telegram settings' => sub {
+    package Local::DeleteTgLogins;
+
+    sub new {
+        my $class = shift;
+        return bless {
+            delete_calls => [],
+        }, $class;
+    }
+
+    sub delete {
+        my ( $self, %args ) = @_;
+        push @{ $self->{delete_calls} }, { %args };
+        return 1;
+    }
+
     package Local::DeleteTgUser;
 
     sub new {
         my $class = shift;
         return bless {
-            login2 => 'telegram_login',
             settings => {
                 telegram => {
                     username => 'telegram_login',
                     user_id => 123456,
                 },
             },
-            set_calls => [],
+            logins => Local::DeleteTgLogins->new,
             set_settings_calls => [],
         }, $class;
     }
@@ -338,15 +368,13 @@ subtest 'Unbind clears login2 when it contains telegram username' => sub {
         return $self->{settings};
     }
 
-    sub get_login2 {
+    sub logins {
         my $self = shift;
-        return $self->{login2};
+        return $self->{logins};
     }
 
     sub set {
         my ( $self, %args ) = @_;
-        push @{ $self->{set_calls} }, { %args };
-        $self->{login2} = $args{login2} if exists $args{login2};
         return 1;
     }
 
@@ -365,8 +393,8 @@ subtest 'Unbind clears login2 when it contains telegram username' => sub {
     my $ret = $tg->api_delete_user_tg_settings();
 
     is( $ret->{msg}, 'Telegram settings deleted successfully', 'delete method returns success' );
-    ok( scalar @{ $fake_user->{set_calls} } >= 1, 'user->set was called to clear login2' );
-    is( $fake_user->{set_calls}[0]->{login2}, undef, 'login2 cleared when it matched telegram username' );
+    is( scalar @{ $fake_user->{logins}->{delete_calls} }, 1, 'telegram alias login is deleted on unbind' );
+    is( $fake_user->{logins}->{delete_calls}[0]->{where}->{login}, '123456', 'deleted telegram alias login matches user_id' );
     is_deeply( $fake_user->{settings}{telegram}, {}, 'telegram settings removed' );
 };
 
