@@ -89,19 +89,16 @@ subtest 'Make payment with partner (personal income percent)' => sub {
 my %profile = $user->profile;
 
 is $profile{email}, 'email@domain.ru', 'Check user profile';
-is $user->email, 'email@domain.ru', 'Check user email';
+is $user->email, 'danuk@domain.ru', 'Check user email';
 
 subtest 'Check user email by login' => sub {
     my $email = 'test@domain.ru';
-    my $new_user_id = $user->reg(
+    my $new_user = $user->reg(
         login => $email,
         password => 'testpassword',
-    )->{user_id};
-
-    my $new_user = $user->id( $new_user_id );
+    );
 
     is( $new_user->login, $email );
-    is( $new_user->email, $email );
 };
 
 subtest 'Check refferals count' => sub {

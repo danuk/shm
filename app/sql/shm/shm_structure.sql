@@ -212,7 +212,6 @@ CREATE TABLE IF NOT EXISTS `users` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `partner_id` int(11) DEFAULT NULL,
   `login` varchar(128) NOT NULL,
-  `login2` varchar(128) DEFAULT NULL,
   `password` varchar(128) DEFAULT NULL,
   `type` tinyint(4) DEFAULT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -232,10 +231,28 @@ CREATE TABLE IF NOT EXISTS `users` (
   `verified` int(11) DEFAULT NULL,
   `create_act` tinyint(4) DEFAULT NULL,
   `settings` json DEFAULT NULL,
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `users_uniq` (`login`),
-  UNIQUE KEY `users_uniq_login2` (`login2`)
+  PRIMARY KEY (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `accounts` (
+  `login` varchar(128) NOT NULL,
+  `type` char(16) NOT NULL DEFAULT 'login',
+  `user_id` int(11) NOT NULL,
+  `settings` json DEFAULT NULL,
+  PRIMARY KEY (`login`, `type`),
+  KEY `idx_accounts_user_id` (`user_id`),
+  CONSTRAINT `fk_accounts_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `accounts` (
+  `login` varchar(128) NOT NULL,
+  `type` char(16) NOT NULL DEFAULT 'login',
+  `user_id` int(11) NOT NULL,
+  `settings` json DEFAULT NULL,
+  PRIMARY KEY (`login`, `type`),
+  KEY `idx_accounts_user_id` (`user_id`),
+  CONSTRAINT `fk_accounts_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `withdraw_history` (
   `withdraw_id` int(11) NOT NULL AUTO_INCREMENT,

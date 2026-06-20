@@ -40,9 +40,11 @@ subtest 'Get server_id by event settings' => sub {
     is ( $task{id}, $task_id );
 
     my ( $info ) = $spool->process_one( \%task );
+    my $server_id = $info->get_settings->{server_id};
+    my %server = get_service('server', _id => $server_id )->get;
 
     is( $info->get_status, 'MOCK' );
-    is( $info->get_settings->{server_id} =~ /^1|2$/, 1 );
+    is( $server{server_gid}, 1, 'server_id belongs to group 1' );
 };
 
 subtest 'Get server_id by server_gid' => sub {
@@ -62,9 +64,11 @@ subtest 'Get server_id by server_gid' => sub {
     is ( $task{id}, $task_id );
 
     my ( $info ) = $spool->process_one( \%task );
+    my $server_id = $info->get_settings->{server_id};
+    my %server = get_service('server', _id => $server_id )->get;
 
     is( $info->get_status, 'MOCK' );
-    is( $info->get_settings->{server_id}, 25 );
+    is( $server{server_gid}, 5, 'server_id belongs to group 5' );
 };
 
 done_testing();
