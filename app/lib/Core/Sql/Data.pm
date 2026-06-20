@@ -546,6 +546,27 @@ sub clean_query_args {
                 }
             }
 
+            if ( $f eq $self->get_table_key2() ) {
+                if ( $settings->{is_update} ) {
+                    unless ( $args->{where}{ $f } ) {
+                        # Добавляем во WHERE ключевое поле
+                        if ( my $id = $self->{res}->{ $f } ) {
+                            $args->{where}{ $f } = $id;
+                        } elsif ( $self->can( $f ) ) {
+                            $args->{where}{ $f } = $self->$f;
+                        }
+                        logger->fatal( "`$f` required", $self ) unless length $args->{where}{ $f };
+                    }
+                    # Запрещаем обновлять ключевое поле
+                    delete $args->{ $f } if exists $args->{ $f };
+                } elsif ( exists $args->{ $f } ) {
+                    # Не используем ключи в insert-ах (админам можно)
+                    unless ( $self->user->authenticated->is_admin ) {
+                        delete $args->{ $f } unless $self->table_allow_insert_key;
+                    }
+                }
+            }
+
             if ( $settings->{is_list} ) {
                 if ( $v->{auto_fill} ) { # получаем автоматически
                     if ( exists $self->{ $f } ) {
@@ -854,12 +875,19 @@ sub get {
         $user_id = $self->user_id;
     }
 
+    my %where = (
+        sprintf("%s.%s", $self->table, $table_key ) => $self->id,
+        $user_id ? ( sprintf("%s.%s", $self->table, 'user_id' ) => $user_id, ) : (),
+    );
+
+    my $key2 = $self->get_table_key2;
+    if ( $key2 ) {
+        $where{ $key2 } = $self->{res}->{ $key2 };
+    }
+
     # do not use list() because of list might contain default selectors
     my ( $ret ) = $self->_list(
-        where => {
-            sprintf("%s.%s", $self->table, $table_key ) => $self->id,
-            $user_id ? ( sprintf("%s.%s", $self->table, 'user_id' ) => $user_id, ) : (),
-        },
+        where => \%where,
         limit => 1,
         @_,
     );
@@ -873,6 +901,17 @@ sub get_table_key {
 
     for ( keys %$structure ) {
         return $_ if $structure->{ $_ }->{key};
+    }
+    return undef;
+}
+
+sub get_table_key2 {
+    my $self = shift;
+
+    my $structure = $self->structure;
+
+    for ( keys %$structure ) {
+        return $_ if $structure->{ $_ }->{key2};
     }
     return undef;
 }
