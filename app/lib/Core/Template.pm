@@ -277,6 +277,8 @@ sub parse_for_api {
         @_,
     );
 
+    delete $args{data};
+
     my $template = $self->id( delete $args{id} );
 
     unless ( $template ) {
@@ -306,6 +308,8 @@ sub parse_for_public {
         id => undef,
         @_,
     );
+
+    delete $args{data};
 
     my $template = $self->id( $args{id} );
     unless ( $template ) {
