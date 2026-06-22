@@ -60,7 +60,7 @@ ENV DB_PORT=3306
 ENV DB_NAME=shm
 
 CMD ["/entry.sh"]
-HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD SCRIPT_NAME=/shm/v1/healthcheck REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9082 || exit 1
+#HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD SCRIPT_NAME=/shm/v1/healthcheck REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9082 || exit 1
 COPY files/ubuntu/crt/* /usr/local/share/ca-certificates/
 RUN update-ca-certificates
 
