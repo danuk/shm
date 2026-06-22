@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y \
     libwww-perl \
     librouter-simple-perl \
     libcryptx-perl \
+    libcpanel-json-xs-perl \
     libbytes-random-secure-perl \
     libcrypt-jwt-perl \
     libmime-base32-perl \

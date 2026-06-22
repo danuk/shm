@@ -88,6 +88,7 @@ our @EXPORT_OK = qw(
     round_down
     round
     hmac_sha256 hmac_sha256_hex sha256_hex sha256 sha512_hex hmac_sha512_hex sha512 hmac_sha512
+    encrypt_aes256_gcm_base64
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -104,6 +105,7 @@ use Date::Calc qw(
     N_Delta_YMDHMS
     Today_and_Now
 );
+use Crypt::PRNG qw(random_bytes);
 
 our %in;
 our $is_header = 0;
@@ -744,23 +746,6 @@ sub get_random_value {
     }
 }
 
-sub random_bytes {
-    my $len = shift;
-    $len = 32 unless defined $len;
-    $len = int($len);
-    return '' if $len < 1;
-
-    my $bytes = '';
-    if ( open my $fh, '<:raw', '/dev/urandom' ) {
-        my $read = read( $fh, $bytes, $len );
-        close $fh;
-        return $bytes if defined $read && $read == $len;
-    }
-
-    # Fallback for environments where /dev/urandom is unavailable.
-    return join('', map { chr(int(rand(256))) } 1..$len );
-}
-
 sub random_base64url {
     my $len = shift;
     $len = 32 unless defined $len;
@@ -1206,6 +1191,22 @@ sub _get_sort_value {
     }
 
     return undef;
+}
+
+sub encrypt_aes256_gcm_base64 {
+    my ($plaintext, $key) = @_;
+
+    my $key_len = do { use bytes; length($key) };
+    if ( $key_len != 32 ) {
+        get_service('logger')->error("CryptX Error: Key must be exactly 32 bytes long");
+        return '';
+    }
+
+    use Crypt::AuthEnc::GCM qw(gcm_encrypt_authenticate);
+
+    my $nonce = random_bytes(12);
+    my ($ciphertext, $tag) = gcm_encrypt_authenticate('AES', $key, $nonce, '', $plaintext);
+    return encode_base64($nonce . $ciphertext . $tag, '');
 }
 
 1;

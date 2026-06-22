@@ -3,7 +3,7 @@ package Core::Sessions;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
-use Core::Utils qw( now );
+use Core::Utils qw( now random_bytes );
 
 sub table { return 'sessions' };
 sub dbh { shift->dbh_myisam };
@@ -30,9 +30,16 @@ sub structure {
 }
 
 sub _generate_id {
-    my @chars =('a' .. 'z', 0 .. 9, 'A' .. 'Z', 0 .. 9);
-    my $session_id = join('', @chars[ map { rand @chars } (1 .. 32) ]);
-
+    my @chars = ('a' .. 'z', 'A' .. 'Z', '0' .. '9');
+    my $n = scalar @chars;
+    my $session_id = '';
+    while ( length($session_id) < 32 ) {
+        for my $byte ( unpack( 'C*', random_bytes(64) ) ) {
+            next if $byte >= int( 256 / $n ) * $n;  # rejection sampling — uniform distribution
+            $session_id .= $chars[ $byte % $n ];
+            last if length($session_id) == 32;
+        }
+    }
     return $session_id;
 }
 

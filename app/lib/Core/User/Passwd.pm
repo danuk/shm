@@ -3,7 +3,7 @@ package Core::User::Passwd;
 use v5.14;
 
 use Digest::SHA qw(sha1_hex sha256_hex hmac_sha512);
-use Math::Random::Secure qw(rand);
+use Core::Utils qw(random_bytes);
 
 # PBKDF2-HMAC-SHA512 (RFC 2898).
 # Args: ($password, $salt_bytes, $iterations, $dklen)
@@ -36,7 +36,7 @@ sub make_password {
     my $plain = shift;
 
     my $iterations = 100_000;
-    my $salt       = pack( 'C*', map { int( rand(256) ) } 1..16 );
+    my $salt       = random_bytes(16);
     my $dk         = _pbkdf2( $plain, $salt, $iterations, 32 );
 
     return sprintf( '$7$%d$%s$%s',
