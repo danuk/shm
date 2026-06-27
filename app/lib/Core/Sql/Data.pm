@@ -348,6 +348,12 @@ sub prepare_query_for_filtering {
             } elsif ($$value eq 'false') {
                 # Поле равно лжи (для boolean полей)
                 $result{$field} = 0;
+            } elsif ($$value eq 'isTrue') {
+                # Поле истинно (поддерживает и true, и 1)
+                $result{"--LOWER($field)"} = { '-in' => [ 'true', '1' ] };
+            } elsif ($$value eq 'isFalse') {
+                # Поле ложно (поддерживает и false, и 0)
+                $result{"--LOWER($field)"} = { '-in' => [ 'false', '0' ] };
             } elsif ($$value =~ /^(lt|gt|le|ge|eq|ne):(.*)$/) {
                 # Операторы сравнения с числами: lt:5, gt:10, le:100, etc.
                 my ($op, $val) = ($1, $2);
@@ -433,12 +439,12 @@ sub query_for_filtering {
                             } else {
                                 # Если есть специальные ключи с префиксом --, обрабатываем их
                                 for my $prep_key ( keys %$prepared ) {
-                                    if ( $prep_key =~ /^--COALESCE\(temp_field,/ ) {
+                                    if ( $prep_key =~ /^--/ ) {
                                         # Заменяем temp_field на реальный путь JSON и убираем префикс --
-                                        my $coalesce_key = $prep_key;
-                                        $coalesce_key =~ s/temp_field/$field_path/;
-                                        $coalesce_key =~ s/^--//;  # Убираем префикс --
-                                        $where{ $coalesce_key } = $prepared->{ $prep_key };
+                                        my $raw_key = $prep_key;
+                                        $raw_key =~ s/temp_field/$field_path/g;
+                                        $raw_key =~ s/^--//;
+                                        $where{ $raw_key } = $prepared->{ $prep_key };
                                     } else {
                                         $where{ $field_path } = $prepared->{ $prep_key };
                                     }
