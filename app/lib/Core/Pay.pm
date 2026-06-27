@@ -148,6 +148,8 @@ sub forecast {
 
         my %wd = $wd->get;
         $wd{months} = $us->service->get_period;
+
+        my $service_next = $us->service;
         my $service_next_name = $obj->{services}->{name};
 
         if ( $us->wd->paid ) {
@@ -157,7 +159,8 @@ sub forecast {
                 next if $wd_next{withdraw_date};
                 %wd = %wd_next;
             } elsif ( $obj->{next} ) {
-                if ( my $service_next = get_service('service', _id => $obj->{next} ) ) {
+                if ( my $s_next = get_service('service', _id => $obj->{next} ) ) {
+                    $service_next = $s_next;
                     $wd{service_id} = $service_next->id;
                     $wd{cost} = $service_next->get_cost;
                     $wd{months} = $service_next->get_period;
@@ -176,7 +179,7 @@ sub forecast {
         );
 
         my $total = $wd_forecast{total};
-        my $calc_bonuses = Core::Billing::calc_available_bonuses( $us->service, $bonus, $total );
+        my $calc_bonuses = Core::Billing::calc_available_bonuses( $service_next, $bonus, $total );
         if ( $calc_bonuses >= $total ) {
             $total = 0;
         } else {
