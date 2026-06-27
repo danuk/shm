@@ -561,7 +561,7 @@ sub http {
         my $message = $response->decoded_content;
         logger->error( $message );
 
-        if ( $response->code == 403 && $message =~ /bot was blocked/ ) {
+        if ( $response->code == 403 && $message =~ /(?:bot was blocked|user is deactivated)/i ) {
             $self->user->set_settings({
                 telegram => {
                     $self->profile_name() => {
