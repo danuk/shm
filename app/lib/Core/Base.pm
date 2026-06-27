@@ -334,12 +334,12 @@ sub _add_or_set {
     my $method = shift;
     my %args = @_;
 
-    if ( $self->can('validate_attributes') ) {
-        unless ( $self->validate_attributes( $method, %args ) ) {
-            logger->warning('validate attribute error:', $method, \%args );
-            return undef;
-        }
-    }
+    # if ( $self->can('validate_attributes') ) {
+    #     unless ( $self->validate_attributes( $method, %args ) ) {
+    #         logger->warning('validate attribute error:', $method, \%args );
+    #         return undef;
+    #     }
+    # }
 
     if ( $method eq 'add' ) {
         if ( my $defaults = cfg('defaults')->{ lc $self->kind } ) {
