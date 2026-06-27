@@ -95,6 +95,20 @@ subtest 'prepare_query_for_filtering - true/false' => sub {
     );
 };
 
+subtest 'prepare_query_for_filtering - isTrue/isFalse' => sub {
+    cmp_deeply(
+        prepare_query_for_filtering({
+            enabled => \'isTrue',
+            blocked => \'isFalse',
+        }),
+        {
+            '--LOWER(enabled)' => { '-in' => [ 'true', '1' ] },
+            '--LOWER(blocked)' => { '-in' => [ 'false', '0' ] },
+        },
+        'isTrue/isFalse convert to LOWER(field) IN (...) checks'
+    );
+};
+
 subtest 'prepare_query_for_filtering - numeric comparisons' => sub {
     cmp_deeply(
         prepare_query_for_filtering({
@@ -293,6 +307,8 @@ subtest 'query_for_filtering - nested JSON expressions with mock' => sub {
             'auto_backup' => \'ne:1',
             'max_items' => \'gt:10',
             'notifications' => \'true',
+            'enabled_bool' => \'isTrue',
+            'disabled_bool' => \'isFalse',
             'theme' => 'dark',
             'priority' => \'le:5',
             'enabled' => \'false',
@@ -307,6 +323,16 @@ subtest 'query_for_filtering - nested JSON expressions with mock' => sub {
     cmp_deeply($result->{"settings->>'\$.priority'"}, { '<=' => '5' }, 'le:5 converted correctly for JSON field');
     is($result->{"settings->>'\$.notifications'"}, 1, 'true converted to 1 for JSON field');
     is($result->{"settings->>'\$.enabled'"}, 0, 'false converted to 0 for JSON field');
+    cmp_deeply(
+        $result->{"LOWER(settings->>'\$.enabled_bool')"},
+        { '-in' => [ 'true', '1' ] },
+        'isTrue converted correctly for JSON field'
+    );
+    cmp_deeply(
+        $result->{"LOWER(settings->>'\$.disabled_bool')"},
+        { '-in' => [ 'false', '0' ] },
+        'isFalse converted correctly for JSON field'
+    );
     is($result->{"settings->>'\$.theme'"}, 'dark', 'Regular string value preserved for JSON field');
     cmp_deeply($result->{"settings->>'\$.api_key'"}, { '!=' => undef }, 'isNotNull converted correctly for JSON field');
     ok(exists $result->{"COALESCE(settings->>'\$.temp_data', '')"}, 'COALESCE field exists for isEmpty in JSON');
