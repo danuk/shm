@@ -177,6 +177,8 @@ sub parse {
         isNotNull => sub { return \'isNotNull' },
         isEmpty => sub { return \'isEmpty' },
         isNotEmpty => sub { return \'isNotEmpty' },
+        isTrue => sub { return \'isTrue' },
+        isFalse => sub { return \'isFalse' },
         # Numeric comparisons
         lt => sub { return \('lt:' . ($_[0] // '')) },  # less than
         gt => sub { return \('gt:' . ($_[0] // '')) },  # greater than
