@@ -2,6 +2,7 @@ package Core::User::Passwd;
 
 use v5.14;
 
+use Core::Base;
 use Digest::SHA qw(sha1_hex sha256_hex hmac_sha512);
 use Core::Utils qw(random_bytes);
 
