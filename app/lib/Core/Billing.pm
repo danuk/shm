@@ -540,6 +540,16 @@ sub money_back {
     return undef if $wd{end_date} le $date;
     return undef if $wd{create_date} gt $date;
 
+    # Return full refund on removal if flag is set
+    if ( $service->settings->{allow_return_full_wd} ) {
+        $self->user->set_balance(
+            balance => $wd{total},
+            bonus   => $wd{bonus},
+        );
+        $self->user->bonus->add( bonus => $wd{bonus}, comment => { withdraw_id => $wd{id} } ) if $wd{bonus};
+        return ($wd{total}, $wd{bonus});
+    }
+
     my $calc = calc_total_by_date_range(
         $self->billing,
         %{ $service->get },

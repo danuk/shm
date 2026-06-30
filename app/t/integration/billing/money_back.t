@@ -321,4 +321,76 @@ subtest 'Moneyback shortly after full bonus payment' => sub {
     is( $wd_after->{bonus}, 6.42);
 };
 
+subtest 'Moneyback with allow_return_full_wd flag - money only' => sub {
+    $user->set( balance => 1000, bonus => 0 );
+
+    is($user->get_balance, 1000, 'Start balance');
+    is($user->get_bonus, 0, 'Start bonus');
+
+    my $service = get_service('service')->add(
+        name => 'test full return service',
+        cost => 900,
+        period => 3,
+        category => 'test',
+        no_discount => 1,
+        config => { allow_return_full_wd => 1 },
+    );
+
+    Test::MockTime::set_fixed_time('2022-01-01T00:00:00Z');
+
+    my $us = create_service(
+        service_id => $service->id,
+        months => 3,
+    );
+
+    is( $user->get_balance, 100, 'Balance after create (1000-900)' );
+
+    # Only 2 days passed, but full amount should be returned
+    Test::MockTime::set_fixed_time('2022-01-03T00:00:00Z');
+    $us->set( expire => now );
+
+    money_back( $us );
+
+    is( $user->get_balance, 1000, 'Full money returned to balance' );
+    is( $user->get_bonus, 0, 'No bonus change' );
+};
+
+subtest 'Moneyback with allow_return_full_wd flag - money and bonuses' => sub {
+    $user->set( balance => 500, bonus => 400 );
+
+    is($user->get_balance, 500, 'Start balance');
+    is($user->get_bonus, 400, 'Start bonus');
+
+    my $service = get_service('service')->add(
+        name => 'test full return with bonus service',
+        cost => 900,
+        period => 3,
+        category => 'test',
+        no_discount => 1,
+        config => { allow_return_full_wd => 1 },
+    );
+
+    Test::MockTime::set_fixed_time('2022-05-01T00:00:00Z');
+
+    my $us = create_service(
+        service_id => $service->id,
+        months => 3,
+    );
+
+    my $wd = $us->withdraw;
+    is( $wd->get->{total}, 500, 'Money part of withdraw' );
+    is( $wd->get->{bonus}, 400, 'Bonus part of withdraw' );
+    is( $user->get_balance, 0, 'Balance after create' );
+    is( $user->get_bonus, 0, 'Bonus after create' );
+
+    # Only 5 days passed, but full amount should be returned
+    Test::MockTime::set_fixed_time('2022-05-06T00:00:00Z');
+    $us->set( expire => now );
+
+    money_back( $us );
+
+    is( $user->get_balance, 500, 'Full money returned to balance' );
+    is( $user->get_bonus, 400, 'Full bonus returned' );
+};
+
 done_testing();
