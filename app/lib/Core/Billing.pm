@@ -573,9 +573,16 @@ sub money_back {
             $wd{bonus} = $used_bonus;
             $delta_bonus = $paid_bonus - $used_bonus;
         } else {
-            $delta_bonus = $calc->{total} > $wd{bonus} ? $wd{bonus} : $calc->{total};
-            $wd{bonus} -= $delta_bonus;
-            $wd{bonus} = 0 if $wd{bonus} < 0;
+            # Бонусы в приоритете: сохраняем столько бонусов, чтобы покрыть стоимость использованного периода, остаток — деньгами.
+            # delta_bonus = излишек бонусов сверх стоимости использованного периода.
+            my $bonus_to_keep = $paid_bonus < $calc->{total} ? $paid_bonus : $calc->{total};
+            my $cash_to_keep  = $calc->{total} - $bonus_to_keep;
+
+            $delta_money      = $paid_money - $cash_to_keep;
+            $delta_bonus      = $paid_bonus - $bonus_to_keep;
+
+            $wd{total} = $cash_to_keep;
+            $wd{bonus} = $bonus_to_keep;
         }
     } else {
         $delta_money = $wd{total} - $calc->{total};

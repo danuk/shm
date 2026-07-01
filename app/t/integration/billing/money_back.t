@@ -193,7 +193,7 @@ subtest 'Moneyback with bonuses' => sub {
     cmp_deeply( scalar $wd->get,
         {
               user_id => 40092,
-              bonus => 500,
+              bonus => 300,
               months => '1.00',
               qnt => 1,
               discount => 0,
@@ -208,8 +208,13 @@ subtest 'Moneyback with bonuses' => sub {
         }
     , 'Check withdraw after money back');
 
+    # New bonus-priority logic:
+    # used cost=300, cash paid=100, bonus paid=800
+    # bonus_to_keep = min(800, 300) = 300 (bonuses cover used period first)
+    # cash_to_keep  = 300 - 300 = 0 (no cash needed)
+    # delta_money = 100 - 0 = 100; delta_bonus = 800 - 300 = 500
     is($user->get_balance, 100, 'Check balance after money back');
-    is($user->get_bonus, 300, 'Check bonuses after money back');
+    is($user->get_bonus, 500, 'Check bonuses after money back (bonus priority: 500 of 800 returned)');
 
     #use Data::Dumper;
     #say Dumper( $user->bonus->list );
@@ -391,6 +396,86 @@ subtest 'Moneyback with allow_return_full_wd flag - money and bonuses' => sub {
 
     is( $user->get_balance, 500, 'Full money returned to balance' );
     is( $user->get_bonus, 400, 'Full bonus returned' );
+};
+
+subtest 'Moneyback: bonuses cover used period, excess cash returned' => sub {
+    # Payment: 100 cash + 800 bonus = 900 total for 3 months
+    # Used: 1 month = 300
+    # Since 300 > 100 (used cost > cash paid):
+    #   bonus_to_keep = min(800, 300) = 300  (cover used period with bonuses)
+    #   cash_to_keep  = 300 - 300 = 0        (no cash needed after bonuses)
+    #   delta_money   = 100 - 0 = 100        (return all cash)
+    #   delta_bonus   = 800 - 300 = 500      (return 500 of 800 bonuses)
+    # Expected: balance=100, bonus=500; wd: total=0, bonus=300
+
+    $user->set( balance => 100, bonus => 800 );
+
+    is($user->get_balance, 100, 'Start balance');
+    is($user->get_bonus, 800, 'Start bonus');
+
+    my $service = get_service('service')->add(
+        name => 'test service bonuses priority',
+        cost => 900,
+        period => 3,
+        category => 'test',
+        no_discount => 1,
+    );
+
+    Test::MockTime::set_fixed_time('2022-01-01T00:00:00Z');
+
+    my $us = create_service(
+        service_id => $service->id,
+        months => 3,
+    );
+
+    my $wd = $us->withdraw;
+    cmp_deeply( scalar $wd->get,
+        {
+              user_id => 40092,
+              bonus => 800,
+              months => 3,
+              qnt => 1,
+              discount => 0,
+              create_date => '2022-01-01 00:00:00',
+              withdraw_date => '2022-01-01 00:00:00',
+              end_date => '2022-03-31 23:59:59',
+              cost => 900,
+              total => 100,
+              user_service_id => $us->id,
+              service_id => $service->id,
+              withdraw_id => $wd->id,
+        }
+    , 'Check withdraw');
+
+    is( $user->get_balance, 0, 'Balance after create (100-100)' );
+    is( $user->get_bonus, 0, 'Bonus after create (800-800)' );
+
+    # Cancel after 1 month: used cost = 300, which is > 100 (cash paid)
+    Test::MockTime::set_fixed_time('2022-02-01T00:00:00Z');
+    $us->set( expire => now );
+
+    money_back( $us );
+
+    cmp_deeply( scalar $wd->get,
+        {
+              user_id => 40092,
+              bonus => 300,
+              months => '1.00',
+              qnt => 1,
+              discount => 0,
+              create_date => '2022-01-01 00:00:00',
+              withdraw_date => '2022-01-01 00:00:00',
+              end_date => '2022-02-01 00:00:00',
+              cost => 900,
+              total => 0,
+              user_service_id => $us->id,
+              service_id => $service->id,
+              withdraw_id => $wd->id,
+        }
+    , 'Withdraw: bonuses kept to cover used period, cash zeroed out');
+
+    is($user->get_balance, 100, 'All cash returned (0 cash needed to cover used period)');
+    is($user->get_bonus, 500, '500 of 800 bonuses returned (300 kept to cover used period)');
 };
 
 done_testing();
