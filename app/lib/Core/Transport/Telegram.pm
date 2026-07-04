@@ -6,6 +6,7 @@ use v5.14;
 use utf8;
 use Core::Base;
 use Core::Const;
+use SHM qw( validate_session );
 use Core::System::ServiceManager qw( get_service logger );
 use Core::Utils qw(
     switch_user
@@ -752,7 +753,7 @@ sub telegram_oidc_init {
         register_if_not_exists => 0,
         bind_to_profile => 0,
         bind_only_if_new => 0,
-        uid => undef,
+        session_id => undef,
         ttl => 600,
         @_,
     );
@@ -780,7 +781,7 @@ sub telegram_oidc_init {
         register_if_not_exists => $args{register_if_not_exists} ? 1 : 0,
         bind_to_profile => $args{bind_to_profile} ? 1 : 0,
         bind_only_if_new => $args{bind_only_if_new} ? 1 : 0,
-        ( defined $args{uid} ? ( uid => $args{uid} ) : () ),
+        ( defined $args{session_id} ? ( session_id => $args{session_id} ) : () ),
     };
 
     cache->set_json( $self->telegram_oidc_state_cache_key($state), $ctx, $args{ttl} );
@@ -1679,9 +1680,20 @@ sub web_auth {
         register_if_not_exists => 0,
         bind_to_profile => 0,
         bind_only_if_new => 0,
-        uid => undef,
+        session_id => undef,
         @_,
     );
+
+    my $uid;
+    if ( $args{bind_to_profile} ) {
+        my $session = validate_session( session_id => $args{session_id} );
+        unless ( $session ) {
+            report->status( 401 );
+            report->error('A valid session is required to bind a Telegram account');
+            return undef;
+        }
+        $uid = $session->user_id;
+    }
 
     my $profile = $args{profile};
 
@@ -1770,12 +1782,12 @@ sub web_auth {
         }
     }
 
-    if ( $args{uid} && $self->user->id($args{uid}) ) {
-        switch_user( $args{uid} );
+    if ( $uid && $self->user->id($uid) ) {
+        switch_user( $uid );
         if ( $args{bind_to_profile} ) {
             if ( $args{bind_only_if_new} ) {
                 my $existing_user = $self->find_user_by_tg( \%in );
-                if ( $existing_user && $existing_user->{user_id} ne $args{uid} ) {
+                if ( $existing_user && $existing_user->{user_id} ne $uid ) {
                     return { error => 'Telegram account already exists' };
                 }
             }
@@ -1870,7 +1882,7 @@ sub web_auth_callback {
             $args{register_if_not_exists} = $ctx->{register_if_not_exists} if !$args{register_if_not_exists} && defined $ctx->{register_if_not_exists};
             $args{bind_to_profile} = $ctx->{bind_to_profile} if !$args{bind_to_profile} && defined $ctx->{bind_to_profile};
             $args{bind_only_if_new} = $ctx->{bind_only_if_new} if !$args{bind_only_if_new} && defined $ctx->{bind_only_if_new};
-            $args{uid} //= $ctx->{uid} if defined $ctx->{uid};
+            $args{session_id} //= $ctx->{session_id} if defined $ctx->{session_id};
 
             cache->delete( $self->telegram_oidc_state_cache_key( $args{state} ) );
         }
