@@ -46,7 +46,6 @@ jobs:
             echo "is_manual=true" >> $GITHUB_OUTPUT
             echo "✅ Ручной запуск - отправим уведомление"
           else
-            # Проверяем, что тег был создан из release ветки
             # Получаем последний тег
             TAG_NAME=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
@@ -57,21 +56,19 @@ jobs:
               exit 0
             fi
 
-            # Проверяем, с какой ветки был создан этот тег
-            BRANCHES=$(git branch -r --contains "tags/${TAG_NAME}" | grep -v HEAD | sed 's/.*origin\///' | tr -d ' ')
-
-            echo "Тег ${TAG_NAME} содержится в ветках: ${BRANCHES}"
-
-            if echo "$BRANCHES" | grep -q "^master$"; then
-              echo "should_notify=true" >> $GITHUB_OUTPUT
-              echo "is_manual=false" >> $GITHUB_OUTPUT
-              echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
-              echo "✅ Тег ${TAG_NAME} создан из master ветки - отправим уведомление"
-            else
+            # Теги с суффиксом (-rc, -beta, -alpha) создаются из не-main веток → пропускаем
+            if [[ "$TAG_NAME" =~ -[a-zA-Z]+ ]]; then
               echo "should_notify=false" >> $GITHUB_OUTPUT
               echo "is_manual=false" >> $GITHUB_OUTPUT
-              echo "⏭️ Тег ${TAG_NAME} НЕ из master ветки (${BRANCHES}) - пропускаем уведомление"
+              echo "⏭️ Тег ${TAG_NAME} имеет суффикс (не-master ветка) - пропускаем уведомление"
+              exit 0
             fi
+
+            # Теги без суффикса могут быть только из master (проверено в release.yml)
+            echo "should_notify=true" >> $GITHUB_OUTPUT
+            echo "is_manual=false" >> $GITHUB_OUTPUT
+            echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+            echo "✅ Тег ${TAG_NAME} без суффикса (master ветка) - отправим уведомление"
           fi
 
       - name: Получение информации о релизе
@@ -122,32 +119,36 @@ jobs:
           # Получаем предыдущий тег
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
+          # Сохраняем коммиты в файл, чтобы избежать проблем с кавычками и спецсимволами
+          COMMITS_FILE=$(mktemp)
           if [ -n "$PREVIOUS_TAG" ]; then
-            # Получаем коммиты между предыдущим и текущим тегом
-            COMMITS=$(git log --pretty=format:"• %s" ${PREVIOUS_TAG}..HEAD 2>/dev/null || echo "")
+            git log --pretty=format:"• %s" "${PREVIOUS_TAG}..HEAD" 2>/dev/null \
+              | grep -v '^• Merge pull request' \
+              | head -100 > "$COMMITS_FILE"
           else
-            # Если предыдущего тега нет, получаем все коммиты
-            COMMITS=$(git log --pretty=format:"• %s" HEAD 2>/dev/null || echo "")
+            git log --pretty=format:"• %s" HEAD 2>/dev/null \
+              | grep -v '^• Merge pull request' \
+              | head -100 > "$COMMITS_FILE"
           fi
 
-          # Ограничиваем количество коммитов (последние 100)
-          if [ -n "$COMMITS" ]; then
-            # Исключаем строки, начинающиеся на 'Merge pull request'
-            COMMITS=$(echo "$COMMITS" | grep -v '^• Merge pull request')
-            COMMITS=$(echo "$COMMITS" | head -100)
-            COMMITS_SECTION="$COMMITS"
-          else
-            COMMITS_SECTION="Нет изменений в коде"
-          fi
+          # Формируем сообщение: пишем напрямую в файл через echo/cat (не через printf)
+          # чтобы кавычки, %, \n и другие спецсимволы в коммитах не обрезали текст
+          {
+            echo "${EMOJI} ${RELEASE_TYPE} ${TAG_NAME}"
+            echo ""
+            echo "📦 Репозиторий: ${REPO_NAME}"
+            echo ""
+            echo "📋 Changelog:"
+            if [ -s "$COMMITS_FILE" ]; then
+              cat "$COMMITS_FILE"
+            else
+              echo "Нет изменений в коде"
+            fi
+            echo ""
+            echo "🔗 Посмотреть релиз: ${REPO_URL}/releases/tag/${TAG_NAME}"
+          } > /tmp/telegram_message.txt
 
-          # Форматирование сообщения (используем plain text без Markdown)
-          printf '%s\n\n%s\n\n%s\n%s\n\n%s' \
-            "${EMOJI} ${RELEASE_TYPE} ${TAG_NAME}" \
-            "📦 Репозиторий: ${REPO_NAME}" \
-            "📋 Changelog:" \
-            "${COMMITS_SECTION}" \
-            "🔗 Посмотреть релиз: ${REPO_URL}/releases/tag/${TAG_NAME}" \
-            > /tmp/telegram_message.txt
+          rm -f "$COMMITS_FILE"
 
           # Сохраняем путь к файлу сообщения
           echo "message_file=/tmp/telegram_message.txt" >> $GITHUB_OUTPUT
@@ -211,5 +212,6 @@ jobs:
       - name: Информация о пропуске
         if: steps.check_conditions.outputs.should_notify == 'false'
         run: |
-          echo "⏭️ Уведомление пропущено - релиз не из release ветки"
-          echo "Уведомления отправляются только для релизов из release ветки (тегов без суффиксов)"
+          echo "⏭️ Уведомление пропущено"
+          echo "Уведомления отправляются только для тегов без суффикса (master ветка)"
+          echo "Теги с суффиксом (-rc, -beta, -alpha) — для не-main веток, уведомления не отправляются"
