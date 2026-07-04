@@ -857,6 +857,13 @@ state $routes //= {
         swagger    => { summary => 'Добавить аккаунт' },
     },
     POST => {
+        params => {
+            login   => { type => 'string', required => 1, min_length => 1, max_length => 128 },
+            type    => { type => 'string', required => 1, min_length => 1, max_length => 32 },
+            user_id => { type => 'integer', required => 1, min => 1 },
+            setting => { type => 'object' },
+            primary => { type => 'boolean' },
+        },
         controller => 'User::Logins',
         swagger    => { summary => 'Изменить аккаунт' },
     },
@@ -1269,11 +1276,9 @@ state $routes //= {
 '/admin/template' => {
     swagger => { tags => 'Шаблоны' },
     GET => {
-        params => {
-            id => { type => 'string', min => 1 },
-        },
         controller => 'Template',
         method => 'list',
+        common_params => 1,
         swagger => { summary => 'Список шаблонов' },
     },
     PUT => {
@@ -1304,11 +1309,9 @@ state $routes //= {
     swagger => { tags => 'Шаблоны' },
     splat_to => 'id',
     GET => {
-        params => {
-            id  => { type => 'string', required => 1, min => 1 },
-        },
         controller => 'Template',
         method => 'parse_for_api',
+        common_params => 1,
         args => {
             format => 'plain',
             do_not_parse => 1,
