@@ -113,6 +113,14 @@ jobs:
         fi
         echo "tag_suffix=${TAG_SUFFIX}" >> $GITHUB_OUTPUT
 
+        # Create minor-with-suffix tag (e.g., '3.0-rc' from '3.0.1-rc')
+        if [ -n "$TAG_SUFFIX" ]; then
+          MINOR_WITH_SUFFIX="${VERSION_MINOR}-${TAG_SUFFIX}"
+        else
+          MINOR_WITH_SUFFIX=""
+        fi
+        echo "minor_with_suffix=${MINOR_WITH_SUFFIX}" >> $GITHUB_OUTPUT
+
         # Check if tag is from master branch
         IS_RELEASE="false"
         if git merge-base --is-ancestor HEAD origin/master 2>/dev/null; then
@@ -170,6 +178,7 @@ jobs:
         tags: |
           ${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.tag) }}
           ${{ steps.version.outputs.is_release == 'true' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
+          ${{ steps.version.outputs.minor_with_suffix != '' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
           ${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix) }}
         cache-from: type=gha,scope=api
         cache-to: type=gha,mode=max,scope=api
@@ -184,6 +193,7 @@ jobs:
         tags: |
           ${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.tag) }}
           ${{ steps.version.outputs.is_release == 'true' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
+          ${{ steps.version.outputs.minor_with_suffix != '' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
           ${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix) }}
         cache-from: type=gha,scope=core
 
@@ -199,11 +209,13 @@ jobs:
           ### API Image
           ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) || '' }}
           ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) }}
+          ${{ steps.version.outputs.minor_with_suffix != '' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
           - `${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix }}`
 
           ### Core Image
           ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) || '' }}
           ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) }}
+          ${{ steps.version.outputs.minor_with_suffix != '' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
           - `${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix }}`
 
           **Version:** `${{ steps.version.outputs.version_string }}`
