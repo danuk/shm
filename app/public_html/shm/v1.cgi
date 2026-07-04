@@ -1729,7 +1729,7 @@ state $routes //= {
             register_if_not_exists => { type => 'boolean' },
             bind_to_profile  => { type => 'boolean' },
             bind_only_if_new => { type => 'boolean' },
-            uid              => { type => 'integer', min => 1 },
+            session_id              => { type => 'integer', min => 1 },
             # OIDC code flow
             code             => { type => 'string' },
             redirect_uri     => { type => 'string' },
@@ -1787,7 +1787,7 @@ state $routes //= {
             register_if_not_exists => { type => 'boolean' },
             bind_to_profile        => { type => 'boolean' },
             bind_only_if_new       => { type => 'boolean' },
-            uid                    => { type => 'integer', min => 1 },
+            session_id             => { type => 'integer', min => 1 },
             ttl                    => { type => 'integer', min => 1 },
         },
         skip_check_auth => 1,
@@ -1831,7 +1831,7 @@ state $routes //= {
             register_if_not_exists => { type => 'boolean' },
             bind_to_profile        => { type => 'boolean' },
             bind_only_if_new       => { type => 'boolean' },
-            uid                    => { type => 'integer', min => 1 },
+            session_id             => { type => 'integer', min => 1 },
             ttl                    => { type => 'integer', min => 1 },
         },
         skip_check_auth => 1,
@@ -1857,7 +1857,7 @@ state $routes //= {
             register_if_not_exists => { type => 'boolean' },
             bind_to_profile        => { type => 'boolean' },
             bind_only_if_new       => { type => 'boolean' },
-            uid                    => { type => 'integer', min => 1 },
+            session_id             => { type => 'integer', min => 1 },
             # OIDC code flow
             code                   => { type => 'string' },
             redirect_uri           => { type => 'string' },
@@ -1885,6 +1885,107 @@ state $routes //= {
                                     session_id => {
                                         type => 'string'
                                     },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+},
+'/oauth2/init/*' => {
+    swagger => { tags => 'Пользователи' },
+    splat_to => 'provider',
+    GET => {
+        params => {
+            redirect_uri            => { type => 'string' },
+            return_url              => { type => 'string' },
+            bind_to_profile         => { type => 'boolean' },
+            bind_only_if_new        => { type => 'boolean' },
+            session_id              => { type => 'string' },
+            ttl                     => { type => 'integer', min => 1 },
+        },
+        skip_check_auth => 1,
+        controller => 'Auth::OAuth2',
+        method => 'oauth2_init',
+        swagger => {
+            summary => 'Инициализация OAuth2-входа/привязки (Google/Yandex/VK/GitHub): state, nonce, PKCE',
+            responses => {
+                '200' => {
+                    content => {
+                        'application/json' => {
+                            schema => {
+                                type => 'object',
+                                properties => {
+                                    auth_url => { type => 'string' },
+                                    state => { type => 'string' },
+                                    nonce => { type => 'string' },
+                                    code_challenge => { type => 'string' },
+                                    code_challenge_method => { type => 'string' },
+                                    redirect_uri => { type => 'string' },
+                                    expires_in => { type => 'number' },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+},
+'/oauth2/start/*' => {
+    swagger => { tags => 'Пользователи' },
+    splat_to => 'provider',
+    GET => {
+        params => {
+            redirect_uri            => { type => 'string' },
+            return_url              => { type => 'string' },
+            bind_to_profile         => { type => 'boolean' },
+            bind_only_if_new        => { type => 'boolean' },
+            session_id              => { type => 'string' },
+            ttl                     => { type => 'integer', min => 1 },
+        },
+        skip_check_auth => 1,
+        controller => 'Auth::OAuth2',
+        method => 'oauth2_start_redirect',
+        swagger => {
+            summary => 'Старт OAuth2-входа/привязки с HTTP redirect на провайдера',
+            responses => {
+                '302' => { description => 'Redirect to provider OAuth' },
+            },
+        },
+    },
+},
+'/oauth2/callback/*' => {
+    swagger => { tags => 'Пользователи' },
+    splat_to => 'provider',
+    GET => {
+        params => {
+            bind_to_profile        => { type => 'boolean' },
+            bind_only_if_new       => { type => 'boolean' },
+            # SECURITY: нет клиентского uid — см. комментарий в /oauth2/init/*.
+            session_id             => { type => 'string' },
+            code                   => { type => 'string' },
+            redirect_uri           => { type => 'string' },
+            return_url             => { type => 'string' },
+            code_verifier          => { type => 'string' },
+            state                  => { type => 'string' },
+            expected_state         => { type => 'string' },
+        },
+        skip_check_auth => 1,
+        controller => 'Auth::OAuth2',
+        method => 'oauth2_callback_redirect',
+        swagger => {
+            summary => 'Callback endpoint для OAuth2-входа/привязки (Google/Yandex/VK/GitHub)',
+            responses => {
+                '200' => {
+                    content => {
+                        'application/json' => {
+                            schema => {
+                                type => 'object',
+                                properties => {
+                                    session_id => { type => 'string' },
                                 },
                             },
                         },
