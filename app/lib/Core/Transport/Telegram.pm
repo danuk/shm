@@ -164,6 +164,12 @@ sub profile {
     my $name = shift;
 
     return $self->profile_name unless $name;
+    if ( my $profile_name = $self->profile_name ) {
+        return $profile_name if
+            $profile_name eq $name &&
+            $self->{profile} eq $name &&
+            $self->{token};
+    }
 
     my $config = $self->config;
 
@@ -300,7 +306,9 @@ sub send {
     );
 
     my @ret;
-    my @profiles = $self->user_profiles();
+    my @profiles = $self->profile_name
+        ? ( $self->profile_name )
+        : $self->user_profiles();
     for my $profile ( @profiles ) {
         $self->profile( $profile );
 
