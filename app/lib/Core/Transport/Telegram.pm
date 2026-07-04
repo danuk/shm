@@ -1631,6 +1631,7 @@ sub webapp_auth {
     );
 
     unless ( $args{initData} ) {
+        logger->error("Telegram WebApp auth error: initData required");
         report->error("bad request");
         $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
         return undef;
@@ -1669,6 +1670,7 @@ sub webapp_auth {
     my $hex = hmac_sha256_hex( $data_check_string, $secret_key);
 
     unless ( $hex eq $hash ) {
+        logger->error("Telegram WebApp auth error: incorrect token for profile $args{profile}");
         report->error('Telegram WebApp auth error');
         $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
         return undef;
