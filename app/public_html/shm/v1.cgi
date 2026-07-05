@@ -68,6 +68,20 @@ state $routes //= {
         skip_check_auth => 1,
     },
 },
+'/system/auth' => {
+    swagger => {
+        tags => 'Авторизация',
+    },
+    GET => {
+        params => {},
+        skip_check_auth => 1,
+        controller => 'Config',
+        method => 'api_data_by_auth',
+        swagger => {
+            summary => 'Доступные способы входа (OAuth2-провайдеры, Telegram) и разрешения на регистрацию/вход/капчу через API',
+        },
+    },
+},
 '/user/captcha' => {
     swagger => { tags => 'Капча' },
     GET => {
