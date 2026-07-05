@@ -1952,6 +1952,25 @@ sub web_auth_callback {
     exit 0;
 }
 
+sub delete_webhook {
+    my $self = shift;
+    my %args = (
+        token => undef,
+        @_,
+    );
+
+    my $delete_webhook = $self->http_transport->http(
+        method => 'get',
+        url => sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->telegram_server, $args{token}),
+    );
+
+    unless ( $delete_webhook->is_success ) {
+        logger->error( $delete_webhook->decoded_content );
+    }
+
+    return $delete_webhook->decoded_content;
+}
+
 sub set_webhook {
     my $self = shift;
     my %args = (
@@ -1968,10 +1987,7 @@ sub set_webhook {
 
     my $method = delete $args{method};
 
-    my $delete_webhook = $self->http_transport->http(
-        method => 'get',
-        url => sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->telegram_server, $args{token}),
-    );
+    $self->delete_webhook( token => $args{token} );
 
     my $bot = $args{template_id};
     $bot .=  "?tg_profile=$args{tg_profile}" if $args{tg_profile};
