@@ -1759,11 +1759,11 @@ state $routes //= {
 '/telegram/set_webhook' => {
     POST => {
         params => {
-            url         => { type => 'string', required => 1, min_length => 1, max_length => 2048 },
-            token       => { type => 'string', required => 1, min_length => 1, max_length => 128 },
-            secret      => { type => 'string', required => 1, min_length => 1, max_length => 128 },
-            template_id => { type => 'string', required => 1, min_length => 1 },
-            tg_profile  => { type => 'string', required => 1, min_length => 1 },
+            url             => { type => 'string', required => 1, min_length => 1, max_length => 2048 },
+            token           => { type => 'string', required => 1, min_length => 1, max_length => 128 },
+            secret          => { type => 'string', required => 1, min_length => 1, max_length => 128 },
+            template_id     => { type => 'string', required => 1, min_length => 1 },
+            tg_profile      => { type => 'string', required => 1, min_length => 1 },
             allowed_updates => { type => 'array' },
         },
         controller => 'Transport::Telegram',
@@ -1773,6 +1773,22 @@ state $routes //= {
         },
         swagger => {
             summary => 'Установка Webhook в Telegram бота',
+        },
+    },
+},
+'/telegram/delete_webhook' => {
+    POST => {
+        params => {
+            token => { type => 'string', required => 1, min_length => 1, max_length => 128 },
+        },
+        skip_check_auth => 1,
+        controller => 'Transport::Telegram',
+        method => 'delete_webhook',
+        args => {
+            format => 'json',
+        },
+        swagger => {
+            summary => 'Удаление Webhook в Telegram бота',
         },
     },
 },
@@ -2644,7 +2660,7 @@ sub get_service_id {
 
 # Validate %args against a params schema defined in the route.
 # Schema format (per field):
-#   type         => 'integer' | 'number' | 'string' | 'email' | 'boolean'
+#   type         => 'integer' | 'number' | 'string' | 'email' | 'boolean' | 'object' | 'array'
 #   required     => 1   (field must be present and non-empty)
 #   min / max    => numeric bounds (for integer/number)
 #   min_length   => minimum string length
