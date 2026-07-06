@@ -291,17 +291,37 @@ sub is_pay {
     # Already withdraw
     return 1 if $wd->get_withdraw_date;
 
+    # Lock the user row to serialize concurrent payments for the same user
+    # (e.g. two spool workers extending different services of the same user simultaneously).
+    # Uses FOR UPDATE SKIP LOCKED with retries so the second worker waits
+    # until the first commits and releases the lock.
+    unless ( $self->user->lock( timeout => 30 ) ) {
+        logger->warning( sprintf "Could not acquire payment lock for user %d", $self->user->id );
+        return 0;
+    }
+    # Reload fresh balance/bonus after obtaining the lock
+    $self->user->reload;
+
     my $pay = calc_payment( $self, $wd->get_total ) or return 0;
     my ( $bonus, $total ) = @{$pay}{qw( bonus total )};
+
+    # Atomically claim this withdraw to prevent double deduction
+    # under concurrent spool workers.
+    # If another worker already set withdraw_date, do() returns 0 → skip.
+    my $claimed = $wd->do(
+        sprintf(
+            "UPDATE %s SET withdraw_date=?, bonus=?, total=? WHERE %s=? AND withdraw_date IS NULL",
+            $wd->table,
+            $wd->get_table_key,
+        ),
+        now, $bonus, $total, $wd->id,
+    );
+    return 1 unless $claimed;
 
     $self->user->set_bonus( bonus => -$bonus, comment => { withdraw_id => $wd->id } );
     $self->user->set_balance( balance => -$total );
 
-    $wd->set(
-        bonus         => $bonus,
-        total         => $total,
-        withdraw_date => now,
-    );
+    $wd->reload;
 
     return 1;
 }
