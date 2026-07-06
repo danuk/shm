@@ -1798,7 +1798,16 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     } elsif ( $ENV{REQUEST_METHOD} eq 'POST' || $ENV{REQUEST_METHOD} eq 'DELETE' ) {
         if ( $user->id && $service->can('structure') ) {
             if ( $service = $service->id( get_service_id( $service, %args ) ) ) {
-                if ( $service->lock( timeout => 3 )) {
+                my $structure = $service->structure;
+                if ( !$admin_mode
+                    && $structure->{user_id}
+                    && $service->get_table_key ne 'user_id'
+                    && defined $service->res->{user_id}
+                    && $service->res->{user_id} != $user->id
+                ) {
+                    $headers{status} = 404;
+                    $info{error} = "Object not found. Check the ID.";
+                } elsif ( $service->lock( timeout => 3 )) {
                     push @data, $service->$method( %args );
                 } else {
                     $headers{status} = 408;
