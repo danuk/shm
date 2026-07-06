@@ -521,7 +521,10 @@ state $routes //= {
     swagger => { tags => 'Шаблоны' },
     splat_to => 'id',
     GET => {
-        params => {},
+        params => {
+            dry_run => { type => 'boolean' },
+            format => { type => 'string', enum => ['default','plain','html','json','other','qrcode','qrcode_png'] },
+        },
         controller => 'Template',
         method => 'parse_for_api',
         args => {
@@ -544,7 +547,9 @@ state $routes //= {
     swagger => { tags => 'Шаблоны' },
     splat_to => 'id',
     GET => {
-        params => {},
+        params => {
+            format => { type => 'string', enum => ['default','plain','html','json','other','qrcode','qrcode_png'] },
+        },
         user_id => 1,
         controller => 'Template',
         method => 'parse_for_public',
