@@ -242,8 +242,10 @@ sub api_set {
 
     if ( $wd{total} != $new_wd{total} ) {
         unless ( $self->unpaid ) {
+            # new_wd.total from calc_withdraw is already (cost - new_wd.bonus),
+            # so we must NOT subtract new_wd.bonus again.
             $self->user->set_balance(
-                balance => $wd{total} - ( $new_wd{total} - $new_wd{bonus} ),
+                balance => $wd{total} - $new_wd{total},
             );
         }
     }
