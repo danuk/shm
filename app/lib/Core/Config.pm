@@ -3,6 +3,7 @@ use v5.14;
 
 use parent 'Core::Base';
 use Core::Base;
+use Core::Const;
 
 our $config;
 our $session_config;
@@ -252,7 +253,7 @@ sub api_data_by_auth {
     my $telegram = $self->data_by_name('telegram') || {};
 
     my %providers;
-    for my $provider ( keys %$oauth2 ) {
+    for my $provider ( OAUTH2_PROVIDERS ) {
         $providers{$provider} = {
             enabled => $oauth2->{$provider}{enabled} ? JSON::true : JSON::false,
         };
@@ -271,13 +272,13 @@ sub api_data_by_auth {
 
     return {
         auth => {
-            enabled => $billing->{allow_user_auth_api},
+            enabled => $billing->{allow_user_auth_api} || JSON::false,
         },
         register => {
-            enabled => $billing->{allow_user_register_api},
+            enabled => $billing->{allow_user_register_api} || JSON::false,
         },
         captcha => {
-            enabled => $billing->{allow_user_register_captcha},
+            enabled => $billing->{allow_user_register_captcha} || JSON::false,
         },
         oauth2 => {
             providers => \%providers,

@@ -28,6 +28,26 @@ sub oauth2_config {
     return $cfg->{$provider} || {};
 }
 
+sub require_enabled_provider {
+    my $self = shift;
+    my $provider = shift;
+
+    my $pcfg = $self->provider_config( $provider );
+    unless ( $pcfg ) {
+        report->status( 400 );
+        report->error("Unknown OAuth2 provider: " . ( $provider // '' ));
+        return 0;
+    }
+
+    unless ( $self->oauth2_config( $provider )->{enabled} ) {
+        report->status( 403 );
+        report->error("OAuth2 provider is disabled: $provider");
+        return 0;
+    }
+
+    return 1;
+}
+
 sub client_id {
     my $self = shift;
     my $provider = shift;
@@ -66,12 +86,8 @@ sub oauth2_init {
     );
 
     my $provider = $args{provider};
+    return undef unless $self->require_enabled_provider( $provider );
     my $pcfg = $self->provider_config( $provider );
-    unless ( $pcfg ) {
-        report->status( 400 );
-        report->error("Unknown OAuth2 provider: " . ( $provider // '' ));
-        return undef;
-    }
 
     my $client_id = $self->client_id( $provider );
     unless ( $client_id ) {
@@ -435,12 +451,8 @@ sub oauth2_callback {
     );
 
     my $provider = $args{provider};
+    return undef unless $self->require_enabled_provider( $provider );
     my $pcfg = $self->provider_config( $provider );
-    unless ( $pcfg ) {
-        report->status( 400 );
-        report->error("Unknown OAuth2 provider: " . ( $provider // '' ));
-        return undef;
-    }
 
     my $uid;
     if ( $args{bind_to_profile} ) {

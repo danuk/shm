@@ -3,12 +3,13 @@ package Core::Auth::Base;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
+use Core::Const;
 use Core::System::ServiceManager qw( get_service );
 use URI::Escape qw( uri_escape );
 
 sub provider_names {
     my $self = shift;
-    my @providers = @_ ? @_ : qw(google yandex github);
+    my @providers = @_ ? @_ : ( OAUTH2_PROVIDERS );
     return sort grep { $self->can("${_}_config") } @providers;
 }
 
