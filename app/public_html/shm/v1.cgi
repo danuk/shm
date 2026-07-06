@@ -429,6 +429,15 @@ state $routes //= {
         },
         swagger => { summary => 'Удаление услуги пользователя' },
     },
+    POST => {
+        controller => 'USObject',
+        method => 'api_add_description',
+        params => {
+            user_service_id => { type => 'integer', required => 1, min => 1 },
+            description     => { type => 'string', required => 1, max_length => 254 },
+        },
+        swagger => { summary => 'Изменить заметку пользователя об услуге' },
+    },
 },
 '/user/service/stop' => {
     swagger => { tags => 'Услуги пользователей' },
