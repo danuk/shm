@@ -1765,6 +1765,9 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my %headers;
     my %info;
 
+    # Temporary direct disallow `fields`
+    delete $args{fields};
+
     if ( $ENV{REQUEST_METHOD} eq 'GET' ) {
         @data = $service->$method( %args );
         %info = (
