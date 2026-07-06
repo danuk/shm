@@ -103,6 +103,11 @@ sub structure {
             hide_for_user => 1,
             title => 'произвольные настройки услуги',
         },
+        description => { # virtual field
+            type => 'text',
+            virtual => 1,
+            title => 'заметка пользователя об услуге',
+        },
     };
 }
 
@@ -133,7 +138,8 @@ sub list_for_api {
                 'name', services.name,
                 'cost', services.cost,
                 'category', services.category
-            ) AS service
+            ) AS service,
+        JSON_UNQUOTE(JSON_EXTRACT(user_services.settings, '$.description')) AS `description`
     );
     $args{join} = { table => 'services', using => ['service_id'] };
     $args{where}{category} = $args{category} if $args{category};
@@ -175,6 +181,28 @@ sub add {
 
     my $usi = $self->SUPER::add( %args );
     return $self->srv('us', _id => $usi );
+}
+
+sub api_add_description {
+    my $self = shift;
+    my %args = (
+        description => undef,
+        @_,
+    );
+
+    return undef unless $self->id;
+
+    $self->settings( { description => $args{description} } );
+    $self->settings_save();
+
+    $args{fields} = q(
+        user_services.*,
+        JSON_UNQUOTE(JSON_EXTRACT(user_services.settings, '$.description')) AS `description`
+    );
+    $args{where}{user_service_id} = $self->id;
+
+    my @arr = $self->SUPER::list_for_api( %args );
+    return @arr;
 }
 
 sub can_delete {
