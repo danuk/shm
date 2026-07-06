@@ -1895,7 +1895,7 @@ state $routes //= {
     },
 },
 '/oauth2/init/*' => {
-    swagger => { tags => 'Пользователи' },
+    swagger => { tags => 'oauth2' },
     splat_to => 'provider',
     GET => {
         params => {
@@ -1935,7 +1935,7 @@ state $routes //= {
     },
 },
 '/oauth2/start/*' => {
-    swagger => { tags => 'Пользователи' },
+    swagger => { tags => 'oauth2' },
     splat_to => 'provider',
     GET => {
         params => {
@@ -1958,7 +1958,7 @@ state $routes //= {
     },
 },
 '/oauth2/callback/*' => {
-    swagger => { tags => 'Пользователи' },
+    swagger => { tags => 'oauth2' },
     splat_to => 'provider',
     GET => {
         params => {
