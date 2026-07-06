@@ -1798,11 +1798,16 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     } elsif ( $ENV{REQUEST_METHOD} eq 'POST' || $ENV{REQUEST_METHOD} eq 'DELETE' ) {
         if ( $user->id && $service->can('structure') ) {
             if ( $service = $service->id( get_service_id( $service, %args ) ) ) {
-                if ( $service->lock( timeout => 3 )) {
-                    push @data, $service->$method( %args );
+                if ( !$admin_mode && $user->id != $service->user_id ) {
+                    $headers{status} = 404;
+                    $info{error} = "Object not found. Check the ID.";
                 } else {
-                    $headers{status} = 408;
-                    $info{error} = "The service is locked. Try again later.";
+                    if ( $service->lock( timeout => 3 )) {
+                        push @data, $service->$method( %args );
+                    } else {
+                        $headers{status} = 408;
+                        $info{error} = "The service is locked. Try again later.";
+                    }
                 }
             } else {
                 $headers{status} = 404;
