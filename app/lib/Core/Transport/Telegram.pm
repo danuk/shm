@@ -172,6 +172,7 @@ sub profile {
     my $config = $self->config;
 
     $self->{profile} = $name;
+    delete $self->{user_tg_settings};  # invalidate cache: settings depend on profile_name
 
     if ( my $profile = $config->{ $name } ) {
         $self->{token} = $profile->{token};
@@ -180,7 +181,7 @@ sub profile {
         $self->{token} = $config->{token}; # for backward compatible
     }
 
-    $self->{chat_id} ||= $self->user_tg_settings->{chat_id};
+    $self->{chat_id} = $self->user_tg_settings->{chat_id};
 
     # всегда возвращаем себя, это нужно для: user.telegram.profile(NAME).send()
     return $self;
