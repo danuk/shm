@@ -757,19 +757,20 @@ sub list_for_api {
     my $method = $args{admin} ? '_list' : 'list';
 
     # Validate fields against structure to prevent SELECT injection.
-    # Complex expressions (containing SQL syntax like parentheses, wildcards or dots)
-    # are treated as trusted internal code and passed through unchanged.
+    # Trust is decided by the CLASS (trusted_fields_passthrough), never by the
+    # shape of the value itself - `fields` may come straight from an HTTP query
+    # string, so a class must opt in explicitly (and must guarantee it never
+    # forwards a client-supplied `fields` value unchanged) to bypass sanitizing.
     my $fields;
     if ( $args{fields} && $args{fields} ne '*' && $self->can('structure') ) {
-        if ( $args{fields} =~ /[().*]/ ) {
-            # Internal trusted SQL expression — pass through unchanged
+        if ( $self->can('trusted_fields_passthrough') && $self->trusted_fields_passthrough ) {
             $fields = $args{fields};
         } else {
             my %structure = %{ $self->structure };
             my @safe = grep { exists $structure{$_} } split /\s*,\s*/, $args{fields};
             $fields = @safe ? join(', ', map { "`$_`" } @safe) : undef;
         }
-    } elsif ( $args{fields} ) {
+    } elsif ( $args{fields} && ( $args{fields} eq '*' || !$self->can('structure') ) ) {
         $fields = $args{fields};
     }
 

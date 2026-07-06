@@ -121,6 +121,8 @@ sub _list {
     return $self->SUPER::_list( %args );
 }
 
+sub trusted_fields_passthrough { return 1 }
+
 sub list_for_api {
     my $self = shift;
     my %args = (
