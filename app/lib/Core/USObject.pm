@@ -55,6 +55,9 @@ sub structure {
             type => 'now',
             title => 'дата создания услуги пользователя',
             readOnly => 1,
+            use_for_stats => 1,
+            stats_mode => 'inc',
+            stats_use_when_add => 1,
         },
         expire => {
             type => 'date',
