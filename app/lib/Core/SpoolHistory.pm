@@ -23,6 +23,8 @@ sub structure {
     }
 }
 
+sub stats {}; # do not use stats
+
 sub add {
     my $self = shift;
     my %args = @_;

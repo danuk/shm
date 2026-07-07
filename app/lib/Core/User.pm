@@ -39,6 +39,9 @@ sub structure {
             type => 'number',
             hide_for_user => 1,
             title => 'id партнера',
+            use_for_stats => 1,
+            stats_mode => 'inc',
+            stats_use_when_add => 1,
         },
         login => {
             type => 'text',
@@ -63,6 +66,9 @@ sub structure {
         created => {
             type => 'now',
             title => 'дата создания',
+            use_for_stats => 1,
+            stats_mode => 'inc',
+            stats_use_when_add => 1,
         },
         last_login => {
             type => 'date',
