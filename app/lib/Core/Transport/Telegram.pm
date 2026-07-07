@@ -163,7 +163,7 @@ sub profile {
 
     return $self->profile_name unless $name;
     if ( my $profile_name = $self->profile_name ) {
-        return $profile_name if
+        return $self if
             $profile_name eq $name &&
             $self->{profile} eq $name &&
             $self->{token};
