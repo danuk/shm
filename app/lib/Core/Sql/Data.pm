@@ -267,7 +267,8 @@ sub convert_sql_structure_data {
                 next unless $json;
                 $data->{ $f } = $json;
             } elsif ( $structure->{ $f }->{type} eq 'number' ) {
-                $data->{ $f } += 0 if defined $data->{ $f }; # force number
+                # Convert undef and empty string to 0 without generating numeric warnings
+                $data->{ $f } = defined($data->{ $f }) && $data->{ $f } ne '' ? $data->{ $f } + 0 : 0;
             }
         }
     }
@@ -766,7 +767,7 @@ sub list_for_api {
     # Validate limit: must be a positive integer, capped at 1000 for non-admins.
     # Admins may pass limit=0 to request all rows (no LIMIT clause).
     $args{limit} = int( $args{limit} // 25 );
-    $args{limit} = 25   if $args{limit} < 0;
+    $args{limit} = 25   if $args{limit} !~ /^\d+$/ || $args{limit} < 0;
     $args{limit} = 25   if $args{limit} == 0 && !$args{admin};
     $args{limit} = 1000 if !$args{admin} && $args{limit} > 1000;
 
