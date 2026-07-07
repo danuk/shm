@@ -659,6 +659,10 @@ sub auth {
 
     switch_user( $login->user_id );
 
+    # Only persist chat_id from private chats.
+    # Group/supergroup/channel chat_id must NOT overwrite the user's personal chat_id.
+    my $is_private = ( $self->message->{chat}->{type} // '' ) eq 'private';
+
     my %telegram_settings = (
         telegram => {
             user_id => $telegram_user_id,  # field for auth
@@ -668,9 +672,9 @@ sub auth {
             last_name => $tg_user->{last_name},
             language_code => $tg_user->{language_code},
             is_premium => $tg_user->{is_premium},
-            chat_id => $self->chat_id, # for backward compatible
+            $is_private ? ( chat_id => $self->chat_id ) : (),  # for backward compatible
             $self->profile_name() => {
-                chat_id => $self->chat_id,
+                $is_private ? ( chat_id => $self->chat_id ) : (),
                 status => 'member',
             },
         },
@@ -684,7 +688,7 @@ sub auth {
             date => now(),
         },
         %telegram_settings,
-    }) if $self->message->{chat}->{type} eq 'private';
+    }) if $is_private;
 
     $self->{shm_login} = $login->get_login;
 
