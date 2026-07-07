@@ -629,7 +629,10 @@ sub set {
 
     clean_query_args( $self, \%args, { is_update => 1 } );
 
-    return $self->_set( %args );
+    my $ret = $self->_set( %args );
+
+    $self->stats('set', \%args) if $ret;
+    return $ret;
 }
 
 sub _set {
@@ -687,7 +690,10 @@ sub add {
 
     clean_query_args( $self, \%args );
 
-    return $self->_add( %args );
+    my $key_id = $self->_add( %args );
+
+    $self->stats('add', \%args) if $key_id;
+    return $key_id;
 }
 
 sub _add {

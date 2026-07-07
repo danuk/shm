@@ -34,6 +34,9 @@ sub structure {
         used => {
             type => 'date',
             title => 'дата использования',
+            use_for_stats => 1,
+            stats_mode => 'inc',
+            stats_use_when_set => 1,
         },
         used_by => {
             type => 'number',

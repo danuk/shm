@@ -38,6 +38,7 @@ sub structure {
             type => 'number',
             required => 1,
             title => 'стоимость',
+            use_for_stats => 1,
         },
         discount => {
             type => 'number',
@@ -48,6 +49,7 @@ sub structure {
             type => 'number',
             default => 0,
             title => 'кол-во бонусов',
+            use_for_stats => 1,
         },
         months => {
             type => 'number',
@@ -57,6 +59,7 @@ sub structure {
         total => {
             type => 'number',
             title => 'итоговая стоимость',
+            use_for_stats => 1,
         },
         service_id => {
             type => 'number',
@@ -74,6 +77,12 @@ sub structure {
             title => 'id услуги пользователя',
         },
     }
+}
+
+sub stats {
+    my ($self, $action, $args) = @_;
+    return if $action ne 'set';
+    return $self->SUPER::stats( $action, $args ) if $args->{withdraw_date};
 }
 
 sub usi {

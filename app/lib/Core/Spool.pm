@@ -43,6 +43,9 @@ sub structure {
             default => TASK_NEW,
             enum => [TASK_NEW,TASK_SUCCESS,TASK_FAIL,TASK_DELAYED,TASK_STUCK,TASK_PAUSED],
             title => 'статус задачи',
+            use_for_stats => 1,
+            stats_mode => 'inc',
+            stats_use_when_set => 1,
         },
         response => {
             type => 'json',
@@ -59,11 +62,17 @@ sub structure {
             type => 'date',
             title => 'дата выполнения задачи',
             readOnly => 1,
+            use_for_stats => 1,
+            stats_mode => 'inc',
+            stats_use_when_set => 1,
         },
         delayed => {        # задерка в секундах
             type => 'date',
             default => 0,
             title => 'время задержки выполнения в секундах',
+            use_for_stats => 1,
+            stats_mode => 'inc',
+            stats_use_when_set => 1,
         },
         settings => { type => 'json', value => {} },
     }
