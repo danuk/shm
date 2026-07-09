@@ -1271,7 +1271,7 @@ state $routes //= {
     POST => {
         params => {
             id => { type => 'integer', required => 1, min => 1 },
-            action => { type => 'string', enum => ['success','pause','retry'] },
+            action => { type => 'string', enum => ['success','pause','retry','resume'] },
         },
         controller => 'Spool',
         method => 'api_manual_action',
