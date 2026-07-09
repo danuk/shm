@@ -348,6 +348,12 @@ sub prepare_query_for_filtering {
             } elsif ($$value eq 'false') {
                 # Поле равно лжи (для boolean полей)
                 $result{$field} = 0;
+            } elsif ($$value eq 'isTrue') {
+                # Поле истинно (поддерживает и true, и 1)
+                $result{"--LOWER($field)"} = { '-in' => [ 'true', '1' ] };
+            } elsif ($$value eq 'isFalse') {
+                # Поле ложно (поддерживает и false, и 0)
+                $result{"--LOWER($field)"} = { '-in' => [ 'false', '0' ] };
             } elsif ($$value =~ /^(lt|gt|le|ge|eq|ne):(.*)$/) {
                 # Операторы сравнения с числами: lt:5, gt:10, le:100, etc.
                 my ($op, $val) = ($1, $2);
@@ -433,12 +439,12 @@ sub query_for_filtering {
                             } else {
                                 # Если есть специальные ключи с префиксом --, обрабатываем их
                                 for my $prep_key ( keys %$prepared ) {
-                                    if ( $prep_key =~ /^--COALESCE\(temp_field,/ ) {
+                                    if ( $prep_key =~ /^--/ ) {
                                         # Заменяем temp_field на реальный путь JSON и убираем префикс --
-                                        my $coalesce_key = $prep_key;
-                                        $coalesce_key =~ s/temp_field/$field_path/;
-                                        $coalesce_key =~ s/^--//;  # Убираем префикс --
-                                        $where{ $coalesce_key } = $prepared->{ $prep_key };
+                                        my $raw_key = $prep_key;
+                                        $raw_key =~ s/temp_field/$field_path/g;
+                                        $raw_key =~ s/^--//;
+                                        $where{ $raw_key } = $prepared->{ $prep_key };
                                     } else {
                                         $where{ $field_path } = $prepared->{ $prep_key };
                                     }
@@ -524,6 +530,27 @@ sub clean_query_args {
                     unless ( $args->{where}{ $f } ) {
                         # Добавляем во WHERE ключевое поле
                         if ( my $id = $self->id ) {
+                            $args->{where}{ $f } = $id;
+                        } elsif ( $self->can( $f ) ) {
+                            $args->{where}{ $f } = $self->$f;
+                        }
+                        logger->fatal( "`$f` required", $self ) unless length $args->{where}{ $f };
+                    }
+                    # Запрещаем обновлять ключевое поле
+                    delete $args->{ $f } if exists $args->{ $f };
+                } elsif ( exists $args->{ $f } ) {
+                    # Не используем ключи в insert-ах (админам можно)
+                    unless ( $self->user->authenticated->is_admin ) {
+                        delete $args->{ $f } unless $self->table_allow_insert_key;
+                    }
+                }
+            }
+
+            if ( $f eq $self->get_table_key2() ) {
+                if ( $settings->{is_update} ) {
+                    unless ( $args->{where}{ $f } ) {
+                        # Добавляем во WHERE ключевое поле
+                        if ( my $id = $self->{res}->{ $f } ) {
                             $args->{where}{ $f } = $id;
                         } elsif ( $self->can( $f ) ) {
                             $args->{where}{ $f } = $self->$f;
@@ -848,12 +875,19 @@ sub get {
         $user_id = $self->user_id;
     }
 
+    my %where = (
+        sprintf("%s.%s", $self->table, $table_key ) => $self->id,
+        $user_id ? ( sprintf("%s.%s", $self->table, 'user_id' ) => $user_id, ) : (),
+    );
+
+    my $key2 = $self->get_table_key2;
+    if ( $key2 ) {
+        $where{ $key2 } = $self->{res}->{ $key2 };
+    }
+
     # do not use list() because of list might contain default selectors
     my ( $ret ) = $self->_list(
-        where => {
-            sprintf("%s.%s", $self->table, $table_key ) => $self->id,
-            $user_id ? ( sprintf("%s.%s", $self->table, 'user_id' ) => $user_id, ) : (),
-        },
+        where => \%where,
         limit => 1,
         @_,
     );
@@ -867,6 +901,17 @@ sub get_table_key {
 
     for ( keys %$structure ) {
         return $_ if $structure->{ $_ }->{key};
+    }
+    return undef;
+}
+
+sub get_table_key2 {
+    my $self = shift;
+
+    my $structure = $self->structure;
+
+    for ( keys %$structure ) {
+        return $_ if $structure->{ $_ }->{key2};
     }
     return undef;
 }

@@ -3,6 +3,7 @@ use v5.14;
 
 use parent 'Core::Base';
 use Core::Base;
+use Core::Const;
 
 our $config;
 our $session_config;
@@ -11,6 +12,7 @@ require 'shm.conf';
 use Core::Utils qw(
     decode_json
 );
+use JSON;
 
 sub table { return 'config' };
 
@@ -243,3 +245,47 @@ sub version_info {
 
     return $version_data;
 }
+
+sub api_data_by_auth {
+    my $self = shift;
+    my $billing = $self->data_by_name('billing');
+    my $oauth2 = $self->data_by_name('oauth2') || {};
+    my $telegram = $self->data_by_name('telegram') || {};
+
+    my %providers;
+    for my $provider ( OAUTH2_PROVIDERS ) {
+        $providers{$provider} = {
+            enabled => $oauth2->{$provider}{enabled} ? JSON::true : JSON::false,
+        };
+    }
+
+    my $telegram_enabled = 0;
+    for my $bot ( values %$telegram ) {
+        next unless ref $bot eq 'HASH';
+        # если хотябы у одного бота заполнены client_id, client_secret и oidc_enabled
+        # то считаем что авторизация по oidc включена
+        if ( $bot->{client_id} && $bot->{client_secret} && $bot->{oidc_enabled} ) {
+            $telegram_enabled = 1;
+            last;
+        }
+    }
+
+    return {
+        auth => {
+            enabled => $billing->{allow_user_auth_api} || JSON::false,
+        },
+        register => {
+            enabled => $billing->{allow_user_register_api} || JSON::false,
+        },
+        captcha => {
+            enabled => $billing->{allow_user_register_captcha} || JSON::false,
+        },
+        oauth2 => {
+            providers => \%providers,
+        },
+        telegram => {
+            enabled => $telegram_enabled ? JSON::true : JSON::false,
+        },
+    }
+
+};

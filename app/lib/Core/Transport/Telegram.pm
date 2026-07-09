@@ -6,6 +6,7 @@ use v5.14;
 use utf8;
 use Core::Base;
 use Core::Const;
+use SHM qw( validate_session );
 use Core::System::ServiceManager qw( get_service logger );
 use Core::Utils qw(
     switch_user
@@ -111,13 +112,9 @@ sub api_set_user_tg_settings {
 sub api_delete_user_tg_settings {
     my $self = shift;
 
-    my $username = $self->user_tg_settings->{username};
-    my $login2 = $self->user->get_login2;
-
-    if ( defined $username && $username ne '' && defined $login2 && $login2 ne '' ) {
-        if ( $login2 eq $username || $login2 eq '@' . $username ) {
-            $self->user->set( login2 => undef );
-        }
+    my $tg_user_id = $self->user_tg_settings->{user_id};
+    if ( defined $tg_user_id && $tg_user_id ne '' ) {
+        $self->user->logins->delete( where => { login => $tg_user_id, type => 'telegram' } );
     }
 
     $self->user->set_settings({
@@ -129,6 +126,7 @@ sub api_delete_user_tg_settings {
 # methods for Templates
 sub settings { shift->user_tg_settings };
 sub login { shift->user_tg_settings->{username} };
+sub shm_login { shift->{shm_login} };
 sub username { shift->user_tg_settings->{username} };
 sub response {
     my $self = shift;
@@ -633,23 +631,13 @@ sub find_user_by_tg {
     my $self = shift;
     my $tg_user = shift;
 
-    my ( $user ) = $self->user->_list(
-        where => {
-            -OR => [
-                login  => $self->get_shm_login( $tg_user->{id} ),
-                login2 => '@' . $tg_user->{id},
-                $tg_user->{username} ? ( login2 => $tg_user->{username} ) : (),
-            ],
-        },
-        limit => 1,
-    );
-    return $user;
+    return $self->user->logins->id( $tg_user->{id}, ['telegram'] );
 }
 
 sub get_shm_login {
     my $self = shift;
     my $tg_user_id = shift;
-    my $prefix = $self->tg_settings->{login_prefix} || '@';
+    my $prefix = $self->tg_settings->{login_prefix};
 
     return sprintf( "%s%s", $prefix, $tg_user_id );
 }
@@ -664,34 +652,42 @@ sub auth {
     my $username = $tg_user->{username};
     my $full_name = sprintf("%s %s", $tg_user->{first_name}, $tg_user->{last_name} );
 
-    my $user = $self->find_user_by_tg( $tg_user );
-    return undef unless $user;
+    my $login = $self->find_user_by_tg( $tg_user );
+    return undef unless $login;
+    return undef unless $self->chat_id;
 
-    switch_user( $user->{user_id} );
+    switch_user( $login->user_id );
 
-    return $self->user unless $self->chat_id;
-
-    $self->user->set( last_login => now );
-    $self->user->set_json(
-        'settings', {
-            telegram => {
-                user_id => $telegram_user_id,  # field for auth
-                login => $tg_user->{username}, # for backward compatible
-                username => $tg_user->{username},
-                first_name => $tg_user->{first_name},
-                last_name => $tg_user->{last_name},
-                language_code => $tg_user->{language_code},
-                is_premium => $tg_user->{is_premium},
-                chat_id => $self->chat_id, # for backward compatible
-                $self->profile_name() => {
-                    chat_id => $self->chat_id,
-                    status => 'member',
-                },
+    my %telegram_settings = (
+        telegram => {
+            user_id => $telegram_user_id,  # field for auth
+            login => $tg_user->{username}, # for backward compatible
+            username => $tg_user->{username},
+            first_name => $tg_user->{first_name},
+            last_name => $tg_user->{last_name},
+            language_code => $tg_user->{language_code},
+            is_premium => $tg_user->{is_premium},
+            chat_id => $self->chat_id, # for backward compatible
+            $self->profile_name() => {
+                chat_id => $self->chat_id,
+                status => 'member',
             },
         },
-    ) if $self->message->{chat}->{type} eq 'private';
+    );
 
-    return $self->user;
+    $login->user->set( last_login => now );
+    $login->user->set_settings( \%telegram_settings ); # for backward compatible
+
+    $login->set_settings({
+        auth => {
+            date => now(),
+        },
+        %telegram_settings,
+    }) if $self->message->{chat}->{type} eq 'private';
+
+    $self->{shm_login} = $login->get_login;
+
+    return $login->user;
 }
 
 sub tg_user {
@@ -755,7 +751,7 @@ sub telegram_oidc_init {
         register_if_not_exists => 0,
         bind_to_profile => 0,
         bind_only_if_new => 0,
-        uid => undef,
+        session_id => undef,
         ttl => 600,
         @_,
     );
@@ -783,7 +779,7 @@ sub telegram_oidc_init {
         register_if_not_exists => $args{register_if_not_exists} ? 1 : 0,
         bind_to_profile => $args{bind_to_profile} ? 1 : 0,
         bind_only_if_new => $args{bind_only_if_new} ? 1 : 0,
-        ( defined $args{uid} ? ( uid => $args{uid} ) : () ),
+        ( defined $args{session_id} ? ( session_id => $args{session_id} ) : () ),
     };
 
     cache->set_json( $self->telegram_oidc_state_cache_key($state), $ctx, $args{ttl} );
@@ -1491,7 +1487,6 @@ sub shmRegister {
         callback_data => undef,
         error => undef,
         partner_id => undef,
-        user_login => undef,
         settings => {},
         get_smart_args(@_),
     );
@@ -1511,8 +1506,8 @@ sub shmRegister {
     my $telegram_user_id = $tg_user->{id};
 
     my $user = $self->user->reg(
-        login => $args{user_login} || $self->get_shm_login( $telegram_user_id ),
-        password => passgen(),
+        login => $self->get_shm_login( $telegram_user_id ),
+        login_type => 'telegram',
         full_name => sprintf("%s %s", $tg_user->{first_name}, $tg_user->{last_name} ),
         settings => {
             %{ $args{settings} || {} },
@@ -1632,7 +1627,6 @@ sub shmServiceDelete {
 sub webapp_auth {
     my $self = shift;
     my %args = (
-        uid => undef,
         initData => undef,
         profile => 'telegram_bot',
         @_,
@@ -1648,23 +1642,11 @@ sub webapp_auth {
     my %in = CGI->new( $args{initData} )->Vars();
     my $tg_user = decode_json( $in{user} );
 
-    if ( $args{uid} && $self->user->id($args{uid}) ) {
-        switch_user( $args{uid} );
-
-        if ( $tg_user->{id} ne $self->user_tg_settings->{user_id} ) {
-            report->error("Telegram WebApp auth error: user_id doesn't match");
-            $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
-            return undef;
-        }
-    } else {
-        my $user = $self->find_user_by_tg( $tg_user );
-        unless ( $user ) {
-            logger->error("Telegram WebApp auth error: user not found");
-            $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
-            return undef;
-        }
-
-        switch_user( $user->{user_id} );
+    my $login = $self->find_user_by_tg( $tg_user );
+    unless ( $login ) {
+        logger->error("Telegram WebApp auth error: user not found");
+        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
+        return undef;
     }
 
     $self->profile( $args{profile} );
@@ -1685,20 +1667,31 @@ sub webapp_auth {
     }
 
     return {
-        session_id => $self->srv('sessions')->add(),
+        session_id => $login->user->srv('sessions')->add(),
     };
 }
 
 sub web_auth {
     my $self = shift;
     my %args = (
-        profile   => 'telegram_bot',
+        profile => 'telegram_bot',
         register_if_not_exists => 0,
         bind_to_profile => 0,
         bind_only_if_new => 0,
-        uid => undef,
+        session_id => undef,
         @_,
     );
+
+    my $uid;
+    if ( $args{bind_to_profile} ) {
+        my $session = validate_session( session_id => $args{session_id} );
+        unless ( $session ) {
+            report->status( 401 );
+            report->error('A valid session is required to bind a Telegram account');
+            return undef;
+        }
+        $uid = $session->user_id;
+    }
 
     my $profile = $args{profile};
 
@@ -1769,7 +1762,7 @@ sub web_auth {
         my @arr = map { "$_=$in{$_}" } sort keys %in;
         my $data_check_string = join("\n", @arr);
 
-        my $token = $self->config->{ $args{profile} }->{token} // $self->config->{token};
+        my $token = $self->config->{ $profile }->{token} // $self->config->{token};
         use Digest::SHA qw(sha256 hmac_sha256_hex);
         my $secret_key = sha256( $token );
 
@@ -1787,19 +1780,19 @@ sub web_auth {
         }
     }
 
-    if ( $args{uid} && $self->user->id($args{uid}) ) {
-        switch_user( $args{uid} );
+    if ( $uid && $self->user->id($uid) ) {
+        switch_user( $uid );
         if ( $args{bind_to_profile} ) {
             if ( $args{bind_only_if_new} ) {
                 my $existing_user = $self->find_user_by_tg( \%in );
-                if ( $existing_user && $existing_user->{user_id} ne $args{uid} ) {
+                if ( $existing_user && $existing_user->{user_id} ne $uid ) {
                     return { error => 'Telegram account already exists' };
                 }
             }
 
-            my $login2 = '@' . $in{id};
-            unless ( $self->user->get_login2 ) {
-                $self->user->set( login2 => $login2 );
+            my $login = $in{id};
+            unless ( $self->user->logins->id( $login, ['telegram'] ) ) {
+                $self->user->logins->add( login => $login, type => 'telegram' );
             }
             my $settings = $self->user->settings->{telegram} || {};
             if ( !$settings->{user_id} ) {
@@ -1832,7 +1825,7 @@ sub web_auth {
 
     if ( !$user && $args{register_if_not_exists} ) {
         $user = $self->user->reg(
-            login     => sprintf("@%s", $in{id}),
+            login     => $self->get_shm_login( $in{id} ),
             password  => passgen(),
             full_name => sprintf("%s %s", $in{first_name} || '', $in{last_name} || ''),
             settings  => {
@@ -1860,12 +1853,9 @@ sub web_auth {
         return undef;
     }
 
-    switch_user( $user->{user_id} );
-
     return {
-        session_id => $self->srv('sessions')->add(),
+        session_id => $user->srv('sessions')->add(),
     };
-
 }
 
 sub web_auth_callback {
@@ -1890,7 +1880,7 @@ sub web_auth_callback {
             $args{register_if_not_exists} = $ctx->{register_if_not_exists} if !$args{register_if_not_exists} && defined $ctx->{register_if_not_exists};
             $args{bind_to_profile} = $ctx->{bind_to_profile} if !$args{bind_to_profile} && defined $ctx->{bind_to_profile};
             $args{bind_only_if_new} = $ctx->{bind_only_if_new} if !$args{bind_only_if_new} && defined $ctx->{bind_only_if_new};
-            $args{uid} //= $ctx->{uid} if defined $ctx->{uid};
+            $args{session_id} //= $ctx->{session_id} if defined $ctx->{session_id};
 
             cache->delete( $self->telegram_oidc_state_cache_key( $args{state} ) );
         }

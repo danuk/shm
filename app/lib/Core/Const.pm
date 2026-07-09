@@ -36,6 +36,8 @@ our @EXPORT = qw(
 
     GROUP_ID_LOCAL
     GROUP_ID_MAIL
+
+    OAUTH2_PROVIDERS
 );
 
 use constant {
@@ -87,6 +89,8 @@ use constant {
     GROUP_ID_LOCAL => 1,
     GROUP_ID_MAIL => 2,
 };
+
+use constant OAUTH2_PROVIDERS => qw( google yandex github );
 
 1;
 

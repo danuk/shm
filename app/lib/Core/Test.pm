@@ -4,6 +4,10 @@ use v5.14;
 use parent 'Core::Base';
 use Core::System::ServiceManager qw( %PROTECTED_SERVICES get_service logger );
 
+use Core::Utils qw(
+    parse_args
+);
+
 sub healthcheck {
     my $self = shift;
     my $result = 'FAIL';
@@ -38,9 +42,11 @@ sub list_for_api {
 sub http_echo {
     my $self = shift;
     my %args = @_;
+    my %in = parse_args();
 
     return {
-        payload => \%args,
+        args => \%args,
+        in => \%in,
         method => $ENV{REQUEST_METHOD},
     };
 }
