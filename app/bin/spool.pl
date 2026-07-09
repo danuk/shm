@@ -15,6 +15,12 @@ POSIX::setuid(33); # www-data
 
 $| = 1;
 
+my $TASK_TIMEOUT = 300; # 5 min
+
+# SIGALRM handler: fires when a task exceeds $TASK_TIMEOUT seconds.
+# The die is caught by Try::Tiny's catch block.
+$SIG{ALRM} = sub { die "Task timeout: execution exceeded ${TASK_TIMEOUT}s\n" };
+
 my $user = SHM->new( user_id => 1 );
 $user->dbh->{RaiseError} = 1;
 # Core::System::ServiceManager::setup();
@@ -32,7 +38,9 @@ for (;;) {
     my $task_exists = 0;
     do {
         try {
+            alarm($TASK_TIMEOUT);
             ( $task ) = $spool->process_one();
+            alarm(0);
 
             if ( ref $task ) {
                 $task_exists = 1;
@@ -40,14 +48,22 @@ for (;;) {
                 say encode_json_perl( $task );
             }
         } catch {
+            alarm(0);
             my $error = $_;
             warn $error;
 
             if ( ref $task ) {
-                $task->retry_task(
-                    status => TASK_FAIL,
-                    response => { error => $error },
-                );
+                if ( $error =~ /^Task timeout:/ ) {
+                    $task->finish_task(
+                        status   => TASK_STUCK,
+                        response => { error => $error },
+                    );
+                } else {
+                    $task->retry_task(
+                        status   => TASK_FAIL,
+                        response => { error => $error },
+                    );
+                }
             }
         };
         $user->commit;
