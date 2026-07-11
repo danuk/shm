@@ -135,6 +135,7 @@ sub profile {
     my $config = $self->config;
 
     $self->{profile} = $name;
+    delete $self->{user_tg_settings}; # профиль изменился — сбрасываем кэш настроек
 
     if ( my $profile = $config->{ $name } ) {
         $self->{token} = $profile->{token};
@@ -280,6 +281,11 @@ sub send {
 
         if ( $self->user_tg_settings->{status} eq 'kicked' || $self->user_tg_settings->{status} eq 'left' ) {
             push @ret, { msg => "Пользователь заблокировал Telegram bot", profile => $profile };
+            next;
+        }
+
+        if ( $self->user_tg_settings->{status} eq 'chat_not_found' ) {
+            push @ret, { msg => "Чат с ботом не найден: пользователь ещё не запустил бота", profile => $profile };
             next;
         }
 
@@ -519,20 +525,39 @@ sub http {
     logger->dump('Answer from TG API', $response->decoded_content );
 
     unless ( $response->is_success ) {
-        my $message = $response->decoded_content;
-        logger->error( $message );
-
-        if ( $response->code == 403 ) {
-            $self->user->set_settings({
-                telegram => {
-                    $self->{profile} => {
-                        status => 'kicked',
-                    },
-                }
-            });
-        }
+        logger->error( $response->decoded_content );
+        $self->set_profile_status_by_error( $response );
     }
     return $response;
+}
+
+# Помечаем профиль пользователя по ошибке Telegram API,
+# чтобы не отправлять сообщения в заведомо недоступный чат
+sub set_profile_status_by_error {
+    my $self = shift;
+    my $response = shift;
+
+    my $status;
+    if ( $response->code == 403 ) {
+        # пользователь заблокировал бота
+        $status = 'kicked';
+    } elsif ( $response->code == 400 ) {
+        my $error = decode_json( $response->decoded_content ) || {};
+        # чата не существует: пользователь ещё не запускал этого бота
+        # (например, регистрация через Telegram Login Widget или внешний API)
+        if ( ( $error->{description} // '' ) =~ /chat not found/i ) {
+            $status = 'chat_not_found';
+        }
+    }
+    return unless $status;
+
+    $self->user->set_settings({
+        telegram => {
+            $self->{profile} => {
+                status => $status,
+            },
+        }
+    });
 }
 
 sub sendMessage {
