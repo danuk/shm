@@ -119,9 +119,9 @@ sub add {
 sub wake_workers {
     my $self = shift;
     my ($id) = $self->dbh->selectrow_array(
-        "SELECT id FROM information_schema.processlist
-        WHERE info LIKE 'SELECT SLEEP(%'
-        ORDER BY time DESC LIMIT 1"
+        "SELECT PROCESSLIST_ID FROM performance_schema.threads
+        WHERE PROCESSLIST_INFO LIKE 'SELECT SLEEP(%'
+        ORDER BY PROCESSLIST_TIME DESC LIMIT 1"
     );
     $self->dbh->do("KILL QUERY $id") if $id;
 }
