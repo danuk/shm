@@ -638,9 +638,7 @@ sub find_user_by_tg {
 sub get_shm_login {
     my $self = shift;
     my $tg_user_id = shift;
-    my $prefix = $self->tg_settings->{login_prefix};
-
-    return sprintf( "%s%s", $prefix, $tg_user_id );
+    return $tg_user_id;
 }
 
 sub auth {
