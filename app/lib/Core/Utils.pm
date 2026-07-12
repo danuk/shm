@@ -90,6 +90,9 @@ our @EXPORT_OK = qw(
     round
     hmac_sha256 hmac_sha256_hex sha256_hex sha256 sha512_hex hmac_sha512_hex sha512 hmac_sha512
     encrypt_aes256_gcm_base64
+
+    uri_escape_utf8
+    uri_unescape
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -107,6 +110,7 @@ use Date::Calc qw(
     Today_and_Now
 );
 use Crypt::PRNG qw(random_bytes);
+use URI::Escape qw( uri_escape_utf8 uri_unescape );
 
 our %in;
 our $is_header = 0;
@@ -757,7 +761,6 @@ sub to_query_string {
     my $data = shift;
     return undef unless ref $data eq 'HASH';
 
-    use URI::Escape qw( uri_escape_utf8 );
     my @ret;
     for my $k ( sort keys %$data ) {
         my $v = defined $data->{ $k } ? $data->{ $k } : '';
