@@ -456,7 +456,9 @@ sub passwd_reset_request {
        $email = $args{email};
     }
 
-    my $existing_user = $self->check_exists_logins( login => $args{login} || $email );
+    my $login = $args{login} || $args{email};
+
+    my $existing_user = $login ? $self->check_exists_logins( login => $login ) : undef;
     my $user_id = $existing_user ? $existing_user->{user_id} : undef;
 
     if ( !$user_id && $email ) {
@@ -806,6 +808,8 @@ sub check_exists_logins {
         exclude_user_id => undef,
         get_smart_args( @_ ),
     );
+
+    return undef unless defined $args{login} && length $args{login};
 
     my %where_by_login = (
         -OR => [
