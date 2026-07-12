@@ -1688,6 +1688,49 @@ state $routes //= {
         },
     },
 },
+
+# ─── MAX (VK / OK messenger) bot ─────────────────────────────────────────────
+'/max/bot/*' => {
+    swagger  => { tags => 'MAX bot' },
+    splat_to => 'template',
+    POST => {
+        params => {
+            profile     => { type => 'string' },
+            update_type => { type => 'string' },
+            timestamp   => { type => 'integer' },
+            message     => { type => 'object' },
+            callback    => { type => 'object' },
+            user        => { type => 'object' },
+            chat_id     => { type => 'integer' },
+            user_id     => { type => 'integer' },
+        },
+        skip_check_auth => 1,
+        skip_errors     => 1,
+        controller => 'Transport::Max',
+        method     => 'process_message',
+        args       => { format => 'json' },
+        swagger    => { summary => 'Webhook от MAX бота (с шаблоном)' },
+    },
+},
+'/max/set_webhook' => {
+    swagger => { tags => 'MAX bot' },
+    POST => {
+        params => {
+            url          => { type => 'string', required => 1, min_length => 1, max_length => 2048 },
+            token        => { type => 'string', required => 1, min_length => 1, max_length => 256 },
+            secret       => { type => 'string', min_length => 5, max_length => 256 },
+            template_id  => { type => 'string', required => 1, min_length => 1 },
+            profile      => { type => 'string', min_length => 1 },
+            update_types => { type => 'object' },
+        },
+        skip_check_auth => 1,
+        controller => 'Transport::Max',
+        method     => 'set_webhook',
+        args       => { format => 'json' },
+        swagger    => { summary => 'Установка Webhook для MAX бота' },
+    },
+},
+
 '/telegram/webapp/auth' => {
     swagger => {
         tags => 'Telegram bot',
