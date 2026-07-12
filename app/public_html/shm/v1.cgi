@@ -2463,7 +2463,13 @@ sub get_service_id {
         print_json( { status => 400, error => sprintf("`%s` not present", $service->get_table_key ) } );
         exit 0;
     }
-    return $service_id;
+
+    my $key2 = $service->get_table_key2;
+    if ( $key2 && exists $args{ $key2 } ) {
+        return ( $service_id, $args{ $key2 } );
+    }
+
+    return ( $service_id );
 }
 
 # Validate %args against a params schema defined in the route.
