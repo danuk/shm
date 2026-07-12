@@ -346,6 +346,8 @@ sub auth {
         },
     });
 
+    $self->{login} = $login;
+
     return $self;
 }
 
@@ -673,11 +675,11 @@ sub reg {
             get_service('report')->add_error("Can't create login");
             return undef;
         }
+        $user->{login} = $user->logins->id( $args{login}, $args{login_type}) ;
     }
 
     $user->make_event( 'registered' );
 
-    $user->{login} = $args{login};
     return $user;
 }
 
@@ -1052,6 +1054,8 @@ sub profile {
 
     return %{ $item->{data} || {} };
 }
+
+sub login { shift->{login} };
 
 sub logins {
     my $self = shift;

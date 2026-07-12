@@ -96,9 +96,17 @@ sub get_password {
     return $self->settings->{password}->{hash};
 }
 
-sub list_by_user {
+sub items_by_types {
     my $self = shift;
-    return $self->list();
+    my $types = shift;
+
+    my $where = {
+        ref $types eq 'ARRAY' ?
+            ( type => { '-in' => $types } ) :
+            ( type => $types ),
+    };
+
+    return $self->item( where => $where );
 }
 
 sub add {
