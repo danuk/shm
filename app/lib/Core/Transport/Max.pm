@@ -672,6 +672,81 @@ sub exec_template {
     }
 }
 
+# Validate MAX WebApp initData and return a session_id.
+# MAX passes initData via window.WebApp.initData (URL fragment #WebAppData=...).
+# Validation algorithm: https://dev.max.ru/docs/webapps/validation
+#   secret_key = HMAC-SHA256("WebAppData", BOT_TOKEN)
+#   hash       = hex(HMAC-SHA256(secret_key, sorted_launch_params))
+sub webapp_auth {
+    my $self = shift;
+    my %args = (
+        initData => undef,
+        profile  => undef,
+        @_,
+    );
+
+    unless ( $args{initData} ) {
+        report->error('MAX WebApp auth: initData required');
+        return undef;
+    }
+
+    $self->profile( $args{profile} ) if $args{profile};
+
+    unless ( $self->token ) {
+        report->error('MAX WebApp auth: bot token not configured for profile');
+        return undef;
+    }
+
+    # Parse & split into key=value pairs
+    my %in;
+    for my $pair ( split /&/, $args{initData} ) {
+        my ( $k, $v ) = split /=/, $pair, 2;
+        next unless defined $k && defined $v;
+        $in{$k} = uri_unescape($v);
+    }
+
+    # Extract and validate hash
+    my $original_hash = delete $in{hash};
+    unless ( $original_hash ) {
+        logger->error('MAX WebApp auth: hash missing');
+        report->error('MAX WebApp auth error');
+        return undef;
+    }
+
+    # Build sorted launch_params string
+    my $launch_params = join("\n", map { "$_=$in{$_}" } sort keys %in);
+
+    # secret_key = HMAC-SHA256("WebAppData", BOT_TOKEN)
+    use Digest::SHA qw(hmac_sha256 hmac_sha256_hex);
+    my $secret_key = hmac_sha256( $self->token, 'WebAppData' );
+    my $hex = hmac_sha256_hex( $launch_params, $secret_key );
+
+    unless ( $hex eq $original_hash ) {
+        logger->error('MAX WebApp auth: hash mismatch');
+        report->error('MAX WebApp auth error');
+        return undef;
+    }
+
+    # Extract MAX user from initData
+    my $max_user = decode_json( $in{user} || '{}' );
+    unless ( ref $max_user eq 'HASH' && $max_user->{id} ) {
+        logger->error('MAX WebApp auth: no user in initData');
+        report->error('MAX WebApp auth error');
+        return undef;
+    }
+
+    my $login = $self->find_user_by_max( { user_id => $max_user->{id} } );
+    unless ( $login ) {
+        logger->error('MAX WebApp auth: user not found', $max_user->{id});
+        report->error('MAX WebApp auth error');
+        return undef;
+    }
+
+    return {
+        session_id => $login->user->srv('sessions')->add(),
+    };
+}
+
 sub set_webhook {
     my $self = shift;
     my %args = (

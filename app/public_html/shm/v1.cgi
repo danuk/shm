@@ -1731,6 +1731,21 @@ state $routes //= {
     },
 },
 
+'/max/webapp/auth' => {
+    swagger => { tags => 'MAX bot' },
+    GET => {
+        params => {
+            initData => { type => 'string', required => 1, min_length => 1, max_length => 4096 },
+            profile  => { type => 'string', min_length => 1, max_length => 64 },
+        },
+        skip_check_auth => 1,
+        controller => 'Transport::Max',
+        method     => 'webapp_auth',
+        args       => { format => 'json' },
+        swagger    => { summary => 'Авторизация MAX WebApp (валидация initData)' },
+    },
+},
+
 '/telegram/webapp/auth' => {
     swagger => {
         tags => 'Telegram bot',
