@@ -21,6 +21,7 @@ use Core::Utils qw(
     to_query_string
     uri_escape_utf8
     uri_unescape
+    any
 );
 
 sub max_server { shift->config->{server} || 'https://platform-api2.max.ru' }
@@ -455,19 +456,6 @@ sub process_message {
 
     my $update_type = $args{update_type} // '';
 
-    # bot_started / bot_added — register or auth user
-    if ( $update_type eq 'bot_started' || $update_type eq 'user_added' ) {
-        my $user = $self->auth();
-        if ( $user ) {
-            $user->set_settings({
-                max => {
-                    $self->profile_name() => { status => 'active' },
-                },
-            });
-        }
-        return {};
-    }
-
     # bot_removed — mark user as left
     if ( $update_type eq 'bot_removed' || $update_type eq 'user_removed' ) {
         my $user = $self->auth();
@@ -481,11 +469,21 @@ sub process_message {
         return {};
     }
 
-    return {} unless $update_type eq 'message_created' || $update_type eq 'message_callback';
+    my @allowed_types = qw(
+        bot_started
+        user_added
+        message_created
+        message_callback
+    );
+
+    unless ( any { $update_type eq $_ } ( @allowed_types ) ) {
+        return {};
+    }
 
     my $user = $self->auth();
 
     my ( $cmd, @cmd_args ) = $self->cmd;
+    $cmd ||= '/start';
 
     if ( $cmd eq '/start' && $cmd_args[0] ) {
         my %start_args;
