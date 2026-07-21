@@ -670,10 +670,10 @@ sub auth {
                 user_id => $telegram_user_id,  # field for auth
                 login => $tg_user->{username}, # for backward compatible
                 username => $tg_user->{username},
-                first_name => $tg_user->{first_name},
-                last_name => $tg_user->{last_name},
-                language_code => $tg_user->{language_code},
-                is_premium => $tg_user->{is_premium},
+                exists $tg_user->{first_name} ? ( first_name => $tg_user->{first_name} ) : (),
+                exists $tg_user->{last_name} ? ( last_name => $tg_user->{last_name} ) : (),
+                exists $tg_user->{language_code} ? ( language_code => $tg_user->{language_code} ) : (),
+                exists $tg_user->{is_premium} ? ( is_premium => $tg_user->{is_premium} ) : (),
                 chat_id => $self->chat_id, # for backward compatible
                 $self->profile_name() => {
                     chat_id => $self->chat_id,
