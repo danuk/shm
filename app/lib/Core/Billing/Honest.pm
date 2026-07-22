@@ -114,8 +114,11 @@ sub calc_total_by_date_range {
 
         if ( $wd{period} && $wd{period} != 1 ) {
             my ( $months, $days, $hours ) = parse_period( $wd{period} );
-            # TODO: add support days and hours
-            $wd{cost} = $wd{cost} / $months if $months;
+            # Convert per-period cost to per-month cost using seconds.
+            # Works for months-only, days/hours-only, and hybrid (e.g. 1m 2d 3h) periods.
+            my $sec_in_month   = days_in_months( $wd{withdraw_date} ) * 86400;
+            my $sec_per_period = $months * $sec_in_month + $days * 86400 + $hours * 3600;
+            $wd{cost} = $wd{cost} / $sec_per_period * $sec_in_month if $sec_per_period;
         }
 
         # calc first month
