@@ -267,8 +267,7 @@ sub convert_sql_structure_data {
                 next unless $json;
                 $data->{ $f } = $json;
             } elsif ( $structure->{ $f }->{type} eq 'number' ) {
-                # Convert undef and empty string to 0 without generating numeric warnings
-                $data->{ $f } = defined($data->{ $f }) && $data->{ $f } ne '' ? $data->{ $f } + 0 : 0;
+                $data->{ $f } += 0 if defined $data->{ $f }; # force number
             }
         }
     }

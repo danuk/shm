@@ -2285,6 +2285,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my %allowed_input_fields = map { $_ => 1 } (
         keys %schema,
         'dry_run',
+        'format',
         'POSTDATA',
         'PUTDATA',
         ( $p->{splat_to} ? $p->{splat_to} : () ),
