@@ -32,6 +32,10 @@ $ENV{SHM_TEST} = 1;
     }
 }
 
+{
+    package Local::FakeSession;
+    sub user_id { return $_[0]->{user_id} }
+}
 my $user = SHM->new( user_id => 40092 );
 my $tg = $user->srv('Transport::Telegram');
 
@@ -243,9 +247,12 @@ subtest 'Bind-to-profile stores telegram settings' => sub {
             iat => time,
         };
     };
+    local *Core::Transport::Telegram::validate_session = sub {
+        return bless { user_id => 40092 }, 'Local::FakeSession';
+    };
 
     my $ret = $tg->web_auth(
-        uid => 40092,
+        session_id => 'fake-session-id',
         bind_to_profile => 1,
         profile => 'telegram_bot',
         id_token => 'stub-token',
@@ -317,9 +324,12 @@ subtest 'Bind-only-if-new rejects binding existing Telegram account' => sub {
     local *Core::Transport::Telegram::find_user_by_tg = sub {
         return { user_id => 777 };
     };
+    local *Core::Transport::Telegram::validate_session = sub {
+        return bless { user_id => 40092 }, 'Local::FakeSession';
+    };
 
     my $ret = $tg->web_auth(
-        uid => 40092,
+        session_id => 'fake-session-id',
         bind_to_profile => 1,
         bind_only_if_new => 1,
         profile => 'telegram_bot',
