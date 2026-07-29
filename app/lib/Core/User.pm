@@ -675,7 +675,7 @@ sub reg {
             get_service('report')->add_error("Can't create login");
             return undef;
         }
-        $user->{login} = $user->logins->id( $args{login}, $args{login_type}) ;
+        $user->{login} = $args{login};
     }
 
     $user->make_event( 'registered' );

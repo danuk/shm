@@ -45,8 +45,8 @@ sub http_echo {
     my %in = parse_args();
 
     return {
+        payload => \%in,
         args => \%args,
-        in => \%in,
         method => $ENV{REQUEST_METHOD},
     };
 }
