@@ -157,13 +157,13 @@ state $routes //= {
         params => {},
         controller => 'User',
         method => 'api_enable_password_auth',
-        swagger => { summary => 'Включить вход по паролю' },
+        swagger => { summary => 'Включение входа по паролю' },
     },
     DELETE => {
         params => {},
         controller => 'User',
         method => 'api_disable_password_auth',
-        swagger => { summary => 'Отключить вход по паролю' },
+        swagger => { summary => 'Отключение входа по паролю' },
     },
 },
 '/user/otp' => {
@@ -241,7 +241,7 @@ state $routes //= {
         params => {},
         controller => 'User::Passkey',
         method => 'api_register_options',
-        swagger => { summary => 'Получить параметры регистрации Passkey' },
+        swagger => { summary => 'Получение параметров регистрации Passkey' },
     },
     POST => {
         params => {
@@ -250,7 +250,7 @@ state $routes //= {
         },
         controller => 'User::Passkey',
         method => 'api_register_complete',
-        swagger => { summary => 'Завершить регистрацию Passkey' },
+        swagger => { summary => 'Завершение регистрации Passkey' },
     },
 },
 '/user/passkey' => {
@@ -268,7 +268,7 @@ state $routes //= {
         },
         controller => 'User::Passkey',
         method => 'api_rename',
-        swagger => { summary => 'Переименовать зарегистрированный Passkey по идентификатору' },
+        swagger => { summary => 'Переименование зарегистрированного Passkey по идентификатору' },
     },
     DELETE => {
         params => {
@@ -276,7 +276,7 @@ state $routes //= {
         },
         controller => 'User::Passkey',
         method => 'api_delete',
-        swagger => { summary => 'Удалить зарегистрированный Passkey по идентификатору' },
+        swagger => { summary => 'Удаление зарегистрированного Passkey по идентификатору' },
     },
 },
 '/user/auth/passkey' => {
@@ -286,7 +286,7 @@ state $routes //= {
         controller => 'User::Passkey',
         method => 'api_auth_options_public',
         skip_check_auth => 1,
-        swagger => { summary => 'Получить параметры публичной аутентификации Passkey' },
+        swagger => { summary => 'Получение параметров публичной аутентификации Passkey' },
     },
     POST => {
         params => {
@@ -302,7 +302,7 @@ state $routes //= {
 '/user/passwd' => {
     swagger => { tags => 'Пользователи' },
     POST => {
-        swagger => { summary => 'Сменить пароль пользователя' },
+        swagger => { summary => 'Смена пароля пользователя' },
         controller => 'User',
         method => 'passwd',
         params => {
@@ -342,7 +342,7 @@ state $routes //= {
             password => { type => 'string', required => 1, min_length => 6, max_length => 128 },
             token    => { type => 'string', required => 1, min_length => 8, max_length => 256 },
         },
-        swagger => { summary => 'Сменить пароль пользователя по токену сброса' },
+        swagger => { summary => 'Смена пароля пользователя по токену сброса' },
     },
 },
 '/user/accounts' => {
@@ -366,13 +366,13 @@ state $routes //= {
         params => {
             email => { type => 'email', required => 1, max_length => 254 },
         },
-        swagger => { summary => 'Привязать email пользователя' },
+        swagger => { summary => 'Привязка email пользователя' },
     },
     GET => {
         params => {},
         controller => 'User',
         method => 'get_email',
-        swagger => { summary => 'Получить email пользователя' },
+        swagger => { summary => 'Получение email пользователя' },
     },
     POST => {
         params => {
@@ -381,7 +381,7 @@ state $routes //= {
         },
         controller => 'User',
         method => 'verify_email',
-        swagger => { summary => 'Верифицировать email пользователя' },
+        swagger => { summary => 'Верификация email пользователя' },
     },
     DELETE => {
         params => {
@@ -389,7 +389,7 @@ state $routes //= {
         },
         controller => 'User',
         method => 'delete_email',
-        swagger => { summary => 'Удалить email пользователя' },
+        swagger => { summary => 'Удаление email пользователя' },
     },
 },
 '/user/service' => {
@@ -406,7 +406,7 @@ state $routes //= {
         params => {
             user_service_id => { type => 'integer', required => 1, min => 1 },
         },
-        swagger => { summary => 'Удалить услугу пользователя' },
+        swagger => { summary => 'Удаление услуги пользователя' },
     },
 },
 '/user/service/stop' => {
@@ -417,7 +417,7 @@ state $routes //= {
         params => {
             user_service_id => { type => 'integer', required => 1, min => 1 },
         },
-        swagger => { summary => 'Остановить услугу пользователя' },
+        swagger => { summary => 'Остановка услуги пользователя' },
     },
 },
 '/user/service/change' => {
@@ -429,7 +429,7 @@ state $routes //= {
             user_service_id => { type => 'integer', required => 1, min => 1 },
             service_id      => { type => 'integer', required => 1, min => 1 },
         },
-        swagger => { summary => 'Сменить тариф' },
+        swagger => { summary => 'Смена тарифа' },
     },
 },
 '/user/withdraw' => {
@@ -454,7 +454,7 @@ state $routes //= {
         args => {
             format => 'json',
         },
-        swagger => { summary => 'Удалить автоплатежи пользователя' },
+        swagger => { summary => 'Удаление автоплатежей пользователя' },
     },
 },
 '/user/pay' => {
@@ -530,7 +530,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Выполнить шаблон' },
+        swagger => { summary => 'Выполнение шаблона' },
     },
     POST => {
         params => {},
@@ -540,7 +540,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Выполнить шаблон с аргументами' },
+        swagger => { summary => 'Выполнение шаблона с аргументами' },
     },
 },
 '/public/*' => {
@@ -556,7 +556,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Выполнить публичный шаблон' },
+        swagger => { summary => 'Выполнение публичного шаблона' },
     },
     POST => {
         params => {},
@@ -567,7 +567,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Выполнить публичный шаблон с аргументами' },
+        swagger => { summary => 'Выполнение публичного шаблона с аргументами' },
     },
 },
 # метод для случаев, когда нужно сохранить ещё и settings
@@ -581,17 +581,17 @@ state $routes //= {
     PUT => { #TODO
         params => {},
         controller => 'Storage',
-        swagger => { summary => 'Создать данные в хранилище' },
+        swagger => { summary => 'Создание данных в хранилище' },
     },
     POST => { #TODO
         params => {},
         controller => 'Storage',
-        swagger => { summary => 'Изменить данные в хранилище' },
+        swagger => { summary => 'Изменение данных в хранилище' },
     },
     DELETE => { #TODO
         params => {},
         controller => 'Storage',
-        swagger => { summary => 'Удалить данные в хранилище' },
+        swagger => { summary => 'Удаление данных из хранилища' },
     },
 },
 '/storage/manage/*' => {
@@ -604,7 +604,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Прочитать данные из хранилища' },
+        swagger => { summary => 'Чтение данных из хранилища' },
     },
     PUT => {
         params => {},
@@ -615,7 +615,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Создать данные в хранилище' },
+        swagger => { summary => 'Создание данных в хранилище' },
     },
     POST => {
         params => {},
@@ -626,13 +626,13 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Изменить данные в хранилище' },
+        swagger => { summary => 'Изменение данных в хранилище' },
     },
     DELETE => {
         params => {},
         controller => 'Storage',
         method => 'delete',
-        swagger => { summary => 'Удалить данные из хранилища' },
+        swagger => { summary => 'Удаление данных из хранилища' },
     },
 },
 '/storage/download/*' => {
@@ -645,7 +645,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Скачать данные из хранилища' },
+        swagger => { summary => 'Скачивание данных из хранилища' },
     },
 },
 '/promo' => {
@@ -715,7 +715,7 @@ state $routes //= {
         args => {
             format => 'json',
         },
-        swagger => { summary => 'Применить промокод' },
+        swagger => { summary => 'Применение промокода' },
     },
 },
 '/admin/system/version' => {
@@ -735,22 +735,22 @@ state $routes //= {
             service_id => { type => 'integer', min => 1 },
         },
         controller => 'Service',
-        swagger => { summary => 'Получить услугу' },
+        swagger => { summary => 'Получение услуги' },
     },
     PUT => {
         controller => 'Service',
-        swagger => { summary => 'Создать услугу' },
+        swagger => { summary => 'Создание услуги' },
     },
     POST => {
         controller => 'Service',
-        swagger => { summary => 'Изменить услугу' },
+        swagger => { summary => 'Изменение услуги' },
     },
     DELETE => {
         params => {
             service_id => { type => 'integer', required => 1, min => 1 },
         },
         controller => 'Service',
-        swagger => { summary => 'Удалить услугу' },
+        swagger => { summary => 'Удаление услуги' },
     },
 },
 '/admin/service/order' => {
@@ -771,7 +771,7 @@ state $routes //= {
         },
         controller => 'USObject',
         method => 'create_for_api',
-        swagger => { summary => 'Зарегистрировать услугу клиенту' },
+        swagger => { summary => 'Регистрация услуги пользователю' },
     },
 },
 '/admin/service/children' => {
@@ -791,7 +791,7 @@ state $routes //= {
         },
         controller => 'Service',
         method => 'children',
-        swagger => { summary => 'Изменить список дочерних услуг' },
+        swagger => { summary => 'Изменение списка дочерних услуг' },
     },
 },
 '/admin/service/event' => {
@@ -802,18 +802,18 @@ state $routes //= {
     },
     PUT => {
         controller => 'Events',
-        swagger => { summary => 'Создать событие' },
+        swagger => { summary => 'Создание события' },
     },
     POST => {
         controller => 'Events',
-        swagger => { summary => 'Изменить событие' },
+        swagger => { summary => 'Изменение события' },
     },
     DELETE => {
         params => {
             id => { type => 'integer', required => 1, min => 1 },
         },
         controller => 'Events',
-        swagger => { summary => 'Удалить событие' },
+        swagger => { summary => 'Удаление события' },
     },
 },
 '/admin/user' => {
@@ -825,11 +825,11 @@ state $routes //= {
     PUT => {
         controller => 'User',
         method => 'reg',
-        swagger => { summary => 'Создать клиента' },
+        swagger => { summary => 'Создание клиента' },
     },
     POST => {
         controller => 'User',
-        swagger => { summary => 'Изменить клиента' },
+        swagger => { summary => 'Изменение клиента' },
     },
     DELETE => {
         controller => 'User',
@@ -837,7 +837,7 @@ state $routes //= {
             user_id => { type => 'integer', required => 1, min => 1 },
             force => { type => 'boolean' },
         },
-        swagger => { summary => 'Удалить клиента' },
+        swagger => { summary => 'Удаление клиента' },
     },
 },
 '/admin/user/search' => {
@@ -859,7 +859,7 @@ state $routes //= {
     },
     PUT => {
         controller => 'User::Logins',
-        swagger    => { summary => 'Добавить аккаунт' },
+        swagger    => { summary => 'Добавление аккаунта' },
     },
     POST => {
         params => {
@@ -870,7 +870,7 @@ state $routes //= {
             primary => { type => 'boolean' },
         },
         controller => 'User::Logins',
-        swagger    => { summary => 'Изменить аккаунт' },
+        swagger    => { summary => 'Изменение аккаунта' },
     },
     DELETE => {
         params => {
@@ -880,7 +880,7 @@ state $routes //= {
         },
         controller => 'User::Logins',
         method     => 'api_delete',
-        swagger    => { summary => 'Удалить аккаунт' },
+        swagger    => { summary => 'Удаление аккаунта' },
     },
 },
 '/admin/user/passwd' => {
@@ -892,7 +892,7 @@ state $routes //= {
             user_id  => { type => 'integer', required => 1, min => 1 },
             password => { type => 'string',  required => 1, min_length => 6, max_length => 128 },
         },
-        swagger => { summary => 'Сменить пароль клиенту' },
+        swagger => { summary => 'Смена пароля клиенту' },
     },
 },
 '/admin/user/payment' => {
@@ -906,7 +906,7 @@ state $routes //= {
             pay_system_id => { type => 'string' },
             comment => { type => 'object' },
         },
-        swagger => { summary => 'Зачислить деньги клиенту' },
+        swagger => { summary => 'Зачисление денег клиенту' },
     },
 },
 '/admin/user/profile' => {
@@ -940,7 +940,7 @@ state $routes //= {
             id      => { type => 'integer', required => 1, min => 1 },
         },
         controller => 'Pay',
-        swagger => { summary => 'Удалить платеж клиента' },
+        swagger => { summary => 'Удаление платежа клиента' },
     },
 },
 '/admin/user/bonus' => {
@@ -951,11 +951,11 @@ state $routes //= {
     },
     PUT => {
         controller => 'Bonus',
-        swagger => { summary => 'Создать бонус' },
+        swagger => { summary => 'Создание бонуса' },
     },
     POST => {
         controller => 'Bonus',
-        swagger => { summary => 'Изменить бонус' },
+        swagger => { summary => 'Изменение бонуса' },
     },
     DELETE => {
         params => {
@@ -963,7 +963,7 @@ state $routes //= {
             user_id => { type => 'integer', required => 1, min => 1 },
         },
         controller => 'Bonus',
-        swagger => { summary => 'Удалить бонус' },
+        swagger => { summary => 'Удаление бонуса' },
     },
 },
 '/admin/user/service' => {
@@ -982,7 +982,7 @@ state $routes //= {
     },
     POST => {
         controller => 'USObject',
-        swagger => { summary => 'Изменить услугу клиента' },
+        swagger => { summary => 'Изменение услуги клиента' },
     },
     DELETE => {
         params => {
@@ -990,7 +990,7 @@ state $routes //= {
             user_service_id => { type => 'integer', required => 1, min => 1 },
         },
         controller => 'USObject',
-        swagger => { summary => 'Удалить услугу клиента' },
+        swagger => { summary => 'Удаление услуги клиента' },
     },
 },
 '/admin/user/service/categories' => {
@@ -999,7 +999,7 @@ state $routes //= {
         params => {},
         controller => 'Service',
         method => 'categories',
-        swagger => { summary => 'Получить список категорий услуг' },
+        swagger => { summary => 'Получение списка категорий услуг' },
     },
 },
 '/admin/user/service/withdraw' => {
@@ -1010,15 +1010,15 @@ state $routes //= {
             withdraw_id => { type => 'integer', min => 1 },
         },
         controller => 'Withdraw',
-        swagger => { summary => 'Получить список списаний клиентов' },
+        swagger => { summary => 'Получение списка списаний клиентов' },
     },
     PUT => {
         controller => 'Withdraw',
-        swagger => { summary => 'Создать списание клиенту' },
+        swagger => { summary => 'Создание списания клиенту' },
     },
     POST => {
         controller => 'Withdraw',
-        swagger => { summary => 'Изменить списание клиента' },
+        swagger => { summary => 'Изменение списания клиента' },
     },
     DELETE => {
         params => {
@@ -1026,7 +1026,7 @@ state $routes //= {
             withdraw_id => { type => 'integer', required => 1, min => 1 },
         },
         controller => 'Withdraw',
-        swagger => { summary => 'Удалить списание клиента' },
+        swagger => { summary => 'Удаление списания клиента' },
     },
 },
 '/admin/user/service/status' => {
@@ -1039,7 +1039,7 @@ state $routes //= {
             user_service_id => { type => 'integer', required => 1, min => 1 },
             status          => { type => 'string', required => 1, enum => ['ACTIVE','BLOCK'] },
         },
-        swagger => { summary => 'Сменить статус услуги клиента' },
+        swagger => { summary => 'Смена статуса услуги клиента' },
     },
 },
 '/admin/user/service/stop' => {
@@ -1051,7 +1051,7 @@ state $routes //= {
             user_id         => { type => 'integer', required => 1, min => 1 },
             user_service_id => { type => 'integer', required => 1, min => 1 },
         },
-        swagger => { summary => 'Остановить услугу клиента' },
+        swagger => { summary => 'Остановка услуги клиента' },
     },
 },
 '/admin/user/service/activate' => {
@@ -1063,7 +1063,7 @@ state $routes //= {
             user_id         => { type => 'integer', required => 1, min => 1 },
             user_service_id => { type => 'integer', required => 1, min => 1 },
         },
-        swagger => { summary => 'Возобновить услугу клиента' },
+        swagger => { summary => 'Возобновление услуги клиента' },
     },
 },
 '/admin/user/service/touch' => {
@@ -1075,7 +1075,7 @@ state $routes //= {
             user_id         => { type => 'integer', required => 1, min => 1 },
             user_service_id => { type => 'integer', required => 1, min => 1 },
         },
-        swagger => { summary => 'Обработать услугу' },
+        swagger => { summary => 'Обработка услуги' },
     },
 },
 '/admin/user/service/change' => {
@@ -1088,7 +1088,7 @@ state $routes //= {
             user_service_id => { type => 'integer', required => 1, min => 1 },
             service_id      => { type => 'integer', required => 1, min => 1 },
         },
-        swagger => { summary => 'Сменить тариф услуги клиента' },
+        swagger => { summary => 'Смена тарифа услуги клиента' },
     },
 },
 '/admin/user/service/spool' => {
@@ -1100,7 +1100,7 @@ state $routes //= {
             user_id         => { type => 'integer', required => 1, min => 1 },
             user_service_id => { type => 'integer', required => 1, min => 1 },
         },
-        swagger => { summary => 'Получить список текущих задач для услуги клиента' },
+        swagger => { summary => 'Получение списка текущих задач для услуги клиента' },
     },
 },
 '/admin/user/session' => {
@@ -1115,7 +1115,7 @@ state $routes //= {
             format => 'json',
         },
         swagger => {
-            summary => 'Сгенерировать session_id для клиента',
+            summary => 'Генерация session_id для клиента',
                 responses => {
                 '200' => {
                     content => {
@@ -1142,22 +1142,22 @@ state $routes //= {
             server_id  => { type => 'integer', min => 1 },
         },
         controller => 'Server',
-        swagger => { summary => 'Получить список серверов' },
+        swagger => { summary => 'Получение списка серверов' },
     },
     PUT => {
         controller => 'Server',
-        swagger => { summary => 'Создать сервер' },
+        swagger => { summary => 'Создание сервера' },
     },
     POST => {
         controller => 'Server',
-        swagger => { summary => 'Изменить сервер' },
+        swagger => { summary => 'Изменение сервера' },
     },
     DELETE => {
         params => {
             server_id => { type => 'integer', required => 1, min => 1 },
         },
         controller => 'Server',
-        swagger => { summary => 'Удалить сервер' },
+        swagger => { summary => 'Удаление сервера' },
     },
 },
 '/admin/server/group' => {
@@ -1167,22 +1167,22 @@ state $routes //= {
             group_id  => { type => 'integer', min => 1 },
         },
         controller => 'ServerGroups',
-        swagger => { summary => 'Получить список групп серверов' },
+        swagger => { summary => 'Получение списка групп серверов' },
     },
     PUT => {
         controller => 'ServerGroups',
-        swagger => { summary => 'Создать группу серверов' },
+        swagger => { summary => 'Создание группы серверов' },
     },
     POST => {
         controller => 'ServerGroups',
-        swagger => { summary => 'Изменить группу серверов' },
+        swagger => { summary => 'Изменение группы серверов' },
     },
     DELETE => {
         params => {
             group_id => { type => 'integer', required => 1, min => 1 },
         },
         controller => 'ServerGroups',
-        swagger => { summary => 'Удалить группу серверов' },
+        swagger => { summary => 'Удаление группы серверов' },
     },
 },
 '/admin/server/identity' => {
@@ -1196,18 +1196,18 @@ state $routes //= {
     },
     PUT => {
         controller => 'Identities',
-        swagger => { summary => 'Сохранить новый SSH ключ' },
+        swagger => { summary => 'Сохранение нового SSH ключа' },
     },
     POST => {
         controller => 'Identities',
-        swagger => { summary => 'Изменить SSH ключ' },
+        swagger => { summary => 'Изменение SSH ключа' },
     },
     DELETE => {
         params => {
             id => { type => 'integer', required => 1, min => 1 },
         },
         controller => 'Identities',
-        swagger => { summary => 'Удалить SSH ключ' },
+        swagger => { summary => 'Удаление SSH ключа' },
     },
 },
 '/admin/server/identity/generate' => {
@@ -1218,7 +1218,7 @@ state $routes //= {
         },
         controller => 'Identities',
         method => 'generate_key_pair',
-        swagger => { summary => 'Сгенерировать SSH ключи' },
+        swagger => { summary => 'Генерация SSH ключей' },
     },
 },
 '/admin/spool' => {
@@ -1235,18 +1235,18 @@ state $routes //= {
     },
     PUT => {
         controller => 'Spool',
-        swagger => { summary => 'Создать задачу' },
+        swagger => { summary => 'Создание задачи' },
     },
     POST => {
         controller => 'Spool',
-        swagger => { summary => 'Изменить задачу' },
+        swagger => { summary => 'Изменение задачи' },
     },
     DELETE => {
         params => {
             id => { type => 'integer', required => 1, min => 1 },
         },
         controller => 'Spool',
-        swagger => { summary => 'Удалить задачу' },
+        swagger => { summary => 'Удаление задачи' },
     },
 },
 '/admin/spool/statuses' => {
@@ -1275,7 +1275,7 @@ state $routes //= {
         },
         controller => 'Spool',
         method => 'api_manual_action',
-        swagger => { summary => 'Изменить статус задачи вручную' },
+        swagger => { summary => 'Изменение статуса задачи вручную' },
     },
 },
 '/admin/template' => {
@@ -1289,7 +1289,7 @@ state $routes //= {
     PUT => {
         controller => 'Template',
         allow_text_plain => 1,
-        swagger => { summary => 'Создать шаблон' },
+        swagger => { summary => 'Создание шаблона' },
         args => {
             format => 'plain',
         },
@@ -1297,7 +1297,7 @@ state $routes //= {
     POST => {
         controller => 'Template',
         allow_text_plain => 1,
-        swagger => { summary => 'Изменить шаблон ' },
+        swagger => { summary => 'Изменение шаблона' },
         args => {
             format => 'plain',
         },
@@ -1307,7 +1307,7 @@ state $routes //= {
             id => { type => 'string', required => 1, min => 1 },
         },
         controller => 'Template',
-        swagger => { summary => 'Удалить шаблон' },
+        swagger => { summary => 'Удаление шаблона' },
     },
 },
 '/admin/template/*' => {
@@ -1321,7 +1321,7 @@ state $routes //= {
             format => 'plain',
             do_not_parse => 1,
         },
-        swagger => { summary => 'Прочитать шаблон' },
+        swagger => { summary => 'Чтение шаблона' },
     },
     PUT => {
         controller => 'Template',
@@ -1350,16 +1350,16 @@ state $routes //= {
             name    => { type => 'string', max_length => 255 },
         },
         controller => 'Storage',
-        swagger => { summary => 'Получить список объектов хранилища' },
+        swagger => { summary => 'Получение списка объектов хранилища' },
     },
     PUT => {
         controller => 'Storage',
-        swagger => { summary => 'Создать объект в хранилище' },
+        swagger => { summary => 'Создание объекта в хранилище' },
     },
     POST => {
         controller => 'Storage',
         method => 'replace',
-        swagger => { summary => 'Изменить данные в объекте хранилища' },
+        swagger => { summary => 'Изменение данных в объекте хранилища' },
     },
     DELETE => {
         params => {
@@ -1368,7 +1368,7 @@ state $routes //= {
         },
         controller => 'Storage',
         method => 'delete',
-        swagger => { summary => 'Удалить объект из хранилища' },
+        swagger => { summary => 'Удаление объекта из хранилища' },
     },
 },
 '/admin/storage/manage/*' => {
@@ -1384,7 +1384,7 @@ state $routes //= {
         args => {
             format => 'other',
         },
-        swagger => { summary => 'Получить объект хранилища' },
+        swagger => { summary => 'Получение объекта хранилища' },
     },
     POST => {
         controller => 'Storage',
@@ -1406,22 +1406,22 @@ state $routes //= {
             key    => { type => 'string', max_length => 128 },
         },
         controller => 'Config',
-        swagger => { summary => 'Прочитать весь конфиг' },
+        swagger => { summary => 'Чтение конфига' },
     },
     PUT => {
         controller => 'Config',
-        swagger => { summary => 'Создать объект в конфиге' },
+        swagger => { summary => 'Создание объекта в конфиге' },
     },
     POST => {
         controller => 'Config',
-        swagger => { summary => 'Изменить объект в конфиге' },
+        swagger => { summary => 'Изменение объекта в конфиге' },
     },
     DELETE => {
         params => {
             key => { type => 'string', required => 1, min_length => 1, max_length => 128 },
         },
         controller => 'Config',
-        swagger => { summary => 'Удалить объект в конфиге' },
+        swagger => { summary => 'Удаление объекта из конфига' },
     },
 },
 '/admin/config/*' => {
@@ -1431,14 +1431,14 @@ state $routes //= {
         params => {},
         controller => 'Config',
         method => 'api_data_by_name',
-        swagger => { summary => 'Получить объект конфига' },
+        swagger => { summary => 'Получение объекта конфига' },
     },
     POST => {
         controller => 'Config',
         params => {},
         method => 'api_set_value',
         skip_auto_parse_json => 1,
-        swagger => { summary => 'Изменить объект в конфиге' },
+        swagger => { summary => 'Изменение объекта в конфиге' },
     },
     DELETE => {
         params => {
@@ -1446,7 +1446,7 @@ state $routes //= {
         },
         controller => 'Config',
         method => 'api_delete_value',
-        swagger => { summary => 'Удалить значение или объект внутри объекта конфига' },
+        swagger => { summary => 'Удаление значения или объекта конфига' },
     },
 },
 '/admin/console' => {
@@ -1501,7 +1501,7 @@ state $routes //= {
     POST => {
         controller => 'Promo',
         method => 'update',
-        swagger => { summary => 'Изменить промокод' },
+        swagger => { summary => 'Изменение промокода' },
     },
     DELETE => {
         params => {
@@ -1509,7 +1509,7 @@ state $routes //= {
         },
         controller => 'Promo',
         method => 'delete',
-        swagger => { summary => 'Удалить промокод' },
+        swagger => { summary => 'Удаление промокода' },
     },
 },
 '/admin/promo/*' => {
@@ -1551,7 +1551,7 @@ state $routes //= {
             format => 'json',
         },
         swagger => {
-            summary => 'Получить настройки пользователя для Telegram бота',
+            summary => 'Получение настроек пользователя для Telegram бота',
         },
     },
     POST => {
@@ -1563,7 +1563,7 @@ state $routes //= {
             format => 'json',
         },
         swagger => {
-            summary => 'Изменить настройки пользователя для Telegram бота',
+            summary => 'Изменение настроек пользователя для Telegram бота',
         },
     },
     DELETE => {
@@ -1574,7 +1574,7 @@ state $routes //= {
             format => 'json',
         },
         swagger => {
-            summary => 'Удалить (отвязать) Telegram аккаунт пользователя',
+            summary => 'Удаление Telegram аккаунта пользователя',
         },
     },
 },
