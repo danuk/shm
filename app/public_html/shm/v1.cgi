@@ -21,6 +21,7 @@ use Core::Utils qw(
 
 use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
+use Time::HiRes ();
 
 state $routes //= {
 '/healthcheck' => {
@@ -866,6 +867,7 @@ state $routes //= {
             login   => { type => 'string', required => 1, min_length => 1, max_length => 128 },
             type    => { type => 'string', required => 1, min_length => 1, max_length => 32 },
             user_id => { type => 'integer', required => 1, min => 1 },
+            password => { type => 'string', min_length => 8, max_length => 64 },
             setting => { type => 'object' },
             primary => { type => 'boolean' },
         },
@@ -2190,6 +2192,7 @@ for my $uri ( keys %{ $routes } ) {
     }
 }
 
+our $request_start = Time::HiRes::time();
 my $uri = $ENV{PATH_INFO};
 our %in;
 
@@ -2208,6 +2211,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     );
 
     if ( $user->is_blocked ) {
+        _log_api_call( $user, code => 403 );
         print_header( status => 403 );
         print_json( { status => 403, error => "User is blocked"} );
         exit 0;
@@ -2216,6 +2220,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my $admin_mode;
     if ( $uri =~/^\/admin\// ) {
         unless ( $user->is_admin ) {
+            _log_api_call( $user, code => 403 );
             print_header( status => 403 );
             print_json( { status => 403, error => "Permission denied"} );
             exit 0;
@@ -2237,6 +2242,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     my $service = get_service( $p->{controller} );
     unless ( $service ) {
+        _log_api_call( $user, code => 404 );
         print_header( status => 404 );
         print_json( { error => 'Ресурс не найден'} );
         exit 0;
@@ -2291,6 +2297,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         ( $p->{splat_to} ? $p->{splat_to} : () ),
     );
     if ( my $err = validate_params( \%schema, \%args, \%allowed_input_fields ) ) {
+        _log_api_call( $user, code => 400 );
         print_header( status => 400 );
         print_json( { status => 400, error => $err } );
         get_service('logger')->warning( sprintf("API validation error: %s %s::%s => %s",
@@ -2309,15 +2316,23 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         %{ $p->{args} || {} },
         $admin_mode ? ( admin => $admin_mode ) : (),
     );
+    # User-provided input only (no route-level defaults like `routes`).
+    # Used for logging to avoid serialising huge internal structures.
+    my %input_args;
     for my $field ( keys %in ) {
-        $safe_args{$field} = $args{$field} if $allowed_input_fields{$field};
+        if ( $allowed_input_fields{$field} ) {
+            $safe_args{$field}  = $args{$field};
+            $input_args{$field} = $args{$field};
+        }
     }
     # Preserve user_id context if admin switched user (already processed above)
     $safe_args{user_id} = $args{user_id} if $admin_mode && exists $args{user_id};
 
     unless ( $service->can( $method ) ) {
+        _log_api_call( $user, code => 500, args => \%input_args );
         print_header( status => 500 );
         print_json( { status => 500, error => 'Method not exists'} );
+        exit 0;
     }
 
     our $last_cache_reset //= time();
@@ -2328,6 +2343,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         my $tag = lc sprintf("%s-%s-%s", ref $service, $method, $ip);
         if ( $cache->get( $tag ) >= 5 ) {
             get_service('logger')->error("API rejected for tag: $tag");
+            _log_api_call( $user, code => 429, args => \%input_args );
             print_header( status => 429 );
             print_json( { status => 429, error => '429 Too Many Requests', ip => $ip } );
             exit 0;
@@ -2422,6 +2438,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     unless ( $report->is_success || $p->{skip_errors} ) {
         my %headers = $report->headers;
         $headers{status} ||= 400;
+        _log_api_call( $user, code => $headers{status}, args => \%input_args );
         print_header( %headers );
         my ( $err_msg ) = $report->errors;
         print_json( { status => $headers{status}, error => $err_msg } );
@@ -2496,12 +2513,14 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         });
     }
 
+    _log_api_call( $user, code => $headers{status}, args => \%input_args, descr => $p->{swagger}->{summary} );
     if ( $in{dry_run} ) {
         $user->rollback();
     } else {
         $user->commit();
     }
 } else {
+    _log_api_call( undef, code => 404 );
     print_header( status => 404 );
     print_json( { status => 404, error => 'Method not found'} );
 }
@@ -2621,6 +2640,30 @@ sub validate_params {
     }
 
     return undef;
+}
+
+sub _log_api_call {
+    my $self = shift;
+    my %args = (
+        code => 200,
+        args => {},
+        descr => undef,
+        @_,
+    );
+
+    unless ( $self ) {
+        $self = SHM->new( skip_check_auth => 1 );
+    }
+
+    my $logs = $self->srv('Logs::Api') || return;
+
+    return $logs->add(
+        url => $ENV{PATH_INFO},
+        method => $ENV{REQUEST_METHOD},
+        duration => int( (Time::HiRes::time() - $request_start) * 1000 ),
+        response_code => delete $args{code} // 200,
+        %args,
+    );
 }
 
 # exit 0;
