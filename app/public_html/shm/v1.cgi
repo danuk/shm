@@ -1690,7 +1690,7 @@ state $routes //= {
             secret      => { type => 'string', required => 1, min_length => 1, max_length => 128 },
             template_id => { type => 'string', required => 1, min_length => 1 },
             tg_profile  => { type => 'string', required => 1, min_length => 1 },
-            allowed_updates => { type => 'object' },
+            allowed_updates => { type => 'array' },
         },
         skip_check_auth => 1,
         controller => 'Transport::Telegram',
@@ -2632,6 +2632,10 @@ sub validate_params {
         elsif ( $type eq 'object' ) {
             return sprintf( "Field '%s' must be an object", $field )
                 unless ref($value) eq 'HASH';
+        }
+        elsif ( $type eq 'array' ) {
+            return sprintf( "Field '%s' must be an array", $field )
+                unless ref($value) eq 'ARRAY';
         }
         elsif ( $type eq 'string' ) {
             if ( defined $rule->{min_length} && length($value) < $rule->{min_length} ) {
