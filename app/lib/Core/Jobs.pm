@@ -69,11 +69,11 @@ sub job_cleanup {
     my $self = shift;
     my $task = shift;
 
-    get_service('us')->cleanup();
-    get_service('SpoolHistory')->cleanup()->commit();
-    get_service('Sessions')->cleanup()->commit();
-    get_service('Statistics')->cleanup();
-    get_service('Logs::Api')->cleanup();
+    get_service('us')->cleanup()->commit();
+    get_service('SpoolHistory')->cleanup(); #auto commit
+    get_service('Sessions')->cleanup(); # auto commit
+    get_service('Statistics')->cleanup()->commit();
+    get_service('Logs::Api')->cleanup()->commit();
 
     return SUCCESS, { msg => 'successful' };
 }
