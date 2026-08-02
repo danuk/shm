@@ -74,4 +74,16 @@ sub add {
     );
 }
 
+sub cleanup {
+    my $self = shift;
+    my $days = cfg('billing')->{cleanup}->{Statistics} // 30;
+    return $self unless $days;
+
+    $self->_delete( where => {
+        date => { '<', \[ 'NOW() - INTERVAL ? DAY', $days ] },
+    });
+
+    return $self;
+}
+
 1;
