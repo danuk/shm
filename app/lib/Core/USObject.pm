@@ -1161,6 +1161,7 @@ sub cleanup {
         $us->delete;
         $us->commit;
     }
+    return $self;
 }
 
 1;
