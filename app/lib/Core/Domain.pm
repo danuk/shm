@@ -25,7 +25,7 @@ sub load_registrator {
 }
 
 sub table { return 'domains' };
-sub dbh { shift->dbh_myisam };
+sub dbh { shift->dbh_auto_commit };
 
 sub structure {
     return {

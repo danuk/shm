@@ -60,7 +60,7 @@ sub init {
 
 # fake
 sub table { return 'templates' };
-sub dbh { shift->dbh_myisam };
+sub dbh { shift->dbh_auto_commit };
 
 sub structure {
     return {

@@ -5,7 +5,7 @@ use parent 'Core::Base';
 use Core::Base;
 
 sub table { return 'discounts' };
-sub dbh { shift->dbh_myisam };
+sub dbh { shift->dbh_auto_commit };
 
 sub structure {
     return {
