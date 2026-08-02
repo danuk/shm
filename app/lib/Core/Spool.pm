@@ -118,12 +118,12 @@ sub add {
 
 sub wake_workers {
     my $self = shift;
-    my ($id) = $self->dbh->selectrow_array(
-        "SELECT PROCESSLIST_ID FROM performance_schema.threads
-        WHERE PROCESSLIST_INFO LIKE 'SELECT SLEEP(%'
-        ORDER BY PROCESSLIST_TIME DESC LIMIT 1"
+    my $list = $self->dbh->selectall_arrayref(
+        "SHOW FULL PROCESSLIST", { Slice => {} }
     );
-    $self->dbh->do("KILL QUERY $id") if $id;
+    my ($proc) = sort { $b->{Time} <=> $a->{Time} }
+                 grep { ( $_->{State} // '' ) eq 'User sleep' } @$list;
+    $self->dbh->do("KILL QUERY $proc->{Id}") if $proc;
 }
 
 # формирует и выдает список задач для исполнения
