@@ -3,6 +3,7 @@ package Core::Logs::Api;
 use v5.14;
 use utf8;
 use parent 'Core::Base';
+use Core::Base;
 
 sub table { return 'logs_api' }
 
@@ -43,7 +44,15 @@ sub structure {
         response_code => {
             type => 'number',
             required => 1,
-            title => 'метод',
+            title => 'код ответа',
+        },
+        ip => {
+            type => 'text',
+            title => 'IP адрес',
+        },
+        response_error => {
+            type => 'text',
+            title => 'ошибка',
         },
     }
 }
@@ -75,6 +84,18 @@ sub add {
     $self->{user_id} = 0 unless $self->user_id;
 
     return $self->SUPER::add( %args );
+}
+
+sub cleanup {
+    my $self = shift;
+    my $days = cfg('billing')->{cleanup}->{ApiLogs} // 30;
+    return $self unless $days;
+
+    $self->_delete( where => {
+        date => { '<', \[ 'NOW() - INTERVAL ? DAY', $days ] },
+    });
+
+    return $self;
 }
 
 1;
