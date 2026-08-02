@@ -225,7 +225,7 @@ sub apply {
     my $code = shift;
 
     my $subscription = get_service('Cloud::Subscription');
-    unless ($subscription->check_subscription() || $ENV{SHM_TEST} ) {
+    unless ( $ENV{SHM_TEST} || $subscription->check_subscription() ) {
         report->status(403);
         report->error( "Требуется активация подписки" );
         return;
