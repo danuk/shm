@@ -1524,6 +1524,19 @@ state $routes //= {
         method => 'delete',
     },
 },
+'/admin/logs/api' => {
+    swagger => { tags => 'Логи' },
+    GET => {
+        params => {
+            user_id       => { type => 'integer', min => 1 },
+            response_code => { type => 'integer', min => 0 },
+            url           => { type => 'string',  max_length => 512 },
+            method        => { type => 'string',  max_length => 10 },
+        },
+        controller => 'Logs::Api',
+        swagger => { summary => 'Список логов API' },
+    },
+},
 '/admin/analytics' => {
     GET => {
         params => {
@@ -2198,6 +2211,7 @@ our %in;
 
 if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
+    my $api_descr = $p->{swagger}{summary};
     %in = parse_args( auto_parse_json => $p->{skip_auto_parse_json} ? 0 : 1 );
     $in{filter} = decode_json( $in{filter} ) if $in{filter};
 
@@ -2211,7 +2225,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     );
 
     if ( $user->is_blocked ) {
-        _log_api_call( $user, code => 403 );
+        _log_api_call( $user, code => 403, error => 'User is blocked', descr => $api_descr );
         print_header( status => 403 );
         print_json( { status => 403, error => "User is blocked"} );
         exit 0;
@@ -2220,7 +2234,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my $admin_mode;
     if ( $uri =~/^\/admin\// ) {
         unless ( $user->is_admin ) {
-            _log_api_call( $user, code => 403 );
+            _log_api_call( $user, code => 403, error => 'Permission denied', descr => $api_descr );
             print_header( status => 403 );
             print_json( { status => 403, error => "Permission denied"} );
             exit 0;
@@ -2242,7 +2256,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     my $service = get_service( $p->{controller} );
     unless ( $service ) {
-        _log_api_call( $user, code => 404 );
+        _log_api_call( $user, code => 404, error => 'Ресурс не найден', descr => $api_descr );
         print_header( status => 404 );
         print_json( { error => 'Ресурс не найден'} );
         exit 0;
@@ -2297,7 +2311,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         ( $p->{splat_to} ? $p->{splat_to} : () ),
     );
     if ( my $err = validate_params( \%schema, \%args, \%allowed_input_fields ) ) {
-        _log_api_call( $user, code => 400 );
+        _log_api_call( $user, code => 400, error => $err, descr => $api_descr );
         print_header( status => 400 );
         print_json( { status => 400, error => $err } );
         get_service('logger')->warning( sprintf("API validation error: %s %s::%s => %s",
@@ -2329,7 +2343,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     $safe_args{user_id} = $args{user_id} if $admin_mode && exists $args{user_id};
 
     unless ( $service->can( $method ) ) {
-        _log_api_call( $user, code => 500, args => \%input_args );
+        _log_api_call( $user, code => 500, args => \%input_args, error => 'Method not exists', descr => $api_descr );
         print_header( status => 500 );
         print_json( { status => 500, error => 'Method not exists'} );
         exit 0;
@@ -2343,7 +2357,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         my $tag = lc sprintf("%s-%s-%s", ref $service, $method, $ip);
         if ( $cache->get( $tag ) >= 5 ) {
             get_service('logger')->error("API rejected for tag: $tag");
-            _log_api_call( $user, code => 429, args => \%input_args );
+            _log_api_call( $user, code => 429, args => \%input_args, error => '429 Too Many Requests', descr => $api_descr );
             print_header( status => 429 );
             print_json( { status => 429, error => '429 Too Many Requests', ip => $ip } );
             exit 0;
@@ -2438,9 +2452,9 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     unless ( $report->is_success || $p->{skip_errors} ) {
         my %headers = $report->headers;
         $headers{status} ||= 400;
-        _log_api_call( $user, code => $headers{status}, args => \%input_args );
-        print_header( %headers );
         my ( $err_msg ) = $report->errors;
+        _log_api_call( $user, code => $headers{status}, args => \%input_args, error => $err_msg, descr => $api_descr );
+        print_header( %headers );
         print_json( { status => $headers{status}, error => $err_msg } );
         exit 0;
     }
@@ -2513,7 +2527,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         });
     }
 
-    _log_api_call( $user, code => $headers{status}, args => \%input_args, descr => $p->{swagger}->{summary} );
+    _log_api_call( $user, code => $headers{status}, args => \%input_args, descr => $api_descr, error => $info{error} );
     if ( $in{dry_run} ) {
         $user->rollback();
     } else {
@@ -2648,6 +2662,7 @@ sub _log_api_call {
         code => 200,
         args => {},
         descr => undef,
+        error => undef,
         @_,
     );
 
@@ -2660,8 +2675,10 @@ sub _log_api_call {
     return $logs->add(
         url => $ENV{PATH_INFO},
         method => $ENV{REQUEST_METHOD},
+        ip => get_user_ip(),
         duration => int( (Time::HiRes::time() - $request_start) * 1000 ),
         response_code => delete $args{code} // 200,
+        response_error => delete $args{error},
         %args,
     );
 }
