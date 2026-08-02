@@ -124,16 +124,16 @@ sub dbh_new {
     return $child_dbh;
 }
 
-sub dbh_myisam {
+sub dbh_auto_commit {
     my $self = shift;
     my $local = get_service('config')->local;
 
-    if ( my $dbh = $local->{dbh_myisam} ) {
+    if ( my $dbh = $local->{dbh_auto_commit} ) {
         return $dbh if $dbh->ping;
         $dbh->disconnect;
     }
 
-    return $local->{dbh_myisam} = $self->dbh_new( AutoCommit => 1, InactiveDestroy => 0 );
+    return $local->{dbh_auto_commit} = $self->dbh_new( AutoCommit => 1, InactiveDestroy => 0 );
 }
 
 sub table_allow_insert_key { return 0 };

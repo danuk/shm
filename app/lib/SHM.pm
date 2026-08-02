@@ -146,8 +146,8 @@ sub db_connect {
                 return;
             }
             $existing->disconnect;
-            if ( my $myisam = delete $local->{dbh_myisam} ) {
-                $myisam->disconnect;
+            if ( my $dbh_auto_commit = delete $local->{dbh_auto_commit} ) {
+                $dbh_auto_commit->disconnect;
             }
         }
     }
@@ -202,8 +202,8 @@ sub DESTROY {
     my $dbh = get_service('config')->local->{dbh};
     $dbh->disconnect if $dbh;
 
-    my $dbh_myisam = get_service('config')->local->{dbh_myisam};
-    $dbh_myisam->disconnect if $dbh_myisam;
+    my $dbh_auto_commit = get_service('config')->local->{dbh_auto_commit};
+    $dbh_auto_commit->disconnect if $dbh_auto_commit;
 }
 
 1;
