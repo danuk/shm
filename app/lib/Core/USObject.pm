@@ -471,6 +471,7 @@ sub make_commands_by_event {
         $self->spool->add(
             %args,
             event => $_,
+            prio => 10,
         );
     }
     return scalar @commands;
