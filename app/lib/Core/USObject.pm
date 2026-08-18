@@ -468,10 +468,12 @@ sub make_commands_by_event {
     $args{settings}{server_id} //= $self->settings->{server_id} + 0 if $self->settings->{server_id};
 
     for ( @commands ) {
+        my $prio = delete $_->{settings}->{prio} // 10;
+
         $self->spool->add(
             %args,
             event => $_,
-            prio => 10,
+            prio => $prio,
         );
     }
     return scalar @commands;
