@@ -974,6 +974,7 @@ state $routes //= {
     GET => {
         params => {
             user_id         => { type => 'integer', min => 1 },
+            parent          => { type => 'integer', min => 1 },
             service_id      => { type => 'integer', min => 1 },
             user_service_id => { type => 'integer', min => 1 },
         },
