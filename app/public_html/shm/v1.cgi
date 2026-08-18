@@ -524,6 +524,7 @@ state $routes //= {
     GET => {
         params => {
             dry_run => { type => 'boolean' },
+            usi => { type => 'integer', min => 1 },
             format => { type => 'string', enum => ['default','plain','html','json','other','qrcode','qrcode_png'] },
         },
         controller => 'Template',
