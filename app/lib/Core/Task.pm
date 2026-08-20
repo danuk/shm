@@ -184,7 +184,7 @@ sub transport_name {
         return $server->get->{transport} || undef;
     }
 
-    return undef;
+    return 'Local';
 }
 
 sub transport {
