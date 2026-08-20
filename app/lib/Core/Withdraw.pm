@@ -252,22 +252,24 @@ sub api_set {
     if ( $wd{total} != $new_wd{total} ) {
         unless ( $self->unpaid ) {
             $self->user->set_balance(
-                balance => $wd{total} - ( $new_wd{total} - $new_wd{bonus} ),
+                balance => ($wd{total} - $wd{bonus}) - ($new_wd{total} - $new_wd{bonus}),
             );
         }
     }
 
     if ( $wd{bonus} != $new_wd{bonus} ) {
-        $self->user->set_bonus(
-            bonus => $wd{bonus} - $new_wd{bonus},
-            comment => { comment => sprintf("changed withdraw %d by admin", $self->id) },
-        );
+        unless ( $self->unpaid ) {
+            $self->user->set_bonus(
+                bonus => $wd{bonus} - $new_wd{bonus},
+                comment => { comment => sprintf("changed withdraw %d by admin", $self->id) },
+            );
+        }
     }
 
-    my $ret = $self->SUPER::api_set( %new_wd );
+    my $ret = $self->set( %new_wd );
     $us->touch;
 
-    return $ret;
+    return scalar $self->get;
 }
 
 sub sum {
