@@ -305,6 +305,11 @@ sub paysystems {
 
         my $proposed_payment = $args{amount} || $forecast;
 
+        my $payment_mode = $p->{payment_mode};
+        if ( $p->{recurring} || $p->{internal} ) {
+            $payment_mode //= 'internal';
+        }
+
         push @ret, {
             paysystem => $paysystem,
             weight => $p->{weight} || 0,
@@ -319,6 +324,7 @@ sub paysystems {
             ),
             recurring => $p->{recurring} ? 1 : 0,
             internal => $p->{internal} ? 1 : 0,
+            payment_mode => $payment_mode,
             allow_deletion => $p->{allow_deletion} ? 1 : 0,
             user_id => $user->id,
             forecast => $forecast,
