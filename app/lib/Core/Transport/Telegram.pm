@@ -273,22 +273,22 @@ sub task_send {
         }
     }
 
-    my @ret = $self->send( $message );
+    my ( $ret ) = $self->send( $message );
+    my $tg_answer_error = $ret->{error};
 
-    if ( my $error = $ret[0]->{error} ) {
-        if ( ref $error eq 'HASH' ) {
-            # http was executed
-            return SUCCESS, $ret[0] if $error->{error_code} == 403; # skip
-            return undef, $ret[0] if $error->{error_code} == 400; # bad request
-            return undef, $ret[0] if $error->{error_code} == 404; # method not found
-            return FAIL, $ret[0]; # retry
-        } else {
-            # chat_id or token not found, etc...
-            return SUCCESS, $ret[0]; # skip
-        }
-    } else {
-        return SUCCESS, $ret[0];
+    if ( ref $tg_answer_error eq 'HASH' ) {
+            # Check `error` field from Telegram answer
+            return SUCCESS, $ret if $tg_answer_error->{error_code} == 403; # skip
+            return undef, $ret if $tg_answer_error->{error_code} == 400; # bad request
+            return undef, $ret if $tg_answer_error->{error_code} == 404; # method not found
+            return FAIL, $ret; # retry
     }
+
+    if ( $ret->{error_info} ) {
+        return FAIL, $ret;
+    }
+
+    return SUCCESS, $ret;
 }
 
 sub send {
@@ -364,6 +364,10 @@ sub send {
                 error => $message,
                 profile => $profile,
                 request => decode_json( $response->request->content ),
+                error_info => {
+                    code => $response->code,
+                    line => $response->status_line,
+                },
             };
         }
     }
