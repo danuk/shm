@@ -87,7 +87,9 @@ sub job_make_forecasts {
     if ( $task ) {
         $settings{days_before_notification} = $task->settings->{days} || $task->settings->{days_before_notification};
         $settings{blocked} = $task->settings->{blocked};
-        $check_period = $task->settings->{check_period};
+        $check_period = $task->settings->{check_period} || '1d';
+        # Проверяем формат: число + допустимый символ (d=дни, m=месяцы, y=годы, H=часы, M=минуты)
+        $check_period = '1d' unless $check_period =~ /^\d+[dmyHM]$/;
     }
 
     my $spool = get_service('spool');
@@ -110,6 +112,13 @@ sub job_make_forecasts {
             $settings{days_before_notification} ? ( days => $settings{days_before_notification} ) : (),
             $settings{blocked} ? ( blocked => $settings{blocked} ) : (),
         );
+
+        $u->set_settings({
+            forecast => {
+                last_check_date => now(),
+            },
+        });
+
         next unless $ret->{total};
 
         $spool->add(
@@ -123,14 +132,9 @@ sub job_make_forecasts {
                 task_id => $task->id,
             },
         );
+        $spool->commit;
 
         push @affected, $u->id;
-
-        $u->set_settings({
-            forecast => {
-                last_check_date => now(),
-            },
-        });
     }
     return SUCCESS, { msg => 'successful', user_matches => \@affected };
 }
