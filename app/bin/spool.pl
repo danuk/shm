@@ -53,17 +53,10 @@ for (;;) {
             warn $error;
 
             if ( ref $task ) {
-                if ( $error =~ /^Task timeout:/ ) {
-                    $task->finish_task(
-                        status   => TASK_STUCK,
-                        response => { error => $error },
-                    );
-                } else {
-                    $task->retry_task(
-                        status   => TASK_FAIL,
-                        response => { error => $error },
-                    );
-                }
+                $task->retry_task(
+                    status   => TASK_FAIL,
+                    response => { error => $error },
+                );
             }
         };
         $user->commit;
