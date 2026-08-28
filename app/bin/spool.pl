@@ -15,7 +15,7 @@ POSIX::setuid(33); # www-data
 
 $| = 1;
 
-my $TASK_TIMEOUT = 300; # 5 min
+my $TASK_TIMEOUT = $ENV{TASK_TIMEOUT} || 300; # 5 min
 
 # SIGALRM handler: fires when a task exceeds $TASK_TIMEOUT seconds.
 # The die is caught by Try::Tiny's catch block.
