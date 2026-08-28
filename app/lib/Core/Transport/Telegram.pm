@@ -356,14 +356,20 @@ sub send {
         my $message = decode_json( $response->decoded_content );
         if ( $response->is_success ) {
             logger->info( $message );
-            push @ret, { message => 'successful', profile => $profile, response => $message };
+            push @ret, {
+                message => 'successful',
+                profile => $profile,
+                response => $message,
+            };
             $self->response( $message );
         } else {
             logger->error( $message );
             push @ret, {
-                error => $message,
+                message => 'error',
                 profile => $profile,
+                response => $message,
                 request => decode_json( $response->request->content ),
+                error => $message,
                 error_info => {
                     code => $response->code,
                     line => $response->status_line,
