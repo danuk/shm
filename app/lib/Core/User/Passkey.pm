@@ -6,7 +6,158 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Utils qw( now encode_json decode_json switch_user );
 
-use MIME::Base64 qw(decode_base64url encode_base64url);
+use MIME::Base64 qw(decode_base64url encode_base64url encode_base64 decode_base64);
+use Digest::SHA qw(sha256);
+use Crypt::PK::ECC;
+
+sub _cbor_read_uint {
+    my ($data, $pos, $info) = @_;
+    if ( $info < 24 ) {
+        return ( $info, $$pos );
+    } elsif ( $info == 24 ) {
+        my $v = unpack( 'C', substr( $data, $$pos, 1 ) );
+        return ( $v, $$pos + 1 );
+    } elsif ( $info == 25 ) {
+        my $v = unpack( 'n', substr( $data, $$pos, 2 ) );
+        return ( $v, $$pos + 2 );
+    } elsif ( $info == 26 ) {
+        my $v = unpack( 'N', substr( $data, $$pos, 4 ) );
+        return ( $v, $$pos + 4 );
+    } elsif ( $info == 27 ) {
+        my ( $hi, $lo ) = unpack( 'NN', substr( $data, $$pos, 8 ) );
+        return ( $hi * 2**32 + $lo, $$pos + 8 );
+    }
+    die "CBOR: unsupported additional info $info";
+}
+
+sub _cbor_decode_item {
+    my ( $data, $pos ) = @_;
+
+    my $first = unpack( 'C', substr( $$data, $$pos, 1 ) );
+    $$pos++;
+    my $major = $first >> 5;
+    my $info  = $first & 0x1f;
+
+    if ( $major == 0 ) { # unsigned int
+        my ( $v, $np ) = _cbor_read_uint( $$data, \$$pos, $info );
+        $$pos = $np;
+        return $v;
+    } elsif ( $major == 1 ) { # negative int
+        my ( $v, $np ) = _cbor_read_uint( $$data, \$$pos, $info );
+        $$pos = $np;
+        return -1 - $v;
+    } elsif ( $major == 2 ) { # byte string
+        my ( $len, $np ) = _cbor_read_uint( $$data, \$$pos, $info );
+        $$pos = $np;
+        my $v = substr( $$data, $$pos, $len );
+        $$pos += $len;
+        return $v;
+    } elsif ( $major == 3 ) { # text string
+        my ( $len, $np ) = _cbor_read_uint( $$data, \$$pos, $info );
+        $$pos = $np;
+        my $v = substr( $$data, $$pos, $len );
+        $$pos += $len;
+        return $v;
+    } elsif ( $major == 4 ) { # array
+        my ( $len, $np ) = _cbor_read_uint( $$data, \$$pos, $info );
+        $$pos = $np;
+        my @arr;
+        push @arr, _cbor_decode_item( $data, $pos ) for 1 .. $len;
+        return \@arr;
+    } elsif ( $major == 5 ) { # map
+        my ( $len, $np ) = _cbor_read_uint( $$data, \$$pos, $info );
+        $$pos = $np;
+        my %map;
+        for ( 1 .. $len ) {
+            my $k = _cbor_decode_item( $data, $pos );
+            my $v = _cbor_decode_item( $data, $pos );
+            $map{ $k } = $v;
+        }
+        return \%map;
+    } elsif ( $major == 7 ) { # simple/float/bool/null
+        if ( $info == 20 ) { return 0 }
+        if ( $info == 21 ) { return 1 }
+        if ( $info == 22 ) { return undef }
+        die "CBOR: unsupported simple value $info";
+    }
+    die "CBOR: unsupported major type $major";
+}
+
+sub _cbor_decode {
+    my $bytes = shift;
+    my $pos = 0;
+    return _cbor_decode_item( \$bytes, \$pos );
+}
+
+sub _parse_auth_data {
+    my $auth_data = shift;
+
+    return undef unless length( $auth_data ) >= 37;
+
+    my $rp_id_hash = substr( $auth_data, 0, 32 );
+    my $flags      = unpack( 'C', substr( $auth_data, 32, 1 ) );
+    my $counter    = unpack( 'N', substr( $auth_data, 33, 4 ) );
+
+    my %result = (
+        rp_id_hash    => $rp_id_hash,
+        flags         => $flags,
+        user_present  => ( $flags & 0x01 ) ? 1 : 0,
+        user_verified => ( $flags & 0x04 ) ? 1 : 0,
+        counter       => $counter,
+    );
+
+    my $pos = 37;
+    if ( $flags & 0x40 && length( $auth_data ) > $pos ) {
+        my $aaguid = substr( $auth_data, $pos, 16 ); $pos += 16;
+        my $cred_id_len = unpack( 'n', substr( $auth_data, $pos, 2 ) ); $pos += 2;
+        my $credential_id = substr( $auth_data, $pos, $cred_id_len ); $pos += $cred_id_len;
+
+        my $cose_key = _cbor_decode_item( \$auth_data, \$pos );
+
+        $result{aaguid} = $aaguid;
+        $result{credential_id} = $credential_id;
+        $result{cose_key} = $cose_key;
+    }
+
+    return \%result;
+}
+
+sub _cose_key_to_stored_format {
+    my $cose_key = shift;
+
+    return undef unless ref $cose_key eq 'HASH';
+
+    my $kty = $cose_key->{1};
+    my $alg = $cose_key->{3};
+    my $crv = $cose_key->{-1};
+    my $x   = $cose_key->{-2};
+    my $y   = $cose_key->{-3};
+
+    return undef unless $kty && $kty == 2 && $crv && $crv == 1 && $x && $y;
+
+    return {
+        kty => 2,
+        alg => $alg,
+        crv => 1,
+        x   => unpack( 'H*', $x ),
+        y   => unpack( 'H*', $y ),
+    };
+}
+
+sub _stored_key_to_pk {
+    my $stored = shift;
+
+    return undef unless ref $stored eq 'HASH' && $stored->{x} && $stored->{y};
+
+    my $raw = pack( 'C', 0x04 ) . pack( 'H*', $stored->{x} ) . pack( 'H*', $stored->{y} );
+
+    my $pk = eval {
+        my $k = Crypt::PK::ECC->new();
+        $k->import_key_raw( $raw, 'secp256r1' );
+        $k;
+    };
+    return $pk;
+}
 
 sub table { return 'users' };
 
@@ -202,9 +353,34 @@ sub api_register_complete {
         return undef;
     }
 
+    my $attestation_object = decode_base64url($args{response}->{attestationObject} || '');
+    my $attestation = eval { _cbor_decode($attestation_object) };
+    unless ($attestation && ref $attestation eq 'HASH' && $attestation->{authData}) {
+        $report->add_error('INVALID_ATTESTATION');
+        return undef;
+    }
+
+    my $auth_data = eval { _parse_auth_data($attestation->{authData}) };
+    unless ($auth_data && $auth_data->{cose_key}) {
+        $report->add_error('INVALID_ATTESTATION');
+        return undef;
+    }
+
+    my $expected_rp_id_hash = sha256($self->get_rp_id());
+    unless ($auth_data->{rp_id_hash} eq $expected_rp_id_hash) {
+        $report->add_error('RP_ID_MISMATCH');
+        return undef;
+    }
+
+    my $stored_key = _cose_key_to_stored_format($auth_data->{cose_key});
+    unless ($stored_key) {
+        $report->add_error('UNSUPPORTED_KEY_ALGORITHM');
+        return undef;
+    }
+
     $self->add_credential($user,
         id => $args{credential_id},
-        public_key => $args{response}->{attestationObject},
+        public_key => $stored_key,
         name => $args{name},
     );
 
@@ -347,8 +523,42 @@ sub api_auth_public {
         return undef;
     }
 
-    unless ($self->find_credential($user, $args{credential_id})) {
+    my $credential = $self->find_credential($user, $args{credential_id});
+    unless ($credential) {
         $report->add_error('UNKNOWN_CREDENTIAL');
+        return undef;
+    }
+
+    my $pk = _stored_key_to_pk($credential->{public_key});
+    unless ($pk) {
+        # Легаси/повреждённая запись без корректного публичного ключа - доверять нельзя
+        $report->add_error('CREDENTIAL_REQUIRES_REREGISTRATION');
+        return undef;
+    }
+
+    my $auth_data_raw = decode_base64url($args{response}->{authenticatorData} || '');
+    my $signature     = decode_base64url($args{response}->{signature} || '');
+    unless ($auth_data_raw && $signature) {
+        $report->add_error('INVALID_PASSKEY_RESPONSE');
+        return undef;
+    }
+
+    my $auth_data = _parse_auth_data($auth_data_raw);
+    unless ($auth_data && $auth_data->{user_present}) {
+        $report->add_error('INVALID_AUTHENTICATOR_DATA');
+        return undef;
+    }
+
+    unless ($auth_data->{rp_id_hash} eq sha256($self->get_rp_id())) {
+        $report->add_error('RP_ID_MISMATCH');
+        return undef;
+    }
+
+    my $client_data_json = decode_base64url($args{response}->{clientDataJSON} || '');
+    my $signed_data = $auth_data_raw . sha256($client_data_json);
+
+    unless (eval { $pk->verify_message($signature, $signed_data, 'SHA256') }) {
+        $report->add_error('INVALID_SIGNATURE');
         return undef;
     }
 
