@@ -481,9 +481,13 @@ sub make_event {
     }
 
     my @commands = $event->get_events( name => $event_name );
-    for ( @commands ) {
+    for my $e ( @commands ) {
+        my $prio = delete $e->{settings}->{prio};
+        $prio = $args{prio} if $args{prio};
+
         $event->make(
-            event => $_,
+            event => $e,
+            prio => $prio || 100,
             $args{settings} ? ( settings => $args{settings } ) : (),
         );
     }
