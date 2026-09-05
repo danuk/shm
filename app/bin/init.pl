@@ -141,34 +141,61 @@ sub run_legacy_migration {
 }
 
 sub sql_split {
-    my $sql = shift;
+    my $sql       = shift;
+    my $delimiter = ';';
+    my @statements;
 
-    my @statements = ("");
-    my @tokens     = grep { ord } split /([\\';])/, $sql;
-    my $in_string  = 0;
-    my $escape     = 0;
-
-    while (@tokens) {
-        my $token = shift @tokens;
-        if ($in_string) {
-            $statements[-1] .= $token;
-            if ($token eq "\\") {
-                $escape = 1;
-                next;
-            }
-            $in_string = 0 if not $escape and $token eq "'";
-            $escape = 0;
-
+    while ( length $sql ) {
+        # Handle DELIMITER directive (case-insensitive, at start of current position)
+        if ( $sql =~ /\A\s*DELIMITER[ \t]+(\S+)[^\n]*(?:\n|\z)/si ) {
+            $delimiter = $1;
+            $sql = substr( $sql, $+[0] );
             next;
         }
-        if ($token eq ';') {
-            push @statements, "";
-            next;
+
+        my $pos = _sql_find_delimiter( $sql, $delimiter );
+        if ( defined $pos ) {
+            my $stmt = substr( $sql, 0, $pos );
+            push @statements, $stmt if $stmt =~ /\S/;
+            $sql = substr( $sql, $pos + length($delimiter) );
         }
-        $statements[-1] .= $token;
-        $in_string = 1 if $token eq "'";
+        else {
+            push @statements, $sql if $sql =~ /\S/;
+            last;
+        }
     }
-    return grep { /\S/ } @statements;
+
+    return @statements;
+}
+
+sub _sql_find_delimiter {
+    my ( $sql, $delim ) = @_;
+    my $len       = length $sql;
+    my $dlen      = length $delim;
+    my $in_string = 0;
+    my $escape    = 0;
+    my $i         = 0;
+
+    while ( $i < $len ) {
+        my $c = substr( $sql, $i, 1 );
+        if ( $in_string ) {
+            if    ( $escape )        { $escape = 0 }
+            elsif ( $c eq '\\' )     { $escape = 1 }
+            elsif ( $c eq "'" )      { $in_string = 0 }
+            $i++;
+        }
+        else {
+            if ( $c eq "'" ) {
+                $in_string = 1;
+                $i++;
+            }
+            elsif ( $dlen <= $len - $i && substr( $sql, $i, $dlen ) eq $delim ) {
+                return $i;
+            }
+            else { $i++ }
+        }
+    }
+    return undef;
 }
 
 sub do_sql {
