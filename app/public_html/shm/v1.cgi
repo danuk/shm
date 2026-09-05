@@ -308,6 +308,7 @@ state $routes //= {
         method => 'passwd',
         params => {
             password => { type => 'string', required => 1, min_length => 6, max_length => 128 },
+            login    => { type => 'string', min_length => 1, max_length => 128 },
         },
     },
 },
@@ -332,6 +333,7 @@ state $routes //= {
         skip_check_auth => 1,
         params => {
             token => { type => 'string', required => 1, min_length => 8, max_length => 256 },
+            login => { type => 'string', required => 1, min_length => 1, max_length => 128 },
         },
         swagger => { summary => 'Проверка токена сброса пароля пользователя перед сменой пароля' },
     },
@@ -342,6 +344,7 @@ state $routes //= {
         params => {
             password => { type => 'string', required => 1, min_length => 6, max_length => 128 },
             token    => { type => 'string', required => 1, min_length => 8, max_length => 256 },
+            login    => { type => 'string', required => 1, min_length => 1, max_length => 128 },
         },
         swagger => { summary => 'Смена пароля пользователя по токену сброса' },
     },
@@ -894,6 +897,7 @@ state $routes //= {
         params => {
             user_id  => { type => 'integer', required => 1, min => 1 },
             password => { type => 'string',  required => 1, min_length => 6, max_length => 128 },
+            login    => { type => 'string', min_length => 1, max_length => 128 },
         },
         swagger => { summary => 'Смена пароля клиенту' },
     },

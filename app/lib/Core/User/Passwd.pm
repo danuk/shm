@@ -10,6 +10,7 @@ sub passwd {
     my $self = shift;
     my %args = (
         password => undef,
+        login    => undef,
         @_,
     );
 
@@ -25,11 +26,22 @@ sub passwd {
         $user = get_service('user', _id => $args{user_id} );
     }
 
-    my $password = $user->make_password( $args{password} );
+    my $login_str = $args{login} || $user->get_login;
+    unless ( $login_str ) {
+        $report->add_error('Login not found');
+        return undef;
+    }
 
-    get_service('sessions')->delete_user_sessions( user_id => $self->user_id );
+    my $login_obj = $user->logins->id( $login_str );
+    unless ( $login_obj ) {
+        $report->add_error('Account not found');
+        return undef;
+    }
 
-    $user->set( password => $password );
+    $login_obj->set_password( $args{password} );
+
+    get_service('sessions')->delete_user_sessions( user_id => $user->user_id );
+
     return scalar $user->get;
 }
 
@@ -62,7 +74,8 @@ sub passwd_reset_request {
        $email = $args{email};
     }
 
-    my $existing_user = $self->check_exists_logins( login => $args{login} || $email );
+    my $login_str = $args{login} || $email;
+    my $existing_user = $self->check_exists_logins( login => $login_str );
     my $user_id = $existing_user ? $existing_user->{user_id} : undef;
 
     if ( !$user_id && $email ) {
@@ -88,22 +101,35 @@ sub passwd_reset_request {
         return { msg => 'Successful' };
     }
 
-    my $token = passgen( 35 );
+
+    $login_str ||= $self->get_login;
+    return { msg => 'Login not found' } unless $login_str;
+
+    my $login_obj = $self->logins->id( $login_str );
+    return { msg => 'Account not found' } unless $login_obj;
+
+    my $token   = passgen( 35 );
     my $expires = time() + 3600;
 
-    $self->user->set_settings({
-        reset_password_verify_token => $token,
-        reset_password_verify_expires => $expires,
+    $login_obj->set_settings({
+        reset_password => {
+            token => $token,
+            expires => $expires,
+        },
     });
+
+    my $send_to = $email || $self->get_email->{email};
+    return { msg => 'Email not found' } unless $send_to;
 
     my $project_name = cfg('company')->{name} || 'SHM';
     my $url = cfg('cli')->{url};
-    my $link = $url ? "$url?token=$token" : undef;
+    my $link = $url ? "$url?login=$login_str&token=$token" : undef;
     my %mail_vars = (
         token => $token,
+        login => $login_str,
         link => $link || '',
         url => $url || '',
-        email => $args{email} || '',
+        email => $send_to,
         project_name => $project_name,
     );
 
@@ -118,7 +144,7 @@ sub passwd_reset_request {
     );
 
     $self->send_mail_message(
-        to => $args{email},
+        to => $send_to,
         subject => $subject,
         message => $message,
     );
@@ -185,32 +211,27 @@ sub passwd_reset_verify {
     my $self = shift;
     my %args = (
         token => undef,
+        login => undef,
         password => undef,
         @_,
     );
 
-    my $token = $args{token};
+    my $token     = $args{token};
+    my $login_str = $args{login};
 
-    # TODO
-    my ( $user ) = $self->_list(
-        where => {
-            sprintf('%s->>"$.%s"', 'settings', 'reset_password_verify_token') => $token,
-        },
-        limit => 1,
-    );
+    return { msg => 'Token is required' } unless $token;
+    return { msg => 'Login is required' } unless $login_str;
 
-    unless ( $user ) {
+    my $login_obj = $self->logins->id( $login_str );
+    return { msg => 'Account not found' } unless $login_obj;
+
+    my $reset = $login_obj->settings->{reset_password} || {};
+
+    unless ( $reset->{token} && $reset->{token} eq $token ) {
         return { msg => 'Invalid token' };
     }
 
-    $self = $self->id( $user->{user_id} );
-
-    my $settings = $self->get_settings;
-    unless ( $settings->{reset_password_verify_token} && $settings->{reset_password_verify_token} eq $token ) {
-        return { msg => 'Invalid token' };
-    }
-
-    if ( $settings->{reset_password_verify_expires} && $settings->{reset_password_verify_expires} < time() ) {
+    if ( $reset->{expires} && $reset->{expires} < time() ) {
         return { msg => 'Token expired' };
     }
 
@@ -218,11 +239,12 @@ sub passwd_reset_verify {
         return { msg => 'Successful' };
     }
 
-    delete $settings->{reset_password_verify_token};
-    delete $settings->{reset_password_verify_expires};
-    $self->set( settings => $settings );
-
-    $self->passwd( password => $args{password} );
+    $login_obj->set_settings({
+        reset_password => undef,
+        email => {
+            verified => 1,
+        },
+    });
 
     return { msg => 'Password reset successful' };
 }
