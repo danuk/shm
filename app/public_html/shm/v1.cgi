@@ -770,7 +770,7 @@ state $routes //= {
         params => {
             user_id    => { type => 'integer', required => 1, min => 1 },
             service_id => { type => 'integer', required => 1, min => 1 },
-            months     => { type => 'number', min => 1 },
+            months     => { type => 'number', min => 0.001 },
             cost       => { type => 'number', min => 0 },
             setting    => { type => 'object' },
         },
