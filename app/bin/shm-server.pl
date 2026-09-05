@@ -32,7 +32,7 @@ BEGIN {
 my $listen_addr = '0.0.0.0';
 my $listen_port = 9082;
 my $num_workers = $ENV{WORKERS_COUNT} || 4;
-my $timeout = 300;
+my $timeout = $ENV{WORKER_TIMEOUT} || 300;
 my $uid = 'www-data';
 my $gid = 'www-data';
 
