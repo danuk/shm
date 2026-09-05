@@ -73,7 +73,7 @@ sub job_cleanup {
     get_service('SpoolHistory')->cleanup(); #auto commit
     get_service('Sessions')->cleanup(); # auto commit
     get_service('Statistics')->cleanup()->commit();
-    get_service('Logs::Api')->cleanup()->commit();
+    get_service('Logs::Api')->cleanup(); # auto commit
 
     return SUCCESS, { msg => 'successful' };
 }

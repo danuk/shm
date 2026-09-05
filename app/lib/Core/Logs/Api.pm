@@ -6,6 +6,7 @@ use parent 'Core::Base';
 use Core::Base;
 
 sub table { return 'logs_api' }
+sub dbh { shift->dbh_auto_commit }
 
 sub structure {
     return {
