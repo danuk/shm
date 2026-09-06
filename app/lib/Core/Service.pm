@@ -35,7 +35,7 @@ sub structure {
         },
         category => {
             type => 'text',
-            required => 1,
+            default => '%',
             title => 'категория',
         },
         children => {
