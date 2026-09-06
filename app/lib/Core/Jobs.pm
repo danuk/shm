@@ -143,7 +143,7 @@ sub job_make_forecast_event {
         my $next_check_date = add_period( $last_check_date, $check_period );
         if ( now() lt $next_check_date ) {
             $self->logger->info("Пропускаем forecast для " . $u->id . ": следующий forecast разрешен после $next_check_date");
-            return SUCCESS, { msg => 'skipped' };
+            return SUCCESS, { msg => 'skip until: ' . $next_check_date };
         }
     }
 
