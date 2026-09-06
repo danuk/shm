@@ -205,7 +205,8 @@ CREATE TABLE IF NOT EXISTS `user_services` (
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`user_service_id`),
   FOREIGN KEY (parent) REFERENCES user_services (user_service_id) ON DELETE SET NULL,
-  KEY idx_user_id (user_id)
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_forecast_candidates` (`auto_bill`, `status`, `withdraw_id`, `expire`, `user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `users` (

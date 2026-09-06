@@ -97,19 +97,17 @@ sub job_make_forecasts {
     }
 
     my $spool = get_service('spool');
-    my $users = $self->user->items;
 
     my @affected;
-    for my $u ( @$users ) {
-        my $candidates = $u->pays->forecast_candidates(
-            $settings{days_before_notification} ? ( days => $settings{days_before_notification} ) : (),
-            $settings{blocked} ? ( blocked => $settings{blocked} ) : (),
-        );
+    my $user_candidates = $self->user->pays->forecast_candidates(
+        distinct_users => 1,
+        $settings{days_before_notification} ? ( days => $settings{days_before_notification} ) : (),
+        $settings{blocked} ? ( blocked => $settings{blocked} ) : (),
+    );
 
-        next unless scalar keys %{ $candidates };
-
+    for my $u ( @$user_candidates ) {
         $spool->add(
-            user_id => $u->id,
+            user_id => $u->{user_id},
             prio => 110,
             event => {
                 name => 'SYSTEM',
@@ -120,10 +118,12 @@ sub job_make_forecasts {
             },
             settings => {
                 check_period => $check_period,
+                days         => $settings{days_before_notification},
+                blocked      => $settings{blocked},
             },
         );
 
-        push @affected, $u->id;
+        push @affected, $u->{user_id};
     }
     return SUCCESS, { msg => 'successful', user_matches => \@affected };
 }
@@ -147,14 +147,19 @@ sub job_make_forecast_event {
         }
     }
 
+    my $ret = $u->pays->forecast(
+        $task->settings->{days}    ? ( days    => $task->settings->{days}    ) : (),
+        $task->settings->{blocked} ? ( blocked => $task->settings->{blocked} ) : (),
+    );
+
     $u->set_settings({
         forecast => {
             last_check_date => now(),
         },
     });
 
-    $u->make_event( 'forecast' );
-    return SUCCESS, { msg => 'successful' };
+    $u->make_event( 'forecast', settings => { forecast => $ret } ) if $ret->{total};
+    return SUCCESS, { msg => 'successful ('. $ret->{total} .')' };
 }
 
 sub job_users {
