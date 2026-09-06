@@ -93,7 +93,7 @@ sub pays {
     return $self;
 }
 
-sub forecast {
+sub forecast_candidates {
     my $self = shift;
     my %args = (
         days => 3,
@@ -101,8 +101,6 @@ sub forecast {
         blocked => 0,
         get_smart_args(@_),
     );
-
-    my $user = $self->user;
 
     my @statuses = (
         STATUS_INIT,
@@ -115,7 +113,7 @@ sub forecast {
 
     my $start_date = add_date_time( start_of_day(), day => $args{consider_today} ? 0 : 1 );
 
-    my $user_services = get_service('UserService', user_id => $self->user_id )->list_prepare(
+    return get_service('UserService', user_id => $self->user_id )->list_prepare(
         where => {
             auto_bill => \[ '= 1'],
             status => { -in => \@statuses },
@@ -130,6 +128,20 @@ sub forecast {
             expire => 'asc',
         ],
     )->with('services','withdraws','settings')->get;
+}
+
+sub forecast {
+    my $self = shift;
+    my %args = (
+        days => 3,
+        consider_today => 0,
+        blocked => 0,
+        get_smart_args(@_),
+    );
+
+    my $user = $self->user;
+
+    my $user_services = $self->forecast_candidates(%args);
 
     my $bonus = $user->get_bonus,
 

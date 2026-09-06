@@ -84,14 +84,16 @@ sub job_make_forecasts {
 
     return undef, { error => 'This task must be run under admin' } unless $self->user->authenticated->is_admin;
 
-    my $check_period;
+    my $check_period = '1d';
     my %settings;
+
     if ( $task ) {
         $settings{days_before_notification} = $task->settings->{days} || $task->settings->{days_before_notification};
         $settings{blocked} = $task->settings->{blocked};
-        $check_period = $task->settings->{check_period} || '1d';
-        # Проверяем формат: число + допустимый символ (d=дни, m=месяцы, y=годы, H=часы, M=минуты)
-        $check_period = '1d' unless $check_period =~ /^\d+[dmyHM]$/;
+
+        if ( $task->settings->{check_period} =~ /^\d+[dmyHM]$/ ) {
+            $check_period = $task->settings->{check_period};
+        }
     }
 
     my $spool = get_service('spool');
@@ -99,29 +101,12 @@ sub job_make_forecasts {
 
     my @affected;
     for my $u ( @$users ) {
-
-        if ( $check_period ) {
-            if ( my $last_check_date = $u->get_settings->{forecast}->{last_check_date} ) {
-                my $next_check_date = add_period( $last_check_date, $check_period );
-                if ( now() lt $next_check_date ) {
-                    $self->logger->info("Пропускаем forecast для " . $u->id . ": следующий forecast разрешен после $next_check_date");
-                    next;
-                }
-            }
-        }
-
-        my $ret = $u->pays->forecast(
+        my $candidates = $u->pays->forecast_candidates(
             $settings{days_before_notification} ? ( days => $settings{days_before_notification} ) : (),
             $settings{blocked} ? ( blocked => $settings{blocked} ) : (),
         );
 
-        $u->set_settings({
-            forecast => {
-                last_check_date => now(),
-            },
-        });
-
-        next unless $ret->{total};
+        next unless scalar keys %{ $candidates };
 
         $spool->add(
             user_id => $u->id,
@@ -133,8 +118,10 @@ sub job_make_forecasts {
                 method => 'job_make_forecast_event',
                 task_id => $task->id,
             },
+            settings => {
+                check_period => $check_period,
+            },
         );
-        $spool->commit;
 
         push @affected, $u->id;
     }
@@ -143,7 +130,30 @@ sub job_make_forecasts {
 
 sub job_make_forecast_event {
     my $self = shift;
-    $self->user->make_event( 'forecast' );
+    my $task = shift;
+
+    my $u = $self->user;
+    unless ( $u->lock() ) {
+        return FAIL, { error => 'User is locked' };
+    }
+
+    my $check_period = $task && $task->settings->{check_period} || '1d';
+
+    if ( my $last_check_date = $u->get_settings->{forecast}->{last_check_date} ) {
+        my $next_check_date = add_period( $last_check_date, $check_period );
+        if ( now() lt $next_check_date ) {
+            $self->logger->info("Пропускаем forecast для " . $u->id . ": следующий forecast разрешен после $next_check_date");
+            return SUCCESS, { msg => 'skipped' };
+        }
+    }
+
+    $u->set_settings({
+        forecast => {
+            last_check_date => now(),
+        },
+    });
+
+    $u->make_event( 'forecast' );
     return SUCCESS, { msg => 'successful' };
 }
 
