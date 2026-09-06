@@ -960,6 +960,7 @@ sub query_select {
         limit => undef,
         offset => undef,
         join => undef,
+        group_by => undef,
         order => undef,
         extra => undef,
         @_,
@@ -1046,6 +1047,11 @@ sub query_select {
             my ( $where, @bind ) = $sql->where( $args{where} );
             $query .= $where;
             push @{ $args{vars} }, @bind;
+    }
+
+    if ( $args{group_by} ) {
+        my @cols = ref $args{group_by} ? @{ $args{group_by} } : ( $args{group_by} );
+        $query .= ' GROUP BY ' . join( ', ', map { "`$_`" } @cols );
     }
 
     if ( $args{order} ) {
