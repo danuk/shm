@@ -84,15 +84,17 @@ sub job_make_forecasts {
 
     return undef, { error => 'This task must be run under admin' } unless $self->user->authenticated->is_admin;
 
-    my $check_period = '1d';
+    my $notify_cooldown = '1d';
     my %settings;
 
     if ( $task ) {
         $settings{days_before_notification} = $task->settings->{days} || $task->settings->{days_before_notification};
         $settings{blocked} = $task->settings->{blocked};
 
-        if ( $task->settings->{check_period} =~ /^\d+[dmyHM]$/ ) {
-            $check_period = $task->settings->{check_period};
+        # check_period is a legacy alias for notify_cooldown
+        my $cooldown = $task->settings->{notify_cooldown} || $task->settings->{check_period};
+        if ( $cooldown && $cooldown =~ /^\d+[dmyHM]$/ ) {
+            $notify_cooldown = $cooldown;
         }
     }
 
@@ -117,7 +119,7 @@ sub job_make_forecasts {
                 task_id => $task->id,
             },
             settings => {
-                check_period => $check_period,
+                notify_cooldown => $notify_cooldown,
                 days         => $settings{days_before_notification},
                 blocked      => $settings{blocked},
             },
@@ -137,10 +139,11 @@ sub job_make_forecast_event {
         return FAIL, { error => 'User is locked' };
     }
 
-    my $check_period = $task && $task->settings->{check_period} || '1d';
+    # check_period is a legacy alias for notify_cooldown
+    my $notify_cooldown = $task && ( $task->settings->{notify_cooldown} || $task->settings->{check_period} ) || '1d';
 
     if ( my $last_check_date = $u->get_settings->{forecast}->{last_check_date} ) {
-        my $next_check_date = add_period( $last_check_date, $check_period );
+        my $next_check_date = add_period( $last_check_date, $notify_cooldown );
         if ( now() lt $next_check_date ) {
             $self->logger->info("Пропускаем forecast для " . $u->id . ": следующий forecast разрешен после $next_check_date");
             return SUCCESS, { msg => 'skip until: ' . $next_check_date };
