@@ -5,6 +5,7 @@ use base qw(Exporter);
 
 our @EXPORT = qw(
     SUCCESS
+    SKIP
     FAIL
 
     STATUS_INIT
@@ -33,6 +34,7 @@ our @EXPORT = qw(
     TASK_DELAYED
     TASK_STUCK
     TASK_PAUSED
+    TASK_SKIPPED
 
     GROUP_ID_LOCAL
     GROUP_ID_MAIL
@@ -40,6 +42,7 @@ our @EXPORT = qw(
 
 use constant {
     SUCCESS => 1,
+    SKIP => 2,
     FAIL => 0,
 };
 
@@ -81,6 +84,7 @@ use constant {
     TASK_DELAYED => 'DELAYED',
     TASK_STUCK => 'STUCK',
     TASK_PAUSED => 'PAUSED',
+    TASK_SKIPPED => 'SKIPPED',
 };
 
 use constant {

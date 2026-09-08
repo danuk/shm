@@ -56,6 +56,8 @@ sub make_task {
                return $self->task_answer( TASK_STUCK, %{ $response_data//={} } );
             } elsif ( $status == SUCCESS  ) {
                 return $self->task_answer( TASK_SUCCESS, %{ $response_data//={} } );
+            } elsif ( $status == SKIP  ) {
+                return $self->task_answer( TASK_SKIPPED, %{ $response_data//={} } );
             } else {
                 return $self->task_answer( TASK_FAIL, error => 'Transport error', %{ $response_data//={} } );
             }
@@ -100,6 +102,8 @@ sub make_task {
 
             $us->set_status_by_event( $self->event->{name} );
         }
+    } elsif ( $status == SKIP ) {
+        return $self->task_answer( TASK_SKIPPED, %{ $response_data//={} } );
     } else {
         return $self->task_answer( TASK_FAIL, error => 'Transport error', %{ $response_data//={} } );
     }
