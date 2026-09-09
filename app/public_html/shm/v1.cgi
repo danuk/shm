@@ -1266,6 +1266,52 @@ state $routes //= {
         swagger => { summary => 'Статусы задач' },
     },
 },
+'/admin/spool/queues' => {
+    swagger => { tags => 'Задачи' },
+    GET => {
+        params => {
+            id   => { type => 'integer', min => 1 },
+            name => { type => 'string' },
+        },
+        controller => 'SpoolQueue',
+        swagger => { summary => 'Список очередей задач' },
+    },
+    PUT => {
+        controller => 'SpoolQueue',
+        swagger => { summary => 'Создание очереди задач' },
+    },
+    POST => {
+        controller => 'SpoolQueue',
+        swagger => { summary => 'Изменение очереди задач' },
+    },
+},
+'/admin/spool/queues/delete' => {
+    swagger => { tags => 'Задачи' },
+    POST => {
+        params => { id => { type => 'integer', required => 1, min => 1 } },
+        controller => 'SpoolQueue',
+        method => 'api_delete_cascade',
+        swagger => { summary => 'Удалить очередь и архивировать все её задачи' },
+    },
+},
+'/admin/spool/queues/pause' => {
+    swagger => { tags => 'Задачи' },
+    POST => {
+        params => { id => { type => 'integer', required => 1, min => 1 } },
+        controller => 'SpoolQueue',
+        method => 'api_pause',
+        swagger => { summary => 'Приостановить очередь задач' },
+    },
+},
+'/admin/spool/queues/resume' => {
+    swagger => { tags => 'Задачи' },
+    POST => {
+        params => { id => { type => 'integer', required => 1, min => 1 } },
+        controller => 'SpoolQueue',
+        method => 'api_resume',
+        swagger => { summary => 'Возобновить очередь задач' },
+    },
+},
 '/admin/spool/history' => {
     swagger => { tags => 'Задачи' },
     GET => {

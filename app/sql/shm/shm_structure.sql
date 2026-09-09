@@ -158,6 +158,25 @@ CREATE TABLE IF NOT EXISTS `events` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `spool_queues` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `rate_limit` float DEFAULT NULL COMMENT 'max tasks per second, NULL = unlimited',
+  `status` enum('active','paused') NOT NULL DEFAULT 'active',
+  `last_executed_at` datetime DEFAULT NULL COMMENT 'last time a task from this queue was executed',
+  `created_at`       datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `finished_at`      datetime DEFAULT NULL COMMENT 'set automatically when no pending tasks remain',
+  `total_added`  int(11) NOT NULL DEFAULT '0',
+  `cnt_success`  int(11) NOT NULL DEFAULT '0',
+  `cnt_fail`     int(11) NOT NULL DEFAULT '0',
+  `cnt_delayed`  int(11) NOT NULL DEFAULT '0',
+  `cnt_stuck`    int(11) NOT NULL DEFAULT '0',
+  `cnt_paused`   int(11) NOT NULL DEFAULT '0',
+  `cnt_skipped`  int(11) NOT NULL DEFAULT '0',
+  `cnt_pending`  int(11) NOT NULL DEFAULT '0' COMMENT 'tasks not yet terminally finished',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `spool` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -170,8 +189,10 @@ CREATE TABLE IF NOT EXISTS `spool` (
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
   `settings` json DEFAULT NULL,
-  KEY idx_spool_select (`prio`,`status`,`delayed`,`executed`),
-  PRIMARY KEY (`id`)
+  `queue_id` int(11) DEFAULT NULL,
+  KEY idx_spool_select (`prio`,`status`,`delayed`,`executed`,`queue_id`),
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_spool_queue` FOREIGN KEY (`queue_id`) REFERENCES `spool_queues` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `spool_history` (
@@ -187,6 +208,7 @@ CREATE TABLE IF NOT EXISTS `spool_history` (
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
   `settings` json DEFAULT NULL,
+  `queue_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 

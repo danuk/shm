@@ -132,6 +132,7 @@ sub parse {
         mail => sub { $self->srv('Transport::Mail') },
         s3 => sub { $self->srv('S3') },
         spool => sub { $self->srv('Spool', $task_id ? (task_id => $task_id) : (), defined $_[0] ? (_id => $_[0]) : () ) },
+        spool_queue => sub { $self->srv('SpoolQueue') },
         promo => sub { $self->srv('promo', defined $_[0] ? (_id => $_[0]) : () ) },
         misc => sub { $self->srv('misc') },
         logger => sub { $self->srv('logger') },

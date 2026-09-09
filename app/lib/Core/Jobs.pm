@@ -16,6 +16,11 @@ sub job_prolongate {
     return undef, { error => 'This task must be run under admin' } unless $self->user->authenticated->is_admin;
     my $spool = get_service('spool');
 
+    my $queue_id = get_service('SpoolQueue')->add(
+        name       => 'Продление услуг',
+        rate_limit => 1,
+    );
+
     my @arr = get_service('UserService')->list_expired_services( admin => 1 );
 
     for ( @arr ) {
@@ -31,9 +36,10 @@ sub job_prolongate {
         $spool->add(
             user_id => $_->{user_id},
             prio => 50,
+            queue_id => $queue_id,
             event => {
                 name => 'SYSTEM',
-                title => 'user service prolongate event',
+                title => sprintf("Продление услуги (us_id=%d)", $_->{user_service_id} ),
                 kind => 'Jobs',
                 method => 'job_prolongate_event',
                 task_id => $task->id,
@@ -44,7 +50,7 @@ sub job_prolongate {
         );
     }
 
-    return SUCCESS, { msg => 'successful', affected_count => scalar @arr };
+    return SUCCESS, { msg => 'Задачи созданы', queue_id => $queue_id, affected_count => scalar @arr };
 }
 
 sub job_prolongate_event {
@@ -60,9 +66,8 @@ sub job_prolongate_event {
         return FAIL, { error => 'UserService is locked' };
     }
     $us->touch;
-    $us->commit;
 
-    return SUCCESS, { msg => 'successful' };
+    return SUCCESS, { msg => sprintf("Услуга продлена (us_id=%d)", $us->id) };
 }
 
 sub job_cleanup {
@@ -71,6 +76,7 @@ sub job_cleanup {
 
     get_service('us')->cleanup()->commit();
     get_service('SpoolHistory')->cleanup(); #auto commit
+    get_service('SpoolQueue')->cleanup(); #auto commit
     get_service('Sessions')->cleanup(); # auto commit
     get_service('Statistics')->cleanup()->commit();
     get_service('Logs::Api')->cleanup(); # auto commit
@@ -100,6 +106,11 @@ sub job_make_forecasts {
 
     my $spool = get_service('spool');
 
+    my $queue_id = get_service('SpoolQueue')->add(
+        name       => 'Прогноз оплаты',
+        rate_limit => 1,
+    );
+
     my @affected;
     my $user_candidates = $self->user->pays->forecast_candidates(
         distinct_users => 1,
@@ -111,9 +122,10 @@ sub job_make_forecasts {
         $spool->add(
             user_id => $u->{user_id},
             prio => 110,
+            queue_id => $queue_id,
             event => {
                 name => 'SYSTEM',
-                title => 'user forecast event',
+                title => sprintf("Прогноз оплаты (user_id=%d)", $u->{user_id}),
                 kind => 'Jobs',
                 method => 'job_make_forecast_event',
                 task_id => $task->id,
@@ -127,7 +139,7 @@ sub job_make_forecasts {
 
         push @affected, $u->{user_id};
     }
-    return SUCCESS, { msg => 'successful', user_matches => \@affected };
+    return SUCCESS, { msg => 'Задачи созданы', queue_id => $queue_id, user_matches => \@affected };
 }
 
 sub job_make_forecast_event {
@@ -146,7 +158,7 @@ sub job_make_forecast_event {
         my $next_check_date = add_period( $last_check_date, $notify_cooldown );
         if ( now() lt $next_check_date ) {
             $self->logger->info("Пропускаем forecast для " . $u->id . ": следующий forecast разрешен после $next_check_date");
-            return SUCCESS, { msg => 'skip until: ' . $next_check_date };
+            return SKIP, { msg => 'Защита от частых уведомлений. Отложено до: ' . $next_check_date };
         }
     }
 
@@ -161,8 +173,12 @@ sub job_make_forecast_event {
         },
     });
 
-    $u->make_event( 'forecast', settings => { forecast => $ret } ) if $ret->{total};
-    return SUCCESS, { msg => 'successful ('. $ret->{total} .')' };
+    if ( $ret->{total} ) {
+        $u->make_event( 'forecast', settings => { forecast => $ret } );
+        return SUCCESS, { msg => 'Событе активировано. К оплате: '. $ret->{total} };
+    }
+
+    return SKIP, { msg => 'Пропуск, оплата не требуется' };
 }
 
 sub job_users {
@@ -183,10 +199,19 @@ sub job_users {
     );
 
     my $spool = get_service('spool');
+
+    unless ($settings{queue_id} || $settings{user_id}) {
+        $settings{queue_id} = get_service('SpoolQueue')->add(
+            name       => $settings{queue_name} || $task->event->{title},
+            rate_limit => $settings{rate_limit} || 1,
+        );
+    }
+
     for my $user ( @users ) {
         $spool->add(
             user_id => $user->{user_id},
             prio => $settings{prio} || $task->get_prio || 100,
+            $settings{queue_id} ? ( queue_id => $settings{queue_id} ) : (),
             event => {
                 name => 'TASK',
                 title => $task->event->{title},
