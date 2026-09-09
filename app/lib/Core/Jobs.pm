@@ -16,12 +16,15 @@ sub job_prolongate {
     return undef, { error => 'This task must be run under admin' } unless $self->user->authenticated->is_admin;
     my $spool = get_service('spool');
 
+    my @arr = get_service('UserService')->list_expired_services( admin => 1 );
+    unless ( scalar @arr ) {
+        return SKIP, { msg => 'Нет задач в данный момент' };
+    }
+
     my $queue_id = get_service('SpoolQueue')->add(
         name       => 'Продление услуг',
         rate_limit => 1,
     );
-
-    my @arr = get_service('UserService')->list_expired_services( admin => 1 );
 
     for ( @arr ) {
         say sprintf("%d %d %s %s",
@@ -50,7 +53,7 @@ sub job_prolongate {
         );
     }
 
-    return SUCCESS, { msg => 'Задачи созданы', queue_id => $queue_id, affected_count => scalar @arr };
+    return SUCCESS, { msg => 'Задачи созданы', queue_id => $queue_id };
 }
 
 sub job_prolongate_event {
@@ -91,31 +94,31 @@ sub job_make_forecasts {
     return undef, { error => 'This task must be run under admin' } unless $self->user->authenticated->is_admin;
 
     my $notify_cooldown = '1d';
-    my %settings;
+    my %settings = $task ? %{ $task->settings } : ();
 
-    if ( $task ) {
-        $settings{days_before_notification} = $task->settings->{days} || $task->settings->{days_before_notification};
-        $settings{blocked} = $task->settings->{blocked};
+    $settings{days_before_notification} //= delete $settings{days};
 
-        # check_period is a legacy alias for notify_cooldown
-        my $cooldown = $task->settings->{notify_cooldown} || $task->settings->{check_period};
-        if ( $cooldown && $cooldown =~ /^\d+[dmyHM]$/ ) {
-            $notify_cooldown = $cooldown;
-        }
+    # check_period is a legacy alias for notify_cooldown
+    my $cooldown = $settings{notify_cooldown} || $settings{check_period};
+    if ( $cooldown && $cooldown =~ /^\d+[dmyHM]$/ ) {
+        $notify_cooldown = $cooldown;
     }
 
     my $spool = get_service('spool');
 
-    my $queue_id = get_service('SpoolQueue')->add(
-        name       => 'Прогноз оплаты',
-        rate_limit => 1,
-    );
-
-    my @affected;
     my $user_candidates = $self->user->pays->forecast_candidates(
         distinct_users => 1,
         $settings{days_before_notification} ? ( days => $settings{days_before_notification} ) : (),
         $settings{blocked} ? ( blocked => $settings{blocked} ) : (),
+    );
+
+    unless ( scalar @$user_candidates ) {
+        return SKIP, { msg => 'Нет задач в данный момент' };
+    }
+
+    my $queue_id = get_service('SpoolQueue')->add(
+        name       => 'Прогноз оплаты',
+        rate_limit => 1,
     );
 
     for my $u ( @$user_candidates ) {
@@ -136,10 +139,9 @@ sub job_make_forecasts {
                 blocked      => $settings{blocked},
             },
         );
-
-        push @affected, $u->{user_id};
     }
-    return SUCCESS, { msg => 'Задачи созданы', queue_id => $queue_id, user_matches => \@affected };
+
+    return SUCCESS, { msg => 'Задачи созданы', queue_id => $queue_id };
 }
 
 sub job_make_forecast_event {
