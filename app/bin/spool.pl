@@ -29,6 +29,7 @@ my $task;
 my $request_count = 0;
 my $max_requests = 10000;
 my $random_factor = int rand(11);
+my $last_task_time = time();
 
 say "SHM spool started at: " . localtime;
 
@@ -44,6 +45,7 @@ for (;;) {
 
             if ( ref $task ) {
                 $task_exists = 1;
+                $last_task_time = time();
                 $request_count++;
                 say encode_json_perl( $task );
             }
@@ -69,10 +71,12 @@ for (;;) {
     }
 
     unless ($task_exists) {
-        $user->dbh->selectrow_array(
-            "SELECT SLEEP(?)",
-            undef, 10 + $random_factor
-        );
+        if ( time() - $last_task_time >= 10 ) {
+            $user->dbh->selectrow_array(
+                "SELECT SLEEP(?)",
+                undef, 10 + $random_factor
+            );
+        }
     }
 }
 
