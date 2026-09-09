@@ -23,7 +23,7 @@ sub job_prolongate {
 
     my $queue_id = get_service('SpoolQueue')->add(
         name       => 'Продление услуг',
-        rate_limit => 1,
+        rate_limit => $task->settings->{rate_limit} || 1,
     );
 
     for ( @arr ) {
@@ -118,7 +118,7 @@ sub job_make_forecasts {
 
     my $queue_id = get_service('SpoolQueue')->add(
         name       => 'Прогноз оплаты',
-        rate_limit => 1,
+        rate_limit => $settings{rate_limit} || 1,
     );
 
     for my $u ( @$user_candidates ) {
