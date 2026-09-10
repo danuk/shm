@@ -71,11 +71,13 @@ for (;;) {
     }
 
     unless ($task_exists) {
-        if ( time() - $last_task_time >= 10 ) {
+        if ( time() - $last_task_time >= 60 ) {
             $user->dbh->selectrow_array(
                 "SELECT SLEEP(?)",
                 undef, 10 + $random_factor
             );
+        } else {
+            sleep 1;
         }
     }
 }
