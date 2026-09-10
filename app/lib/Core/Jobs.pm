@@ -16,6 +16,8 @@ sub job_prolongate {
     return undef, { error => 'This task must be run under admin' } unless $self->user->authenticated->is_admin;
     my $spool = get_service('spool');
 
+    my %settings = $task ? %{ $task->settings } : ();
+
     my @arr = get_service('UserService')->list_expired_services( admin => 1 );
     unless ( scalar @arr ) {
         return SKIP, { msg => 'Нет задач в данный момент' };
@@ -23,7 +25,7 @@ sub job_prolongate {
 
     my $queue_id = get_service('SpoolQueue')->add(
         name       => 'Продление услуг',
-        rate_limit => $task->settings->{rate_limit} || 1,
+        $settings{rate_limit} ? ( rate_limit => $settings{rate_limit} ) : (),
     );
 
     for ( @arr ) {
@@ -118,7 +120,7 @@ sub job_make_forecasts {
 
     my $queue_id = get_service('SpoolQueue')->add(
         name       => 'Прогноз оплаты',
-        rate_limit => $settings{rate_limit} || 1,
+        $settings{rate_limit} ? ( rate_limit => $settings{rate_limit} ) : (),
     );
 
     for my $u ( @$user_candidates ) {
@@ -205,7 +207,7 @@ sub job_users {
     unless ($settings{queue_id} || $settings{user_id}) {
         $settings{queue_id} = get_service('SpoolQueue')->add(
             name       => $settings{queue_name} || $task->event->{title},
-            rate_limit => $settings{rate_limit} || 1,
+            $settings{rate_limit} ? ( rate_limit => $settings{rate_limit} ) : (),
         );
     }
 
