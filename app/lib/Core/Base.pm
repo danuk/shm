@@ -627,7 +627,7 @@ sub stats_fields {
     my $structure = $self->structure;
     my @fields;
 
-    for my $field (keys %$structure) {
+    for my $field (sort keys %$structure) {
         push @fields, $field if $structure->{$field}->{use_for_stats};
     }
 
