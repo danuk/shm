@@ -364,7 +364,8 @@ sub retry_task {
     $self->write_history;
 
     if ( my $queue = $self->queue ) {
-        $queue->on_task_finish( $args{status} );
+        $queue->on_task_finish( TASK_FAIL ) if $args{status} eq TASK_FAIL;
+        $queue->on_task_finish( TASK_DELAYED ) if $delayed;
     }
 }
 
