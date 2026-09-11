@@ -4,7 +4,11 @@ use v5.14;
 
 use Core::Base;
 use Digest::SHA qw(sha1_hex sha256_hex hmac_sha512);
-use Core::Utils qw(random_bytes);
+use Core::Const;
+use Core::Utils qw(
+    random_bytes
+    is_email
+);
 
 sub passwd {
     my $self = shift;
@@ -100,7 +104,6 @@ sub passwd_reset_request {
         $self->make_event( 'user_password_reset' );
         return { msg => 'Successful' };
     }
-
 
     $login_str ||= $self->get_login;
     return { msg => 'Login not found' } unless $login_str;
