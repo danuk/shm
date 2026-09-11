@@ -65,6 +65,30 @@ sub set_new_passwd {
     return $new_password;
 }
 
+sub send_mail_message {
+    my $self = shift;
+    my %args = (
+        to => undef,
+        subject => undef,
+        message => undef,
+        @_,
+    );
+
+    return $self->srv('spool')->add(
+        event => {
+            title => 'send verify code',
+            name => 'SYSTEM',
+            server_gid => cfg('mail')->{server_gid} || GROUP_ID_MAIL,
+        },
+        settings => {
+            to => $args{to},
+            subject => $args{subject},
+            message => $args{message},
+            cfg('mail')->{from} ? ( from => cfg('mail')->{from} ) : (),
+        },
+    );
+}
+
 sub passwd_reset_request {
     my $self = shift;
     my %args = (
