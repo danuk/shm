@@ -416,17 +416,27 @@ sub set_email {
     return { msg => 'Successful' };
 }
 
+sub get_emails {
+    my $self = shift;
+
+    my @emails;
+    my $emails_logins = $self->logins->items( where => { type => 'email' } );
+    for ( @$emails_logins ) {
+        push @emails, {
+            email          => $_->get_login,
+            email_verified => $_->settings->{email}->{verified} // 0,
+            is_primary => int ( $_->get_login eq $self->get_login ),
+        };
+    }
+    @emails = sort { $b->{is_primary} <=> $a->{is_primary} } @emails;
+    return \@emails;
+}
+
 sub get_email {
     my $self = shift;
 
-    my $email_row = first_item $self->logins->items( where => { type => 'email' } );
-    if ( $email_row ) {
-        return {
-            email          => $email_row->get_login,
-            email_verified => $email_row->settings->{email}->{verified} // 0,
-        };
-    }
-    return {};
+    my @emails = @{ $self->get_emails };
+    return scalar @emails ? @emails[0] : {};
 }
 
 sub verify_email {

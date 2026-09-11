@@ -375,7 +375,7 @@ state $routes //= {
     GET => {
         params => {},
         controller => 'User',
-        method => 'get_email',
+        method => 'get_emails',
         swagger => { summary => 'Получение email пользователя' },
     },
     POST => {
