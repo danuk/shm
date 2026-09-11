@@ -447,7 +447,7 @@ sub verify_email {
         return { msg => 'email not found' };
     }
 
-    if ( $email->settings->{email}->{verified} ) {
+    if ( $login->settings->{email}->{verified} ) {
         return { msg => 'Email verified successfully' };
     }
 
