@@ -1700,7 +1700,6 @@ sub webapp_auth {
     }
 
     my $hash = delete $in{hash};
-    delete $in{signature}; # excluded from HMAC check per Telegram Bot API spec
     my @arr = map( "$_=$in{$_}", sort { $a cmp $b } keys %in );
     my $data_check_string = join("\n", @arr );
 
