@@ -1744,7 +1744,6 @@ state $routes //= {
             tg_profile  => { type => 'string', required => 1, min_length => 1 },
             allowed_updates => { type => 'array' },
         },
-        skip_check_auth => 1,
         controller => 'Transport::Telegram',
         method => 'set_webhook',
         args => {
