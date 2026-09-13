@@ -9,6 +9,7 @@ subtest 'Try to change user password' => sub {
         url => 'v1/user/passwd',
         method => 'POST',
         data => {
+            old_password => 'danuk',
             password => 'new_password',
         },
         login => 'danuk',
@@ -23,6 +24,7 @@ subtest 'Try to auth with old password' => sub {
         url => 'v1/user/passwd',
         method => 'POST',
         data => {
+            old_password => 'danuk',
             password => 'new_password',
         },
         login => 'danuk',
@@ -36,6 +38,7 @@ subtest 'Set old password' => sub {
         url => 'v1/user/passwd',
         method => 'POST',
         data => {
+            old_password => 'new_password',
             password => 'danuk',
         },
         login => 'danuk',
