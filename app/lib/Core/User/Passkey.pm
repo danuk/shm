@@ -142,7 +142,7 @@ sub _verify_assertion_signature {
                 x   => encode_base64url( $x, '' ),
                 y   => encode_base64url( $y, '' ),
             } );
-            $pk->verify_message( $sig_bytes, $sig_base, 'SHA256', 'DER' );
+            $pk->verify_message( $sig_bytes, $sig_base, 'SHA256' );
         };
         return $ok ? 1 : 0;
     }
