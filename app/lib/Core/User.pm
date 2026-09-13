@@ -351,6 +351,68 @@ sub auth {
     return $self;
 }
 
+sub passwd {
+    my $self = shift;
+    my %args = (
+        password     => undef,
+        old_password => undef,
+        @_,
+    );
+
+    my $report = get_service('report');
+    unless ( $args{password} ) {
+        $report->add_error('Password is empty');
+        return undef;
+    }
+
+    my $user = $self;
+
+    if ( $args{admin} && $args{user_id} ) {
+        $user = get_service('user', _id => $args{user_id} );
+    }
+
+    unless ( $args{admin} ) {
+        my $stored = $user->get->{password};
+
+        if ( $stored ) {
+            # User has an existing password — must verify it before changing.
+            unless ( $args{old_password} ) {
+                $report->add_error('OLD_PASSWORD_REQUIRED');
+                return undef;
+            }
+            unless ( $user->verify_password( $args{old_password}, $stored, $user->get_login ) ) {
+                $report->add_error('INVALID_OLD_PASSWORD');
+                return undef;
+            }
+        }
+        # If the user has no password stored (passkey-only account), allow setting
+        # a new password without verification.
+    }
+
+    my $password = $user->make_password( $args{password} );
+
+    get_service('sessions')->delete_user_sessions( user_id => $user->user_id );
+
+    $user->set( password => $password );
+    return scalar $user->get;
+}
+
+sub set_new_passwd {
+    my $self = shift;
+    my %args = (
+        len => 10,
+        admin => 0,
+        @_,
+    );
+
+    return undef if $self->is_admin && !$args{admin};
+
+    my $new_password = passgen( $args{len} );
+    $self->passwd( password => $new_password );
+
+    return $new_password;
+}
+
 sub render_mail_text {
     my $self = shift;
     my %args = (
