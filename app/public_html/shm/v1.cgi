@@ -1320,7 +1320,6 @@ state $routes //= {
 },
 '/telegram/set_webhook' => {
     POST => {
-        skip_check_auth => 1,
         controller => 'Transport::Telegram',
         method => 'set_webhook',
         required => [

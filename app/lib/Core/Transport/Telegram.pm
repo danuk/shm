@@ -720,11 +720,50 @@ sub tg_user {
 sub verify_telegram_secret {
     my $self = shift;
 
-    if ( my $expected_token = $self->config->{ $self->profile }->{secret} ) {
-        my $secret_token = parse_headers->{'x_telegram_bot_api_secret_token'};
-        return $secret_token eq $expected_token;
+    my $expected_token = $self->config->{ $self->profile }->{secret};
+    unless ( $expected_token ) {
+        logger->error(sprintf(
+            "Telegram webhook secret is not configured for profile '%s' — request rejected (fail-closed)",
+            $self->profile_name // '',
+        ));
+        return 0;
     }
-    return 1;
+
+    my $secret_token = parse_headers->{'x_telegram_bot_api_secret_token'};
+    return $secret_token eq $expected_token;
+}
+
+# Validates that a return_url is safe to redirect to.
+# Allows only relative URLs or absolute URLs on the same host as the server.
+sub is_safe_return_url {
+    my $self = shift;
+    my $url  = shift;
+
+    return 0 unless defined $url && $url ne '';
+
+    # Reject dangerous schemes regardless of host
+    return 0 if $url =~ m{^(javascript|data|vbscript):}i;
+
+    # Relative URLs are always safe
+    return 1 if $url =~ m{^/[^/]};
+
+    # Only allow http/https absolute URLs
+    return 0 unless $url =~ m{^https?://}i;
+
+    my $host = $ENV{HTTP_X_FORWARDED_HOST} || $ENV{HTTP_HOST};
+
+    # If no server host is known (e.g. CLI/test), accept any http/https URL
+    return 1 unless $host;
+
+    # Enforce same-host in production
+    if ( $url =~ m{^https?://([^/?#]+)}i ) {
+        my $url_host = $1;
+        $url_host =~ s/:\d+$//;  # strip port
+        $host     =~ s/:\d+$//;
+        return lc($url_host) eq lc($host);
+    }
+
+    return 0;
 }
 
 sub telegram_web_callback_url {
@@ -1796,10 +1835,24 @@ sub web_auth {
     unless ( $args{id_token} ) {
         my $hash = delete $in{hash};
 
+        unless ( defined $in{id} && $in{id} ne '' ) {
+            logger->error("Telegram auth error: user id is missing or empty");
+            report->error('Telegram auth error');
+            $self->set_user_fail_attempt( 'web_auth', 3600, $self->telegram_ips );
+            return undef;
+        }
+
         my @arr = map { "$_=$in{$_}" } sort keys %in;
         my $data_check_string = join("\n", @arr);
 
         my $token = $self->config->{ $args{profile} }->{token} // $self->config->{token};
+        unless ( $token ) {
+            logger->error("Telegram auth error: bot token is not configured for profile $args{profile}");
+            report->error('Telegram auth error');
+            $self->set_user_fail_attempt( 'web_auth', 3600, $self->telegram_ips );
+            return undef;
+        }
+
         use Digest::SHA qw(sha256 hmac_sha256_hex);
         my $secret_key = sha256( $token );
 
@@ -1933,6 +1986,11 @@ sub web_auth_callback {
     my $result = $self->web_auth( %args );
 
     my $return_url = $args{return_url};
+    if ( $return_url && !$self->is_safe_return_url($return_url) ) {
+        logger->error("web_auth_callback: unsafe return_url rejected: $return_url");
+        report->error('Invalid redirect URL');
+        return undef;
+    }
     return $result unless $return_url;
 
     my %query;
