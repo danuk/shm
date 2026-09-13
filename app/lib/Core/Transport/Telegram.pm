@@ -1735,9 +1735,11 @@ sub webapp_auth {
     # Step 4: find or switch to the user AFTER signature is verified
     if ( $args{uid} && $self->user->id($args{uid}) ) {
         switch_user( $args{uid} );
+        delete $self->{user_tg_settings}; # clear cache stale after switch_user
 
         my $stored_tg_id = $self->user_tg_settings->{user_id};
         unless ( defined $stored_tg_id && $stored_tg_id ne '' && $tg_user->{id} eq $stored_tg_id ) {
+            logger->error("Telegram WebApp auth error: user_id doesn't match for uid=$args{uid}");
             report->error("Telegram WebApp auth error: user_id doesn't match");
             $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
             return undef;
