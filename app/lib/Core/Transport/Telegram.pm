@@ -1648,12 +1648,57 @@ sub webapp_auth {
     }
 
     my %in = CGI->new( $args{initData} )->Vars();
+
+    # Step 1: verify Telegram signature BEFORE any user lookup or switch
+    $self->profile( $args{profile} );
+
+    my $token = $self->token;
+    unless ( $token ) {
+        logger->error("Telegram WebApp auth error: bot token is not configured for profile $args{profile}");
+        report->error('Telegram WebApp auth error');
+        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips );
+        return undef;
+    }
+
+    my $hash = delete $in{hash};
+    my @arr = map( "$_=$in{$_}", sort { $a cmp $b } keys %in );
+    my $data_check_string = join("\n", @arr );
+
+    use Digest::SHA qw(hmac_sha256 hmac_sha256_hex);
+    my $secret_key = hmac_sha256( $token, "WebAppData" );
+    my $hex = hmac_sha256_hex( $data_check_string, $secret_key );
+
+    unless ( $hex eq $hash ) {
+        logger->error("Telegram WebApp auth error: incorrect token for profile $args{profile}");
+        report->error('Telegram WebApp auth error');
+        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
+        return undef;
+    }
+
+    # Step 2: check auth_date freshness (prevent replay attacks)
+    if ( !$in{auth_date} || time - $in{auth_date} > 86400 ) {
+        logger->error("Telegram WebApp auth error: auth_date is missing or expired");
+        report->error('Telegram WebApp auth error');
+        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips );
+        return undef;
+    }
+
+    # Step 3: decode user and validate id is non-empty
     my $tg_user = decode_json( $in{user} );
 
+    unless ( $tg_user && defined $tg_user->{id} && $tg_user->{id} ne '' ) {
+        logger->error("Telegram WebApp auth error: user id is missing or empty");
+        report->error('Telegram WebApp auth error');
+        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips );
+        return undef;
+    }
+
+    # Step 4: find or switch to the user AFTER signature is verified
     if ( $args{uid} && $self->user->id($args{uid}) ) {
         switch_user( $args{uid} );
 
-        if ( $tg_user->{id} ne $self->user_tg_settings->{user_id} ) {
+        my $stored_tg_id = $self->user_tg_settings->{user_id};
+        unless ( defined $stored_tg_id && $stored_tg_id ne '' && $tg_user->{id} eq $stored_tg_id ) {
             report->error("Telegram WebApp auth error: user_id doesn't match");
             $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
             return undef;
@@ -1667,23 +1712,6 @@ sub webapp_auth {
         }
 
         switch_user( $user->{user_id} );
-    }
-
-    $self->profile( $args{profile} );
-
-    my $hash = delete $in{hash};
-    my @arr = map( "$_=$in{$_}", sort { $a cmp $b } keys %in );
-    my $data_check_string = join("\n", @arr );
-
-    use Digest::SHA qw(hmac_sha256 hmac_sha256_hex);
-    my $secret_key = hmac_sha256( $self->token, "WebAppData" );
-    my $hex = hmac_sha256_hex( $data_check_string, $secret_key);
-
-    unless ( $hex eq $hash ) {
-        logger->error("Telegram WebApp auth error: incorrect token for profile $args{profile}");
-        report->error('Telegram WebApp auth error');
-        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
-        return undef;
     }
 
     return {
