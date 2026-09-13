@@ -481,9 +481,18 @@ sub process_message {
     }
 
     my $user = $self->auth();
-
     my ( $cmd, @cmd_args ) = $self->cmd;
     $cmd ||= '/start';
+
+    my $user = $self->auth();
+    if ( !$user ) {
+        logger->warning( 'MAX: USER_NOT_FOUND:', $self->max_user );
+        logger->warning( 'MAX: CMD:', $cmd );
+        $cmd = 'USER_NOT_FOUND';
+    } elsif ( $user->is_blocked ) {
+        $self->sendMessage( text => sprintf("You are blocked! (user_id: %s)", $user->id) );
+        return {};
+    }
 
     if ( $cmd eq '/start' && $cmd_args[0] ) {
         my %start_args;
@@ -492,17 +501,6 @@ sub process_message {
             $start_args{ $key } = uri_unescape( $value ) if defined $key && defined $value;
         }
         $self->start_args( %start_args ) if %start_args;
-    }
-
-    if ( $cmd ne '/register' ) {
-        if ( !$user ) {
-            logger->warning( 'MAX: USER_NOT_FOUND:', $self->max_user );
-            logger->warning( 'MAX: CMD:', $cmd );
-            $cmd = 'USER_NOT_FOUND';
-        } elsif ( $user->is_blocked ) {
-            $self->sendMessage( text => sprintf("You are blocked! (user_id: %s)", $user->id) );
-            return {};
-        }
     }
 
     my $template = $self->_get_template( $args{template} );
