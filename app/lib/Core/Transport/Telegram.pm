@@ -1997,7 +1997,6 @@ sub web_auth_callback {
     if ( ref $result eq 'HASH' && $result->{session_id} ) {
         %query = (
             tg_status => 'success',
-            session_id => $result->{session_id},
         );
     } elsif ( ref $result eq 'HASH' && $result->{error} eq 'Telegram account already exists' ) {
         %query = (

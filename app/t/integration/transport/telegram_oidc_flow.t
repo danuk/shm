@@ -138,9 +138,9 @@ subtest 'Callback redirects to return_url on success' => sub {
     is( $ret->{status}, 302, 'redirect status is 302' );
     like( $ret->{redirect}, qr/^https:\/\/example\.com\/lk\/profile\?/, 'redirect points to return_url' );
     like( $ret->{redirect}, qr/tg_status=success/, 'redirect contains tg_status=success' );
-    like( $ret->{redirect}, qr/session_id=redirect-session/, 'redirect contains session_id' );
+    unlike( $ret->{redirect}, qr/session_id=/, 'redirect does not expose session_id' );
     is( $ret->{tg_status}, 'success', 'payload tg_status is success' );
-    is( $ret->{session_id}, 'redirect-session', 'payload includes session_id' );
+    ok( !exists $ret->{session_id}, 'payload does not include session_id' );
 };
 
 subtest 'Callback redirects with tg_status=already_exists' => sub {

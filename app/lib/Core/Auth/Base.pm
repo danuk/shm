@@ -117,7 +117,7 @@ sub build_callback_redirect_url {
 
     my %query;
     if ( ref $result eq 'HASH' && $result->{session_id} ) {
-        %query = ( $status_key => 'success', session_id => $result->{session_id} );
+        %query = ( $status_key => 'success' );
     } elsif ( ref $result eq 'HASH' && ( $result->{error} || '' ) =~ /already linked/i ) {
         %query = ( $status_key => 'already_exists', error => $result->{error} );
     } elsif ( ref $result eq 'HASH' && ( $result->{error} || '' ) =~ /Already\s+bound/i ) {

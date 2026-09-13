@@ -8,6 +8,33 @@ use Core::Base;
 sub table { return 'logs_api' }
 sub dbh { shift->dbh_auto_commit }
 
+sub _mask_sensitive_args {
+    my $value = shift;
+
+    if ( ref $value eq 'HASH' ) {
+        my %copy;
+        for my $key ( keys %$value ) {
+            if ( _is_sensitive_key($key) ) {
+                $copy{$key} = '***';
+            } else {
+                $copy{$key} = _mask_sensitive_args( $value->{$key} );
+            }
+        }
+        return \%copy;
+    }
+
+    if ( ref $value eq 'ARRAY' ) {
+        return [ map { _mask_sensitive_args($_) } @$value ];
+    }
+
+    return $value;
+}
+
+sub _is_sensitive_key {
+    my $key = lc( shift // '' );
+    return $key =~ /^(?:password|token|otp_token|session_id|secret|private_key|hash|code|id_token|code_verifier|client_secret|nonce|captcha_token|captcha_answer|credential_id|userhandle|authenticatordata|clientdatajson|attestationobject|signature)$/;
+}
+
 sub structure {
     return {
         user_id => {
@@ -69,18 +96,7 @@ sub add {
         @_,
     );
 
-    if ( ref $args{args} eq 'HASH' ) {
-        my %masked = %{ $args{args} };
-        my %sensitive = map { $_ => 1 } qw(
-            password token otp_token session_id secret
-            private_key hash code id_token code_verifier
-            client_secret nonce captcha_token captcha_answer
-        );
-        for my $key ( keys %masked ) {
-            $masked{$key} = '***' if $sensitive{ lc $key };
-        }
-        $args{args} = \%masked;
-    }
+    $args{args} = _mask_sensitive_args( $args{args} ) if ref $args{args};
 
     $self->{user_id} = 0 unless $self->user_id;
 

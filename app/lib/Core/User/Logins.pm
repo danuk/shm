@@ -48,15 +48,17 @@ sub id {
     my $self = shift;
     my $login = shift;
     my $types = shift || ['login','email'];
+    my %args = @_;
 
     if ( $login ) {
         my $obj = first_item $self->items(
-            admin => 1,
+            admin => exists $args{admin} ? $args{admin} : 1,
             where => {
                 login => $login,
                 ref $types eq 'ARRAY' ?
                     ( type => { '-in' => $types } ) :
                     ( type => $types ),
+                defined $args{user_id} ? ( user_id => $args{user_id} ) : (),
             },
             limit => 1,
         );

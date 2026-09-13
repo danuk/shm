@@ -8,6 +8,7 @@ use Core::Const;
 use Core::Utils qw(
     random_bytes
     is_email
+    passgen
 );
 
 sub passwd {
@@ -36,7 +37,11 @@ sub passwd {
         return undef;
     }
 
-    my $login_obj = $user->logins->id( $login_str );
+    my $login_obj = $user->logins->id(
+        $login_str,
+        undef,
+        user_id => $user->user_id,
+    );
     unless ( $login_obj ) {
         $report->add_error('Account not found');
         return undef;
