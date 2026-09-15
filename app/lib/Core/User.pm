@@ -312,13 +312,15 @@ sub auth {
 
     return undef unless $args{login} || $args{password};
 
+    my @lookup = (
+        { login  => $args{login} },
+        { login2 => $args{login} },
+    );
+    push @lookup, { sprintf('%s->>"$.%s"', 'settings', 'email') => $args{login} }
+        if is_email( $args{login} );
+
     my ( $user_row ) = $self->_list(
-        where => {
-            -OR => [
-                { login => $args{login} },
-                { login2 => $args{login} },
-            ],
-        },
+        where => { -OR => \@lookup },
         limit => 1,
     );
 
@@ -603,20 +605,27 @@ sub set_email {
 
     my $verified = 0;
     my $current_email = $self->user->email;
-    if ( $current_email && $current_email eq $args{email} ) {
+    if ( $current_email && lc $current_email eq lc $args{email} ) {
         $verified = $self->get_settings->{email_verified} // 0;
     }
 
     $self->user->set_settings({
         email_verified => $verified,
-        email => $args{email},
+        email => lc $args{email},
     });
 
-    unless ( $self->user->get_login2 ) {
-        $self->user->set( login2 => $args{email} );
-    }
+    $self->_release_login2_if_email;
 
     return { msg => 'Successful' };
+}
+
+sub _release_login2_if_email {
+    my $self = shift;
+
+    my $login2 = $self->user->get_login2;
+    if ( defined $login2 && is_email( $login2 ) ) {
+        $self->user->set( login2 => undef );
+    }
 }
 
 sub get_email {
@@ -709,6 +718,8 @@ sub delete_email {
         email => undef,
         email_verified => 0,
     });
+
+    $self->_release_login2_if_email;
 
     return { msg => 'Successful' };
 }
@@ -851,7 +862,7 @@ sub check_exists_logins {
     return undef unless is_email( $args{login} );
 
     my %where_by_email = (
-        sprintf('%s->>"$.%s"', 'settings', 'email') => $args{login},
+        sprintf('%s->>"$.%s"', 'settings', 'email') => lc $args{login},
     );
 
     if ( $args{exclude_user_id} ) {
@@ -1228,7 +1239,6 @@ sub emails {
     my %profile = $self->profile;
     my @emails = (
         $self->get_settings->{email},
-        $self->get_login2,
         $self->get_login,
         $profile{email},
     );
