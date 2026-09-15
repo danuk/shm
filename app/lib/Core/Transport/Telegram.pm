@@ -26,6 +26,7 @@ use Core::Utils qw(
     to_query_string
     qrencode
     sha256
+    is_email
 );
 
 # https://core.telegram.org/resources/cidr.txt
@@ -111,13 +112,16 @@ sub api_set_user_tg_settings {
 sub api_delete_user_tg_settings {
     my $self = shift;
 
-    my $username = $self->user_tg_settings->{username};
+    my $tg = $self->user_tg_settings;
     my $login2 = $self->user->get_login2;
 
-    if ( defined $username && $username ne '' && defined $login2 && $login2 ne '' ) {
-        if ( $login2 eq $username || $login2 eq '@' . $username ) {
-            $self->user->set( login2 => undef );
-        }
+    if ( defined $login2 && $login2 ne '' ) {
+        my @tg_logins = grep { defined $_ && length $_ } (
+            $tg->{username},
+            $tg->{username} ? '@' . $tg->{username} : undef,
+            $tg->{user_id}  ? '@' . $tg->{user_id}  : undef,
+        );
+        $self->user->set( login2 => undef ) if grep { $login2 eq $_ } @tg_logins;
     }
 
     $self->user->set_settings({
@@ -641,6 +645,7 @@ sub find_user_by_tg {
                 login  => $self->get_shm_login( $tg_user->{id} ),
                 login2 => '@' . $tg_user->{id},
                 $tg_user->{username} ? ( login2 => $tg_user->{username} ) : (),
+                sprintf('%s->>"$.%s"', 'settings', 'telegram.user_id') => $tg_user->{id},
             ],
         },
         limit => 1,
@@ -1875,15 +1880,14 @@ sub web_auth {
     if ( $args{uid} && $self->user->id($args{uid}) ) {
         switch_user( $args{uid} );
         if ( $args{bind_to_profile} ) {
-            if ( $args{bind_only_if_new} ) {
-                my $existing_user = $self->find_user_by_tg( \%in );
-                if ( $existing_user && $existing_user->{user_id} ne $args{uid} ) {
-                    return { error => 'Telegram account already exists' };
-                }
+            my $existing_user = $self->find_user_by_tg( \%in );
+            if ( $existing_user && $existing_user->{user_id} ne $args{uid} ) {
+                return { error => 'Telegram account already exists' };
             }
 
             my $login2 = '@' . $in{id};
-            unless ( $self->user->get_login2 ) {
+            my $current_login2 = $self->user->get_login2;
+            if ( !defined $current_login2 || $current_login2 eq '' || is_email( $current_login2 ) ) {
                 $self->user->set( login2 => $login2 );
             }
             my $settings = $self->user->settings->{telegram} || {};
