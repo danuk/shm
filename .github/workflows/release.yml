@@ -95,18 +95,14 @@ jobs:
         fi
         echo "minor_with_suffix=${MINOR_WITH_SUFFIX}" >> $GITHUB_OUTPUT
 
-        # Check if tag is from master branch
-        IS_RELEASE="false"
-        if git merge-base --is-ancestor HEAD origin/master 2>/dev/null; then
-          BRANCH=$(git branch -r --contains HEAD | grep -E 'origin/master$' | head -n1)
-          if [ -n "$BRANCH" ]; then
-            IS_RELEASE="true"
-            echo "Tag is from master branch - will push 'latest' tag"
-          fi
-        fi
-
-        if [ "$IS_RELEASE" = "false" ]; then
-          echo "Tag is NOT from master branch - will push suffix tag instead"
+        # A tag without a suffix (e.g. 1.2.3) is a release and gets the 'latest' tag;
+        # a tag with a suffix (e.g. 1.2.3-beta) is not
+        if [ -z "$TAG_SUFFIX" ]; then
+          IS_RELEASE="true"
+          echo "Tag has no suffix - will push 'latest' tag"
+        else
+          IS_RELEASE="false"
+          echo "Tag has suffix - will push suffix tag instead"
         fi
 
         echo "is_release=${IS_RELEASE}" >> $GITHUB_OUTPUT
@@ -194,7 +190,7 @@ jobs:
 
           **Version:** `${{ steps.version.outputs.version_string }}`
           **Git Revision:** `${{ steps.version.outputs.rev }}`
-          ${{ steps.version.outputs.is_release != 'true' && format('**Note:** This release is from a non-release branch. Only {0} tags are created.', steps.version.outputs.tag_suffix) || '' }}
+          ${{ steps.version.outputs.is_release != 'true' && format('**Note:** This is a `{0}` pre-release tag. Only {0} tags are created.', steps.version.outputs.tag_suffix) || '' }}
 
           ## What's Changed
 
