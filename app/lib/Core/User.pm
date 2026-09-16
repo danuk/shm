@@ -491,13 +491,13 @@ sub get_emails {
         };
     }
     @emails = sort { $b->{is_primary} <=> $a->{is_primary} } @emails;
-    return \@emails;
+    return @emails;
 }
 
 sub get_email {
     my $self = shift;
 
-    my @emails = @{ $self->get_emails };
+    my @emails = $self->get_emails;
     return scalar @emails ? @emails[0] : {};
 }
 
