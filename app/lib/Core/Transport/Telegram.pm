@@ -1679,7 +1679,6 @@ sub shmServiceDelete {
 sub webapp_auth {
     my $self = shift;
     my %args = (
-        uid => undef,
         initData => undef,
         profile => 'telegram_bot',
         @_,
@@ -1738,34 +1737,16 @@ sub webapp_auth {
         return undef;
     }
 
-    # Step 4: find or switch to the user AFTER signature is verified
-    my $user;
-    if ( $args{uid} && $self->user->id($args{uid}) ) {
-        switch_user( $args{uid} );
-        delete $self->{user_tg_settings}; # clear cache stale after switch_user
-
-        my $stored_tg_id = $self->user_tg_settings->{user_id};
-        unless ( defined $stored_tg_id && $stored_tg_id ne '' && $tg_user->{id} eq $stored_tg_id ) {
-            logger->error("Telegram WebApp auth error: user_id doesn't match for uid=$args{uid}");
-            report->error("Telegram WebApp auth error: user_id doesn't match");
-            $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
-            return undef;
-        }
-
-        $user = $self->user;
-    } else {
-        my $login = $self->find_user_by_tg( $tg_user );
-        unless ( $login ) {
-            logger->error("Telegram WebApp auth error: user not found");
-            $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
-            return undef;
-        }
-
-        $user = $login->user;
+    # Step 4: find the user AFTER signature is verified
+    my $login = $self->find_user_by_tg( $tg_user );
+    unless ( $login ) {
+        logger->error("Telegram WebApp auth error: user not found");
+        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
+        return undef;
     }
 
     return {
-        session_id => $user->srv('sessions')->add(),
+        session_id => $login->user->srv('sessions')->add(),
     };
 }
 
