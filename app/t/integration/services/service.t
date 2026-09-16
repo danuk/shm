@@ -48,6 +48,28 @@ subtest 'price_list_check_allow_to_order' => sub {
     ok( !$unavailable->price_list_check_allow_to_order, 'Service with allow_to_order=0 is absent in price list items' );
 };
 
+subtest 'price_list hides already used order_only_once services' => sub {
+    my $trial = get_service('service')->add(
+        name => 'ORDER ONCE TEST',
+        cost => 0,
+        category => 'new',
+        allow_to_order => 1,
+        config => { order_only_once => 1 },
+    );
+
+    my @before = get_service('service')->price_list;
+    ok( ( grep { $_->{service_id} == $trial->id } @before ), 'order_only_once service is present in price_list before it was ever ordered' );
+
+    my $us = $trial->reg( service_id => $trial->id );
+    ok( defined $us, 'Service is registered for the first time' );
+
+    my @after = get_service('service')->price_list;
+    ok( !( grep { $_->{service_id} == $trial->id } @after ), 'order_only_once service disappears from price_list once it was used' );
+
+    $us->block_force;
+    $us->delete;
+};
+
 is_deeply( scalar $service->categories, [
     'web_tariff_lock',
     'web_tariff',

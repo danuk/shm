@@ -973,8 +973,6 @@ sub create {
         }
     }
 
-    # order_only_once
-
     my $us;
 
     if ( $args{check_exists} || $args{check_exists_unpaid} || $args{check_category} ) {
