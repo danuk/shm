@@ -303,7 +303,7 @@ sub price_list_items {
 
 sub price_list_check_allow_to_order {
     my $self = shift;
-    return grep { $_->id == $self->id } $self->price_list_items;
+    return grep { $_->{service_id} == $self->id } $self->price_list;
 }
 
 sub price_list {
