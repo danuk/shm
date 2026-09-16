@@ -18,6 +18,7 @@ sub structure {
     };
 }
 sub get_table_key        { return 'id' }
+sub get_table_key2       { return 'id2' }
 sub table_allow_insert_key { return 0 }
 
 package main;

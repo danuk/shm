@@ -11,7 +11,7 @@ use Core::Utils qw(
 );
 
 sub table { return 'identities' };
-sub dbh { shift->dbh_myisam };
+sub dbh { shift->dbh_auto_commit };
 
 sub structure {
     return {

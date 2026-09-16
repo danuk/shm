@@ -32,7 +32,7 @@ BEGIN {
 my $listen_addr = '0.0.0.0';
 my $listen_port = 9082;
 my $num_workers = $ENV{WORKERS_COUNT} || 4;
-my $timeout = 300;
+my $timeout = $ENV{WORKER_TIMEOUT} || 300;
 my $uid = 'www-data';
 my $gid = 'www-data';
 
@@ -116,7 +116,7 @@ worker_startup();
 
 # Save clean environment before any request processing
 my %CLEAN_ENV = %ENV;
-my $max_requests = 1000;
+my $max_requests = $ENV{DEV} ? 1 : 1000;
 my $request_count = 0;
 
 while ($request_count < $max_requests && $request->Accept() >= 0) {

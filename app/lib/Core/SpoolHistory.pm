@@ -5,7 +5,7 @@ use parent 'Core::Spool';
 use Core::Base;
 
 sub table { return 'spool_history' };
-sub dbh { shift->dbh_myisam };
+sub dbh { shift->dbh_auto_commit };
 
 sub structure {
     my $self = shift;
@@ -22,6 +22,8 @@ sub structure {
         },
     }
 }
+
+sub stats {}; # do not use stats
 
 sub add {
     my $self = shift;

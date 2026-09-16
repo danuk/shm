@@ -15,12 +15,15 @@ DROP TABLE IF EXISTS `services`;
 DROP TABLE IF EXISTS `events`;
 DROP TABLE IF EXISTS `spool`;
 DROP TABLE IF EXISTS `spool_history`;
+DROP TABLE IF EXISTS `spool_queues`;
 DROP TABLE IF EXISTS `user_services`;
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `withdraw_history`;
 DROP TABLE IF EXISTS `zones`;
 DROP TABLE IF EXISTS `console`;
 DROP TABLE IF EXISTS `profiles`;
+DROP TABLE IF EXISTS `accounts`;
+DROP TABLE IF EXISTS `statistics`;
 
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;

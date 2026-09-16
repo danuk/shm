@@ -7,6 +7,20 @@ use Core::Utils qw(
     uniq_by_key
 );
 
+# Common query parameters automatically injected into Swagger docs for GET
+# list endpoints (no explicit method set => defaults to list_for_api), or for
+# any route that sets common_params => 1. Route-level params take precedence.
+my %COMMON_LIST_PARAMS = (
+    start  => { type => 'string',  pattern => '^\d{4}-\d{2}-\d{2}' },
+    stop   => { type => 'string',  pattern => '^\d{4}-\d{2}-\d{2}' },
+    field  => { type => 'string',  pattern => '^\w+' },
+    sort_field => {type => 'string', pattern => '^\w+' },
+    sort_direction => { type => 'enum', enum => ['desc','asc'] },
+    limit  => { type => 'integer', min => 1, max => 10000, default => 25 },
+    offset => { type => 'integer', min => 0, default => 0 },
+    filter => { type => 'string', default => '{}' },
+);
+
 sub gen_swagger_json {
     my $self = shift;
     my %args = (
@@ -105,44 +119,55 @@ sub gen_swagger_json {
                 push @request_params, get_request_params( $splat_id, $structure, in => 'path', required => 1 );
             }
 
-            my @required = @{ $info->{$method}->{required} || [] };
+            my %route_params = %{ $info->{$method}->{params} || {} };
 
             # Request section
             if ( $method eq 'GET' || $method eq 'DELETE' ) {
-                for ( @required ) {
-                    push @request_params, get_request_params( $_, $structure, required => 1 );
-                };
+                # Inject common list params when: no explicit method (defaults to
+                # list_for_api) OR route has common_params => 1 flag.
+                my $inject_common = $method eq 'GET' && (
+                    !$info->{$method}->{method} ||
+                    $info->{$method}->{common_params}
+                );
 
-                for ( @{ $info->{$method}->{optional} || [] } ) {
-                    push @request_params, get_request_params( $_, $structure );
-                }
-
-                if ( $args{admin_mode} && !$info->{$method}->{method} ) {
-                    for ('user_id') {
-                        next unless exists $structure->{$_};
-                        push @request_params, get_request_params( $_, $structure );
+                my %effective_params = %route_params;
+                if ( $inject_common ) {
+                    for my $p ( keys %COMMON_LIST_PARAMS ) {
+                        $effective_params{$p} //= $COMMON_LIST_PARAMS{$p};
+                    }
+                    # user_id is a common filter param for admin list endpoints
+                    if ( $args{admin_mode} ) {
+                        $effective_params{user_id} //= { type => 'integer', min => 1 };
                     }
                 }
 
-                push @request_params, get_pagination_params() if $method ne 'DELETE';
+                for my $param_name ( sort keys %effective_params ) {
+                    my $required = $effective_params{$param_name}->{required} ? 1 : 0;
+                    my $schema = get_swagger_properties_by_route_params( $param_name, $effective_params{$param_name}, $structure );
+                    push @request_params, {
+                        name => $param_name,
+                        in => 'query',
+                        required => $required,
+                        schema => $schema,
+                    };
+                };
 
-            } elsif ( exists $info->{$method}->{required} && # required может быть и пустым
-                $info->{$method}->{method} &&
-                !$info->{$method}->{only_text_plain}
-            ) {
-                # add required fields to requestBody
-                my $schema = {};
-                for ( @required ) {
-                    $schema->{ $_ } = get_swagger_properties( $_, $structure );
-                    delete $schema->{ $_ }->{readOnly}; # always show required field
+            } elsif ( exists $info->{$method}->{params} ) {
+                # add fields from route params to requestBody
+                my %schema;
+                my @required;
+                for my $param_name ( sort keys %route_params ) {
+                    $schema{$param_name} = get_swagger_properties_by_route_params( $param_name, $route_params{$param_name}, $structure );
+                    push @required, $param_name if $route_params{$param_name}->{required};
                 }
+
                 $json{paths}{$route}{ lc $method}{requestBody} = {
                     content => {
                         'application/json' => {
                             schema => {
                                 type => 'object',
-                                required => [$_],
-                                properties => $schema,
+                                @required ? ( required => \@required ) : (),
+                                properties => \%schema,
                             }
                         },
                     }
@@ -258,6 +283,14 @@ sub get_swagger_field_type {
 
     if ( $field eq 'number' ) {
         $type = 'number';
+    } elsif ( $field eq 'integer' ) {
+        $type = 'integer';
+    } elsif ( $field eq 'boolean' ) {
+        $type = 'boolean';
+    } elsif ( $field eq 'string' ) {
+        $type = 'string';
+    } elsif ( $field eq 'email' ) {
+        $type = 'string';
     } elsif ( $field eq 'json' ) {
         $type = 'object';
     } elsif ( $field eq 'text' ) {
@@ -265,6 +298,45 @@ sub get_swagger_field_type {
     }
 
     return $type;
+}
+
+sub get_swagger_properties_by_route_params {
+    my $field = shift;
+    my $rule = shift || {};
+    my $structure = shift || {};
+
+    my %schema = (
+        $structure->{$field} ? %{ get_swagger_properties( $field, $structure ) } : (),
+    );
+
+    # request schemas should not include read/write access flags from response model
+    delete $schema{readOnly};
+    delete $schema{writeOnly};
+    # remove model-inherited example to avoid leaking internal defaults into request docs
+    delete $schema{example};
+
+    if ( exists $rule->{type} ) {
+        $schema{type} = get_swagger_field_type( $rule->{type} ) || $rule->{type} || 'string';
+    }
+    $schema{type} ||= 'string';
+    $schema{format} = 'email' if ( $rule->{type} || '' ) eq 'email';
+
+    $schema{minimum} = $rule->{min} if exists $rule->{min};
+    $schema{maximum} = $rule->{max} if exists $rule->{max};
+    $schema{minLength} = $rule->{min_length} if exists $rule->{min_length};
+    $schema{maxLength} = $rule->{max_length} if exists $rule->{max_length};
+    $schema{pattern} = $rule->{pattern} if exists $rule->{pattern};
+    $schema{enum} = $rule->{enum} if exists $rule->{enum};
+    $schema{description} = $rule->{description} if exists $rule->{description};
+    $schema{default} = $rule->{default} if exists $rule->{default};
+
+    # Prevent Swagger UI from auto-generating misleading "string" / "stringstri"
+    # placeholder values for string fields that have no explicit example or enum.
+    unless ( exists $schema{example} || exists $schema{enum} ) {
+        $schema{example} = '' if ( $schema{type} // '' ) eq 'string';
+    }
+
+    return \%schema;
 }
 
 sub gen_swagger_def {

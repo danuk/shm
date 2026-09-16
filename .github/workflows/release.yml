@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate tag format and branch restrictions
+      - name: Validate tag format
         run: |
           # Get the tag name
           TAG_NAME="${GITHUB_REF#refs/tags/}"
@@ -34,32 +34,6 @@ jobs:
             git push origin --delete "refs/tags/$TAG_NAME" || true
 
             exit 1
-          fi
-
-          # Get the commit hash for this tag
-          COMMIT_HASH=$(git rev-list -n 1 "$TAG_NAME")
-          echo "Commit: $COMMIT_HASH"
-
-          # Check if tag has a suffix (contains dash followed by letters)
-          if [[ "$TAG_NAME" =~ -[a-zA-Z]+ ]]; then
-            echo "✅ Tag has suffix (e.g., -beta, -rc, -alpha) - allowed from any branch"
-          else
-            echo "Tag has no suffix - checking if from master branch"
-
-            # Tags without suffix only allowed from master branch
-            if git merge-base --is-ancestor "$COMMIT_HASH" origin/master 2>/dev/null; then
-              echo "✅ Tag '$TAG_NAME' is from master branch - allowed"
-            else
-              echo "❌ ERROR: Tag '$TAG_NAME' has no suffix and is NOT from master branch"
-              echo "Tags without suffix (e.g., 1.0.0, 2.10.1) are only allowed from 'master' branch"
-              echo "Use -beta, -rc, or -alpha suffix for tags from other branches"
-
-              # Delete invalid tag from remote
-              echo "🗑️ Deleting invalid tag from origin..."
-              git push origin --delete "refs/tags/$TAG_NAME" || true
-
-              exit 1
-            fi
           fi
 
   build:
@@ -94,8 +68,27 @@ jobs:
         TAG=${GITHUB_REF#refs/tags/}
         echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
+        # Extract tag suffix (e.g., 'beta' from '2.10.1-beta')
+        TAG_SUFFIX=""
+        if [[ "$TAG" =~ -([a-zA-Z]+)$ ]]; then
+          TAG_SUFFIX="${BASH_REMATCH[1]}"
+        fi
+        echo "tag_suffix=${TAG_SUFFIX}" >> $GITHUB_OUTPUT
+        TAG_SUFFIX_LOWER=$(echo "$TAG_SUFFIX" | tr '[:upper:]' '[:lower:]')
+
+        # A '-latest' suffix (e.g. 1.2.3-latest, case-insensitive) is stripped
+        # from the Docker tag / version string, so it behaves like a plain
+        # release tag (1.2.3). A standalone 'latest' Docker tag is still
+        # pushed further down via the tag_suffix output.
+        if [ "$TAG_SUFFIX_LOWER" = "latest" ]; then
+          DOCKER_TAG="${TAG%-$TAG_SUFFIX}"
+        else
+          DOCKER_TAG="$TAG"
+        fi
+        echo "docker_tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
+
         # Get minor version (1.2 from 1.2.3)
-        VERSION_MINOR=$(echo $TAG | cut -d '.' -f 1,2)
+        VERSION_MINOR=$(echo $DOCKER_TAG | cut -d '.' -f 1,2)
         echo "minor=${VERSION_MINOR}" >> $GITHUB_OUTPUT
 
         # Get git revision
@@ -103,36 +96,28 @@ jobs:
         echo "rev=${REV}" >> $GITHUB_OUTPUT
 
         # Create version string for app/version
-        VERSION_STRING="${TAG}-${REV}"
+        VERSION_STRING="${DOCKER_TAG}-${REV}"
         echo "version_string=${VERSION_STRING}" >> $GITHUB_OUTPUT
 
-        # Extract tag suffix (e.g., 'beta' from '2.10.1-beta')
-        TAG_SUFFIX=""
-        if [[ "$TAG" =~ -([a-zA-Z]+)$ ]]; then
-          TAG_SUFFIX="${BASH_REMATCH[1]}"
-        fi
-        echo "tag_suffix=${TAG_SUFFIX}" >> $GITHUB_OUTPUT
-
-        # Create minor-with-suffix tag (e.g., '3.0-rc' from '3.0.1-rc')
-        if [ -n "$TAG_SUFFIX" ]; then
+        # Create minor-with-suffix tag (e.g., '3.0-rc' from '3.0.1-rc').
+        # Not created for the 'latest' suffix - it's stripped instead.
+        if [ -n "$TAG_SUFFIX" ] && [ "$TAG_SUFFIX_LOWER" != "latest" ]; then
           MINOR_WITH_SUFFIX="${VERSION_MINOR}-${TAG_SUFFIX}"
         else
           MINOR_WITH_SUFFIX=""
         fi
         echo "minor_with_suffix=${MINOR_WITH_SUFFIX}" >> $GITHUB_OUTPUT
 
-        # Check if tag is from master branch
-        IS_RELEASE="false"
-        if git merge-base --is-ancestor HEAD origin/master 2>/dev/null; then
-          BRANCH=$(git branch -r --contains HEAD | grep -E 'origin/master$' | head -n1)
-          if [ -n "$BRANCH" ]; then
-            IS_RELEASE="true"
-            echo "Tag is from master branch - will push 'latest' tag"
-          fi
-        fi
-
-        if [ "$IS_RELEASE" = "false" ]; then
-          echo "Tag is NOT from master branch - will push suffix tag instead"
+        # A tag without a suffix (e.g. 1.2.3) is a release and also gets a minor
+        # version tag (e.g. 1.2). A '-latest' suffix (e.g. 1.2.3-latest) is
+        # treated as a release too. Any other suffix (e.g. 1.2.3-beta) is a
+        # pre-release and does not get the minor version tag.
+        if [ -z "$TAG_SUFFIX" ] || [ "$TAG_SUFFIX_LOWER" = "latest" ]; then
+          IS_RELEASE="true"
+          echo "Tag has no suffix (or 'latest' suffix) - treated as a release, will also push minor version tag"
+        else
+          IS_RELEASE="false"
+          echo "Tag has suffix - will also push suffix tags instead"
         fi
 
         echo "is_release=${IS_RELEASE}" >> $GITHUB_OUTPUT
@@ -176,10 +161,10 @@ jobs:
         push: true
         target: api
         tags: |
-          ${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.tag) }}
+          ${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.docker_tag) }}
           ${{ steps.version.outputs.is_release == 'true' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
           ${{ steps.version.outputs.minor_with_suffix != '' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
-          ${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix) }}
+          ${{ steps.version.outputs.tag_suffix != '' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.tag_suffix) || '' }}
         cache-from: type=gha,scope=api
         cache-to: type=gha,mode=max,scope=api
 
@@ -191,36 +176,36 @@ jobs:
         push: true
         target: core
         tags: |
-          ${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.tag) }}
+          ${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.docker_tag) }}
           ${{ steps.version.outputs.is_release == 'true' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
           ${{ steps.version.outputs.minor_with_suffix != '' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
-          ${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix) }}
+          ${{ steps.version.outputs.tag_suffix != '' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.tag_suffix) || '' }}
         cache-from: type=gha,scope=core
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.version.outputs.tag }}
-        name: Release ${{ steps.version.outputs.tag }}
+        name: Release ${{ steps.version.outputs.docker_tag }}
         generate_release_notes: true
         body: |
           ## Docker Images Built
 
           ### API Image
-          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) || '' }}
-          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) }}
+          - `${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.docker_tag) }}`
+          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
           ${{ steps.version.outputs.minor_with_suffix != '' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
-          - `${{ env.IMAGE_NAME }}-api:${{ steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix }}`
+          ${{ steps.version.outputs.tag_suffix != '' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.tag_suffix) || '' }}
 
           ### Core Image
-          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) || '' }}
-          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.tag) }}
+          - `${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.docker_tag) }}`
+          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
           ${{ steps.version.outputs.minor_with_suffix != '' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
-          - `${{ env.IMAGE_NAME }}-core:${{ steps.version.outputs.is_release == 'true' && 'latest' || steps.version.outputs.tag_suffix }}`
+          ${{ steps.version.outputs.tag_suffix != '' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.tag_suffix) || '' }}
 
           **Version:** `${{ steps.version.outputs.version_string }}`
           **Git Revision:** `${{ steps.version.outputs.rev }}`
-          ${{ steps.version.outputs.is_release != 'true' && format('**Note:** This release is from a non-release branch. Only {0} tags are created.', steps.version.outputs.tag_suffix) || '' }}
+          ${{ steps.version.outputs.is_release != 'true' && format('**Note:** This is a `{0}` pre-release tag. Only {0} tags are created.', steps.version.outputs.tag_suffix) || '' }}
 
           ## What's Changed
 

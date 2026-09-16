@@ -158,6 +158,25 @@ CREATE TABLE IF NOT EXISTS `events` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `spool_queues` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `rate_limit` float DEFAULT NULL COMMENT 'max tasks per second, NULL = unlimited',
+  `status` enum('active','paused') NOT NULL DEFAULT 'active',
+  `last_executed_at` datetime DEFAULT NULL COMMENT 'last time a task from this queue was executed',
+  `created_at`       datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `finished_at`      datetime DEFAULT NULL COMMENT 'set automatically when no pending tasks remain',
+  `total_added`  int(11) NOT NULL DEFAULT '0',
+  `cnt_success`  int(11) NOT NULL DEFAULT '0',
+  `cnt_fail`     int(11) NOT NULL DEFAULT '0',
+  `cnt_delayed`  int(11) NOT NULL DEFAULT '0',
+  `cnt_stuck`    int(11) NOT NULL DEFAULT '0',
+  `cnt_paused`   int(11) NOT NULL DEFAULT '0',
+  `cnt_skipped`  int(11) NOT NULL DEFAULT '0',
+  `cnt_pending`  int(11) NOT NULL DEFAULT '0' COMMENT 'tasks not yet terminally finished',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `spool` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -170,8 +189,10 @@ CREATE TABLE IF NOT EXISTS `spool` (
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
   `settings` json DEFAULT NULL,
-  KEY idx_spool_select (`prio`,`status`,`delayed`,`executed`),
-  PRIMARY KEY (`id`)
+  `queue_id` int(11) DEFAULT NULL,
+  KEY idx_spool_select (`prio`,`status`,`delayed`,`executed`,`queue_id`),
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_spool_queue` FOREIGN KEY (`queue_id`) REFERENCES `spool_queues` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `spool_history` (
@@ -187,6 +208,7 @@ CREATE TABLE IF NOT EXISTS `spool_history` (
   `executed` datetime DEFAULT NULL,
   `delayed` int(11) NOT NULL DEFAULT '0',
   `settings` json DEFAULT NULL,
+  `queue_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
@@ -205,14 +227,14 @@ CREATE TABLE IF NOT EXISTS `user_services` (
   `settings` json DEFAULT NULL,
   PRIMARY KEY (`user_service_id`),
   FOREIGN KEY (parent) REFERENCES user_services (user_service_id) ON DELETE SET NULL,
-  KEY idx_user_id (user_id)
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_forecast_candidates` (`auto_bill`, `status`, `withdraw_id`, `expire`, `user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `users` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `partner_id` int(11) DEFAULT NULL,
   `login` varchar(128) NOT NULL,
-  `login2` varchar(128) DEFAULT NULL,
   `password` varchar(128) DEFAULT NULL,
   `type` tinyint(4) DEFAULT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -232,10 +254,28 @@ CREATE TABLE IF NOT EXISTS `users` (
   `verified` int(11) DEFAULT NULL,
   `create_act` tinyint(4) DEFAULT NULL,
   `settings` json DEFAULT NULL,
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `users_uniq` (`login`),
-  UNIQUE KEY `users_uniq_login2` (`login2`)
+  PRIMARY KEY (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `accounts` (
+  `login` varchar(128) NOT NULL,
+  `type` char(16) NOT NULL DEFAULT 'login',
+  `user_id` int(11) NOT NULL,
+  `settings` json DEFAULT NULL,
+  PRIMARY KEY (`login`, `type`),
+  KEY `idx_accounts_user_id` (`user_id`),
+  CONSTRAINT `fk_accounts_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `accounts` (
+  `login` varchar(128) NOT NULL,
+  `type` char(16) NOT NULL DEFAULT 'login',
+  `user_id` int(11) NOT NULL,
+  `settings` json DEFAULT NULL,
+  PRIMARY KEY (`login`, `type`),
+  KEY `idx_accounts_user_id` (`user_id`),
+  CONSTRAINT `fk_accounts_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `withdraw_history` (
   `withdraw_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -353,6 +393,33 @@ CREATE TABLE IF NOT EXISTS `promo_codes` (
   `expire` datetime DEFAULT NULL,
   PRIMARY KEY (`id`,`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `logs_api` (
+  `user_id` int(11) DEFAULT NULL,
+  `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `ip` varchar(45) NOT NULL,
+  `url` varchar(512) NOT NULL,
+  `method` varchar(10) NOT NULL,
+  `args` json DEFAULT NULL,
+  `descr` char(128) DEFAULT NULL,
+  `duration` int(11) unsigned NOT NULL DEFAULT '0',
+  `response_code` smallint(5) unsigned NOT NULL DEFAULT '0',
+  `response_error` varchar(512) DEFAULT NULL,
+  KEY `idx_logs_api_user_id` (`user_id`),
+  KEY `idx_logs_api_date` (`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `statistics` (
+  `date` date NOT NULL,
+  `kind` varchar(32) NOT NULL,
+  `field` varchar(64) NOT NULL,
+  `count` int(11) NOT NULL DEFAULT '0',
+  `sum` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `min` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `max` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `avg` decimal(12,2) NOT NULL DEFAULT '0.00',
+  UNIQUE KEY (`date`, `kind`, `field`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;

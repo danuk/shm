@@ -273,7 +273,7 @@ sub send_mail {
         my %smtp_params = (
             host    => $host,
             port    => $port || 25,
-            timeout => $args{timeout} || 30,
+            timeout => $args{timeout} || 5,
             $tls_mode ? ( ssl => $tls_mode ) : (),
         );
 

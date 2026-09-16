@@ -15,6 +15,12 @@ POSIX::setuid(33); # www-data
 
 $| = 1;
 
+my $TASK_TIMEOUT = $ENV{TASK_TIMEOUT} || 300; # 5 min
+
+# SIGALRM handler: fires when a task exceeds $TASK_TIMEOUT seconds.
+# The die is caught by Try::Tiny's catch block.
+$SIG{ALRM} = sub { die "Task timeout: execution exceeded ${TASK_TIMEOUT}s\n" };
+
 my $user = SHM->new( user_id => 1 );
 $user->dbh->{RaiseError} = 1;
 # Core::System::ServiceManager::setup();
@@ -23,6 +29,7 @@ my $task;
 my $request_count = 0;
 my $max_requests = 10000;
 my $random_factor = int rand(11);
+my $last_task_time = time();
 
 say "SHM spool started at: " . localtime;
 
@@ -32,20 +39,24 @@ for (;;) {
     my $task_exists = 0;
     do {
         try {
+            alarm($TASK_TIMEOUT);
             ( $task ) = $spool->process_one();
+            alarm(0);
 
             if ( ref $task ) {
                 $task_exists = 1;
+                $last_task_time = time();
                 $request_count++;
                 say encode_json_perl( $task );
             }
         } catch {
+            alarm(0);
             my $error = $_;
             warn $error;
 
             if ( ref $task ) {
                 $task->retry_task(
-                    status => TASK_FAIL,
+                    status   => TASK_FAIL,
                     response => { error => $error },
                 );
             }
@@ -60,10 +71,14 @@ for (;;) {
     }
 
     unless ($task_exists) {
-        $user->dbh->selectrow_array(
-            "SELECT SLEEP(?)",
-            undef, 10 + $random_factor
-        );
+        if ( time() - $last_task_time >= 60 ) {
+            $user->dbh->selectrow_array(
+                "SELECT SLEEP(?)",
+                undef, 10 + $random_factor
+            );
+        } else {
+            sleep 1;
+        }
     }
 }
 

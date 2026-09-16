@@ -34,6 +34,8 @@ sub structure {
             type => 'number',
             required => 1,
             title => 'сумма платежа',
+            use_for_stats => 1,
+            stats_use_when_add => 1,
         },
         date => {
             type => 'now',
@@ -91,16 +93,15 @@ sub pays {
     return $self;
 }
 
-sub forecast {
+sub forecast_candidates {
     my $self = shift;
     my %args = (
         days => 3,
         consider_today => 0,
         blocked => 0,
+        distinct_users => 0,
         get_smart_args(@_),
     );
-
-    my $user = $self->user;
 
     my @statuses = (
         STATUS_INIT,
@@ -113,21 +114,45 @@ sub forecast {
 
     my $start_date = add_date_time( start_of_day(), day => $args{consider_today} ? 0 : 1 );
 
-    my $user_services = get_service('UserService', user_id => $self->user_id )->list_prepare(
-        where => {
-            auto_bill => \[ '= 1'],
-            status => { -in => \@statuses },
-            withdraw_id => { '!=', undef },
-            expire => [
-                { '<', \[ '? + INTERVAL ? DAY', $start_date, $args{days} ] },
-                undef,
-            ],
-        },
+    my $where = {
+        auto_bill => \[ '= 1'],
+        status => { -in => \@statuses },
+        withdraw_id => { '!=', undef },
+        expire => [
+            { '<', \[ '? + INTERVAL ? DAY', $start_date, $args{days} ] },
+            undef,
+        ],
+    };
+
+    if ( $args{distinct_users} ) {
+        my @rows = $self->srv('us')->_list(
+            where => $where,
+            fields => 'DISTINCT user_id',
+        );
+        return \@rows;
+    }
+
+    return get_service('UserService', user_id => $self->user_id )->list_prepare(
+        where => $where,
         order => [
             user_service_id => 'asc',
             expire => 'asc',
         ],
     )->with('services','withdraws','settings')->get;
+}
+
+sub forecast {
+    my $self = shift;
+    my %args = (
+        days => 3,
+        consider_today => 0,
+        blocked => 0,
+        get_smart_args(@_),
+    );
+
+    my $user = $self->user;
+
+    my $user_services = $self->forecast_candidates(%args);
 
     my $bonus = $user->get_bonus,
 
@@ -303,6 +328,11 @@ sub paysystems {
 
         my $proposed_payment = $args{amount} || $forecast;
 
+        my $payment_mode = $p->{payment_mode};
+        if ( $p->{recurring} || $p->{internal} ) {
+            $payment_mode //= 'internal';
+        }
+
         push @ret, {
             paysystem => $paysystem,
             weight => $p->{weight} || 0,
@@ -317,6 +347,7 @@ sub paysystems {
             ),
             recurring => $p->{recurring} ? 1 : 0,
             internal => $p->{internal} ? 1 : 0,
+            payment_mode => $payment_mode,
             allow_deletion => $p->{allow_deletion} ? 1 : 0,
             user_id => $user->id,
             forecast => $forecast,

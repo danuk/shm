@@ -124,16 +124,16 @@ sub dbh_new {
     return $child_dbh;
 }
 
-sub dbh_myisam {
+sub dbh_auto_commit {
     my $self = shift;
     my $local = get_service('config')->local;
 
-    if ( my $dbh = $local->{dbh_myisam} ) {
+    if ( my $dbh = $local->{dbh_auto_commit} ) {
         return $dbh if $dbh->ping;
         $dbh->disconnect;
     }
 
-    return $local->{dbh_myisam} = $self->dbh_new( AutoCommit => 1, InactiveDestroy => 0 );
+    return $local->{dbh_auto_commit} = $self->dbh_new( AutoCommit => 1, InactiveDestroy => 0 );
 }
 
 sub table_allow_insert_key { return 0 };
@@ -348,6 +348,12 @@ sub prepare_query_for_filtering {
             } elsif ($$value eq 'false') {
                 # Поле равно лжи (для boolean полей)
                 $result{$field} = 0;
+            } elsif ($$value eq 'isTrue') {
+                # Поле истинно (поддерживает и true, и 1)
+                $result{"--LOWER($field)"} = { '-in' => [ 'true', '1' ] };
+            } elsif ($$value eq 'isFalse') {
+                # Поле ложно (поддерживает и false, и 0)
+                $result{"--LOWER($field)"} = { '-in' => [ 'false', '0' ] };
             } elsif ($$value =~ /^(lt|gt|le|ge|eq|ne):(.*)$/) {
                 # Операторы сравнения с числами: lt:5, gt:10, le:100, etc.
                 my ($op, $val) = ($1, $2);
@@ -433,12 +439,12 @@ sub query_for_filtering {
                             } else {
                                 # Если есть специальные ключи с префиксом --, обрабатываем их
                                 for my $prep_key ( keys %$prepared ) {
-                                    if ( $prep_key =~ /^--COALESCE\(temp_field,/ ) {
+                                    if ( $prep_key =~ /^--/ ) {
                                         # Заменяем temp_field на реальный путь JSON и убираем префикс --
-                                        my $coalesce_key = $prep_key;
-                                        $coalesce_key =~ s/temp_field/$field_path/;
-                                        $coalesce_key =~ s/^--//;  # Убираем префикс --
-                                        $where{ $coalesce_key } = $prepared->{ $prep_key };
+                                        my $raw_key = $prep_key;
+                                        $raw_key =~ s/temp_field/$field_path/g;
+                                        $raw_key =~ s/^--//;
+                                        $where{ $raw_key } = $prepared->{ $prep_key };
                                     } else {
                                         $where{ $field_path } = $prepared->{ $prep_key };
                                     }
@@ -540,6 +546,27 @@ sub clean_query_args {
                 }
             }
 
+            if ( $f eq $self->get_table_key2() ) {
+                if ( $settings->{is_update} ) {
+                    unless ( $args->{where}{ $f } ) {
+                        # Добавляем во WHERE ключевое поле
+                        if ( my $id = $self->{res}->{ $f } ) {
+                            $args->{where}{ $f } = $id;
+                        } elsif ( $self->can( $f ) ) {
+                            $args->{where}{ $f } = $self->$f;
+                        }
+                        logger->fatal( "`$f` required", $self ) unless length $args->{where}{ $f };
+                    }
+                    # Запрещаем обновлять ключевое поле
+                    delete $args->{ $f } if exists $args->{ $f };
+                } elsif ( exists $args->{ $f } ) {
+                    # Не используем ключи в insert-ах (админам можно)
+                    unless ( $self->user->authenticated->is_admin ) {
+                        delete $args->{ $f } unless $self->table_allow_insert_key;
+                    }
+                }
+            }
+
             if ( $settings->{is_list} ) {
                 if ( $v->{auto_fill} ) { # получаем автоматически
                     if ( exists $self->{ $f } ) {
@@ -601,7 +628,10 @@ sub set {
 
     clean_query_args( $self, \%args, { is_update => 1 } );
 
-    return $self->_set( %args );
+    my $ret = $self->_set( %args );
+
+    $self->stats('set', \%args) if $ret;
+    return $ret;
 }
 
 sub _set {
@@ -659,7 +689,10 @@ sub add {
 
     clean_query_args( $self, \%args );
 
-    return $self->_add( %args );
+    my $key_id = $self->_add( %args );
+
+    $self->stats('add', \%args) if $key_id;
+    return $key_id;
 }
 
 sub _add {
@@ -739,7 +772,7 @@ sub list_for_api {
     # Validate limit: must be a positive integer, capped at 1000 for non-admins.
     # Admins may pass limit=0 to request all rows (no LIMIT clause).
     $args{limit} = int( $args{limit} // 25 );
-    $args{limit} = 25   if $args{limit} < 0;
+    $args{limit} = 25   if $args{limit} !~ /^\d+$/ || $args{limit} < 0;
     $args{limit} = 25   if $args{limit} == 0 && !$args{admin};
     $args{limit} = 1000 if !$args{admin} && $args{limit} > 1000;
 
@@ -848,12 +881,19 @@ sub get {
         $user_id = $self->user_id;
     }
 
+    my %where = (
+        sprintf("%s.%s", $self->table, $table_key ) => $self->id,
+        $user_id ? ( sprintf("%s.%s", $self->table, 'user_id' ) => $user_id, ) : (),
+    );
+
+    my $key2 = $self->get_table_key2;
+    if ( $key2 ) {
+        $where{ $key2 } = $self->{res}->{ $key2 };
+    }
+
     # do not use list() because of list might contain default selectors
     my ( $ret ) = $self->_list(
-        where => {
-            sprintf("%s.%s", $self->table, $table_key ) => $self->id,
-            $user_id ? ( sprintf("%s.%s", $self->table, 'user_id' ) => $user_id, ) : (),
-        },
+        where => \%where,
         limit => 1,
         @_,
     );
@@ -867,6 +907,17 @@ sub get_table_key {
 
     for ( keys %$structure ) {
         return $_ if $structure->{ $_ }->{key};
+    }
+    return undef;
+}
+
+sub get_table_key2 {
+    my $self = shift;
+
+    my $structure = $self->structure;
+
+    for ( keys %$structure ) {
+        return $_ if $structure->{ $_ }->{key2};
     }
     return undef;
 }
@@ -909,6 +960,7 @@ sub query_select {
         limit => undef,
         offset => undef,
         join => undef,
+        group_by => undef,
         order => undef,
         extra => undef,
         @_,
@@ -995,6 +1047,11 @@ sub query_select {
             my ( $where, @bind ) = $sql->where( $args{where} );
             $query .= $where;
             push @{ $args{vars} }, @bind;
+    }
+
+    if ( $args{group_by} ) {
+        my @cols = ref $args{group_by} ? @{ $args{group_by} } : ( $args{group_by} );
+        $query .= ' GROUP BY ' . join( ', ', map { "`$_`" } @cols );
     }
 
     if ( $args{order} ) {

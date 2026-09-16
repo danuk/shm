@@ -55,12 +55,12 @@ subtest 'Check EVAL_PERL' => sub {
         data => '
             {{ PERL }}
                 use v5.14;
-                say "My login is: {{ user.login }}";
+                say "My user_id is: {{ user.id }}";
             {{ END -}}
         ',
     );
 
-    is( $perl, 'My login is: danuk' );
+    is( $perl, "My user_id is: 40092" );
 };
 
 subtest 'Check template trim' => sub {

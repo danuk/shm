@@ -55,6 +55,9 @@ sub structure {
             type => 'now',
             title => 'дата создания услуги пользователя',
             readOnly => 1,
+            use_for_stats => 1,
+            stats_mode => 'inc',
+            stats_use_when_add => 1,
         },
         expire => {
             type => 'date',
@@ -465,9 +468,12 @@ sub make_commands_by_event {
     $args{settings}{server_id} //= $self->settings->{server_id} + 0 if $self->settings->{server_id};
 
     for ( @commands ) {
+        my $prio = delete $_->{settings}->{prio} // 10;
+
         $self->spool->add(
             %args,
             event => $_,
+            prio => $prio,
         );
     }
     return scalar @commands;
@@ -1189,6 +1195,7 @@ sub cleanup {
         $us->delete;
         $us->commit;
     }
+    return $self;
 }
 
 1;

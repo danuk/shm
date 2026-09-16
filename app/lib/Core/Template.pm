@@ -60,7 +60,7 @@ sub init {
 
 # fake
 sub table { return 'templates' };
-sub dbh { shift->dbh_myisam };
+sub dbh { shift->dbh_auto_commit };
 
 sub structure {
     return {
@@ -132,6 +132,7 @@ sub parse {
         mail => sub { $self->srv('Transport::Mail') },
         s3 => sub { $self->srv('S3') },
         spool => sub { $self->srv('Spool', $task_id ? (task_id => $task_id) : (), defined $_[0] ? (_id => $_[0]) : () ) },
+        spool_queue => sub { $self->srv('SpoolQueue') },
         promo => sub { $self->srv('promo', defined $_[0] ? (_id => $_[0]) : () ) },
         misc => sub { $self->srv('misc') },
         logger => sub { $self->srv('logger') },
@@ -177,6 +178,8 @@ sub parse {
         isNotNull => sub { return \'isNotNull' },
         isEmpty => sub { return \'isEmpty' },
         isNotEmpty => sub { return \'isNotEmpty' },
+        isTrue => sub { return \'isTrue' },
+        isFalse => sub { return \'isFalse' },
         # Numeric comparisons
         lt => sub { return \('lt:' . ($_[0] // '')) },  # less than
         gt => sub { return \('gt:' . ($_[0] // '')) },  # greater than
