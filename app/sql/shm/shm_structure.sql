@@ -250,7 +250,6 @@ CREATE TABLE IF NOT EXISTS `users` (
   `full_name` char(255) DEFAULT NULL,
   `can_overdraft` tinyint(4) DEFAULT '0',
   `bonus` decimal(10,2) NOT NULL,
-  `phone` char(20) DEFAULT NULL,
   `verified` int(11) DEFAULT NULL,
   `create_act` tinyint(4) DEFAULT NULL,
   `settings` json DEFAULT NULL,

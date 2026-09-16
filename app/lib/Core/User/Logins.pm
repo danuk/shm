@@ -6,6 +6,7 @@ use parent 'Core::Base';
 use Core::Base;
 use Core::Utils qw(
     is_email
+    is_phone
     encode_json
     now
     get_user_ip
@@ -47,7 +48,7 @@ sub structure {
 sub id {
     my $self = shift;
     my $login = shift;
-    my $types = shift || ['login','email'];
+    my $types = shift || ['login','email','phone'];
     my %args = @_;
 
     if ( $login ) {
@@ -123,9 +124,20 @@ sub add {
     $args{login} = lc $args{login};
     $args{type} = 'email' if is_email( $args{login} );
 
+    if ( $args{type} eq 'phone' ) {
+        ( my $digits = $args{login} ) =~ s/\D+//g;
+        $args{login} = $digits;
+    }
+
     if ( $args{type} eq 'email' && !is_email( $args{login} ) ) {
         report->status( 400 );
         report->add_error('Incorrect login format (is not email)' );
+        return undef;
+    }
+
+    if ( $args{type} eq 'phone' && !is_phone( $args{login} ) ) {
+        report->status( 400 );
+        report->add_error('Incorrect login format (is not phone)' );
         return undef;
     }
 

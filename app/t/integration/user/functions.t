@@ -91,6 +91,24 @@ my %profile = $user->profile;
 is $profile{email}, 'email@domain.ru', 'Check user profile';
 is $user->email, 'danuk@domain.ru', 'Check user email';
 
+subtest 'Check user phone backward compatibility' => sub {
+    is( $user->get_phone, undef, 'No phone logins by default' );
+
+    $user->logins->add( login => '+7 999 123-45-67', type => 'phone' );
+    $user->logins->add( login => '8 (800) 555-35-35', type => 'phone' );
+
+    is(
+        join( ',', sort split( /, /, $user->get_phone ) ),
+        join( ',', sort qw( 79991234567 88005553535 ) ),
+        'get_phone returns comma separated cleaned phones',
+    );
+    cmp_deeply(
+        [ sort $user->phones ],
+        [ sort qw( 79991234567 88005553535 ) ],
+        'phones returns list of cleaned phone logins',
+    );
+};
+
 subtest 'Check user email by login' => sub {
     my $email = 'test@domain.ru';
     my $new_user = $user->reg(

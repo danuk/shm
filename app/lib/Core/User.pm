@@ -140,6 +140,8 @@ sub structure {
             default => 0,
             title => 'бонусы',
         },
+        # Виртуальное поле для обратной совместимости со старой колонкой users.phone.
+        # Реальные номера хранятся в accounts (тип 'phone'), см. set()/get_phone()/phones().
         phone => {
             type => 'text',
             allow_update_by_user => 1,
@@ -794,7 +796,26 @@ sub set {
         $self->make_event( 'credit', settings => { credit => $args{credit} } );
     }
 
-    return $self->SUPER::set( %args );
+    if ( exists $args{phone} ) {
+        $self->_set_legacy_phone( delete $args{phone} );
+    }
+
+    return %args ? $self->SUPER::set( %args ) : 1;
+}
+
+sub _set_legacy_phone {
+    my $self = shift;
+    my $phone = shift;
+
+    return 1 unless defined $phone && length $phone;
+
+    ( my $digits = $phone ) =~ s/\D+//g;
+    return 1 unless length $digits;
+
+    my $logins = $self->logins;
+    return 1 if $logins->id( $digits, ['phone'], user_id => $self->id );
+
+    return $logins->add( login => $phone, type => 'phone' );
 }
 
 sub set_balance {
@@ -922,7 +943,6 @@ sub recash {
 
     $self->set(
         balance => $balance,
-        #bonus => $bonus,
         bonus => $bonus_total, # calc bonuses by the bonus table, because it also contains withdraws data
     );
 
@@ -1070,7 +1090,13 @@ sub list_for_api {
         $args{where}->{user_id} = $self->id;
     }
 
-    return $self->SUPER::list_for_api( %args );
+    my @list = $self->SUPER::list_for_api( %args );
+
+    for ( @list ) {
+        $_->{phone} = $self->id( $_->{user_id} )->get_phone if $_->{user_id};
+    }
+
+    return @list;
 }
 
 sub _list {
@@ -1127,6 +1153,22 @@ sub email {
 
     my ( $email ) = $self->emails;
     return $email;
+}
+
+sub phones {
+    my $self = shift;
+
+    my $phones = $self->logins->filter( type => \('eq:phone') )->items;
+
+    my $logins = pluck( $phones, 'get_login' ) || [];
+    return wantarray ? @$logins : $logins;
+}
+
+sub get_phone {
+    my $self = shift;
+
+    my @phones = $self->phones;
+    return @phones ? join( ', ', @phones ) : undef;
 }
 
 sub referrals {
@@ -1375,7 +1417,6 @@ sub api_search_for_admins {
 
     my @or_where = (
         { full_name => { '-like' => "%$text%" } },
-        { phone     => { '-like' => "%$text%" } },
         { sprintf('CAST(%s AS CHAR)', 'settings') => { '-like' => "%$text%" } },
     );
 

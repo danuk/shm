@@ -54,6 +54,7 @@ our @EXPORT_OK = qw(
     passgen
     shm_test_api
     is_email
+    is_phone
     is_host
     html_escape
     html_unescape
@@ -622,6 +623,13 @@ sub is_host {
     return 1 if is_ipv6( $host );
 
     return 0;
+}
+
+sub is_phone {
+    my $phone = shift;
+
+    return 0 unless defined $phone;
+    return $phone =~ /^\d{10,15}$/ ? 1 : 0;
 }
 
 sub ipv4_aton {
