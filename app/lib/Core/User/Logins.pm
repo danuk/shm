@@ -168,6 +168,16 @@ sub api_set {
     return undef unless %ret;
 
     if ( $args{primary} ) {
+        # Если этот логин уже является primary у другого пользователя - снимаем его оттуда
+        my $other_users = $self->user->items(
+            admin => 1,
+            where => {
+                login => $args{login},
+                user_id => { '!=' => $self->user_id },
+            },
+        );
+        $_->set( login => '' ) for @$other_users;
+
         $self->user->set(
             login => $args{login},
         );
