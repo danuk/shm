@@ -452,9 +452,11 @@ state $routes //= {
         swagger => { summary => 'Список автоплатежей пользователя' },
     },
     DELETE => {
-        params => {},
         controller => 'User',
         method => 'delete_autopayment',
+        params => {
+            pay_system => { type => 'string', max_length => 64 },
+        },
         args => {
             format => 'json',
         },
