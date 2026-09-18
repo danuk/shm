@@ -398,7 +398,9 @@ sub set_new_passwd {
     return undef if $self->is_admin && !$args{admin};
 
     my $new_password = passgen( $args{len} );
-    $self->passwd( password => $new_password );
+    # Generating a brand new random password is itself the identity-verifying
+    # action, so bypass the old-password requirement in passwd().
+    $self->passwd( password => $new_password, admin => 1 );
 
     return $new_password;
 }
@@ -581,7 +583,9 @@ sub passwd_reset_verify {
     delete $settings->{reset_password_verify_expires};
     $self->set( settings => $settings );
 
-    $self->passwd( password => $args{password} );
+    # The token already proves ownership of the account, so bypass the
+    # old-password verification required for a regular self-service change.
+    $self->passwd( password => $args{password}, admin => 1 );
 
     return { msg => 'Password reset successful' };
 }
