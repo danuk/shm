@@ -433,6 +433,7 @@ state $routes //= {
         params => {
             user_service_id => { type => 'integer', required => 1, min => 1 },
             service_id      => { type => 'integer', required => 1, min => 1 },
+            finish_active   => { type => 'boolean' },
         },
         swagger => { summary => 'Смена тарифа' },
     },
@@ -1095,9 +1096,11 @@ state $routes //= {
         controller => 'USObject',
         method => 'change',
         params => {
-            user_id         => { type => 'integer', required => 1, min => 1 },
-            user_service_id => { type => 'integer', required => 1, min => 1 },
-            service_id      => { type => 'integer', required => 1, min => 1 },
+            user_id              => { type => 'integer', required => 1, min => 1 },
+            user_service_id      => { type => 'integer', required => 1, min => 1 },
+            service_id           => { type => 'integer', required => 1, min => 1 },
+            finish_active        => { type => 'boolean' },
+            allow_partial_period => { type => 'boolean' },
         },
         swagger => { summary => 'Смена тарифа услуги клиента' },
     },
