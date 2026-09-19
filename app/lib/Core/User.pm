@@ -1039,12 +1039,22 @@ sub list_for_api {
     }
 
     my @list = $self->SUPER::list_for_api( %args );
+    # get_phone() below issues extra SELECTs on the same connection, which
+    # would otherwise clobber FOUND_ROWS() before found_rows() is read.
+    $self->{_found_rows_cache} = $self->SUPER::found_rows();
 
     for ( @list ) {
         $_->{phone} = $self->id( $_->{user_id} )->get_phone if $_->{user_id};
     }
 
     return @list;
+}
+
+sub found_rows {
+    my $self = shift;
+    return exists $self->{_found_rows_cache}
+        ? delete( $self->{_found_rows_cache} )
+        : $self->SUPER::found_rows();
 }
 
 sub _list {
