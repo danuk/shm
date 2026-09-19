@@ -516,7 +516,9 @@ sub verify_email {
         return { msg => 'is not email' };
     }
 
-    my $login = $self->logins->id( $email, ['email'] );
+    # Scope the lookup to the current user, otherwise any authenticated
+    # user could probe/verify or trigger mail to another user's email login.
+    my $login = $self->logins->id( $email, ['email'], user_id => $self->id );
     unless ( $login ) {
         return { msg => 'email not found' };
     }
@@ -604,7 +606,9 @@ sub delete_email {
     my $self = shift;
     my $email = shift;
 
-    my $login = $self->logins->id( $email, ['email'] );
+    # Scope the lookup to the current user, otherwise any authenticated
+    # user could delete another user's email login by guessing its address.
+    my $login = $self->logins->id( $email, ['email'], user_id => $self->id );
     unless ( $login ) {
         return { msg => 'Email not found' };
     }
