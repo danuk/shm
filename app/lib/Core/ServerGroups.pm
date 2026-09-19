@@ -7,7 +7,7 @@ use Core::Const;
 use Core::Utils qw( any );
 
 sub table { return 'servers_groups' };
-sub dbh { shift->dbh_myisam };
+sub dbh { shift->dbh_auto_commit };
 
 sub structure {
     return {

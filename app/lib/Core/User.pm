@@ -39,6 +39,9 @@ sub structure {
             type => 'number',
             hide_for_user => 1,
             title => 'id партнера',
+            use_for_stats => 1,
+            stats_mode => 'inc',
+            stats_use_when_add => 1,
         },
         login => {
             type => 'text',
@@ -63,6 +66,9 @@ sub structure {
         created => {
             type => 'now',
             title => 'дата создания',
+            use_for_stats => 1,
+            stats_mode => 'inc',
+            stats_use_when_add => 1,
         },
         last_login => {
             type => 'date',
@@ -134,6 +140,8 @@ sub structure {
             default => 0,
             title => 'бонусы',
         },
+        # Виртуальное поле для обратной совместимости со старой колонкой users.phone.
+        # Реальные номера хранятся в accounts (тип 'phone'), см. set()/get_phone()/phones().
         phone => {
             type => 'text',
             allow_update_by_user => 1,
@@ -359,30 +367,6 @@ sub render_mail_text {
     return $text;
 }
 
-sub send_mail_message {
-    my $self = shift;
-    my %args = (
-        to => undef,
-        subject => undef,
-        message => undef,
-        @_,
-    );
-
-    return $self->srv('spool')->add(
-        event => {
-            title => 'send verify code',
-            name => 'SYSTEM',
-            server_gid => cfg('mail')->{server_gid} || GROUP_ID_MAIL,
-        },
-        settings => {
-            to => $args{to},
-            subject => $args{subject},
-            message => $args{message},
-            cfg('mail')->{from} ? ( from => cfg('mail')->{from} ) : (),
-        },
-    );
-}
-
 sub gen_session {
     my $self = shift;
     my %args = (
@@ -429,7 +413,7 @@ sub set_email {
         },
     );
 
-    return { msg => 'Successful' };
+    return { msg => 'Verification code sent' };
 }
 
 sub get_email {
@@ -738,7 +722,26 @@ sub set {
         $self->make_event( 'credit', settings => { credit => $args{credit} } );
     }
 
-    return $self->SUPER::set( %args );
+    if ( exists $args{phone} ) {
+        $self->_set_legacy_phone( delete $args{phone} );
+    }
+
+    return %args ? $self->SUPER::set( %args ) : 1;
+}
+
+sub _set_legacy_phone {
+    my $self = shift;
+    my $phone = shift;
+
+    return 1 unless defined $phone && length $phone;
+
+    ( my $digits = $phone ) =~ s/\D+//g;
+    return 1 unless length $digits;
+
+    my $logins = $self->logins;
+    return 1 if $logins->id( $digits, ['phone'], user_id => $self->id );
+
+    return $logins->add( login => $phone, type => 'phone' );
 }
 
 sub set_balance {
@@ -866,7 +869,6 @@ sub recash {
 
     $self->set(
         balance => $balance,
-        #bonus => $bonus,
         bonus => $bonus_total, # calc bonuses by the bonus table, because it also contains withdraws data
     );
 
@@ -1069,6 +1071,22 @@ sub email {
 
     my ( $email ) = $self->emails;
     return $email;
+}
+
+sub phones {
+    my $self = shift;
+
+    my $phones = $self->logins->filter( type => \('eq:phone') )->items;
+
+    my $logins = pluck( $phones, 'get_login' ) || [];
+    return wantarray ? @$logins : $logins;
+}
+
+sub get_phone {
+    my $self = shift;
+
+    my @phones = $self->phones;
+    return @phones ? join( ', ', @phones ) : undef;
 }
 
 sub referrals {

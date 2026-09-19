@@ -38,6 +38,7 @@ sub send {
         vars => {
             SUCCESS => SUCCESS,
             FAIL => FAIL,
+            SKIP => SKIP,
             STUCK => '',
         },
     );

@@ -18,7 +18,7 @@ subtest '' => sub {
 };
 
 subtest '' => sub {
-    my $response = $http->http(url => 'http://api/shm/v1/user');
+    my $response = $http->http(url => 'http://api/shm/v1/user', method => 'GET');
     is( $response->code, 401 );
     like( $response->status_line, qr/401 Unauthorized/ );
 };

@@ -7,7 +7,7 @@ use Core::Base;
 use Core::Utils qw/now/;
 
 sub table { return 'console' };
-sub dbh { shift->dbh_myisam };
+sub dbh { shift->dbh_auto_commit };
 
 sub structure {
     return {

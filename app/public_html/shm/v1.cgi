@@ -21,6 +21,7 @@ use Core::Utils qw(
 
 use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
+use Time::HiRes ();
 
 state $routes //= {
 '/healthcheck' => {
@@ -171,13 +172,13 @@ state $routes //= {
         params => {},
         controller => 'User',
         method => 'api_enable_password_auth',
-        swagger => { summary => 'Включить вход по паролю' },
+        swagger => { summary => 'Включение входа по паролю' },
     },
     DELETE => {
         params => {},
         controller => 'User',
         method => 'api_disable_password_auth',
-        swagger => { summary => 'Отключить вход по паролю' },
+        swagger => { summary => 'Отключение входа по паролю' },
     },
 },
 '/user/otp' => {
@@ -255,7 +256,7 @@ state $routes //= {
         params => {},
         controller => 'User::Passkey',
         method => 'api_register_options',
-        swagger => { summary => 'Получить параметры регистрации Passkey' },
+        swagger => { summary => 'Получение параметров регистрации Passkey' },
     },
     POST => {
         params => {
@@ -300,7 +301,7 @@ state $routes //= {
         controller => 'User::Passkey',
         method => 'api_auth_options_public',
         skip_check_auth => 1,
-        swagger => { summary => 'Получить параметры публичной аутентификации Passkey' },
+        swagger => { summary => 'Получение параметров публичной аутентификации Passkey' },
     },
     POST => {
         params => {
@@ -316,7 +317,7 @@ state $routes //= {
 '/user/passwd' => {
     swagger => { tags => 'Пользователи' },
     POST => {
-        swagger => { summary => 'Сменить пароль пользователя' },
+        swagger => { summary => 'Смена пароля пользователя' },
         controller => 'User',
         method => 'passwd',
         params => {
@@ -385,8 +386,8 @@ state $routes //= {
     GET => {
         params => {},
         controller => 'User',
-        method => 'get_email',
-        swagger => { summary => 'Получить email пользователя' },
+        method => 'get_emails',
+        swagger => { summary => 'Получение email пользователя' },
     },
     POST => {
         params => {
@@ -468,7 +469,7 @@ state $routes //= {
         args => {
             format => 'json',
         },
-        swagger => { summary => 'Удалить автоплатежи пользователя' },
+        swagger => { summary => 'Удаление автоплатежей пользователя' },
     },
 },
 '/user/pay' => {
@@ -544,7 +545,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Выполнить шаблон' },
+        swagger => { summary => 'Выполнение шаблона' },
     },
     POST => {
         params => {},
@@ -554,7 +555,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Выполнить шаблон с аргументами' },
+        swagger => { summary => 'Выполнение шаблона с аргументами' },
     },
 },
 '/public/*' => {
@@ -570,7 +571,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Выполнить публичный шаблон' },
+        swagger => { summary => 'Выполнение публичного шаблона' },
     },
     POST => {
         params => {},
@@ -581,7 +582,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Выполнить публичный шаблон с аргументами' },
+        swagger => { summary => 'Выполнение публичного шаблона с аргументами' },
     },
 },
 # метод для случаев, когда нужно сохранить ещё и settings
@@ -595,12 +596,12 @@ state $routes //= {
     PUT => { #TODO
         params => {},
         controller => 'Storage',
-        swagger => { summary => 'Создать данные в хранилище' },
+        swagger => { summary => 'Создание данных в хранилище' },
     },
     POST => { #TODO
         params => {},
         controller => 'Storage',
-        swagger => { summary => 'Изменить данные в хранилище' },
+        swagger => { summary => 'Изменение данных в хранилище' },
     },
     DELETE => { #TODO
         params => {},
@@ -618,7 +619,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Прочитать данные из хранилища' },
+        swagger => { summary => 'Чтение данных из хранилища' },
     },
     PUT => {
         params => {},
@@ -629,7 +630,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Создать данные в хранилище' },
+        swagger => { summary => 'Создание данных в хранилище' },
     },
     POST => {
         params => {},
@@ -640,7 +641,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Изменить данные в хранилище' },
+        swagger => { summary => 'Изменение данных в хранилище' },
     },
     DELETE => {
         params => {},
@@ -659,7 +660,7 @@ state $routes //= {
         args => {
             format => 'plain',
         },
-        swagger => { summary => 'Скачать данные из хранилища' },
+        swagger => { summary => 'Скачивание данных из хранилища' },
     },
 },
 '/promo' => {
@@ -729,7 +730,7 @@ state $routes //= {
         args => {
             format => 'json',
         },
-        swagger => { summary => 'Применить промокод' },
+        swagger => { summary => 'Применение промокода' },
     },
 },
 '/admin/system/version' => {
@@ -749,11 +750,11 @@ state $routes //= {
             service_id => { type => 'integer', min => 1 },
         },
         controller => 'Service',
-        swagger => { summary => 'Получить услугу' },
+        swagger => { summary => 'Получение услуги' },
     },
     PUT => {
         controller => 'Service',
-        swagger => { summary => 'Создать услугу' },
+        swagger => { summary => 'Создание услуги' },
     },
     POST => {
         controller => 'Service',
@@ -816,11 +817,11 @@ state $routes //= {
     },
     PUT => {
         controller => 'Events',
-        swagger => { summary => 'Создать событие' },
+        swagger => { summary => 'Создание события' },
     },
     POST => {
         controller => 'Events',
-        swagger => { summary => 'Изменить событие' },
+        swagger => { summary => 'Изменение события' },
     },
     DELETE => {
         params => {
@@ -965,11 +966,11 @@ state $routes //= {
     },
     PUT => {
         controller => 'Bonus',
-        swagger => { summary => 'Создать бонус' },
+        swagger => { summary => 'Создание бонуса' },
     },
     POST => {
         controller => 'Bonus',
-        swagger => { summary => 'Изменить бонус' },
+        swagger => { summary => 'Изменение бонуса' },
     },
     DELETE => {
         params => {
@@ -1013,7 +1014,7 @@ state $routes //= {
         params => {},
         controller => 'Service',
         method => 'categories',
-        swagger => { summary => 'Получить список категорий услуг' },
+        swagger => { summary => 'Получение списка категорий услуг' },
     },
 },
 '/admin/user/service/withdraw' => {
@@ -1024,11 +1025,11 @@ state $routes //= {
             withdraw_id => { type => 'integer', min => 1 },
         },
         controller => 'Withdraw',
-        swagger => { summary => 'Получить список списаний клиентов' },
+        swagger => { summary => 'Получение списка списаний клиентов' },
     },
     PUT => {
         controller => 'Withdraw',
-        swagger => { summary => 'Создать списание клиенту' },
+        swagger => { summary => 'Создание списания клиенту' },
     },
     POST => {
         controller => 'Withdraw',
@@ -1129,7 +1130,7 @@ state $routes //= {
             format => 'json',
         },
         swagger => {
-            summary => 'Сгенерировать session_id для клиента',
+            summary => 'Генерация session_id для клиента',
                 responses => {
                 '200' => {
                     content => {
@@ -1156,11 +1157,11 @@ state $routes //= {
             server_id  => { type => 'integer', min => 1 },
         },
         controller => 'Server',
-        swagger => { summary => 'Получить список серверов' },
+        swagger => { summary => 'Получение списка серверов' },
     },
     PUT => {
         controller => 'Server',
-        swagger => { summary => 'Создать сервер' },
+        swagger => { summary => 'Создание сервера' },
     },
     POST => {
         controller => 'Server',
@@ -1181,15 +1182,15 @@ state $routes //= {
             group_id  => { type => 'integer', min => 1 },
         },
         controller => 'ServerGroups',
-        swagger => { summary => 'Получить список групп серверов' },
+        swagger => { summary => 'Получение списка групп серверов' },
     },
     PUT => {
         controller => 'ServerGroups',
-        swagger => { summary => 'Создать группу серверов' },
+        swagger => { summary => 'Создание группы серверов' },
     },
     POST => {
         controller => 'ServerGroups',
-        swagger => { summary => 'Изменить группу серверов' },
+        swagger => { summary => 'Изменение группы серверов' },
     },
     DELETE => {
         params => {
@@ -1210,11 +1211,11 @@ state $routes //= {
     },
     PUT => {
         controller => 'Identities',
-        swagger => { summary => 'Сохранить новый SSH ключ' },
+        swagger => { summary => 'Сохранение нового SSH ключа' },
     },
     POST => {
         controller => 'Identities',
-        swagger => { summary => 'Изменить SSH ключ' },
+        swagger => { summary => 'Изменение SSH ключа' },
     },
     DELETE => {
         params => {
@@ -1232,7 +1233,7 @@ state $routes //= {
         },
         controller => 'Identities',
         method => 'generate_key_pair',
-        swagger => { summary => 'Сгенерировать SSH ключи' },
+        swagger => { summary => 'Генерация SSH ключей' },
     },
 },
 '/admin/spool' => {
@@ -1249,11 +1250,11 @@ state $routes //= {
     },
     PUT => {
         controller => 'Spool',
-        swagger => { summary => 'Создать задачу' },
+        swagger => { summary => 'Создание задачи' },
     },
     POST => {
         controller => 'Spool',
-        swagger => { summary => 'Изменить задачу' },
+        swagger => { summary => 'Изменение задачи' },
     },
     DELETE => {
         params => {
@@ -1270,6 +1271,52 @@ state $routes //= {
         controller => 'Spool',
         method => 'statuses',
         swagger => { summary => 'Статусы задач' },
+    },
+},
+'/admin/spool/queues' => {
+    swagger => { tags => 'Задачи' },
+    GET => {
+        params => {
+            id   => { type => 'integer', min => 1 },
+            name => { type => 'string' },
+        },
+        controller => 'SpoolQueue',
+        swagger => { summary => 'Список очередей задач' },
+    },
+    PUT => {
+        controller => 'SpoolQueue',
+        swagger => { summary => 'Создание очереди задач' },
+    },
+    POST => {
+        controller => 'SpoolQueue',
+        swagger => { summary => 'Изменение очереди задач' },
+    },
+},
+'/admin/spool/queues/delete' => {
+    swagger => { tags => 'Задачи' },
+    POST => {
+        params => { id => { type => 'integer', required => 1, min => 1 } },
+        controller => 'SpoolQueue',
+        method => 'api_delete_cascade',
+        swagger => { summary => 'Удалить очередь и архивировать все её задачи' },
+    },
+},
+'/admin/spool/queues/pause' => {
+    swagger => { tags => 'Задачи' },
+    POST => {
+        params => { id => { type => 'integer', required => 1, min => 1 } },
+        controller => 'SpoolQueue',
+        method => 'api_pause',
+        swagger => { summary => 'Приостановить очередь задач' },
+    },
+},
+'/admin/spool/queues/resume' => {
+    swagger => { tags => 'Задачи' },
+    POST => {
+        params => { id => { type => 'integer', required => 1, min => 1 } },
+        controller => 'SpoolQueue',
+        method => 'api_resume',
+        swagger => { summary => 'Возобновить очередь задач' },
     },
 },
 '/admin/spool/history' => {
@@ -1303,7 +1350,7 @@ state $routes //= {
     PUT => {
         controller => 'Template',
         allow_text_plain => 1,
-        swagger => { summary => 'Создать шаблон' },
+        swagger => { summary => 'Создание шаблона' },
         args => {
             format => 'plain',
         },
@@ -1311,7 +1358,7 @@ state $routes //= {
     POST => {
         controller => 'Template',
         allow_text_plain => 1,
-        swagger => { summary => 'Изменить шаблон ' },
+        swagger => { summary => 'Изменение шаблона' },
         args => {
             format => 'plain',
         },
@@ -1335,7 +1382,7 @@ state $routes //= {
             format => 'plain',
             do_not_parse => 1,
         },
-        swagger => { summary => 'Прочитать шаблон' },
+        swagger => { summary => 'Чтение шаблона' },
     },
     PUT => {
         controller => 'Template',
@@ -1364,16 +1411,16 @@ state $routes //= {
             name    => { type => 'string', max_length => 255 },
         },
         controller => 'Storage',
-        swagger => { summary => 'Получить список объектов хранилища' },
+        swagger => { summary => 'Получение списка объектов хранилища' },
     },
     PUT => {
         controller => 'Storage',
-        swagger => { summary => 'Создать объект в хранилище' },
+        swagger => { summary => 'Создание объекта в хранилище' },
     },
     POST => {
         controller => 'Storage',
         method => 'replace',
-        swagger => { summary => 'Изменить данные в объекте хранилища' },
+        swagger => { summary => 'Изменение данных в объекте хранилища' },
     },
     DELETE => {
         params => {
@@ -1398,7 +1445,7 @@ state $routes //= {
         args => {
             format => 'other',
         },
-        swagger => { summary => 'Получить объект хранилища' },
+        swagger => { summary => 'Получение объекта хранилища' },
     },
     POST => {
         controller => 'Storage',
@@ -1420,15 +1467,15 @@ state $routes //= {
             key    => { type => 'string', max_length => 128 },
         },
         controller => 'Config',
-        swagger => { summary => 'Прочитать весь конфиг' },
+        swagger => { summary => 'Чтение конфига' },
     },
     PUT => {
         controller => 'Config',
-        swagger => { summary => 'Создать объект в конфиге' },
+        swagger => { summary => 'Создание объекта в конфиге' },
     },
     POST => {
         controller => 'Config',
-        swagger => { summary => 'Изменить объект в конфиге' },
+        swagger => { summary => 'Изменение объекта в конфиге' },
     },
     DELETE => {
         params => {
@@ -1445,14 +1492,14 @@ state $routes //= {
         params => {},
         controller => 'Config',
         method => 'api_data_by_name',
-        swagger => { summary => 'Получить объект конфига' },
+        swagger => { summary => 'Получение объекта конфига' },
     },
     POST => {
         controller => 'Config',
         params => {},
         method => 'api_set_value',
         skip_auto_parse_json => 1,
-        swagger => { summary => 'Изменить объект в конфиге' },
+        swagger => { summary => 'Изменение объекта в конфиге' },
     },
     DELETE => {
         params => {
@@ -1515,7 +1562,7 @@ state $routes //= {
     POST => {
         controller => 'Promo',
         method => 'update',
-        swagger => { summary => 'Изменить промокод' },
+        swagger => { summary => 'Изменение промокода' },
     },
     DELETE => {
         params => {
@@ -1534,6 +1581,19 @@ state $routes //= {
     DELETE => {
         controller => 'Promo',
         method => 'delete',
+    },
+},
+'/admin/logs/api' => {
+    swagger => { tags => 'Логи' },
+    GET => {
+        params => {
+            user_id       => { type => 'integer', min => 1 },
+            response_code => { type => 'integer', min => 0 },
+            url           => { type => 'string',  max_length => 512 },
+            method        => { type => 'string',  max_length => 10 },
+        },
+        controller => 'Logs::Api',
+        swagger => { summary => 'Список логов API' },
     },
 },
 '/admin/analytics' => {
@@ -1565,7 +1625,7 @@ state $routes //= {
             format => 'json',
         },
         swagger => {
-            summary => 'Получить настройки пользователя для Telegram бота',
+            summary => 'Получение настроек пользователя для Telegram бота',
         },
     },
     POST => {
@@ -1577,7 +1637,7 @@ state $routes //= {
             format => 'json',
         },
         swagger => {
-            summary => 'Изменить настройки пользователя для Telegram бота',
+            summary => 'Изменение настроек пользователя для Telegram бота',
         },
     },
     DELETE => {
@@ -1588,7 +1648,7 @@ state $routes //= {
             format => 'json',
         },
         swagger => {
-            summary => 'Удалить (отвязать) Telegram аккаунт пользователя',
+            summary => 'Удаление Telegram аккаунта пользователя',
         },
     },
 },
@@ -1702,6 +1762,64 @@ state $routes //= {
         },
     },
 },
+
+# ─── MAX (VK / OK messenger) bot ─────────────────────────────────────────────
+'/max/bot/*' => {
+    swagger  => { tags => 'MAX bot' },
+    splat_to => 'template',
+    POST => {
+        params => {
+            profile     => { type => 'string' },
+            update_type => { type => 'string' },
+            timestamp   => { type => 'integer' },
+            message     => { type => 'object' },
+            callback    => { type => 'object' },
+            user        => { type => 'object' },
+            chat_id     => { type => 'integer' },
+            user_id     => { type => 'integer' },
+        },
+        skip_check_auth => 1,
+        skip_errors     => 1,
+        controller => 'Transport::Max',
+        method     => 'process_message',
+        args       => { format => 'json' },
+        swagger    => { summary => 'Webhook от MAX бота (с шаблоном)' },
+    },
+},
+'/max/set_webhook' => {
+    swagger => { tags => 'MAX bot' },
+    POST => {
+        params => {
+            url          => { type => 'string', required => 1, min_length => 1, max_length => 2048 },
+            token        => { type => 'string', required => 1, min_length => 1, max_length => 256 },
+            secret       => { type => 'string', min_length => 5, max_length => 256 },
+            template_id  => { type => 'string', required => 1, min_length => 1 },
+            profile      => { type => 'string', min_length => 1 },
+            update_types => { type => 'object' },
+        },
+        skip_check_auth => 1,
+        controller => 'Transport::Max',
+        method     => 'set_webhook',
+        args       => { format => 'json' },
+        swagger    => { summary => 'Установка Webhook для MAX бота' },
+    },
+},
+
+'/max/webapp/auth' => {
+    swagger => { tags => 'MAX bot' },
+    GET => {
+        params => {
+            initData => { type => 'string', required => 1, min_length => 1, max_length => 4096 },
+            profile  => { type => 'string', min_length => 1, max_length => 64 },
+        },
+        skip_check_auth => 1,
+        controller => 'Transport::Max',
+        method     => 'webapp_auth',
+        args       => { format => 'json' },
+        swagger    => { summary => 'Авторизация MAX WebApp (валидация initData)' },
+    },
+},
+
 '/telegram/webapp/auth' => {
     swagger => {
         tags => 'Telegram bot',
@@ -2146,11 +2264,13 @@ for my $uri ( keys %{ $routes } ) {
     }
 }
 
+our $request_start = Time::HiRes::time();
 my $uri = $ENV{PATH_INFO};
 our %in;
 
 if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
+    my $api_descr = $p->{swagger}{summary};
     %in = parse_args( auto_parse_json => $p->{skip_auto_parse_json} ? 0 : 1 );
     $in{filter} = decode_json( $in{filter} ) if $in{filter};
 
@@ -2164,6 +2284,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     );
 
     if ( $user->is_blocked ) {
+        _log_api_call( $user, code => 403, error => 'User is blocked', descr => $api_descr );
         print_header( status => 403 );
         print_json( { status => 403, error => "User is blocked"} );
         exit 0;
@@ -2172,6 +2293,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my $admin_mode;
     if ( $uri =~/^\/admin\// ) {
         unless ( $user->is_admin ) {
+            _log_api_call( $user, code => 403, error => 'Permission denied', descr => $api_descr );
             print_header( status => 403 );
             print_json( { status => 403, error => "Permission denied"} );
             exit 0;
@@ -2185,7 +2307,12 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         admin => $admin_mode,
     );
 
-    if ( $user->is_admin && $args{user_id} ) {
+    # User-switching (impersonation) is only allowed for a genuinely
+    # authenticated admin (session/login/basic-auth). Routes that force a
+    # fixed context user via route config (e.g. /public/* uses user_id => 1
+    # to run unauthenticated) must never honour a client-supplied user_id,
+    # otherwise an anonymous caller could impersonate any client.
+    if ( !$p->{user_id} && $user->is_admin && $args{user_id} ) {
         switch_user( $args{user_id} );
     } else {
         delete $args{user_id};
@@ -2271,8 +2398,10 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     $safe_args{user_id} = $args{user_id} if $admin_mode && exists $args{user_id};
 
     unless ( $service->can( $method ) ) {
+        _log_api_call( $user, code => 500, args => \%input_args, error => 'Method not exists', descr => $api_descr );
         print_header( status => 500 );
         print_json( { status => 500, error => 'Method not exists'} );
+        exit 0;
     }
 
     our $last_cache_reset //= time();
@@ -2283,6 +2412,7 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         my $tag = lc sprintf("%s-%s-%s", ref $service, $method, $ip);
         if ( $cache->get( $tag ) >= 5 ) {
             get_service('logger')->error("API rejected for tag: $tag");
+            _log_api_call( $user, code => 429, args => \%input_args, error => '429 Too Many Requests', descr => $api_descr );
             print_header( status => 429 );
             print_json( { status => 429, error => '429 Too Many Requests', ip => $ip } );
             exit 0;
@@ -2310,6 +2440,9 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     my @data;
     my %headers;
     my %info;
+
+    # Temporary direct disallow `fields`
+    delete $args{fields};
 
     if ( $ENV{REQUEST_METHOD} eq 'GET' ) {
         @data = $service->$method( %safe_args );
@@ -2374,8 +2507,9 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
     unless ( $report->is_success || $p->{skip_errors} ) {
         my %headers = $report->headers;
         $headers{status} ||= 400;
-        print_header( %headers );
         my ( $err_msg ) = $report->errors;
+        _log_api_call( $user, code => $headers{status}, args => \%input_args, error => $err_msg, descr => $api_descr );
+        print_header( %headers );
         print_json( { status => $headers{status}, error => $err_msg } );
         exit 0;
     }
@@ -2448,12 +2582,14 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         });
     }
 
+    _log_api_call( $user, code => $headers{status}, args => \%input_args, descr => $api_descr, error => $info{error} );
     if ( $in{dry_run} ) {
         $user->rollback();
     } else {
         $user->commit();
     }
 } else {
+    _log_api_call( undef, code => 404 );
     print_header( status => 404 );
     print_json( { status => 404, error => 'Method not found'} );
 }
@@ -2474,7 +2610,136 @@ sub get_service_id {
         print_json( { status => 400, error => sprintf("`%s` not present", $service->get_table_key ) } );
         exit 0;
     }
-    return $service_id;
+
+    my $key2 = $service->get_table_key2;
+    if ( $key2 && exists $args{ $key2 } ) {
+        return ( $service_id, $args{ $key2 } );
+    }
+
+    return ( $service_id );
+}
+
+# Validate %args against a params schema defined in the route.
+# Schema format (per field):
+#   type         => 'integer' | 'number' | 'string' | 'email' | 'boolean'
+#   required     => 1   (field must be present and non-empty)
+#   min / max    => numeric bounds (for integer/number)
+#   min_length   => minimum string length
+#   max_length   => maximum string length
+#   pattern      => regex the value must match (string)
+#   enum         => arrayref of allowed values
+#
+# Returns undef on success, or an error string on the first failing field.
+sub validate_params {
+    my ( $schema, $args, $allowed_input_fields ) = @_;
+
+    for my $field ( sort keys %{ $schema } ) {
+        my $rule  = $schema->{ $field };
+        my $value = $args->{ $field };
+        my $type  = $rule->{type} // 'string';
+
+        # presence check
+        if ( $rule->{required} && ( !defined $value || $value eq '' ) ) {
+            return sprintf( "Field required: %s", $field );
+        }
+
+        # Skip remaining checks only when field is truly absent.
+        # Empty string is treated as provided value and must be validated.
+        next unless defined $value;
+
+        # type coercion / check
+        if ( $type eq 'integer' ) {
+            return sprintf( "Field '%s' must be an integer", $field )
+                unless $value =~ /^-?\d+$/;
+            $value = int($value);
+            $args->{ $field } = $value;
+            return sprintf( "Field '%s' must be >= %s", $field, $rule->{min} )
+                if defined $rule->{min} && $value < $rule->{min};
+            return sprintf( "Field '%s' must be <= %s", $field, $rule->{max} )
+                if defined $rule->{max} && $value > $rule->{max};
+        }
+        elsif ( $type eq 'number' ) {
+            return sprintf( "Field '%s' must be a number", $field )
+                unless $value =~ /^-?(?:\d+\.?\d*|\.\d+)$/;
+            $value = $value + 0;
+            $args->{ $field } = $value;
+            return sprintf( "Field '%s' must be >= %s", $field, $rule->{min} )
+                if defined $rule->{min} && $value < $rule->{min};
+            return sprintf( "Field '%s' must be <= %s", $field, $rule->{max} )
+                if defined $rule->{max} && $value > $rule->{max};
+        }
+        elsif ( $type eq 'boolean' ) {
+            # Normalize JSON booleans (true → 1, false → 0) and string variants
+            if ( ref $value ) {
+                $value = $value ? 1 : 0;
+                $args->{ $field } = $value;
+            } elsif ( $value eq 'true' || $value eq 'false' ) {
+                $value = $value eq 'true' ? 1 : 0;
+                $args->{ $field } = $value;
+            }
+            return sprintf( "Field '%s' must be 0 or 1", $field )
+                unless $value =~ /^[01]$/;
+        }
+        elsif ( $type eq 'email' ) {
+            return sprintf( "Field '%s' must be a valid email address", $field )
+                unless is_email($value) && length($value) <= 254;
+        }
+        elsif ( $type eq 'object' ) {
+            return sprintf( "Field '%s' must be an object", $field )
+                unless ref($value) eq 'HASH';
+        }
+        elsif ( $type eq 'array' ) {
+            return sprintf( "Field '%s' must be an array", $field )
+                unless ref($value) eq 'ARRAY';
+        }
+        elsif ( $type eq 'string' ) {
+            if ( defined $rule->{min_length} && length($value) < $rule->{min_length} ) {
+                return sprintf( "Field '%s' must be at least %d characters", $field, $rule->{min_length} );
+            }
+            if ( defined $rule->{max_length} && length($value) > $rule->{max_length} ) {
+                return sprintf( "Field '%s' must be at most %d characters", $field, $rule->{max_length} );
+            }
+            if ( defined $rule->{pattern} && $value !~ /$rule->{pattern}/ ) {
+                return sprintf( "Field '%s' has an invalid format", $field );
+            }
+        }
+
+        # enum check (applicable to any type)
+        if ( my $enum = $rule->{enum} ) {
+            my %allowed = map { $_ => 1 } @{ $enum };
+            return sprintf( "Field '%s' must be one of: %s", $field, join(', ', @{ $enum }) )
+                unless $allowed{ $value };
+        }
+    }
+
+    return undef;
+}
+
+sub _log_api_call {
+    my $self = shift;
+    my %args = (
+        code => 200,
+        args => {},
+        descr => undef,
+        error => undef,
+        @_,
+    );
+
+    unless ( $self ) {
+        $self = SHM->new( skip_check_auth => 1 );
+    }
+
+    my $logs = $self->srv('Logs::Api') || return;
+
+    return $logs->add(
+        url => $ENV{PATH_INFO},
+        method => $ENV{REQUEST_METHOD},
+        ip => get_user_ip(),
+        duration => int( (Time::HiRes::time() - $request_start) * 1000 ),
+        response_code => delete $args{code} // 200,
+        response_error => delete $args{error},
+        %args,
+    );
 }
 
 # Validate %args against a params schema defined in the route.

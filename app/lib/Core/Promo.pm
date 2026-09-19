@@ -34,6 +34,9 @@ sub structure {
         used => {
             type => 'date',
             title => 'дата использования',
+            use_for_stats => 1,
+            stats_mode => 'inc',
+            stats_use_when_set => 1,
         },
         used_by => {
             type => 'number',
@@ -222,7 +225,7 @@ sub apply {
     my $code = shift;
 
     my $subscription = get_service('Cloud::Subscription');
-    unless ($subscription->check_subscription() || $ENV{SHM_TEST} ) {
+    unless ( $ENV{SHM_TEST} || $subscription->check_subscription() ) {
         report->status(403);
         report->error( "Требуется активация подписки" );
         return;

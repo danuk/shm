@@ -27,6 +27,8 @@ sub structure {
             type => 'number',
             required => 1,
             title => 'кол-во бонусов',
+            use_for_stats => 1,
+            stats_use_when_add => 1,
         },
         comment => {
             type => 'json',

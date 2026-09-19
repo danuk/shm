@@ -36,6 +36,29 @@ subtest 'Check allow_to_order' => sub {
     $us->delete;
 };
 
+subtest 'Check order_only_once' => sub {
+    my $trial = get_service('service')->add(
+        name => 'trial service',
+        category => 'test-trial-1',
+        cost => 0,
+        allow_to_order => 1,
+        config => { order_only_once => 1 },
+    );
+
+    my $us1 = $trial->reg(
+        service_id => $trial->id,
+    );
+    is( defined $us1, 1, 'First order of order_only_once service is allowed' );
+
+    my $us2 = $trial->reg(
+        service_id => $trial->id,
+    );
+    is( $us2, undef, 'Repeated order of order_only_once service is rejected' );
+
+    $us1->block_force;
+    $us1->delete;
+};
+
 subtest 'Check check_exists' => sub {
     my $us1 = $service->reg(
         service_id => $service->id,

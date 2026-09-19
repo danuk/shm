@@ -6,7 +6,7 @@ use Core::Base;
 use Core::Utils qw( now random_bytes );
 
 sub table { return 'sessions' };
-sub dbh { shift->dbh_myisam };
+sub dbh { shift->dbh_auto_commit };
 
 sub table_allow_insert_key { return 1 };
 

@@ -54,6 +54,7 @@ our @EXPORT_OK = qw(
     passgen
     shm_test_api
     is_email
+    is_phone
     is_host
     html_escape
     html_unescape
@@ -90,6 +91,9 @@ our @EXPORT_OK = qw(
     round
     hmac_sha256 hmac_sha256_hex sha256_hex sha256 sha512_hex hmac_sha512_hex sha512 hmac_sha512
     encrypt_aes256_gcm_base64
+
+    uri_escape_utf8
+    uri_unescape
 );
 
 use Core::System::ServiceManager qw( get_service delete_service );
@@ -107,6 +111,7 @@ use Date::Calc qw(
     Today_and_Now
 );
 use Crypt::PRNG qw(random_bytes);
+use URI::Escape qw( uri_escape_utf8 uri_unescape );
 
 our %in;
 our $is_header = 0;
@@ -481,7 +486,7 @@ sub switch_user {
 }
 
 sub passgen {
-    my $len = shift || 10;
+    my $len = shift || 8;
     my @chars =('e','r','t','p','a','d','f','h','k','z','x','c','b','n','m', 'E','R','T','P','A','D','F','H','K','Z','X','C','B','N','M', 1 .. 9);
     my $pass = join("", @chars[ map { rand @chars } (1 .. $len) ]);
     return $pass;
@@ -618,6 +623,13 @@ sub is_host {
     return 1 if is_ipv6( $host );
 
     return 0;
+}
+
+sub is_phone {
+    my $phone = shift;
+
+    return 0 unless defined $phone;
+    return $phone =~ /^\d{10,15}$/ ? 1 : 0;
 }
 
 sub ipv4_aton {
@@ -757,7 +769,6 @@ sub to_query_string {
     my $data = shift;
     return undef unless ref $data eq 'HASH';
 
-    use URI::Escape qw( uri_escape_utf8 );
     my @ret;
     for my $k ( sort keys %$data ) {
         my $v = defined $data->{ $k } ? $data->{ $k } : '';

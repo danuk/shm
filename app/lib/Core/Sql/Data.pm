@@ -124,16 +124,16 @@ sub dbh_new {
     return $child_dbh;
 }
 
-sub dbh_myisam {
+sub dbh_auto_commit {
     my $self = shift;
     my $local = get_service('config')->local;
 
-    if ( my $dbh = $local->{dbh_myisam} ) {
+    if ( my $dbh = $local->{dbh_auto_commit} ) {
         return $dbh if $dbh->ping;
         $dbh->disconnect;
     }
 
-    return $local->{dbh_myisam} = $self->dbh_new( AutoCommit => 1, InactiveDestroy => 0 );
+    return $local->{dbh_auto_commit} = $self->dbh_new( AutoCommit => 1, InactiveDestroy => 0 );
 }
 
 sub table_allow_insert_key { return 0 };
@@ -628,7 +628,10 @@ sub set {
 
     clean_query_args( $self, \%args, { is_update => 1 } );
 
-    return $self->_set( %args );
+    my $ret = $self->_set( %args );
+
+    $self->stats('set', \%args) if $ret;
+    return $ret;
 }
 
 sub _set {
@@ -686,7 +689,10 @@ sub add {
 
     clean_query_args( $self, \%args );
 
-    return $self->_add( %args );
+    my $key_id = $self->_add( %args );
+
+    $self->stats('add', \%args) if $key_id;
+    return $key_id;
 }
 
 sub _add {
@@ -766,7 +772,7 @@ sub list_for_api {
     # Validate limit: must be a positive integer, capped at 1000 for non-admins.
     # Admins may pass limit=0 to request all rows (no LIMIT clause).
     $args{limit} = int( $args{limit} // 25 );
-    $args{limit} = 25   if $args{limit} < 0;
+    $args{limit} = 25   if $args{limit} !~ /^\d+$/ || $args{limit} < 0;
     $args{limit} = 25   if $args{limit} == 0 && !$args{admin};
     $args{limit} = 1000 if !$args{admin} && $args{limit} > 1000;
 
@@ -954,6 +960,7 @@ sub query_select {
         limit => undef,
         offset => undef,
         join => undef,
+        group_by => undef,
         order => undef,
         extra => undef,
         @_,
@@ -1040,6 +1047,11 @@ sub query_select {
             my ( $where, @bind ) = $sql->where( $args{where} );
             $query .= $where;
             push @{ $args{vars} }, @bind;
+    }
+
+    if ( $args{group_by} ) {
+        my @cols = ref $args{group_by} ? @{ $args{group_by} } : ( $args{group_by} );
+        $query .= ' GROUP BY ' . join( ', ', map { "`$_`" } @cols );
     }
 
     if ( $args{order} ) {

@@ -172,6 +172,7 @@ sub profile {
     my $config = $self->config;
 
     $self->{profile} = $name;
+    delete $self->{user_tg_settings};  # invalidate cache: settings depend on profile_name
 
     if ( my $profile = $config->{ $name } ) {
         $self->{token} = $profile->{token};
@@ -277,22 +278,22 @@ sub task_send {
         }
     }
 
-    my @ret = $self->send( $message );
+    my ( $ret ) = $self->send( $message );
+    my $tg_answer_error = $ret->{error};
 
-    if ( my $error = $ret[0]->{error} ) {
-        if ( ref $error eq 'HASH' ) {
-            # http was executed
-            return SUCCESS, $ret[0] if $error->{error_code} == 403; # skip
-            return undef, $ret[0] if $error->{error_code} == 400; # bad request
-            return undef, $ret[0] if $error->{error_code} == 404; # method not found
-            return FAIL, $ret[0]; # retry
-        } else {
-            # chat_id or token not found, etc...
-            return SUCCESS, $ret[0]; # skip
-        }
-    } else {
-        return SUCCESS, $ret[0];
+    if ( ref $tg_answer_error eq 'HASH' ) {
+            # Check `error` field from Telegram answer
+            return SUCCESS, $ret if $tg_answer_error->{error_code} == 403; # skip
+            return undef, $ret if $tg_answer_error->{error_code} == 400; # bad request
+            return undef, $ret if $tg_answer_error->{error_code} == 404; # method not found
+            return FAIL, $ret; # retry
     }
+
+    if ( $ret->{error_info} ) {
+        return FAIL, $ret;
+    }
+
+    return SUCCESS, $ret;
 }
 
 sub send {
@@ -362,14 +363,24 @@ sub send {
         my $message = decode_json( $response->decoded_content );
         if ( $response->is_success ) {
             logger->info( $message );
-            push @ret, { message => 'successful', profile => $profile, response => $message };
+            push @ret, {
+                message => 'successful',
+                profile => $profile,
+                response => $message,
+            };
             $self->response( $message );
         } else {
             logger->error( $message );
             push @ret, {
-                error => $message,
+                message => 'error',
                 profile => $profile,
+                response => $message,
                 request => decode_json( $response->request->content ),
+                error => $message,
+                error_info => {
+                    code => $response->code,
+                    line => $response->status_line,
+                },
             };
         }
     }
@@ -714,11 +725,50 @@ sub tg_user {
 sub verify_telegram_secret {
     my $self = shift;
 
-    if ( my $expected_token = $self->config->{ $self->profile }->{secret} ) {
-        my $secret_token = parse_headers->{'x_telegram_bot_api_secret_token'};
-        return $secret_token eq $expected_token;
+    my $expected_token = $self->config->{ $self->profile }->{secret};
+    unless ( $expected_token ) {
+        logger->error(sprintf(
+            "Telegram webhook secret is not configured for profile '%s' — request rejected (fail-closed)",
+            $self->profile_name // '',
+        ));
+        return 0;
     }
-    return 1;
+
+    my $secret_token = parse_headers->{'x_telegram_bot_api_secret_token'};
+    return $secret_token eq $expected_token;
+}
+
+# Validates that a return_url is safe to redirect to.
+# Allows only relative URLs or absolute URLs on the same host as the server.
+sub is_safe_return_url {
+    my $self = shift;
+    my $url  = shift;
+
+    return 0 unless defined $url && $url ne '';
+
+    # Reject dangerous schemes regardless of host
+    return 0 if $url =~ m{^(javascript|data|vbscript):}i;
+
+    # Relative URLs are always safe
+    return 1 if $url =~ m{^/[^/]};
+
+    # Only allow http/https absolute URLs
+    return 0 unless $url =~ m{^https?://}i;
+
+    my $host = $ENV{HTTP_X_FORWARDED_HOST} || $ENV{HTTP_HOST};
+
+    # If no server host is known (e.g. CLI/test), accept any http/https URL
+    return 1 unless $host;
+
+    # Enforce same-host in production
+    if ( $url =~ m{^https?://([^/?#]+)}i ) {
+        my $url_host = $1;
+        $url_host =~ s/:\d+$//;  # strip port
+        $host     =~ s/:\d+$//;
+        return lc($url_host) eq lc($host);
+    }
+
+    return 0;
 }
 
 sub telegram_web_callback_url {
@@ -1649,19 +1699,43 @@ sub webapp_auth {
         return undef;
     }
 
-    $self->profile( $args{profile} );
-
     my $hash = delete $in{hash};
     my @arr = map( "$_=$in{$_}", sort { $a cmp $b } keys %in );
     my $data_check_string = join("\n", @arr );
 
     use Digest::SHA qw(hmac_sha256 hmac_sha256_hex);
-    my $secret_key = hmac_sha256( $self->token, "WebAppData" );
-    my $hex = hmac_sha256_hex( $data_check_string, $secret_key);
+    my $secret_key = hmac_sha256( $token, "WebAppData" );
+    my $hex = hmac_sha256_hex( $data_check_string, $secret_key );
 
     unless ( $hex eq $hash ) {
         logger->error("Telegram WebApp auth error: incorrect token for profile $args{profile}");
         report->error('Telegram WebApp auth error');
+        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
+        return undef;
+    }
+
+    # Step 2: check auth_date freshness (prevent replay attacks)
+    if ( !$in{auth_date} || time - $in{auth_date} > 86400 ) {
+        logger->error("Telegram WebApp auth error: auth_date is missing or expired");
+        report->error('Telegram WebApp auth error');
+        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips );
+        return undef;
+    }
+
+    # Step 3: decode user and validate id is non-empty
+    my $tg_user = decode_json( $in{user} );
+
+    unless ( $tg_user && defined $tg_user->{id} && $tg_user->{id} ne '' ) {
+        logger->error("Telegram WebApp auth error: user id is missing or empty");
+        report->error('Telegram WebApp auth error');
+        $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips );
+        return undef;
+    }
+
+    # Step 4: find the user AFTER signature is verified
+    my $login = $self->find_user_by_tg( $tg_user );
+    unless ( $login ) {
+        logger->error("Telegram WebApp auth error: user not found");
         $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
         return undef;
     }
@@ -1758,6 +1832,13 @@ sub web_auth {
 
     unless ( $args{id_token} ) {
         my $hash = delete $in{hash};
+
+        unless ( defined $in{id} && $in{id} ne '' ) {
+            logger->error("Telegram auth error: user id is missing or empty");
+            report->error('Telegram auth error');
+            $self->set_user_fail_attempt( 'web_auth', 3600, $self->telegram_ips );
+            return undef;
+        }
 
         my @arr = map { "$_=$in{$_}" } sort keys %in;
         my $data_check_string = join("\n", @arr);
@@ -1893,13 +1974,17 @@ sub web_auth_callback {
     my $result = $self->web_auth( %args );
 
     my $return_url = $args{return_url};
+    if ( $return_url && !$self->is_safe_return_url($return_url) ) {
+        logger->error("web_auth_callback: unsafe return_url rejected: $return_url");
+        report->error('Invalid redirect URL');
+        return undef;
+    }
     return $result unless $return_url;
 
     my %query;
     if ( ref $result eq 'HASH' && $result->{session_id} ) {
         %query = (
             tg_status => 'success',
-            session_id => $result->{session_id},
         );
     } elsif ( ref $result eq 'HASH' && $result->{error} eq 'Telegram account already exists' ) {
         %query = (
