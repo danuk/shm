@@ -604,7 +604,13 @@ sub email_verify_code_check {
 
 sub delete_email {
     my $self = shift;
-    my $email = shift;
+    my %args = (
+        email => undef,
+        @_,
+    );
+
+    my $email = lc( $args{email} // '' );
+    return { msg => 'Email not found' } unless $email;
 
     # Scope the lookup to the current user, otherwise any authenticated
     # user could delete another user's email login by guessing its address.
