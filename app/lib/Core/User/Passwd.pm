@@ -281,6 +281,16 @@ sub passwd_reset_verify {
         return { msg => 'Successful' };
     }
 
+    # Actually persist the new password. `admin => 1` bypasses the
+    # old_password check in passwd() — by design, whoever resets a
+    # forgotten password via a mailed token cannot supply the old one.
+    my $ret = $self->passwd(
+        password => $args{password},
+        admin    => 1,
+        user_id  => $login_obj->get_user_id,
+    );
+    return { msg => 'Password reset failed' } unless $ret;
+
     $login_obj->set_settings({
         reset_password => undef,
         email => {
