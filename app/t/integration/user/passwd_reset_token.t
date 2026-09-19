@@ -152,6 +152,46 @@ subtest 'Missing params are rejected' => sub {
     is( $ret->{msg}, 'Login is required', 'Login is required' );
 };
 
+subtest 'SECURITY: reset token is never delivered to an attacker-supplied email' => sub {
+    # Victim registers with a plain username (not an e-mail) and has a
+    # separate, verified e-mail login — this is the setup that made the
+    # bug exploitable: an attacker who knows/guesses the victim's *login*
+    # could pass their own address as `email` and have the token mailed
+    # to themselves instead of to the victim.
+    my $victim_login    = sprintf( 'victim_user_%d', time() );
+    my $victim_email    = sprintf( 'victim_real_%d@domain.ru', time() );
+    my $attacker_email  = sprintf( 'attacker_%d@evil.com', time() );
+
+    my $victim = $admin->reg(
+        login    => $victim_login,
+        login_type => 'login',
+        password => 'victim_password_123',
+    );
+    ok( $victim, 'Victim registered with a username login' );
+
+    $victim->logins->add( login => $victim_email, type => 'email' );
+    my $victim_email_login = $victim->logins->id( $victim_email, ['email'] );
+    ok( $victim_email_login, 'Victim email login created' );
+    $victim_email_login->set_settings({ email => { verified => 1 } });
+
+    my $ret = $victim->passwd_reset_request(
+        login => $victim_login,
+        email => $attacker_email,
+    );
+    is( $ret->{msg}, 'Successful', 'Reset request accepted' );
+
+    my $spool = $victim->srv('spool');
+    my @rows  = $spool->list;
+    my ( $row ) = sort { $b->{id} <=> $a->{id} } @rows;
+    ok( $row, 'A reset e-mail was queued' );
+
+    is( $row->{settings}->{to}, $victim_email, 'Token was mailed to the victim\'s own registered address' );
+    isnt( $row->{settings}->{to}, $attacker_email, 'Token was NOT mailed to the attacker-supplied address' );
+
+    $spool->id( $row->{id} )->delete();
+    $victim->delete;
+};
+
 done_testing();
 
 exit 0;

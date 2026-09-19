@@ -121,6 +121,12 @@ sub passwd_reset_request {
     my $existing_user = $self->check_exists_logins( login => $login_str );
     my $user_id = $existing_user ? $existing_user->{user_id} : undef;
 
+    # Was $email actually confirmed to belong to the resolved account (as
+    # opposed to being an arbitrary, unrelated address supplied alongside a
+    # different `login`)? Only such a confirmed address may be used as the
+    # delivery destination below.
+    my $email_confirmed = $user_id && $login_str && lc($login_str) eq lc($email // '') ? 1 : 0;
+
     if ( !$user_id && $email ) {
         my $profile = get_service("profile");
         my ( $profile_data ) = $profile->_list(
@@ -129,7 +135,10 @@ sub passwd_reset_request {
             },
             limit => 1,
         );
-        $user_id = $profile_data->{user_id} if $profile_data;
+        if ( $profile_data ) {
+            $user_id = $profile_data->{user_id};
+            $email_confirmed = 1;
+        }
     }
 
     return { msg => 'User not found' } unless $user_id;
@@ -160,7 +169,12 @@ sub passwd_reset_request {
         },
     });
 
-    my $send_to = $email || $self->get_email->{email};
+    # SECURITY: the reset token must only ever be delivered to an address
+    # already tied to the resolved account. Never trust a client-supplied
+    # `email` that just happens to be sent alongside a different `login` —
+    # otherwise anyone could redirect another user's reset token to an
+    # address of their choosing (login=<victim>, email=<attacker>).
+    my $send_to = ( $email_confirmed ? $email : undef ) || $self->get_email->{email};
     return { msg => 'Email not found' } unless $send_to;
 
     my $project_name = cfg('company')->{name} || 'SHM';
