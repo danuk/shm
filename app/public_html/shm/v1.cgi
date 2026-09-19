@@ -2307,7 +2307,12 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         admin => $admin_mode,
     );
 
-    if ( $user->is_admin && $args{user_id} ) {
+    # User-switching (impersonation) is only allowed for a genuinely
+    # authenticated admin (session/login/basic-auth). Routes that force a
+    # fixed context user via route config (e.g. /public/* uses user_id => 1
+    # to run unauthenticated) must never honour a client-supplied user_id,
+    # otherwise an anonymous caller could impersonate any client.
+    if ( !$p->{user_id} && $user->is_admin && $args{user_id} ) {
         switch_user( $args{user_id} );
     } else {
         delete $args{user_id};
