@@ -685,12 +685,13 @@ sub check_exists_logins {
     my $self = shift;
     my %args = (
         login => undef,
+        types => ['login','email','phone'],
         @_,
     );
 
     return undef unless $args{login};
 
-    if ( my $login = $self->logins->id( $args{login} ) ) {
+    if ( my $login = $self->logins->id( $args{login}, $args{types} ) ) {
         return scalar $login->get;
     }
 

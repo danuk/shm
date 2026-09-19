@@ -118,7 +118,9 @@ sub passwd_reset_request {
     }
 
     my $login_str = $args{login} || $email;
-    my $existing_user = $self->check_exists_logins( login => $login_str );
+    # Password reset via a mailed link only ever makes sense for login/email
+    # identities — never resolve (or later act on) a `phone`-type row here.
+    my $existing_user = $self->check_exists_logins( login => $login_str, types => ['login','email'] );
     my $user_id = $existing_user ? $existing_user->{user_id} : undef;
 
     # Was $email actually confirmed to belong to the resolved account (as
@@ -153,10 +155,14 @@ sub passwd_reset_request {
         return { msg => 'Successful' };
     }
 
-    $login_str ||= $self->get_login;
+    # NOTE: never fall back to $self->get_login (users.login) here — that
+    # field is a denormalized copy on the `users` table and is not
+    # guaranteed to correspond to any actual row in `accounts`. The account
+    # identity for reset purposes is always an `accounts` row of type
+    # login/email, already resolved into $login_str above.
     return { msg => 'Login not found' } unless $login_str;
 
-    my $login_obj = $self->logins->id( $login_str );
+    my $login_obj = $self->logins->id( $login_str, ['login','email'] );
     return { msg => 'Account not found' } unless $login_obj;
 
     my $token   = passgen( 35 );
@@ -278,7 +284,11 @@ sub passwd_reset_verify {
     return { msg => 'Token is required' } unless $token;
     return { msg => 'Login is required' } unless $login_str;
 
-    my $login_obj = $self->logins->id( $login_str );
+    # Must match the same type-scoped lookup used in passwd_reset_request —
+    # a `phone` row (or any row found through a different, wider search)
+    # could otherwise resolve to a different `accounts` entry than the one
+    # the token was actually written to.
+    my $login_obj = $self->logins->id( $login_str, ['login','email'] );
     return { msg => 'Account not found' } unless $login_obj;
 
     my $reset = $login_obj->settings->{reset_password} || {};

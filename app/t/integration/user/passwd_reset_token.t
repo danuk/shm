@@ -192,6 +192,32 @@ subtest 'SECURITY: reset token is never delivered to an attacker-supplied email'
     $victim->delete;
 };
 
+subtest 'CORRECTNESS: reset never resolves/acts through a phone-type accounts row' => sub {
+    # A `phone` login is a valid `accounts` row, but the mailed-link reset
+    # flow makes no sense for it (nowhere to send the link) and must never
+    # be used to resolve the account or to store/read the token — only
+    # `login`/`email` typed rows are valid here.
+    my $phone_user_login = sprintf( 'phoneuser_%d', time() );
+    my $phone_number      = '+7 999 555-' . substr( time(), -4 );
+
+    my $phone_user = $admin->reg(
+        login    => $phone_user_login,
+        login_type => 'login',
+        password => 'phone_user_password_123',
+    );
+    ok( $phone_user, 'Phone-owning user registered with a username login' );
+
+    $phone_user->logins->add( login => $phone_number, type => 'phone' );
+    ( my $phone_digits = $phone_number ) =~ s/\D+//g;
+    my $phone_login_obj = $phone_user->logins->id( $phone_digits, ['phone'] );
+    ok( $phone_login_obj, 'Phone login created' );
+
+    my $ret = $phone_user->passwd_reset_request( login => $phone_digits );
+    is( $ret->{msg}, 'User not found', 'Reset request via a phone identifier is rejected outright' );
+
+    $phone_user->delete;
+};
+
 done_testing();
 
 exit 0;
