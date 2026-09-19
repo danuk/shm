@@ -1918,10 +1918,11 @@ sub web_auth {
 
     if ( !$user && $args{register_if_not_exists} ) {
         $user = $self->user->reg(
-            login     => $self->get_shm_login( $in{id} ),
-            password  => passgen(),
-            full_name => sprintf("%s %s", $in{first_name} || '', $in{last_name} || ''),
-            settings  => {
+            login      => $self->get_shm_login( $in{id} ),
+            login_type => 'telegram',
+            password   => passgen(),
+            full_name  => sprintf("%s %s", $in{first_name} || '', $in{last_name} || ''),
+            settings   => {
                 %{ $args{settings} || {} },
                 telegram => {
                     user_id         => $chat_id,
