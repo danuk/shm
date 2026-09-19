@@ -486,7 +486,7 @@ sub switch_user {
 }
 
 sub passgen {
-    my $len = shift || 10;
+    my $len = shift || 8;
     my @chars =('e','r','t','p','a','d','f','h','k','z','x','c','b','n','m', 'E','R','T','P','A','D','F','H','K','Z','X','C','B','N','M', 1 .. 9);
     my $pass = join("", @chars[ map { rand @chars } (1 .. $len) ]);
     return $pass;
