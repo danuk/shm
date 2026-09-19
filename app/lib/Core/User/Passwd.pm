@@ -14,8 +14,8 @@ use Core::Utils qw(
 sub passwd {
     my $self = shift;
     my %args = (
-        password => undef,
-        login    => undef,
+        password     => undef,
+        old_password => undef,
         @_,
     );
 
@@ -31,26 +31,29 @@ sub passwd {
         $user = get_service('user', _id => $args{user_id} );
     }
 
-    my $login_str = $args{login} || $user->get_login;
-    unless ( $login_str ) {
-        $report->add_error('Login not found');
-        return undef;
+    unless ( $args{admin} ) {
+        my $stored = $user->get->{password};
+
+        if ( $stored ) {
+            # User has an existing password — must verify it before changing.
+            unless ( $args{old_password} ) {
+                $report->add_error('OLD_PASSWORD_REQUIRED');
+                return undef;
+            }
+            unless ( $user->verify_password( $args{old_password}, $stored, $user->get_login ) ) {
+                $report->add_error('INVALID_OLD_PASSWORD');
+                return undef;
+            }
+        }
+        # If the user has no password stored (passkey-only account), allow setting
+        # a new password without verification.
     }
 
-    my $login_obj = $user->logins->id(
-        $login_str,
-        undef,
-        user_id => $user->user_id,
-    );
-    unless ( $login_obj ) {
-        $report->add_error('Account not found');
-        return undef;
-    }
-
-    $login_obj->set_password( $args{password} );
+    my $password = $user->make_password( $args{password} );
 
     get_service('sessions')->delete_user_sessions( user_id => $user->user_id );
 
+    $user->set( password => $password );
     return scalar $user->get;
 }
 
@@ -65,7 +68,14 @@ sub set_new_passwd {
     return undef if $self->is_admin && !$args{admin};
 
     my $new_password = passgen( $args{len} );
-    $self->passwd( password => $new_password );
+
+    # Skip the old_password check in passwd(): this is a system-generated
+    # reset (e.g. via password-reset email), the caller can't know the old
+    # password. Without `admin => 1` passwd() bails out with
+    # OLD_PASSWORD_REQUIRED for any account that already has a password,
+    # so the new password would be emailed but never actually saved.
+    my $ret = $self->passwd( password => $new_password, admin => 1 );
+    return undef unless $ret;
 
     return $new_password;
 }
