@@ -98,6 +98,8 @@ state $routes //= {
             full_name => { type => 'string', required => 0, min_length => 1, max_length => 64 },
             phone => { type => 'string', required => 0, min_length => 1, max_length => 16 },
             partner_id => { type => 'integer', min => 2 },
+            captcha_token  => { type => 'string' },
+            captcha_answer => { type => 'string' },
         },
         swagger => { summary => 'Регистрация пользователя' },
     },
