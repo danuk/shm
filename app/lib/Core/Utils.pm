@@ -38,6 +38,7 @@ our @EXPORT_OK = qw(
     parse_args
     parse_headers
     get_cookies
+    session_id_cookie
     string_to_utime
     utime_to_string
     decode_json
@@ -697,6 +698,29 @@ sub get_cookies {
     } else {
         return wantarray ? %cookies : \%cookies;
     }
+}
+
+# Builds a `session_id` cookie for redirect-based auth flows (OAuth2/Telegram
+# callbacks), where the response body cannot be read by client JS. HttpOnly
+# prevents JS/XSS access; SameSite=None+Secure allows it to be sent on
+# subsequent cross-site XHR/fetch requests (over HTTPS only — plain HTTP
+# falls back to SameSite=Lax since browsers reject `SameSite=None` without
+# `Secure`).
+sub session_id_cookie {
+    my $session_id = shift || return undef;
+
+    my $is_https = ( $ENV{HTTP_X_FORWARDED_PROTO} || '' ) eq 'https'
+        || ( $ENV{HTTPS} || '' ) =~ /^(1|on)$/i;
+
+    return CGI::Cookie->new(
+        -name     => 'session_id',
+        -value    => $session_id,
+        -path     => '/',
+        -httponly => 1,
+        -secure   => $is_https ? 1 : 0,
+        -samesite => $is_https ? 'None' : 'Lax',
+        -expires  => '+3d',
+    );
 }
 
 sub parse_period {

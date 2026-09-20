@@ -18,6 +18,7 @@ use Core::Utils qw(
     print_header
     print_json
     hash_merge
+    session_id_cookie
 );
 use URI::Escape qw( uri_escape );
 
@@ -606,11 +607,26 @@ sub oauth2_callback_redirect {
         'oauth2_status',
     );
 
+    # Session can no longer travel in the redirect URL (leaks via browser
+    # history/Referer/logs), so hand it to the client as an HttpOnly cookie
+    # on the 302 response instead.
+    my $cookie = ( ref $result eq 'HASH' && $result->{session_id} )
+        ? session_id_cookie( $result->{session_id} )
+        : undef;
+
     if ( $ENV{SHM_TEST} ) {
-        return { status => 302, redirect => $redirect_url };
+        return {
+            status => 302,
+            redirect => $redirect_url,
+            $cookie ? ( session_cookie => $cookie->as_string ) : (),
+        };
     }
 
-    print_header( status => 302, Location => $redirect_url );
+    print_header(
+        status => 302,
+        Location => $redirect_url,
+        $cookie ? ( cookie => $cookie ) : (),
+    );
     print_json({ status => 302, redirect => $redirect_url });
     exit 0;
 }

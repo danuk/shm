@@ -27,6 +27,7 @@ use Core::Utils qw(
     to_query_string
     qrencode
     sha256
+    session_id_cookie
 );
 
 # https://core.telegram.org/resources/cidr.txt
@@ -2032,10 +2033,18 @@ sub web_auth_callback {
     my $sep = $return_url =~ /\?/ ? '&' : '?';
     my $finish_url = $return_url . ($qs ? $sep . $qs : '');
 
+    # Session can no longer travel in the redirect URL (leaks via browser
+    # history/Referer/logs), so hand it to the client as an HttpOnly cookie
+    # on the 302 response instead.
+    my $cookie = ( ref $result eq 'HASH' && $result->{session_id} )
+        ? session_id_cookie( $result->{session_id} )
+        : undef;
+
     my $redirect_payload = {
         status => 302,
         redirect => $finish_url,
         %query,
+        $cookie ? ( session_cookie => $cookie->as_string ) : (),
     };
 
     if ( $ENV{SHM_TEST} ) {
@@ -2045,6 +2054,7 @@ sub web_auth_callback {
     print_header(
         status => 302,
         Location => $finish_url,
+        $cookie ? ( cookie => $cookie ) : (),
     );
     print_json($redirect_payload);
     exit 0;
