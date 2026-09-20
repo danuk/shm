@@ -122,7 +122,10 @@ sub add {
     );
 
     $args{login} = lc $args{login};
-    $args{type} = 'email' if is_email( $args{login} );
+    # Тип угадываем по виду логина только для типа по-умолчанию. У аккаунтов
+    # внешних провайдеров (google_oauth2, github_oauth2, ...) логин это тоже
+    # почта, и безусловная подмена превращала их в дубликат email-аккаунта
+    $args{type} = 'email' if $args{type} eq 'login' && is_email( $args{login} );
 
     if ( $args{type} eq 'phone' ) {
         ( my $digits = $args{login} ) =~ s/\D+//g;
