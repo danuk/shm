@@ -326,7 +326,7 @@ sub auth {
     my $password = $login_password || $self->get_password;
     return undef unless $password;
 
-    unless ( $self->verify_password( $args{password}, $password, $self->get_login ) ) {
+    unless ( $self->verify_password( $args{password}, $password, $login->get_login ) ) {
         report->warning('Incorrect login or password: ' . $login->get_login );
         return undef;
     }
