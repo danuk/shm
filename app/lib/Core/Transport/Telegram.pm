@@ -1747,7 +1747,9 @@ sub webapp_auth {
     }
 
     return {
-        session_id => $login->user->srv('sessions')->add(),
+        session_id => $login->user->srv('sessions')->add(
+            settings => { account => { login => $login->get_login, type => $login->get_type } },
+        ),
     };
 }
 
@@ -1915,7 +1917,8 @@ sub web_auth {
 
     my $chat_id = $in{id};
 
-    my $user = $self->find_user_by_tg( \%in );
+    my $login = $self->find_user_by_tg( \%in );
+    my $user = $login;
 
     if ( !$user && $args{register_if_not_exists} ) {
         $user = $self->user->reg(
@@ -1949,7 +1952,9 @@ sub web_auth {
     }
 
     return {
-        session_id => $user->srv('sessions')->add(),
+        session_id => $user->srv('sessions')->add(
+            $login ? ( settings => { account => { login => $login->get_login, type => $login->get_type } } ) : (),
+        ),
     };
 }
 

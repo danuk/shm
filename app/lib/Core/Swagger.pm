@@ -201,6 +201,56 @@ sub gen_swagger_json {
     return \%json;
 }
 
+# Список локейшенов (URI) и их методов, отдельно для админов и обычных
+# пользователей. Методы с skip_check_auth (не требуют авторизации)
+# пропускаются - список предназначен для построения правил доступа групп
+# (Core::User::Groups), которые применяются только к авторизованным запросам.
+sub list_locations {
+    my $self = shift;
+    my %args = (
+        routes => {},
+        admin_mode => 0,
+        @_,
+    );
+
+    my @locations;
+    for my $route ( sort keys %{ $args{routes} } ) {
+        if ( $args{admin_mode} ) {
+            next unless $route =~ /^\/admin\//;
+        } else {
+            next if $route =~ /^\/admin\//;
+        }
+
+        my @methods;
+        for my $method ( 'GET','PUT','POST','DELETE' ) {
+            my $info = $args{routes}->{$route}->{$method} or next;
+            next if $info->{skip_check_auth};
+
+            push @methods, {
+                method => $method,
+                summary => $info->{swagger}->{summary},
+            };
+        }
+        next unless @methods;
+
+        push @locations, {
+            location => $route,
+            methods => \@methods,
+        };
+    }
+
+    $self->{_found_rows_cache} = scalar @locations;
+
+    return @locations;
+}
+
+sub found_rows {
+    my $self = shift;
+    return exists $self->{_found_rows_cache}
+        ? delete( $self->{_found_rows_cache} )
+        : $self->SUPER::found_rows();
+}
+
 sub get_swagger_schema {
     my $self = shift;
     my $controller = shift;

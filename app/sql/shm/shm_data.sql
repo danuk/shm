@@ -8,6 +8,14 @@ INSERT INTO `accounts` VALUES
 ('admin','login',1,'{"password": {"hash": "$7$100000$92e8c37b96278da15d1f542c0a566d2d$2f09dcdf0d50a2c4c83418ced379ab333ff9ac6d222227fe30ec39e4b849f26f"}}')
 ;
 
+INSERT INTO `user_groups` VALUES
+(1,'admins',1,'allow',NULL),
+(2,'users',0,'allow',NULL),
+(3,'Модератор',1,'deny','[{"uri": "/admin/user", "action": "allow", "methods": ["GET", "POST"]}, {"uri": "/admin/user/search", "action": "allow", "methods": ["GET"]}, {"uri": "/admin/user/accounts", "action": "allow", "methods": ["GET"]}, {"uri": "/admin/user/service", "action": "allow", "methods": ["GET"]}, {"uri": "/admin/user/service/*", "action": "allow", "methods": ["GET"]}, {"uri": "/admin/user/pay", "action": "allow", "methods": ["GET"]}, {"uri": "/admin/user/bonus", "action": "allow", "methods": ["GET"]}]'),
+(4,'Поддержка',1,'deny','[{"uri": "/admin/user", "action": "allow", "methods": ["GET"]}, {"uri": "/admin/user/search", "action": "allow", "methods": ["GET"]}, {"uri": "/admin/user/accounts", "action": "allow", "methods": ["GET"]}, {"uri": "/admin/user/service", "action": "allow", "methods": ["GET"]}, {"uri": "/admin/user/service/*", "action": "allow", "methods": ["GET"]}, {"uri": "/admin/user/pay", "action": "allow", "methods": ["GET"]}, {"uri": "/admin/user/bonus", "action": "allow", "methods": ["GET"]}]'),
+(5,'Viewer',1,'deny','[{"uri": "/admin/*", "action": "allow", "methods": ["GET"]}]')
+;
+
 INSERT INTO `servers_groups` VALUES
 (default,'LOCAL','local','random',NULL),
 (default,'Email уведомления','mail','random',NULL),

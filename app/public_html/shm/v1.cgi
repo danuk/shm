@@ -874,6 +874,44 @@ state $routes //= {
         swagger => { summary => 'Удаление клиента' },
     },
 },
+'/admin/user/group' => {
+    swagger => { tags => 'Группы пользователей' },
+    GET => {
+        params => {
+            gid  => { type => 'integer', min => 1 },
+        },
+        controller => 'User::Groups',
+        swagger => { summary => 'Получение списка групп пользователей' },
+    },
+    PUT => {
+        controller => 'User::Groups',
+        params => {
+            name           => { type => 'string', required => 1, min_length => 1, max_length => 255 },
+            is_admin       => { type => 'boolean' },
+            default_policy => { type => 'string', enum => ['allow','deny'] },
+            rules          => { type => 'array' },
+        },
+        swagger => { summary => 'Создание группы пользователей' },
+    },
+    POST => {
+        controller => 'User::Groups',
+        params => {
+            gid            => { type => 'integer', required => 1, min => 1 },
+            name           => { type => 'string', min_length => 1, max_length => 255 },
+            is_admin       => { type => 'boolean' },
+            default_policy => { type => 'string', enum => ['allow','deny'] },
+            rules          => { type => 'array' },
+        },
+        swagger => { summary => 'Изменение группы пользователей' },
+    },
+    DELETE => {
+        params => {
+            gid => { type => 'integer', required => 1, min => 1 },
+        },
+        controller => 'User::Groups',
+        swagger => { summary => 'Удаление группы пользователей' },
+    },
+},
 '/admin/user/search' => {
     swagger => { tags => 'Пользователи' },
     GET => {
@@ -2294,6 +2332,33 @@ $routes->{'/swagger_admin.json'} //= {
     },
 };
 
+$routes->{'/system/locations'} //= {
+    swagger => { tags => 'Служебное' },
+    GET => {
+        params => {},
+        controller => 'Swagger',
+        method => 'list_locations',
+        args => {
+            routes => $routes,
+        },
+        swagger => { summary => 'Список доступных локейшенов и методов (пользователи)' },
+    },
+};
+
+$routes->{'/admin/system/locations'} //= {
+    swagger => { tags => 'Служебное' },
+    GET => {
+        params => {},
+        controller => 'Swagger',
+        method => 'list_locations',
+        args => {
+            routes => $routes,
+            admin_mode => 1,
+        },
+        swagger => { summary => 'Список доступных локейшенов и методов (админ)' },
+    },
+};
+
 state $router //= Router::Simple->new();
 for my $uri ( keys %{ $routes } ) {
     for my $method ( 'GET','POST','PUT','DELETE' ) {
@@ -2338,6 +2403,15 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
             exit 0;
         }
         $admin_mode = 1;
+    }
+
+    unless ( $p->{skip_check_auth} ) {
+        unless ( $user->can_access( uri => $uri, method => $ENV{REQUEST_METHOD} ) ) {
+            _log_api_call( $user, code => 403, error => 'Permission denied', descr => $api_descr );
+            print_header( status => 403 );
+            print_json( { status => 403, error => "Permission denied"} );
+            exit 0;
+        }
     }
 
     my %args = (

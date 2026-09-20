@@ -108,11 +108,10 @@ sub structure {
         },
         gid => {
             type => 'number',
-            default => 0,
+            default => 2,
             hide_for_user => 1,
-            enum => [0,1],
             title => 'группа',
-            description => '0 - пользователи, 1 - админы',
+            description => 'ссылка на user_groups.gid. По умолчанию 2 (обычные пользователи). 1 - системная группа админов',
         },
         perm_credit => {
             type => 'number',
@@ -294,7 +293,7 @@ sub auth_api_safe {
         $otp->set_settings($user, verified_at => now());
     }
 
-    my $session_id = $user->gen_session->{id};
+    my $session_id = $user->gen_session( login => $user->{login} )->{id};
 
     $user->set( last_login => now );
 
@@ -373,13 +372,17 @@ sub gen_session {
     my $self = shift;
     my %args = (
         usi => undef,
+        login => undef,
         @_,
     );
+
+    my $login = $args{login};
 
     my $session_id = get_service('sessions')->add(
         user_id => $self->id,
         settings => {
             $args{usi} ? ( usi => $args{usi} ) : (),
+            $login ? ( account => { login => $login->get_login, type => $login->get_type } ) : (),
         },
     );
 
@@ -1017,7 +1020,60 @@ sub promo {
 
 sub is_admin {
     my $self = shift;
-    return $self->get_gid;
+
+    my $group = $self->group;
+    return $group && $group->get_is_admin ? 1 : 0;
+}
+
+# Группа пользователя (users.gid). undef, если gid не задан/равен 0, либо
+# такой группы не существует (для обратной совместимости - как если бы
+# группа не была задана вовсе).
+sub group {
+    my $self = shift;
+
+    my $gid = $self->get_gid;
+    return undef unless $gid;
+
+    my $group = get_service('User::Groups', _id => $gid );
+    return ( $group && $group->get ) ? $group : undef;
+}
+
+# Группа аккаунта (accounts.settings.gid), которым выполнен вход в
+# текущем запросе (см. Core::User::auth и SHM.pm). Может ещё сильнее
+# сузить права, выданные группой пользователя, но не расширить их.
+sub account_group {
+    my $self = shift;
+
+    my $login = $self->{login} || return undef;
+    my $gid = $login->get_settings->{gid};
+    return undef unless $gid;
+
+    my $group = get_service('User::Groups', _id => $gid );
+    return ( $group && $group->get ) ? $group : undef;
+}
+
+# Итоговое решение по доступу к $uri методом $method.
+# Если группа пользователя не задана/не найдена - это НЕ снимает проверку
+# группы аккаунта: каждый уровень (пользователь, затем аккаунт) проверяется
+# независимо, отсутствие ограничения на одном уровне не отменяет проверку
+# другого (см. can_access ниже).
+sub can_access {
+    my $self = shift;
+    my %args = (
+        uri => undef,
+        method => undef,
+        @_,
+    );
+
+    if ( my $group = $self->group ) {
+        return 0 unless $group->check( %args );
+    }
+
+    if ( my $account_group = $self->account_group ) {
+        return 0 unless $account_group->check( %args );
+    }
+
+    return 1;
 }
 
 sub list_for_api {

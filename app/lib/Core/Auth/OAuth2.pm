@@ -548,8 +548,16 @@ sub oauth2_callback {
         return undef;
     }
 
+    # Аккаунт, которым фактически выполнен вход этот раз - провайдерский
+    # логин (создаётся/обновляется в save_oauth2_account выше).
+    my $account_login = $user->logins->id( $email, [$self->oauth2_login_type($provider)] );
+
     return {
-        session_id => $user->srv('sessions')->add(),
+        session_id => $user->srv('sessions')->add(
+            settings => $account_login ? {
+                account => { login => $account_login->get_login, type => $account_login->get_type },
+            } : {},
+        ),
     };
 }
 

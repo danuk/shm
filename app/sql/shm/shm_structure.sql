@@ -231,6 +231,15 @@ CREATE TABLE IF NOT EXISTS `user_services` (
   KEY `idx_forecast_candidates` (`auto_bill`, `status`, `withdraw_id`, `expire`, `user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `user_groups` (
+  `gid` int(11) NOT NULL AUTO_INCREMENT,
+  `name` char(255) NOT NULL,
+  `is_admin` tinyint(4) NOT NULL DEFAULT '0',
+  `default_policy` char(8) NOT NULL DEFAULT 'allow',
+  `rules` json DEFAULT NULL,
+  PRIMARY KEY (`gid`)
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `users` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `partner_id` int(11) DEFAULT NULL,
@@ -245,7 +254,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `comment` char(255) DEFAULT NULL,
   `dogovor` char(32) DEFAULT NULL,
   `block` tinyint(4) NOT NULL DEFAULT '0',
-  `gid` tinyint(4) DEFAULT NULL,
+  `gid` tinyint(4) NOT NULL DEFAULT '2',
   `perm_credit` tinyint(4) DEFAULT '0',
   `full_name` char(255) DEFAULT NULL,
   `can_overdraft` tinyint(4) DEFAULT '0',
