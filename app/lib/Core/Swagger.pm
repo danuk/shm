@@ -215,9 +215,7 @@ sub list_locations {
 
     my @locations;
     for my $route ( sort keys %{ $args{routes} } ) {
-        if ( $args{admin_mode} ) {
-            next unless $route =~ /^\/admin\//;
-        } else {
+        unless ( $args{admin_mode} ) {
             next if $route =~ /^\/admin\//;
         }
 
