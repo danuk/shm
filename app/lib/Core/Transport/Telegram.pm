@@ -1943,9 +1943,17 @@ sub web_auth {
             },
             $args{partner_id} ? ( partner_id => $args{partner_id} ) : (),
         );
+
+        unless ( $user ) {
+            # Registration can fail if the account was created concurrently
+            # (e.g. duplicate request/race condition) between the lookup above
+            # and the reg() call. Re-check before giving up.
+            $login = $self->find_user_by_tg( \%in );
+            $user = $login;
+        }
     }
 
-    if ( !$args{register_if_not_exists} && !$user ) {
+    if ( !$user ) {
         logger->error("Telegram WebApp auth error: user not found");
         $self->set_user_fail_attempt( 'web_auth', 3600, $self->telegram_ips ); # 5 fails/hour
         return undef;
