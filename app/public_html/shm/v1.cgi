@@ -23,6 +23,21 @@ use CGI::Carp qw(fatalsToBrowser);
 use Data::Dumper;
 use Time::HiRes ();
 
+sub route_methods {
+    my @pairs;
+    while (@_) {
+        my $key   = shift;
+        my $value = shift;
+        if (ref $key eq 'ARRAY') {
+            push @pairs, $_, $value for @$key;
+        }
+        else {
+            push @pairs, $key, $value;
+        }
+    }
+    return @pairs;
+}
+
 state $routes //= {
 '/healthcheck' => {
     GET => {
@@ -553,6 +568,7 @@ state $routes //= {
 '/template/*' => {
     swagger => { tags => 'Шаблоны' },
     splat_to => 'id',
+    route_methods(
     GET => {
         params => {
             dry_run => { type => 'boolean' },
@@ -566,7 +582,7 @@ state $routes //= {
         },
         swagger => { summary => 'Выполнение шаблона' },
     },
-    POST => {
+        ['PUT','POST','DELETE'] => {
         params => {},
         controller => 'Template',
         method => 'parse_for_api',
@@ -576,10 +592,12 @@ state $routes //= {
         },
         swagger => { summary => 'Выполнение шаблона с аргументами' },
     },
+    ),
 },
 '/public/*' => {
     swagger => { tags => 'Шаблоны' },
     splat_to => 'id',
+    route_methods(
     GET => {
         params => {
             format => { type => 'string', enum => ['default','plain','html','json','other','qrcode','qrcode_png'] },
@@ -587,22 +605,23 @@ state $routes //= {
         user_id => 1,
         controller => 'Template',
         method => 'parse_for_public',
-        args => {
-            format => 'plain',
-        },
+            args => {
+                format => 'plain',
+            },
         swagger => { summary => 'Выполнение публичного шаблона' },
     },
-    POST => {
+        ['PUT','POST','DELETE'] => {
         params => {},
         user_id => 1,
         controller => 'Template',
         method => 'parse_for_public',
         skip_auto_parse_json => 1,
-        args => {
-            format => 'plain',
-        },
+            args => {
+                format => 'plain',
+            },
         swagger => { summary => 'Выполнение публичного шаблона с аргументами' },
     },
+    ),
 },
 # метод для случаев, когда нужно сохранить ещё и settings
 '/storage/manage' => {
