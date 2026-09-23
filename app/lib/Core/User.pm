@@ -318,8 +318,21 @@ sub auth {
         return undef;
     }
 
+    if ( $login->is_expired ) {
+        $self->report->add_error('Account expired');
+        return undef;
+    }
+
+    if ( $login->is_ip_restricted ) {
+        $self->report->add_error('Account restricted');
+        return undef;
+    }
+
     my $self = $self->id( $login->user_id );
-    return undef if $self->is_blocked;
+    if ( $self->is_blocked ) {
+        $self->report->add_error('Account blocked');
+        return undef;
+    }
 
     my $login_password = $login->get_password;
     my $password = $login_password || $self->get_password;

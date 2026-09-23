@@ -13,7 +13,9 @@ use Core::Utils qw(
     get_random_value
     sha256_hex
     add_period
+    is_ip_allowed
 );
+use Data::Validate::IP qw(is_ipv4 is_ipv6);
 
 my @TOKEN_CHARS = ( 'a' .. 'z', 'A' .. 'Z', 0 .. 9 );
 my $TOKEN_LENGTH = 64;
@@ -70,7 +72,6 @@ sub id {
             limit => 1,
         );
         return undef unless $obj && $self->user->id( $obj->get_user_id ); # Check exists user_id
-        return undef if $self->is_expired( $obj );
         return $obj;
     }
     return $self->SUPER::id();
@@ -82,6 +83,30 @@ sub is_expired {
 
     my $expire_at = $res->{settings}->{expire_at} || return 0;
     return now() ge $expire_at ? 1 : 0;
+}
+
+# Аккаунт можно ограничить списком IP/подсетей (settings.allowed_ips):
+# если список задан, вход разрешён только с перечисленных адресов
+sub is_ip_restricted {
+    my $self = shift;
+    my $res = shift || $self->{res};
+
+    my $allowed_ips = $res->{settings}->{allowed_ips};
+    return 0 unless ref $allowed_ips eq 'ARRAY' && @$allowed_ips;
+
+    return is_ip_allowed( get_user_ip(), $allowed_ips ) ? 0 : 1;
+}
+
+sub _validate_allowed_ips {
+    my $ips = shift;
+    return 1 unless ref $ips eq 'ARRAY' && @$ips;
+
+    for my $ip ( @$ips ) {
+        my ( $addr, $masklen ) = split '/', $ip, 2;
+        return 0 unless is_ipv4( $addr ) || is_ipv6( $addr );
+        return 0 if defined $masklen && $masklen !~ /^\d+$/;
+    }
+    return 1;
 }
 
 sub get {
@@ -183,6 +208,15 @@ sub add {
     }
 
     $args{settings} //= {};
+
+    if ( exists $args{settings}->{allowed_ips} ) {
+        unless ( _validate_allowed_ips( $args{settings}->{allowed_ips} ) ) {
+            report->status( 400 );
+            report->add_error('Incorrect allowed_ips format (expected IP or CIDR, e.g. 1.2.3.4 or 10.0.0.0/8)' );
+            return undef;
+        }
+    }
+
     $args{settings}->{created} = {
         date => now(),
         ip => get_user_ip,
@@ -213,6 +247,14 @@ sub api_set {
     my %args = (
         @_,
     );
+
+    if ( ref $args{settings} eq 'HASH' && exists $args{settings}->{allowed_ips} ) {
+        unless ( _validate_allowed_ips( $args{settings}->{allowed_ips} ) ) {
+            report->status( 400 );
+            report->add_error('Incorrect allowed_ips format (expected IP or CIDR, e.g. 1.2.3.4 or 10.0.0.0/8)' );
+            return undef;
+        }
+    }
 
     my %ret = $self->SUPER::api_set( %args );
     return undef unless %ret;

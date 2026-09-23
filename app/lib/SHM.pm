@@ -140,10 +140,19 @@ sub ext_user_auth {
         login => $login,
         password => $password,
     );
+
+    my $report = get_service('report');
+    unless ( $report->is_success ) {
+        my ( $err_msg ) = $report->errors;
+        print_json( { status => 401, error => $err_msg } );
+        exit 0;
+    }
+
     unless ( $user ) {
         print_json( { status => 401, error => 'Incorrect login or password' } );
         exit 0;
     }
+
     return ( $user->id, $user->{login} );
 }
 
@@ -158,8 +167,15 @@ sub ext_token_auth {
     }
 
     my $login_obj = get_service('User::Logins')->id( sha256_hex( $token ), ['token'] );
-    unless ( $login_obj ) {
+
+    if ( !$login_obj ) {
         print_json( { status => 401, error => 'Incorrect token' } );
+        exit 0;
+    } elsif ( $login_obj->is_expired ) {
+        print_json( { status => 401, error => 'Token expired' } );
+        exit 0;
+    } elsif ( $login_obj->is_ip_restricted ) {
+        print_json( { status => 401, error => 'Token restricted' } );
         exit 0;
     }
 
