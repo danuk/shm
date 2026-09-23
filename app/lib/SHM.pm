@@ -21,6 +21,7 @@ use Core::Utils qw(
     encode_json
     print_header
     print_json
+    sha256_hex
 );
 
 use base qw(Exporter);
@@ -88,10 +89,14 @@ sub new {
         $user_id = $args->{user_id};
     } elsif ( $ENV{HTTP_AUTHORIZATION} ) {
         my $auth = $ENV{HTTP_AUTHORIZATION};
-        $auth =~s/^Basic\s+//;
-        $auth = decode_base64( $auth );
-        my ( $user, $password ) = split(/\:/, $auth);
-        ( $user_id, $login_obj ) = ext_user_auth( $user, $password );
+        if ( $auth =~ s/^Bearer\s+//i ) {
+            ( $user_id, $login_obj ) = ext_token_auth( trim( $auth ) );
+        } else {
+            $auth =~s/^Basic\s+//;
+            $auth = decode_base64( $auth );
+            my ( $user, $password ) = split(/\:/, $auth);
+            ( $user_id, $login_obj ) = ext_user_auth( $user, $password );
+        }
     } elsif ( $headers{HTTP_LOGIN} && $headers{HTTP_PASSWORD} ) {
         ( $user_id, $login_obj ) = ext_user_auth($headers{HTTP_LOGIN}, $headers{HTTP_PASSWORD});
     } elsif ( !$args->{skip_check_auth} ) {
@@ -140,6 +145,25 @@ sub ext_user_auth {
         exit 0;
     }
     return ( $user->id, $user->{login} );
+}
+
+sub ext_token_auth {
+    my $token = shift;
+
+    db_connect();
+
+    unless ( $token ) {
+        print_json( { status => 401, error => 'Incorrect token' } );
+        exit 0;
+    }
+
+    my $login_obj = get_service('User::Logins')->id( sha256_hex( $token ), ['token'] );
+    unless ( $login_obj ) {
+        print_json( { status => 401, error => 'Incorrect token' } );
+        exit 0;
+    }
+
+    return ( $login_obj->get_user_id, $login_obj );
 }
 
 # Восстанавливаем accounts-логин, которым была создана сессия (см.
