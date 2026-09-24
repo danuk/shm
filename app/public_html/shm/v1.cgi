@@ -806,7 +806,7 @@ state $routes //= {
     POST => {
         params => {
             service_id => { type => 'integer', required => 1, min => 1 },
-            children   => { type => 'object', required => 1 },
+            children   => { type => 'array', required => 1 },
         },
         controller => 'Service',
         method => 'children',
