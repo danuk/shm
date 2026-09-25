@@ -250,13 +250,16 @@ sub api_data_by_auth {
     my $billing = $self->data_by_name('billing');
     my $oauth2 = $self->data_by_name('oauth2') || {};
     my $telegram = $self->data_by_name('telegram') || {};
+    my $passkey = $self->data_by_name('passkey') || {};
 
     my %providers;
     for my $provider ( keys %$oauth2 ) {
         my $provider_cfg = $oauth2->{$provider} || {};
-        $providers{$provider} = {
-            enabled => ( $provider_cfg->{client_id} && $provider_cfg->{client_secret} ) ? JSON::true : JSON::false,
-        };
+        if ( $provider_cfg->{enabled} == JSON::true ) {
+            $providers{$provider} = {
+                enabled => ( $provider_cfg->{client_id} && $provider_cfg->{client_secret} ) ? JSON::true : JSON::false,
+            };
+        }
     }
 
     my $telegram_enabled = 0;
@@ -272,7 +275,10 @@ sub api_data_by_auth {
 
     return {
         auth => {
-            enabled => $billing->{allow_user_auth_api} ? JSON::true : JSON::false,
+            enabled => ( $billing->{allow_user_auth_api} // 1 ) ? JSON::true : JSON::false,
+        },
+        passkey => {
+            enabled => $passkey->{enabled} ? JSON::true : JSON::false,
         },
         register => {
             enabled => ( $billing->{allow_user_register_api} // 1 ) ? JSON::true : JSON::false,
