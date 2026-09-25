@@ -232,8 +232,8 @@ sub send_mail {
         header => [
             From    => sprintf("%s <%s>", $encoded_from_name, $args{from} ),
             To      => $args{to},
-            Cc      => $args{cc} || "",
-            BCc     => $args{bcc} || "",
+            $args{cc} ? ( Cc => $args{cc} ) : (),
+            $args{bcc} ? ( BCc => $args{bcc} ) : (),
             Subject => $encoded_subject,
             'Content-Type' => "$args{content_type}; charset=UTF-8",
             'Content-Transfer-Encoding' => 'base64',
