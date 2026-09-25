@@ -38,6 +38,7 @@ our @EXPORT_OK = qw(
     parse_args
     parse_headers
     get_cookies
+    session_id_cookie
     string_to_utime
     utime_to_string
     decode_json
@@ -54,6 +55,7 @@ our @EXPORT_OK = qw(
     passgen
     shm_test_api
     is_email
+    is_phone
     is_host
     html_escape
     html_unescape
@@ -485,7 +487,7 @@ sub switch_user {
 }
 
 sub passgen {
-    my $len = shift || 10;
+    my $len = shift || 8;
     my @chars =('e','r','t','p','a','d','f','h','k','z','x','c','b','n','m', 'E','R','T','P','A','D','F','H','K','Z','X','C','B','N','M', 1 .. 9);
     my $pass = join("", @chars[ map { rand @chars } (1 .. $len) ]);
     return $pass;
@@ -624,6 +626,13 @@ sub is_host {
     return 0;
 }
 
+sub is_phone {
+    my $phone = shift;
+
+    return 0 unless defined $phone;
+    return $phone =~ /^\d{10,15}$/ ? 1 : 0;
+}
+
 sub ipv4_aton {
     my $ip = shift;
     my @o = split /\./, $ip;
@@ -689,6 +698,29 @@ sub get_cookies {
     } else {
         return wantarray ? %cookies : \%cookies;
     }
+}
+
+# Builds a `session_id` cookie for redirect-based auth flows (OAuth2/Telegram
+# callbacks), where the response body cannot be read by client JS. HttpOnly
+# prevents JS/XSS access; SameSite=None+Secure allows it to be sent on
+# subsequent cross-site XHR/fetch requests (over HTTPS only — plain HTTP
+# falls back to SameSite=Lax since browsers reject `SameSite=None` without
+# `Secure`).
+sub session_id_cookie {
+    my $session_id = shift || return undef;
+
+    my $is_https = ( $ENV{HTTP_X_FORWARDED_PROTO} || '' ) eq 'https'
+        || ( $ENV{HTTPS} || '' ) =~ /^(1|on)$/i;
+
+    return CGI::Cookie->new(
+        -name     => 'session_id',
+        -value    => $session_id,
+        -path     => '/',
+        -httponly => 1,
+        -secure   => $is_https ? 1 : 0,
+        -samesite => $is_https ? 'None' : 'Lax',
+        -expires  => '+3d',
+    );
 }
 
 sub parse_period {

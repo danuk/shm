@@ -341,6 +341,74 @@ subtest 'Bind-only-if-new rejects binding existing Telegram account' => sub {
     is( scalar @{ $fake_user->{set_json_calls} }, 0, 'telegram settings are not changed on reject' );
 };
 
+subtest 'Register-if-not-exists creates login with type telegram' => sub {
+    package Local::FakeSessions;
+
+    sub new {
+        my $class = shift;
+        return bless {}, $class;
+    }
+
+    sub add {
+        return 'new-session-id';
+    }
+
+    package Local::RegisteredUser;
+
+    sub new {
+        my $class = shift;
+        return bless {}, $class;
+    }
+
+    sub srv {
+        my ( $self, $name ) = @_;
+        return Local::FakeSessions->new if $name eq 'sessions';
+        return undef;
+    }
+
+    package Local::RegUserService;
+
+    sub new {
+        my $class = shift;
+        return bless {
+            reg_calls => [],
+        }, $class;
+    }
+
+    sub reg {
+        my ( $self, %args ) = @_;
+        push @{ $self->{reg_calls} }, { %args };
+        return Local::RegisteredUser->new;
+    }
+
+    package main;
+
+    my $fake_user_service = Local::RegUserService->new;
+
+    local *Core::Transport::Telegram::user = sub { return $fake_user_service; };
+    local *Core::Transport::Telegram::find_user_by_tg = sub { return undef; };
+    local *Core::Transport::Telegram::verify_telegram_oidc_id_token = sub {
+        return {
+            id => 999888,
+            preferred_username => 'new_tg_user',
+            given_name => 'Jane',
+            family_name => 'Roe',
+            iat => time,
+        };
+    };
+
+    my $ret = $tg->web_auth(
+        profile => 'telegram_bot',
+        register_if_not_exists => 1,
+        id_token => 'stub-token',
+    );
+
+    is( $ret->{session_id}, 'new-session-id', 'registration returns a session id' );
+    is( scalar @{ $fake_user_service->{reg_calls} }, 1, 'user->reg is called once' );
+    is( $fake_user_service->{reg_calls}[0]->{login}, '999888', 'reg is called with telegram id as login' );
+    is( $fake_user_service->{reg_calls}[0]->{login_type}, 'telegram', 'reg is called with login_type telegram so find_user_by_tg can find the user afterwards' );
+};
+
 subtest 'Unbind clears telegram settings' => sub {
     package Local::DeleteTgLogins;
 

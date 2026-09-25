@@ -106,6 +106,11 @@ sub structure {
             hide_for_user => 1,
             title => 'произвольные настройки услуги',
         },
+        description => { # virtual field
+            type => 'text',
+            virtual => 1,
+            title => 'заметка пользователя об услуге',
+        },
     };
 }
 
@@ -136,7 +141,8 @@ sub list_for_api {
                 'name', services.name,
                 'cost', services.cost,
                 'category', services.category
-            ) AS service
+            ) AS service,
+        JSON_UNQUOTE(JSON_EXTRACT(user_services.settings, '$.description')) AS `description`
     );
     $args{join} = { table => 'services', using => ['service_id'] };
     $args{where}{category} = $args{category} if $args{category};
@@ -150,7 +156,7 @@ sub settings {
     my $data = shift;
 
     if ( $data && ref( $data ) eq 'HASH' ) {
-        $self->res->{settings} = { %{ $data }, %{ $self->settings } };
+        $self->res->{settings} = { %{ $self->settings }, %{ $data } };
         return $self;
     }
 
@@ -178,6 +184,28 @@ sub add {
 
     my $usi = $self->SUPER::add( %args );
     return $self->srv('us', _id => $usi );
+}
+
+sub api_add_description {
+    my $self = shift;
+    my %args = (
+        description => undef,
+        @_,
+    );
+
+    return undef unless $self->id;
+
+    $self->settings( { description => $args{description} } );
+    $self->settings_save();
+
+    $args{fields} = q(
+        user_services.*,
+        JSON_UNQUOTE(JSON_EXTRACT(user_services.settings, '$.description')) AS `description`
+    );
+    $args{where}{user_service_id} = $self->id;
+
+    my @arr = $self->SUPER::list_for_api( %args );
+    return @arr;
 }
 
 sub can_delete {
@@ -909,6 +937,24 @@ sub api_set {
         delete $args{ $_ } unless $allowed_fields{ $_ };
     }
 
+    # Клиент не может назначить бесплатную услугу тарифом на следующий период:
+    # иначе бесплатный период (cost = 0) продлевается бесконечно.
+    # next = -1 (удалить услугу) и next = 0 (сбросить) остаются разрешёнными.
+    if ( defined $args{next} && !get_service('user')->authenticated->is_admin ) {
+        my $next_id = int( $args{next} );
+        if ( $next_id > 0 ) {
+            my $next_service = $self->srv('service', _id => $next_id );
+            unless ( $next_service && $next_service->get_cost && $next_service->get_cost > 0 ) {
+                logger->warning(
+                    sprintf "Denied next=%s (free service) for user service: %s", $args{next}, $self->id
+                );
+                report->status( 403 );
+                report->add_error('The next service must not be free');
+                return undef;
+            }
+        }
+    }
+
     return $self->SUPER::api_set( %args );
 }
 
@@ -927,6 +973,21 @@ sub change {
     unless ( $service ) {
         logger->error("Can't change us to non exists service: $args{service_id}");
         return undef;
+    }
+
+    # Смена тарифа на бесплатный доступна только администратору. Иначе клиент
+    # переключается на бесплатную услугу (в том числе из статуса BLOCK) и
+    # пользуется ей бесконечно: order_only_once тут не помогает, эта проверка
+    # живёт только в Core::Service::price_list, а change её не вызывает.
+    unless ( get_service('user')->authenticated->is_admin ) {
+        unless ( $service->get_cost && $service->get_cost > 0 ) {
+            logger->warning(
+                sprintf "Denied change to free service %s for user service: %s", $args{service_id}, $self->id
+            );
+            report->status( 403 );
+            report->add_error('Switching to a free service is not allowed');
+            return undef;
+        }
     }
 
     $self->set( next => $service->id );

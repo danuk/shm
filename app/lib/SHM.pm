@@ -21,6 +21,7 @@ use Core::Utils qw(
     encode_json
     print_header
     print_json
+    sha256_hex
 );
 
 use base qw(Exporter);
@@ -73,6 +74,7 @@ sub new {
     }
 
     my $user_id;
+    my $login_obj; # accounts-логин, которым выполнен вход в этом запросе (если известен)
     my %headers = parse_headers;
 
     if ( $headers{HTTP_TEST} ) {
@@ -87,17 +89,22 @@ sub new {
         $user_id = $args->{user_id};
     } elsif ( $ENV{HTTP_AUTHORIZATION} ) {
         my $auth = $ENV{HTTP_AUTHORIZATION};
-        $auth =~s/^Basic\s+//;
-        $auth = decode_base64( $auth );
-        my ( $user, $password ) = split(/\:/, $auth);
-        $user_id = ext_user_auth( $user, $password );
+        if ( $auth =~ s/^Bearer\s+//i ) {
+            ( $user_id, $login_obj ) = ext_token_auth( trim( $auth ) );
+        } else {
+            $auth =~s/^Basic\s+//;
+            $auth = decode_base64( $auth );
+            my ( $user, $password ) = split(/\:/, $auth);
+            ( $user_id, $login_obj ) = ext_user_auth( $user, $password );
+        }
     } elsif ( $headers{HTTP_LOGIN} && $headers{HTTP_PASSWORD} ) {
-        $user_id = ext_user_auth($headers{HTTP_LOGIN}, $headers{HTTP_PASSWORD});
+        ( $user_id, $login_obj ) = ext_user_auth($headers{HTTP_LOGIN}, $headers{HTTP_PASSWORD});
     } elsif ( !$args->{skip_check_auth} ) {
         my %in = parse_args();
         my $session = validate_session( session_id => $headers{HTTP_SESSION_ID} || $in{session_id} );
         print_not_authorized() unless $session;
         $user_id = $session->user_id;
+        $login_obj = login_from_session( $session );
     }
 
     my $user = get_service('user', _id => $user_id);
@@ -109,6 +116,11 @@ sub new {
 
     # Store current user_id to local config
     switch_user( $user_id );
+
+    # Аккаунт (accounts), которым выполнен вход - используется для
+    # дополнительного (только сужающего) ограничения прав по группам
+    # (Core::User::account_group / can_access).
+    $user->{login} = $login_obj if $login_obj;
 
     if ($ENV{SCRIPT_NAME}=~/\/admin\// && !$user->is_admin ) {
         print_header( status => 403 );
@@ -128,11 +140,58 @@ sub ext_user_auth {
         login => $login,
         password => $password,
     );
+
+    my $report = get_service('report');
+    unless ( $report->is_success ) {
+        my ( $err_msg ) = $report->errors;
+        print_json( { status => 401, error => $err_msg } );
+        exit 0;
+    }
+
     unless ( $user ) {
         print_json( { status => 401, error => 'Incorrect login or password' } );
         exit 0;
     }
-    return $user->id;
+
+    return ( $user->id, $user->{login} );
+}
+
+sub ext_token_auth {
+    my $token = shift;
+
+    db_connect();
+
+    unless ( $token ) {
+        print_json( { status => 401, error => 'Incorrect token' } );
+        exit 0;
+    }
+
+    my $login_obj = get_service('User::Logins')->id( sha256_hex( $token ), ['token'] );
+
+    if ( !$login_obj ) {
+        print_json( { status => 401, error => 'Incorrect token' } );
+        exit 0;
+    } elsif ( $login_obj->is_expired ) {
+        print_json( { status => 401, error => 'Token expired' } );
+        exit 0;
+    } elsif ( $login_obj->is_ip_restricted ) {
+        print_json( { status => 401, error => 'Token restricted' } );
+        exit 0;
+    }
+
+    return ( $login_obj->get_user_id, $login_obj );
+}
+
+# Восстанавливаем accounts-логин, которым была создана сессия (см.
+# Core::User::gen_session), чтобы применить сужение прав по
+# accounts.settings.gid и для запросов по session_id (cookie).
+sub login_from_session {
+    my $session = shift || return undef;
+
+    my $account = $session->get_settings->{account} || return undef;
+    return undef unless $account->{login} && $account->{type};
+
+    return get_service('User::Logins')->id( $account->{login}, [ $account->{type} ] );
 }
 
 sub db_connect {

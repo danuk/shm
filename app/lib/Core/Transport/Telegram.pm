@@ -27,6 +27,7 @@ use Core::Utils qw(
     to_query_string
     qrencode
     sha256
+    session_id_cookie
 );
 
 # https://core.telegram.org/resources/cidr.txt
@@ -1693,7 +1694,7 @@ sub webapp_auth {
 
     my %in = CGI->new( $args{initData} )->Vars();
 
-    # Step 1: verify Telegram signature BEFORE any user lookup
+    # Step 1: verify Telegram signature BEFORE any user lookup or switch
     $self->profile( $args{profile} );
 
     my $token = $self->token;
@@ -1737,7 +1738,7 @@ sub webapp_auth {
         return undef;
     }
 
-    # Step 4: find user AFTER signature is verified
+    # Step 4: find the user AFTER signature is verified
     my $login = $self->find_user_by_tg( $tg_user );
     unless ( $login ) {
         logger->error("Telegram WebApp auth error: user not found");
@@ -1746,7 +1747,9 @@ sub webapp_auth {
     }
 
     return {
-        session_id => $login->user->srv('sessions')->add(),
+        session_id => $login->user->srv('sessions')->add(
+            settings => { account => { login => $login->get_login, type => $login->get_type } },
+        ),
     };
 }
 
@@ -1914,14 +1917,16 @@ sub web_auth {
 
     my $chat_id = $in{id};
 
-    my $user = $self->find_user_by_tg( \%in );
+    my $login = $self->find_user_by_tg( \%in );
+    my $user = $login;
 
     if ( !$user && $args{register_if_not_exists} ) {
         $user = $self->user->reg(
-            login     => $self->get_shm_login( $in{id} ),
-            password  => passgen(),
-            full_name => sprintf("%s %s", $in{first_name} || '', $in{last_name} || ''),
-            settings  => {
+            login      => $self->get_shm_login( $in{id} ),
+            login_type => 'telegram',
+            password   => passgen(),
+            full_name  => sprintf("%s %s", $in{first_name} || '', $in{last_name} || ''),
+            settings   => {
                 %{ $args{settings} || {} },
                 telegram => {
                     user_id         => $chat_id,
@@ -1938,16 +1943,26 @@ sub web_auth {
             },
             $args{partner_id} ? ( partner_id => $args{partner_id} ) : (),
         );
+
+        unless ( $user ) {
+            # Registration can fail if the account was created concurrently
+            # (e.g. duplicate request/race condition) between the lookup above
+            # and the reg() call. Re-check before giving up.
+            $login = $self->find_user_by_tg( \%in );
+            $user = $login;
+        }
     }
 
-    if ( !$args{register_if_not_exists} && !$user ) {
+    if ( !$user ) {
         logger->error("Telegram WebApp auth error: user not found");
         $self->set_user_fail_attempt( 'web_auth', 3600, $self->telegram_ips ); # 5 fails/hour
         return undef;
     }
 
     return {
-        session_id => $user->srv('sessions')->add(),
+        session_id => $user->srv('sessions')->add(
+            $login ? ( settings => { account => { login => $login->get_login, type => $login->get_type } } ) : (),
+        ),
     };
 }
 
@@ -2031,10 +2046,18 @@ sub web_auth_callback {
     my $sep = $return_url =~ /\?/ ? '&' : '?';
     my $finish_url = $return_url . ($qs ? $sep . $qs : '');
 
+    # Session can no longer travel in the redirect URL (leaks via browser
+    # history/Referer/logs), so hand it to the client as an HttpOnly cookie
+    # on the 302 response instead.
+    my $cookie = ( ref $result eq 'HASH' && $result->{session_id} )
+        ? session_id_cookie( $result->{session_id} )
+        : undef;
+
     my $redirect_payload = {
         status => 302,
         redirect => $finish_url,
         %query,
+        $cookie ? ( session_cookie => $cookie->as_string ) : (),
     };
 
     if ( $ENV{SHM_TEST} ) {
@@ -2044,9 +2067,29 @@ sub web_auth_callback {
     print_header(
         status => 302,
         Location => $finish_url,
+        $cookie ? ( cookie => $cookie ) : (),
     );
     print_json($redirect_payload);
     exit 0;
+}
+
+sub delete_webhook {
+    my $self = shift;
+    my %args = (
+        token => undef,
+        @_,
+    );
+
+    my $delete_webhook = $self->http_transport->http(
+        method => 'get',
+        url => sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->telegram_server, $args{token}),
+    );
+
+    unless ( $delete_webhook->is_success ) {
+        logger->error( $delete_webhook->decoded_content );
+    }
+
+    return $delete_webhook->decoded_content;
 }
 
 sub set_webhook {
@@ -2065,10 +2108,7 @@ sub set_webhook {
 
     my $method = delete $args{method};
 
-    my $delete_webhook = $self->http_transport->http(
-        method => 'get',
-        url => sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->telegram_server, $args{token}),
-    );
+    $self->delete_webhook( token => $args{token} );
 
     my $bot = $args{template_id};
     $bot .=  "?tg_profile=$args{tg_profile}" if $args{tg_profile};

@@ -739,7 +739,9 @@ sub webapp_auth {
     }
 
     return {
-        session_id => $login->user->srv('sessions')->add(),
+        session_id => $login->user->srv('sessions')->add(
+            settings => { account => { login => $login->get_login, type => $login->get_type } },
+        ),
     };
 }
 

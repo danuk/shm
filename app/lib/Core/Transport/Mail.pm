@@ -131,7 +131,7 @@ sub task_send {
     $settings{to} ||= $self->user->email || delete $settings{bcc};
 
     unless ( $settings{to} ) {
-        return SUCCESS, {
+        return SKIP, {
             error => "User email undefined. For test email set `bcc` in server",
         }
     }
@@ -190,7 +190,7 @@ sub send_mail {
         );
     }
 
-    return SUCCESS, { msg => "The message is empty, skip it." } unless $args{message};
+    return SKIP, { msg => "The message is empty, skip it." } unless $args{message};
 
     $args{content_type} ||= 'text/plain';
 
@@ -198,18 +198,18 @@ sub send_mail {
         error => "Incorrect FROM address: $args{from}",
     } unless is_email( $args{from} );
 
-    return undef, {
+    return SKIP, {
         error => "Incorrect email address: $args{to}",
     } unless is_email( $args{to} );
 
     if ( my $email = $args{cc} ) {
-        return undef, {
+        return SKIP, {
             error => "Incorrect CC address: $email",
         } unless is_email( $email );
     }
 
     if ( my $email = $args{bcc} ) {
-        return undef, {
+        return SKIP, {
             error => "Incorrect BCc address: $email",
         } unless is_email( $email );
     }

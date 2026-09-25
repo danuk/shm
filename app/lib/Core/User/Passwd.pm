@@ -14,8 +14,8 @@ use Core::Utils qw(
 sub passwd {
     my $self = shift;
     my %args = (
-        password => undef,
-        login    => undef,
+        password     => undef,
+        old_password => undef,
         @_,
     );
 
@@ -31,26 +31,29 @@ sub passwd {
         $user = get_service('user', _id => $args{user_id} );
     }
 
-    my $login_str = $args{login} || $user->get_login;
-    unless ( $login_str ) {
-        $report->add_error('Login not found');
-        return undef;
+    unless ( $args{admin} ) {
+        my $stored = $user->get->{password};
+
+        if ( $stored ) {
+            # User has an existing password — must verify it before changing.
+            unless ( $args{old_password} ) {
+                $report->add_error('OLD_PASSWORD_REQUIRED');
+                return undef;
+            }
+            unless ( $user->verify_password( $args{old_password}, $stored, $user->get_login ) ) {
+                $report->add_error('INVALID_OLD_PASSWORD');
+                return undef;
+            }
+        }
+        # If the user has no password stored (passkey-only account), allow setting
+        # a new password without verification.
     }
 
-    my $login_obj = $user->logins->id(
-        $login_str,
-        undef,
-        user_id => $user->user_id,
-    );
-    unless ( $login_obj ) {
-        $report->add_error('Account not found');
-        return undef;
-    }
-
-    $login_obj->set_password( $args{password} );
+    my $password = $user->make_password( $args{password} );
 
     get_service('sessions')->delete_user_sessions( user_id => $user->user_id );
 
+    $user->set( password => $password );
     return scalar $user->get;
 }
 
@@ -65,7 +68,14 @@ sub set_new_passwd {
     return undef if $self->is_admin && !$args{admin};
 
     my $new_password = passgen( $args{len} );
-    $self->passwd( password => $new_password );
+
+    # Skip the old_password check in passwd(): this is a system-generated
+    # reset (e.g. via password-reset email), the caller can't know the old
+    # password. Without `admin => 1` passwd() bails out with
+    # OLD_PASSWORD_REQUIRED for any account that already has a password,
+    # so the new password would be emailed but never actually saved.
+    my $ret = $self->passwd( password => $new_password, admin => 1 );
+    return undef unless $ret;
 
     return $new_password;
 }
@@ -108,8 +118,16 @@ sub passwd_reset_request {
     }
 
     my $login_str = $args{login} || $email;
-    my $existing_user = $self->check_exists_logins( login => $login_str );
+    # Password reset via a mailed link only ever makes sense for login/email
+    # identities — never resolve (or later act on) a `phone`-type row here.
+    my $existing_user = $self->check_exists_logins( login => $login_str, types => ['login','email'] );
     my $user_id = $existing_user ? $existing_user->{user_id} : undef;
+
+    # Was $email actually confirmed to belong to the resolved account (as
+    # opposed to being an arbitrary, unrelated address supplied alongside a
+    # different `login`)? Only such a confirmed address may be used as the
+    # delivery destination below.
+    my $email_confirmed = $user_id && $login_str && lc($login_str) eq lc($email // '') ? 1 : 0;
 
     if ( !$user_id && $email ) {
         my $profile = get_service("profile");
@@ -119,7 +137,10 @@ sub passwd_reset_request {
             },
             limit => 1,
         );
-        $user_id = $profile_data->{user_id} if $profile_data;
+        if ( $profile_data ) {
+            $user_id = $profile_data->{user_id};
+            $email_confirmed = 1;
+        }
     }
 
     return { msg => 'User not found' } unless $user_id;
@@ -134,10 +155,14 @@ sub passwd_reset_request {
         return { msg => 'Successful' };
     }
 
-    $login_str ||= $self->get_login;
+    # NOTE: never fall back to $self->get_login (users.login) here — that
+    # field is a denormalized copy on the `users` table and is not
+    # guaranteed to correspond to any actual row in `accounts`. The account
+    # identity for reset purposes is always an `accounts` row of type
+    # login/email, already resolved into $login_str above.
     return { msg => 'Login not found' } unless $login_str;
 
-    my $login_obj = $self->logins->id( $login_str );
+    my $login_obj = $self->logins->id( $login_str, ['login','email'] );
     return { msg => 'Account not found' } unless $login_obj;
 
     my $token   = passgen( 35 );
@@ -150,7 +175,12 @@ sub passwd_reset_request {
         },
     });
 
-    my $send_to = $email || $self->get_email->{email};
+    # SECURITY: the reset token must only ever be delivered to an address
+    # already tied to the resolved account. Never trust a client-supplied
+    # `email` that just happens to be sent alongside a different `login` —
+    # otherwise anyone could redirect another user's reset token to an
+    # address of their choosing (login=<victim>, email=<attacker>).
+    my $send_to = ( $email_confirmed ? $email : undef ) || $self->get_email->{email};
     return { msg => 'Email not found' } unless $send_to;
 
     my $project_name = cfg('company')->{name} || 'SHM';
@@ -254,7 +284,11 @@ sub passwd_reset_verify {
     return { msg => 'Token is required' } unless $token;
     return { msg => 'Login is required' } unless $login_str;
 
-    my $login_obj = $self->logins->id( $login_str );
+    # Must match the same type-scoped lookup used in passwd_reset_request —
+    # a `phone` row (or any row found through a different, wider search)
+    # could otherwise resolve to a different `accounts` entry than the one
+    # the token was actually written to.
+    my $login_obj = $self->logins->id( $login_str, ['login','email'] );
     return { msg => 'Account not found' } unless $login_obj;
 
     my $reset = $login_obj->settings->{reset_password} || {};
@@ -270,6 +304,16 @@ sub passwd_reset_verify {
     unless ( $args{password} ) {
         return { msg => 'Successful' };
     }
+
+    # Actually persist the new password. `admin => 1` bypasses the
+    # old_password check in passwd() — by design, whoever resets a
+    # forgotten password via a mailed token cannot supply the old one.
+    my $ret = $self->passwd(
+        password => $args{password},
+        admin    => 1,
+        user_id  => $login_obj->get_user_id,
+    );
+    return { msg => 'Password reset failed' } unless $ret;
 
     $login_obj->set_settings({
         reset_password => undef,
