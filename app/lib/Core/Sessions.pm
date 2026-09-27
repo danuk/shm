@@ -3,7 +3,7 @@ package Core::Sessions;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
-use Core::Utils qw( now random_bytes );
+use Core::Utils qw( now random_bytes get_user_ip );
 
 sub table { return 'sessions' };
 sub dbh { shift->dbh_auto_commit };
@@ -67,6 +67,12 @@ sub validate {
 
     my $session = $self->id( $args{session_id} );
     return undef unless $session;
+
+    # if an IP address was stored for this session, it must match the current one
+    my $session_ip = $session->settings->{ip};
+    if ( $session_ip && $session_ip ne get_user_ip() ) {
+        return undef;
+    }
 
     # do not update more than 3 minutes
     $self->_set(
