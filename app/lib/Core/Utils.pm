@@ -639,13 +639,27 @@ sub ipv4_aton {
     return ($o[0]<<24) + ($o[1]<<16) + ($o[2]<<8) + $o[3];
 }
 
+# $nets may be an arrayref of IP/CIDR entries, or a string with entries
+# separated by commas, semicolons and/or whitespace (including newlines)
+sub _normalize_nets {
+    my $nets = shift;
+    return () unless defined $nets;
+
+    my @list = ref $nets eq 'ARRAY' ? @$nets : split /[\s,;]+/, $nets;
+
+    return grep { defined && length } @list;
+}
+
 sub is_ip_allowed {
     my ($ip, $nets) = @_;
     return 0 unless $ip;
 
+    my @nets = _normalize_nets($nets);
+    return 0 unless @nets;
+
     if (is_ipv4($ip)) {
         my $ip_int = ipv4_aton($ip);
-        for my $cidr (@$nets) {
+        for my $cidr (@nets) {
             next unless $cidr =~ /^[0-9.]+/;
             my ($net, $masklen) = split '/', $cidr;
             $masklen //= 32;
@@ -659,7 +673,7 @@ sub is_ip_allowed {
     elsif (is_ipv6($ip)) {
         require Socket;
         my $ip_bin = Socket::inet_pton(Socket::AF_INET6(), $ip);
-        for my $cidr (@$nets) {
+        for my $cidr (@nets) {
             next unless $cidr =~ /:/;
             my ($net, $masklen) = split '/', $cidr;
             $masklen //= 128;
