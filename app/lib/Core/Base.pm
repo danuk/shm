@@ -589,6 +589,23 @@ sub set_user_fail_attempt {
     return $cache->increment( $tag, $expire );
 }
 
+sub get_user_fail_attempt {
+    my $self = shift;
+    my $method = shift;
+    my $additional_ips = shift;
+
+    my $user_ip = get_user_ip() || return 0;
+
+    if ( my @ip_ranges = trusted_ips( $additional_ips ) ) {
+        return 0 if is_ip_allowed($user_ip, \@ip_ranges );
+    }
+
+    my $cache = $self->cache || return 0;
+    my $tag = lc sprintf("%s-%s-%s", ref $self, $method, $user_ip);
+
+    return $cache->get( $tag ) || 0;
+}
+
 sub arch {
     my $self = shift;
 

@@ -135,11 +135,20 @@ sub ext_user_auth {
     my ($login, $password) = @_;
 
     db_connect();
-    my $user = get_service('user');
-    $user = $user->auth(
+
+    my $user_srv = get_service('user');
+    if ( $user_srv->get_user_fail_attempt('ext_user_auth') >= 5 ) { # 5 attempts/3 min
+        $user_srv->set_user_fail_attempt( 'ext_user_auth', 180 );
+        print_json( { status => 401, error => 'Too many failed attempts, try again later' } );
+        exit 0;
+    }
+
+    my $user = $user_srv->auth(
         login => $login,
         password => $password,
     );
+
+    $user_srv->set_user_fail_attempt( 'ext_user_auth', 180 ) unless $user; # 5 attempts/3 min
 
     my $report = get_service('report');
     unless ( $report->is_success ) {
@@ -162,13 +171,21 @@ sub ext_token_auth {
     db_connect();
 
     unless ( $token ) {
-        print_json( { status => 401, error => 'Incorrect token' } );
+        print_json( { status => 401, error => 'Token is empty' } );
+        exit 0;
+    }
+
+    my $user = get_service('user');
+    if ( $user->get_user_fail_attempt('ext_token_auth') >= 5 ) { # 5 attempts/3 min
+        $user->set_user_fail_attempt( 'ext_token_auth', 180 );
+        print_json( { status => 401, error => 'Too many failed attempts, try again later' } );
         exit 0;
     }
 
     my $login_obj = get_service('User::Logins')->id( sha256_hex( $token ), ['token'] );
 
     if ( !$login_obj ) {
+        $user->set_user_fail_attempt( 'ext_token_auth', 180 );
         print_json( { status => 401, error => 'Incorrect token' } );
         exit 0;
     } elsif ( $login_obj->is_expired ) {
