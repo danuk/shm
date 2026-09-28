@@ -8,6 +8,7 @@ use Core::Utils qw( now encode_json decode_json switch_user );
 
 use MIME::Base64 qw(decode_base64url encode_base64url);
 use Digest::SHA qw(sha256);
+use Crypt::PRNG qw(random_bytes);
 
 sub table { return 'users' };
 
@@ -69,9 +70,8 @@ sub _cbor_decode {
     return undef;
 }
 
-# Parse the CBOR attestationObject and extract the COSE public key map.
-# Returns a hashref with integer COSE map keys, or undef on failure.
-sub _extract_cose_key {
+# authData из attestationObject
+sub _attestation_auth_data {
     my ( $self, $attestation_b64 ) = @_;
     return undef unless $attestation_b64;
 
@@ -82,7 +82,36 @@ sub _extract_cose_key {
     my $obj = eval { _cbor_decode( \$data, \$pos ) };
     return undef unless ref($obj) eq 'HASH';
 
-    my $auth_data = $obj->{authData};
+    return $obj->{authData};
+}
+
+# Проверка authData при регистрации, возвращает код ошибки или undef
+sub _check_registration_auth_data {
+    my ( $self, $auth_data, $credential_id ) = @_;
+
+    return 'INVALID_ATTESTATION_OBJECT' unless defined $auth_data && length($auth_data) > 55;
+    return 'INVALID_RP_ID' unless substr( $auth_data, 0, 32 ) eq sha256( $self->get_rp_id() );
+
+    my $flags = ord( substr( $auth_data, 32, 1 ) );
+    return 'USER_NOT_PRESENT' unless $flags & 0x01;
+    return 'USER_NOT_VERIFIED' if $self->uv_required && !( $flags & 0x04 );
+    return 'INVALID_ATTESTATION_OBJECT' unless $flags & 0x40;
+
+    my $cred_id_len = unpack( 'n', substr( $auth_data, 53, 2 ) );
+    my $cred_id     = substr( $auth_data, 55, $cred_id_len );
+    my $claimed     = eval { decode_base64url( $credential_id // '' ) };
+    return 'CREDENTIAL_ID_MISMATCH' unless defined $claimed && $cred_id eq $claimed;
+
+    return undef;
+}
+
+# Parse the CBOR attestationObject and extract the COSE public key map.
+# Returns a hashref with integer COSE map keys, or undef on failure.
+sub _extract_cose_key {
+    my ( $self, $attestation_b64 ) = @_;
+    return undef unless $attestation_b64;
+
+    my $auth_data = $self->_attestation_auth_data($attestation_b64);
     return undef unless defined $auth_data && length($auth_data) > 55;
 
     my $flags = ord( substr( $auth_data, 32, 1 ) );
@@ -93,7 +122,7 @@ sub _extract_cose_key {
     return undef unless length($auth_data) > $cose_offset;
 
     my $cose_bytes = substr( $auth_data, $cose_offset );
-    $pos = 0;
+    my $pos = 0;
     my $cose = eval { _cbor_decode( \$cose_bytes, \$pos ) };
     return undef unless ref($cose) eq 'HASH';
 
@@ -119,6 +148,7 @@ sub _verify_assertion_signature {
 
     my $flags = ord( substr( $auth_data_bytes, 32, 1 ) );
     return 0 unless $flags & 0x01;    # user present
+    return 0 if $self->uv_required && !( $flags & 0x04 );    # user verified
 
     # sigBase = authData || SHA-256(clientDataJSON)  (per WebAuthn §6.3.3)
     my $sig_base = $auth_data_bytes . $client_json_hash;
@@ -251,12 +281,32 @@ sub get_rp_id {
     return $host;
 }
 
+sub uv_required {
+    my $self = shift;
+    return ( ( cfg('passkey') || {} )->{user_verification} // '' ) eq 'required' ? 1 : 0;
+}
+
+sub user_verification {
+    my $self = shift;
+    return $self->uv_required ? 'required' : 'preferred';
+}
+
+# Если задан passkey.origins, пускаем только с этих origin
+sub check_origin {
+    my $self = shift;
+    my $client_data = shift;
+
+    my $origins = ( cfg('passkey') || {} )->{origins};
+    return 1 unless ref $origins eq 'ARRAY' && @$origins;
+    return scalar grep { defined $client_data->{origin} && $_ eq $client_data->{origin} } @$origins;
+}
+
 sub generate_challenge {
     my $self = shift;
     my $user_id = shift;
 
-    my $challenge = join('', map { chr(int(rand(256))) } 1..32);
-    my $challenge_b64 = encode_base64url($challenge, '');
+    # rand() для этого не годится, его можно предсказать
+    my $challenge_b64 = encode_base64url( random_bytes(32), '' );
 
     my $cache = get_service('Core::System::Cache');
     $cache->set("passkey_challenge:$challenge_b64", $user_id || 0, 300);
@@ -277,13 +327,15 @@ sub verify_challenge {
     my $stored_value = $cache->get($key);
     return 0 unless defined $stored_value;
 
-    if ($expected_user_id && $stored_value) {
+    # У challenge входа значение 0, у регистрации user_id
+    if ($expected_user_id) {
         return 0 unless $stored_value eq $expected_user_id;
+    } else {
+        return 0 unless $stored_value eq '0';
     }
 
-    $cache->delete($key);
-
-    return 1;
+    # del вернет 1 только одному из параллельных запросов
+    return $cache->redis->del($key) ? 1 : 0;
 }
 
 sub parse_client_data {
@@ -328,7 +380,7 @@ sub api_register_options {
         authenticatorSelection => {
             authenticatorAttachment => 'platform',
             residentKey => 'preferred',
-            userVerification => 'preferred',
+            userVerification => $self->user_verification,
         },
     };
 }
@@ -356,8 +408,21 @@ sub api_register_complete {
         return undef;
     }
 
+    unless ($self->check_origin($client_data)) {
+        $report->add_error('INVALID_ORIGIN');
+        return undef;
+    }
+
     unless ($self->verify_challenge($client_data->{challenge}, $user->id)) {
         $report->add_error('INVALID_CHALLENGE');
+        return undef;
+    }
+
+    if ( my $err = $self->_check_registration_auth_data(
+        $self->_attestation_auth_data( $args{response}->{attestationObject} ),
+        $args{credential_id},
+    ) ) {
+        $report->add_error($err);
         return undef;
     }
 
@@ -466,7 +531,7 @@ sub api_auth_options_public {
         challenge => $self->generate_challenge(),
         timeout => 60000,
         rpId => $self->get_rp_id(),
-        userVerification => 'preferred',
+        userVerification => $self->user_verification,
     };
 }
 
@@ -498,6 +563,11 @@ sub api_auth_public {
     my $client_data = $self->parse_client_data($args{response}->{clientDataJSON}, 'webauthn.get');
     unless ($client_data) {
         $report->add_error('INVALID_OPERATION_TYPE');
+        return undef;
+    }
+
+    unless ($self->check_origin($client_data)) {
+        $report->add_error('INVALID_ORIGIN');
         return undef;
     }
 
