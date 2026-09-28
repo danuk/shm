@@ -327,6 +327,11 @@ sub send {
             next;
         }
 
+        if ( $self->user_tg_settings->{status} eq 'chat_not_found' ) {
+            push @ret, { msg => "Чат с ботом не найден: пользователь ещё не запустил бота", profile => $profile };
+            next;
+        }
+
         my $response;
         if ( ref $data ) {
             my @arr;
@@ -576,20 +581,41 @@ sub http {
     logger->dump('Answer from TG API', $response->decoded_content );
 
     unless ( $response->is_success ) {
-        my $message = $response->decoded_content;
-        logger->error( $message );
-
-        if ( $response->code == 403 && $message =~ /(?:bot was blocked|user is deactivated)/i ) {
-            $self->user->set_settings({
-                telegram => {
-                    $self->profile_name() => {
-                        status => 'kicked',
-                    },
-                }
-            });
-        }
+        logger->error( $response->decoded_content );
+        $self->set_profile_status_by_error( $response );
     }
     return $response;
+}
+
+# Помечаем профиль пользователя по ошибке Telegram API,
+# чтобы не отправлять сообщения в заведомо недоступный чат
+sub set_profile_status_by_error {
+    my $self = shift;
+    my $response = shift;
+
+    my $message = $response->decoded_content;
+    my $status;
+
+    if ( $response->code == 403 && $message =~ /(?:bot was blocked|user is deactivated)/i ) {
+        # пользователь заблокировал бота
+        $status = 'kicked';
+    } elsif ( $response->code == 400 ) {
+        my $error = decode_json( $message ) || {};
+        # чата не существует: пользователь ещё не запускал этого бота
+        # (например, регистрация через Telegram Login Widget или внешний API)
+        if ( ( $error->{description} // '' ) =~ /chat not found/i ) {
+            $status = 'chat_not_found';
+        }
+    }
+    return unless $status;
+
+    $self->user->set_settings({
+        telegram => {
+            $self->profile_name() => {
+                status => $status,
+            },
+        }
+    });
 }
 
 sub sendMessage {
