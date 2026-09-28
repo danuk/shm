@@ -216,8 +216,16 @@ sub save_contact_phone {
 
     return undef unless $phone;
 
-    return $user->logins->id( $phone, ['phone'], user_id => $user->id )
-        || $user->logins->add( login => $phone, type => 'phone' );
+    if ( my $login = $user->logins->id( $phone, ['phone'], user_id => $user->id ) ) {
+        $login->set_settings({ phone => { verified => 1 } });
+        return $login;
+    }
+
+    return $user->logins->add(
+        login    => $phone,
+        type     => 'phone',
+        settings => { phone => { verified => 1 } },
+    );
 }
 
 sub find_user_by_phone {
