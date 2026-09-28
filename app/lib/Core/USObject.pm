@@ -923,6 +923,41 @@ sub change {
         return undef;
     }
 
+    # Смена тарифа на бесплатный доступна только администратору. Иначе клиент
+    # переключается на бесплатную услугу (в том числе из статуса BLOCK) и
+    # пользуется ей бесконечно: order_only_once тут не помогает, эта проверка
+    # живёт только в Core::Service::price_list, а change её не вызывает.
+    unless ( get_service('user')->authenticated->is_admin ) {
+        unless ( $service->get_cost && $service->get_cost > 0 ) {
+            logger->warning(
+                sprintf "Denied change to free service %s for user service: %s", $args{service_id}, $self->id
+            );
+            report->status( 403 );
+            report->add_error('Switching to a free service is not allowed');
+            return undef;
+        }
+
+        # Тот же критерий, что и при заказе (create): архивные, скрытые
+        # и одноразовые (order_only_once, уже использованные) тарифы не должны
+        # быть доступны клиенту в обход price_list.
+        unless ( $service->price_list_check_allow_to_order ) {
+            logger->warning(
+                sprintf "Denied change to service %s (prohibited for order) for user service: %s", $args{service_id}, $self->id
+            );
+            report->status( 403 );
+            report->add_error('The service is prohibited for registration');
+            return undef;
+        }
+
+        # Неполный период разрешаем только если это явно включено в настройках
+        # самого тарифа. Значение из запроса для не-админа игнорируем: иначе
+        # клиент сам включает allow_partial_period и получает дорогой тариф
+        # за небольшую часть его полной стоимости, даже если админ это запретил.
+        unless ( $service->settings->{allow_partial_period} ) {
+            $args{allow_partial_period} = 0;
+        }
+    }
+
     $self->set( next => $service->id );
 
     if ( $self->get_status eq STATUS_WAIT_FOR_PAY || $self->get_status eq STATUS_BLOCK ) {
