@@ -1199,6 +1199,8 @@ sub get_phone {
     return @phones ? join( ', ', @phones ) : undef;
 }
 
+*phone = \&get_phone;
+
 sub referrals {
     my $self = shift;
 
