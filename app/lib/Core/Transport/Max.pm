@@ -22,6 +22,7 @@ use Core::Utils qw(
     uri_escape_utf8
     uri_unescape
     any
+    hmac_sha256_hex
 );
 
 sub max_server { shift->config->{server} || 'https://platform-api2.max.ru' }
@@ -197,7 +198,13 @@ sub message_contact_phone {
     for my $attachment ( @$attachments ) {
         next unless ( $attachment->{type} // '' ) eq 'contact';
 
-        my $vcf = $attachment->{payload}->{vcf_info} // next;
+        my $payload = $attachment->{payload} || next;
+        unless ( $self->_verify_contact_hash( $payload ) ) {
+            logger->warning('MAX: contact hash verification failed, ignoring phone');
+            next;
+        }
+
+        my $vcf = $payload->{vcf_info} // next;
         next unless $vcf =~ /^TEL[^:\r\n]*:([^\r\n]+)/m;
 
         ( my $digits = $1 ) =~ s/\D+//g;
@@ -205,6 +212,20 @@ sub message_contact_phone {
     }
 
     return undef;
+}
+
+# https://dev.max.ru/docs-api/use-cases/sending-messages/keyboard#Кнопка%20request_contact)
+sub _verify_contact_hash {
+    my $self = shift;
+    my $payload = shift || return 0;
+
+    my $hash  = $payload->{hash} // return 0;
+    my $vcf   = $payload->{vcf_info} // return 0;
+    my $token = $self->token || return 0;
+
+    $vcf =~ s/\\r\\n/\r\n/g;
+
+    return lc( hmac_sha256_hex( $vcf, $token ) ) eq lc( $hash );
 }
 
 sub contact_phone { shift->{contact_phone} }
