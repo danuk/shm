@@ -2519,6 +2519,13 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         exit 0;
     }
 
+    # Pin the session to the current IP whenever a route explicitly accepts
+    # `session_id` as a parameter (vs. the auth cookie/header), so a leaked
+    # session_id can't be replayed from another IP.
+    if ( $schema{session_id} && $args{session_id} ) {
+        get_service('sessions')->bind_ip( session_id => $args{session_id} );
+    }
+
     # Build safe_args: route-level defaults + only declared/validated input fields.
     # Any %in field not listed in params or optional is silently dropped.
     # Use %args (not %in) so that type-coerced values (int, number) are used.

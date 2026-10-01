@@ -58,6 +58,24 @@ sub add {
     return $session_id;
 }
 
+sub bind_ip {
+    my $self = shift;
+    my %args = (
+        session_id => undef,
+        @_,
+    );
+
+    my $session = $args{session_id} ? $self->id( $args{session_id} ) : $self;
+    return undef unless $session;
+
+    # Pin the session to the IP that first used it. Once bound, the IP is
+    # never overwritten, so validate() will reject the session_id if it is
+    # later replayed from a different IP (e.g. stolen/intercepted session_id).
+    return $session if $session->settings->{ip};
+
+    return $session->set( settings => { %{ $session->settings || {} }, ip => get_user_ip() } );
+}
+
 sub validate {
     my $self = shift;
     my %args = (
