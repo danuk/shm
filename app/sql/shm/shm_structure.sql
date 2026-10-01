@@ -362,7 +362,7 @@ CREATE TABLE IF NOT EXISTS `config` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `sessions` (
-  `id` char(32) NOT NULL,
+  `id` char(64) NOT NULL, -- sha256 hex digest of the session_id bearer credential
   `user_id` int(11) NOT NULL,
   `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,

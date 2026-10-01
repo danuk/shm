@@ -38,7 +38,7 @@ if ( $in{session_id} ) {
 
 
 my $session = get_service('sessions');
-if ($session->id( $in{session_id} ) ) {
+if ( $in{session_id} && $session->id( $session->hash_id( $in{session_id} ) ) ) {
     print_json( { status => 0, msg => 'Already authorized', session_id => $session->id, user_id => $session->user_id } );
 	exit 0;
 }

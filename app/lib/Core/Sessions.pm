@@ -3,7 +3,7 @@ package Core::Sessions;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
-use Core::Utils qw( now random_bytes get_user_ip get_user_agent );
+use Core::Utils qw( now random_bytes get_user_ip get_user_agent sha256_hex );
 
 sub table { return 'sessions' };
 sub dbh { shift->dbh_auto_commit };
@@ -50,6 +50,12 @@ sub _generate_id {
     return $session_id;
 }
 
+sub hash_id {
+    my $self = shift;
+    my $id = shift;
+    return sha256_hex( $id );
+}
+
 sub add {
     my $self = shift;
     my %args = (
@@ -76,7 +82,12 @@ sub add {
         strict     => { map { $_ => ( $cfg_strict->{ $_ } ? 1 : 0 ) } values %STRICT_CFG_KEY },
     };
 
-    my $session_id = $self->SUPER::add( %args );
+    # The plain session_id is the bearer credential handed to the client
+    # (cookie/API response); only its sha256 hash is ever persisted.
+    my $session_id = $args{id};
+    $args{id} = $self->hash_id( $session_id );
+
+    return undef unless $self->SUPER::add( %args );
 
     $self->res->{id} = $session_id;
 
@@ -90,7 +101,7 @@ sub bind_fingerprint {
         @_,
     );
 
-    my $session = $args{session_id} ? $self->id( $args{session_id} ) : $self;
+    my $session = $args{session_id} ? $self->id( $self->hash_id( $args{session_id} ) ) : $self;
     return undef unless $session;
 
     my $settings = $session->settings || {};
@@ -138,7 +149,10 @@ sub validate {
         @_,
     );
 
-    my $session = $self->id( $args{session_id} );
+    return undef unless $args{session_id};
+    my $hashed_id = $self->hash_id( $args{session_id} );
+
+    my $session = $self->id( $hashed_id );
     return undef unless $session;
 
     # A fingerprint mismatch (IP and/or User-Agent changed since creation/
@@ -156,10 +170,10 @@ sub validate {
         for my $field ( @mismatches ) {
             my $strict_key = $STRICT_CFG_KEY{ $field };
             if ( $strict->{ $strict_key } ) {
-                logger->warning("Session $args{session_id} rejected: $field mismatch");
+                logger->warning("Session $hashed_id rejected: $field mismatch");
                 return undef;
             }
-            logger->warning("Session $args{session_id} $field mismatch ignored (session strict.$strict_key is disabled)");
+            logger->warning("Session $hashed_id $field mismatch ignored (session strict.$strict_key is disabled)");
         }
     }
 
@@ -167,7 +181,7 @@ sub validate {
     $self->_set(
         updated => now,
         where => {
-            id => $args{session_id},
+            id => $hashed_id,
             updated => { '<', \[ 'NOW() - INTERVAL ? MINUTE', 3 ] },
         },
     );

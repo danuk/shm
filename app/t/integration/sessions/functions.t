@@ -17,13 +17,13 @@ subtest 'Check user gen_session()' => sub {
     is( defined $user_session_id, 1 , 'Check gen_session()');
     is( length $user_session_id , 32 , 'Check gen_session() length');
 
-    my $session = get_service('sessions', _id => $user_session_id );
+    my $session = get_service('sessions', _id => get_service('sessions')->hash_id( $user_session_id ) );
     is ( $session->id eq $user_session_id, 1, 'Check Session module' );
 };
 
 subtest 'Check session add' => sub {
     my $new_session = get_service('sessions')->add();
-    my $session = get_service('sessions', _id => $new_session );
+    my $session = get_service('sessions', _id => get_service('sessions')->hash_id( $new_session ) );
     is ( $session->get_user_id, 40092, 'Check session user_id' );
 };
 
@@ -33,7 +33,7 @@ subtest 'Check session add with custom parameters' => sub {
         settings => {},
     );
 
-    my $session = get_service('sessions', _id => $new_session );
+    my $session = get_service('sessions', _id => get_service('sessions')->hash_id( $new_session ) );
     is ( $session->get_user_id, 1, 'Check session user_id' );
 };
 
