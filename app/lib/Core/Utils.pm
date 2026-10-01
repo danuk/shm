@@ -63,6 +63,7 @@ our @EXPORT_OK = qw(
     blessed
     get_random_value
     random_bytes
+    random_string
     random_base64url
     jwt_decode
     to_query_string
@@ -796,6 +797,26 @@ sub get_random_value {
     } else {
         return $value;
     }
+}
+
+# Cryptographically secure random string generator (session ids, bearer
+# tokens, etc). Draws uniformly from $chars (default: a-z A-Z 0-9) using the
+# Crypt::PRNG CSPRNG (random_bytes) with rejection sampling to avoid modulo
+# bias, unlike get_random_value()/rand() which are not suitable for secrets.
+sub random_string {
+    my $length = shift // 32;
+    my $chars = shift || [ 'a' .. 'z', 'A' .. 'Z', '0' .. '9' ];
+
+    my $n = scalar @$chars;
+    my $str = '';
+    while ( length($str) < $length ) {
+        for my $byte ( unpack( 'C*', random_bytes( $length * 2 ) ) ) {
+            next if $byte >= int( 256 / $n ) * $n;  # rejection sampling — uniform distribution
+            $str .= $chars->[ $byte % $n ];
+            last if length($str) == $length;
+        }
+    }
+    return $str;
 }
 
 sub random_base64url {

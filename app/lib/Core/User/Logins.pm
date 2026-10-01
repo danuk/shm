@@ -10,7 +10,7 @@ use Core::Utils qw(
     encode_json
     now
     get_user_ip
-    get_random_value
+    random_string
     sha256_hex
     add_period
     is_ip_allowed
@@ -153,7 +153,7 @@ sub items_by_types {
 }
 
 sub _generate_token {
-    return join( '', map { get_random_value( \@TOKEN_CHARS ) } 1 .. $TOKEN_LENGTH );
+    return random_string( $TOKEN_LENGTH, \@TOKEN_CHARS );
 }
 
 sub add {

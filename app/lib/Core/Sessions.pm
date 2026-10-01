@@ -3,7 +3,7 @@ package Core::Sessions;
 use v5.14;
 use parent 'Core::Base';
 use Core::Base;
-use Core::Utils qw( now random_bytes get_user_ip get_user_agent sha256_hex );
+use Core::Utils qw( now get_user_ip get_user_agent sha256_hex random_string );
 
 sub table { return 'sessions' };
 sub dbh { shift->dbh_auto_commit };
@@ -37,17 +37,7 @@ sub structure {
 }
 
 sub _generate_id {
-    my @chars = ('a' .. 'z', 'A' .. 'Z', '0' .. '9');
-    my $n = scalar @chars;
-    my $session_id = '';
-    while ( length($session_id) < 32 ) {
-        for my $byte ( unpack( 'C*', random_bytes(64) ) ) {
-            next if $byte >= int( 256 / $n ) * $n;  # rejection sampling — uniform distribution
-            $session_id .= $chars[ $byte % $n ];
-            last if length($session_id) == 32;
-        }
-    }
-    return $session_id;
+    return random_string(32);
 }
 
 sub hash_id {
