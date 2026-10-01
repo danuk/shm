@@ -71,6 +71,7 @@ our @EXPORT_OK = qw(
     print_header
     print_json
     get_user_ip
+    get_user_agent
     is_ip_allowed
     trusted_ips
 
@@ -875,6 +876,10 @@ sub print_json {
 
 sub get_user_ip {
     return $ENV{HTTP_X_REAL_IP} || $ENV{REMOTE_ADDR};
+}
+
+sub get_user_agent {
+    return $ENV{HTTP_USER_AGENT} // '';
 }
 
 sub format_time_diff {
