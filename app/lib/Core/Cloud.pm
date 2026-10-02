@@ -137,7 +137,7 @@ sub reg {
     );
 
     my $response = $self->http(
-        url => CLOUD_URL . '/user',
+        url => CLOUD_URL . '/cloud/user/reg',
         method => 'put',
         content => {
             login    => $args{login},
@@ -169,7 +169,7 @@ sub auth {
     );
 
     my $response = $self->http(
-        url => CLOUD_URL . '/cloud/auth',
+        url => CLOUD_URL . '/cloud/user/auth',
         method => 'get',
         headers => {
             ps => join(',', $self->ps_list),
@@ -264,7 +264,7 @@ sub reset_user_ip {
     );
 
     my $response = $self->cloud_request(
-        url => '/cloud/auth/reset',
+        url => '/cloud/user/reset',
         method => 'post',
         content => {
             login    => $args{login},
