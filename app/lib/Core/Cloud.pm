@@ -243,10 +243,19 @@ sub proxy {
 
 sub reset_user_ip {
     my $self = shift;
+    my %args = (
+        login => undef,
+        password => undef,
+        @_,
+    );
 
     my $response = $self->cloud_request(
-        url => CLOUD_URL . '/cloud/auth/reset',
+        url => '/cloud/auth/reset',
         method => 'post',
+        content => {
+            login    => $args{login},
+            password => $args{password},
+        },
     ) || return undef;
 
     unless ( $response->is_success ) {
