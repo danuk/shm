@@ -55,10 +55,15 @@ sub cloud_request {
     $args{url} = CLOUD_URL . $args{url};
 
     my $response = $self->http( %args );
+    my $status_code = $response->code;
 
     unless ( $response->is_success ) {
-        report->status( 400 ); # do not use 401 code because it reserves by Web
         my $err = $response->json_content ? $response->json_content->{error} : $response->decoded_content;
+        if ( $status_code == 401 ) { # && $err eq 'Account restricted' ) {
+            $err = 'IP prohibited'; # Message for Web
+        }
+
+        report->status( 400 ); # do not use 401 code because it reserves by Web
         report->add_error( $err || 'ERROR' );
     }
 
@@ -120,7 +125,7 @@ sub get_user {
     return $response->json_content->{data}->[0];
 }
 
-sub login_user {
+sub auth {
     my $self = shift;
     my %args = (
         login => undef,
@@ -129,7 +134,7 @@ sub login_user {
     );
 
     my $response = $self->http(
-        url => CLOUD_URL . '/auth',
+        url => CLOUD_URL . '/cloud/auth',
         method => 'get',
         headers => {
             ps => join(',', $self->ps_list),
@@ -161,6 +166,7 @@ sub reg_user {
     my $self = shift;
     my %args = (
         login => undef,
+        login_type => 'email',
         password => undef,
         captcha_token => undef,
         captcha_answer => undef,
@@ -172,6 +178,7 @@ sub reg_user {
         method => 'put',
         content => {
             login    => $args{login},
+            login_type => $args{login_type}.
             password => $args{password},
             captcha_token => $args{captcha_token},
             captcha_answer => $args{captcha_answer},
@@ -232,6 +239,23 @@ sub proxy {
     }
 
     return $response->json_content || $response->decoded_content;
+}
+
+sub reset_user_ip {
+    my $self = shift;
+
+    my $response = $self->cloud_request(
+        url => CLOUD_URL . '/cloud/auth/reset',
+        method => 'post',
+    ) || return undef;
+
+    unless ( $response->is_success ) {
+        report->status( 400 );
+        report->add_error( $response->decoded_content || 'ERROR' );
+        return undef;
+    }
+
+    return $response->json_content->{data}->[0];
 }
 
 sub logout_user {

@@ -238,7 +238,7 @@ sub auth_api_safe {
         @_,
     );
 
-    my $user = $self->auth( %args );
+    my $user = $self->auth( login => $args{login}, password => $args{password} );
     unless ( $user ) {
         report->status( 401 );
         report->add_error('Incorrect login or password' );
@@ -307,6 +307,7 @@ sub auth {
     my %args = (
         login    => undef,
         password => undef,
+        skip_check_ip => 0,
         @_,
     );
 
@@ -323,7 +324,7 @@ sub auth {
         return undef;
     }
 
-    if ( $login->is_ip_restricted ) {
+    if ( !$args{skip_check_ip} && $login->is_ip_restricted ) {
         $self->report->add_error('Account restricted');
         return undef;
     }

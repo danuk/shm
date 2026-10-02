@@ -2255,7 +2255,12 @@ state $routes //= {
             password => { type => 'string', required => 1, min_length => 1, max_length => 128 },
         },
         controller => 'Cloud',
-        method => 'login_user',
+        method => 'auth',
+    },
+    PUT => {
+        params => {},
+        controller => 'Cloud',
+        method => 'reset_user_ip',
     },
     DELETE => {
         params => {},
