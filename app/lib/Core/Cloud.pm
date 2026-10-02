@@ -125,6 +125,41 @@ sub get_user {
     return $response->json_content->{data}->[0];
 }
 
+sub reg {
+    my $self = shift;
+    my %args = (
+        login => undef,
+        login_type => 'email',
+        password => undef,
+        captcha_token => undef,
+        captcha_answer => undef,
+        @_,
+    );
+
+    my $response = $self->http(
+        url => CLOUD_URL . '/user',
+        method => 'put',
+        content => {
+            login    => $args{login},
+            login_type => $args{login_type}.
+            password => $args{password},
+            captcha_token => $args{captcha_token},
+            captcha_answer => $args{captcha_answer},
+        },
+    );
+
+    unless ( $response->is_success ) {
+        return undef;
+    }
+
+    $self->save_auth_basic(
+        login    => $args{login},
+        password => $args{password},
+    );
+
+    return $response->json_content->{data};
+}
+
 sub auth {
     my $self = shift;
     my %args = (
@@ -162,39 +197,18 @@ sub auth {
     return $self->get_user();
 }
 
-sub reg_user {
+sub logout {
     my $self = shift;
-    my %args = (
-        login => undef,
-        login_type => 'email',
-        password => undef,
-        captcha_token => undef,
-        captcha_answer => undef,
-        @_,
-    );
 
-    my $response = $self->http(
-        url => CLOUD_URL . '/user',
-        method => 'put',
-        content => {
-            login    => $args{login},
-            login_type => $args{login_type}.
-            password => $args{password},
-            captcha_token => $args{captcha_token},
-            captcha_answer => $args{captcha_answer},
-        },
-    );
+    get_service('Cloud::Subscription')->clear_subscription_cache();
 
-    unless ( $response->is_success ) {
-        return undef;
-    }
+    $self->config->set_value({
+        cloud => {
+            auth => undef,
+        }
+    });
 
-    $self->save_auth_basic(
-        login    => $args{login},
-        password => $args{password},
-    );
-
-    return $response->json_content->{data};
+    return undef;
 }
 
 sub proxy {
@@ -264,21 +278,8 @@ sub reset_user_ip {
         return undef;
     }
 
-    return $response->json_content->{data}->[0];
-}
-
-sub logout_user {
-    my $self = shift;
-
-    get_service('Cloud::Subscription')->clear_subscription_cache();
-
-    $self->config->set_value({
-        cloud => {
-            auth => undef,
-        }
-    });
-
-    return undef;
+    return {};
+    return $response->json_content || $response->decoded_content;
 }
 
 sub paysystems {

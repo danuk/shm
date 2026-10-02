@@ -2242,7 +2242,7 @@ state $routes //= {
             captcha_answer => { type => 'string' },
         },
         controller => 'Cloud',
-        method => 'reg_user',
+        method => 'reg',
     },
 },
 '/admin/cloud/user/auth' => {
@@ -2258,14 +2258,17 @@ state $routes //= {
         method => 'auth',
     },
     PUT => {
-        params => {},
+        params => {
+            login    => { type => 'string', required => 1, min_length => 1, max_length => 128 },
+            password => { type => 'string', required => 1, min_length => 1, max_length => 128 },
+        },
         controller => 'Cloud',
         method => 'reset_user_ip',
     },
     DELETE => {
         params => {},
         controller => 'Cloud',
-        method => 'logout_user',
+        method => 'logout',
     },
 },
 '/admin/cloud/paysystems' => {
