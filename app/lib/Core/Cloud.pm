@@ -181,6 +181,8 @@ sub reg {
     );
 
     unless ( $response->is_success ) {
+        report->status( 400 );
+        report->add_error( $response->json_content->{error} || 'ERROR' );
         return undef;
     }
 

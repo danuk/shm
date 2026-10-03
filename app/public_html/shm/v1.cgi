@@ -2612,7 +2612,9 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         );
     } elsif ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
         my $ret = $service->$method( %safe_args );
-        if ( length $ret ) {
+        if ( $safe_args{format} ) {
+            @data = ( $ret );
+        } elsif ( length $ret ) {
             if ( ref $ret eq 'HASH' ) {
                 push @data, $ret;
             } elsif ( ref $ret eq 'ARRAY' ) {
