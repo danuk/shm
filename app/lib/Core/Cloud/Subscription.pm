@@ -26,7 +26,7 @@ sub check_subscription {
     my $cache_file = $self->_subscription_cache_file();
     my $current_time = now();
 
-    return 0 unless $self->get_auth_basic();
+    return 0 unless $self->get_auth_header;
 
     # Try to read from cache file first
     if (-f $cache_file) {

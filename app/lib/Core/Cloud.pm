@@ -8,6 +8,8 @@ use Core::Utils qw(
     decode_json
     encode_base64
     parse_args
+    encode_base64url
+    decode_base64url
 );
 
 use constant {
@@ -38,20 +40,34 @@ sub check_network {
     return $response && $response->is_success ? 1 : 0;
 }
 
+sub get_auth_header {
+    my $self = shift;
+    my $auth_header;
+
+    if ( my $token = $self->get_auth_token ) {
+        $auth_header = sprintf("Bearer %s", $token );
+    } elsif ( my $auth = $self->get_auth_basic ) {
+        $auth_header = sprintf("Basic %s", $auth );
+    }
+
+    return $auth_header;
+}
+
 sub cloud_request {
     my $self = shift;
     my %args = (
         @_,
     );
 
-    my $auth =  $self->get_auth_basic();
-    unless ( $auth ) {
+    $args{headers} = $self->cloud_headers;
+
+    if ( my $auth_header = $self->get_auth_header ) {
+        $args{headers}->{Authorization} = $auth_header;
+    } else {
         report->status( 400 );
         return undef;
     }
 
-    $args{headers} = $self->cloud_headers;
-    $args{headers}->{Authorization} = sprintf("Basic %s", $auth );
     $args{url} = CLOUD_URL . $args{url};
 
     my $response = $self->http( %args );
@@ -77,17 +93,13 @@ sub config {
 
 sub get_auth_basic {
     my $self = shift;
-    my %args = (
-        login => undef,
-        password => undef,
-        @_,
-    );
-
-    if ( $args{login} && $args{password} ) {
-        return encode_base64( sprintf("%s:%s", $args{login}, $args{password}) );
-    }
-
     return $self->config->get_data->{cloud}->{auth};
+}
+
+sub get_auth_token {
+    my $self = shift;
+    my $token = $self->config->get_data->{cloud}->{token};
+    return $token ? decode_base64url( $token ) : '';
 }
 
 sub save_auth_basic {
@@ -101,18 +113,38 @@ sub save_auth_basic {
     if ( $args{login} && $args{password} ) {
         $self->config->set_value({
             cloud => {
-              auth => $self->get_auth_basic( login => $args{login}, password => $args{password} ),
+              auth => encode_base64 sprintf("%s:%s", $args{login}, $args{password} ),
             }
         });
         $self->srv('Cloud::Jobs')->startup();
     }
 }
 
+sub save_auth_token {
+    my $self = shift;
+    my %args = (
+        token => undef,
+        @_,
+    );
+
+    return undef unless $args{token};
+
+    $self->config->set_value({
+        cloud => {
+            auth => undef, # remove legacy basic auth if exists
+            token => encode_base64url( $args{token} ),
+        }
+    });
+    $self->srv('Cloud::Jobs')->startup();
+
+    return 1;
+}
+
 sub get_user {
     my $self = shift;
 
     my $response = $self->cloud_request(
-        url => '/user',
+        url => '/cloud/info',
         method => 'get',
     ) || return undef;
 
@@ -122,7 +154,7 @@ sub get_user {
         return undef;
     }
 
-    return $response->json_content->{data}->[0];
+    return $response->json_content || $response->decoded_content;
 }
 
 sub reg {
@@ -141,7 +173,7 @@ sub reg {
         method => 'put',
         content => {
             login    => $args{login},
-            login_type => $args{login_type}.
+            login_type => $args{login_type},
             password => $args{password},
             captcha_token => $args{captcha_token},
             captcha_answer => $args{captcha_answer},
@@ -152,12 +184,20 @@ sub reg {
         return undef;
     }
 
-    $self->save_auth_basic(
-        login    => $args{login},
-        password => $args{password},
-    );
+    my $answer = $response->json_content || {};
 
-    return $response->json_content->{data};
+    if ( $answer->{token} ) {
+        $self->save_auth_token(
+            token => $answer->{token},
+        );
+    } else {
+        $self->save_auth_basic(
+            login    => $args{login},
+            password => $args{password},
+        );
+    }
+
+    return { successful => 1 };
 }
 
 sub auth {
@@ -171,9 +211,6 @@ sub auth {
     my $response = $self->http(
         url => CLOUD_URL . '/cloud/user/auth',
         method => 'get',
-        headers => {
-            ps => join(',', $self->ps_list),
-        },
         content => {
             login    => $args{login},
             password => $args{password},
@@ -189,12 +226,20 @@ sub auth {
         return undef;
     }
 
-    $self->save_auth_basic(
-        login    => $args{login},
-        password => $args{password},
-    );
+    my $response = $response->json_content || {};
 
-    return $self->get_user();
+    if ( $response->{token} ) {
+        $self->save_auth_token(
+            token => $response->{token},
+        );
+    } else {
+        $self->save_auth_basic(
+            login    => $args{login},
+            password => $args{password},
+        );
+    }
+
+    return { successful => 1 };
 }
 
 sub logout {
@@ -225,10 +270,10 @@ sub proxy {
     $headers->{content_type} ||= 'application/json; charset=utf-8';
 
     my $method = uc( $args{method} || $ENV{REQUEST_METHOD} );
+    $headers = $self->cloud_headers;
 
-    if ( my $auth =  $self->get_auth_basic() ) {
-        $headers = $self->cloud_headers;
-        $headers->{Authorization} = sprintf("Basic %s", $auth );
+    if ( my $auth = $self->get_auth_header ) {
+        $headers->{Authorization} = $auth;
     }
 
     my $response = $self->http(
@@ -278,7 +323,6 @@ sub reset_user_ip {
         return undef;
     }
 
-    return {};
     return $response->json_content || $response->decoded_content;
 }
 

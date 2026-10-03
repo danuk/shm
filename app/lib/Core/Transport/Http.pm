@@ -125,7 +125,9 @@ sub send {
 
 sub HTTP::Response::json_content {
     my $self = shift;
-    return undef unless $self->header('content-type') =~ m/application\/json/gi;
+    # Some servers mislabel JSON bodies with a non-JSON content-type
+    # (e.g. `text/plain`), so attempt to decode regardless of the header.
+    # decode_json() safely returns undef for non-JSON/empty content.
     return decode_json( $self->decoded_content );
 }
 

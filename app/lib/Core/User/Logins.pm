@@ -17,9 +17,6 @@ use Core::Utils qw(
 );
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
 
-my @TOKEN_CHARS = ( 'a' .. 'z', 'A' .. 'Z', 0 .. 9 );
-my $TOKEN_LENGTH = 64;
-
 sub table { return 'accounts' }
 sub table_allow_insert_key { return 1 }
 
@@ -152,24 +149,20 @@ sub items_by_types {
     return $self->item( where => $where );
 }
 
-sub _generate_token {
-    return random_string( $TOKEN_LENGTH, \@TOKEN_CHARS );
-}
-
 sub add {
     my $self = shift;
     my %args = (
         login => undef,
         type => 'login',
         settings => {},
-        @_,
+        get_smart_args( @_ ),
     );
 
     # Логин для типа token генерируется на сервере и хранится только в виде
     # sha256-хеша, поэтому любой переданный клиентом login игнорируется
     my $plain_token;
     if ( $args{type} eq 'token' ) {
-        $plain_token = _generate_token();
+        $plain_token = random_string( 64 );
         $args{login} = sha256_hex( $plain_token );
         delete $args{primary};
 
@@ -184,9 +177,6 @@ sub add {
         }
     } else {
         $args{login} = lc $args{login};
-        # Тип угадываем по виду логина только для типа по-умолчанию. У аккаунтов
-        # внешних провайдеров (google_oauth2, github_oauth2, ...) логин это тоже
-        # почта, и безусловная подмена превращала их в дубликат email-аккаунта
         $args{type} = 'email' if $args{type} eq 'login' && is_email( $args{login} );
 
         if ( $args{type} eq 'phone' ) {

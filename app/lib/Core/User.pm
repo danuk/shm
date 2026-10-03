@@ -234,11 +234,12 @@ sub auth_api_safe {
     my $self = shift;
     my %args = (
         login => undef,
+        login_type => undef,
         password => undef,
         @_,
     );
 
-    my $user = $self->auth( login => $args{login}, password => $args{password} );
+    my $user = $self->auth( %args );
     unless ( $user ) {
         report->status( 401 );
         report->add_error('Incorrect login or password' );
@@ -306,15 +307,16 @@ sub auth {
     my $self = shift;
     my %args = (
         login    => undef,
+        login_type => undef,
         password => undef,
         skip_check_ip => 0,
-        @_,
+        get_smart_args( @_ ),
     );
 
     $args{login} = lc( $args{login} );
     return undef unless $args{login} && $args{password};
 
-    my $login = $self->logins->id( $args{login} );
+    my $login = $self->logins->id( $args{login}, $args{login_type} );
     unless ( $login ) {
         return undef;
     }
@@ -690,7 +692,7 @@ sub reg {
             get_service('report')->add_error("Can't create login");
             return undef;
         }
-        $user->{login} = $args{login};
+        $user->{login} = $user->logins->id( $args{login}, $args{login_type} );
     }
 
     $user->make_event( 'registered' );

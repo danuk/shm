@@ -30,7 +30,7 @@ sub job_download_all_paystems {
         return undef;
     }
 
-    unless ( $self->get_auth_basic() ) {
+    unless ( $self->get_auth_header ) {
         return undef;
     }
 
@@ -87,7 +87,7 @@ sub job_download_paystem {
     my $ps_name = $task->settings->{ps_name};
     my $version = $task->settings->{version};
 
-    unless ( $self->get_auth_basic() ) {
+    unless ( $self->get_auth_header ) {
         return SUCCESS, { msg => 'no auth' };
     }
 

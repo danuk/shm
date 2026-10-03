@@ -160,7 +160,8 @@ sub validate {
         for my $field ( @mismatches ) {
             my $strict_key = $STRICT_CFG_KEY{ $field };
             if ( $strict->{ $strict_key } ) {
-                logger->warning("Session $hashed_id rejected: $field mismatch");
+                logger->error("Session $hashed_id terminated: $field mismatch / compromised");
+                $session->delete();
                 return undef;
             }
             logger->warning("Session $hashed_id $field mismatch ignored (session strict.$strict_key is disabled)");
@@ -188,11 +189,6 @@ sub cleanup {
         },
     );
     return $self;
-}
-
-sub delete {
-    my $self = shift;
-    $self->SUPER::delete( @_ );
 }
 
 sub delete_user_sessions {

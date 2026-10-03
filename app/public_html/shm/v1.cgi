@@ -150,6 +150,7 @@ state $routes //= {
         skip_check_auth => 1,
         params => {
             login    => { type => 'string', required => 1, min_length => 1, max_length => 64 },
+            login_type => { type => 'string', required => 0, enum => ['login','email'] },
             password => { type => 'string', required => 1, min_length => 1, max_length => 128 },
             otp_token => { type => 'string', required => 0, min_length => 1, max_length => 128 },
         },
@@ -2233,6 +2234,7 @@ state $routes //= {
         params => {},
         controller => 'Cloud',
         method => 'get_user',
+        args => { format => 'json' },
     },
     PUT => {
         params => {
@@ -2243,6 +2245,7 @@ state $routes //= {
         },
         controller => 'Cloud',
         method => 'reg',
+        args => { format => 'json' },
     },
 },
 '/admin/cloud/user/auth' => {
@@ -2256,6 +2259,7 @@ state $routes //= {
         },
         controller => 'Cloud',
         method => 'auth',
+        args => { format => 'json' },
     },
     PUT => {
         params => {
@@ -2264,11 +2268,13 @@ state $routes //= {
         },
         controller => 'Cloud',
         method => 'reset_user_ip',
+        args => { format => 'json' },
     },
     DELETE => {
         params => {},
         controller => 'Cloud',
         method => 'logout',
+        args => { format => 'json' },
     },
 },
 '/admin/cloud/paysystems' => {
@@ -2276,6 +2282,7 @@ state $routes //= {
         params => {},
         controller => 'Cloud',
         method => 'paysystems',
+        args => { format => 'json' },
     },
 },
 '/admin/cloud/currencies' => {
@@ -2285,6 +2292,7 @@ state $routes //= {
         },
         controller => 'Cloud::Currency',
         method => 'currencies',
+        args => { format => 'json' },
     },
     POST => {
         params => {
@@ -2292,6 +2300,7 @@ state $routes //= {
         },
         controller => 'Cloud::Currency',
         method => 'save',
+        args => { format => 'json' },
     },
 },
 '/admin/cloud/proxy/*' => {
@@ -2300,33 +2309,25 @@ state $routes //= {
         params => {},
         controller => 'Cloud',
         method => 'proxy',
-        args => {
-            format => 'json',
-        },
+        args => { format => 'json' },
     },
     POST => {
         params => {},
         controller => 'Cloud',
         method => 'proxy',
-        args => {
-            format => 'json',
-        },
+        args => { format => 'json' },
     },
     PUT => {
         params => {},
         controller => 'Cloud',
         method => 'proxy',
-        args => {
-            format => 'json',
-        },
+        args => { format => 'json' },
     },
     DELETE => {
         params => {},
         controller => 'Cloud',
         method => 'proxy',
-        args => {
-            format => 'json',
-        },
+        args => { format => 'json' },
     },
 }
 
