@@ -44,6 +44,12 @@ jobs:
           else
             echo "minor=${TAG}" >> $GITHUB_OUTPUT
           fi
+          # Extract major version (e.g., 1.2.5 -> 1)
+          if [[ $TAG =~ ^([0-9]+)\. ]]; then
+            echo "major=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+          else
+            echo "major=${TAG}" >> $GITHUB_OUTPUT
+          fi
           # Check if current commit is on master branch (works in detached HEAD)
           IS_MASTER="false"
           if git branch -r --contains HEAD | grep -q 'origin/master'; then
@@ -101,6 +107,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:${{ steps.version.outputs.minor }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/shm-core:${{ steps.version.outputs.major }}
             ${{ steps.version.outputs.push_latest == 'true' && format('{0}/shm-core:latest', secrets.DOCKERHUB_USERNAME) || format('{0}/shm-core:skip-latest-{1}', secrets.DOCKERHUB_USERNAME, steps.version.outputs.rev) }}
           cache-from: type=gha,scope=core
 
@@ -113,6 +120,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/shm-api:${{ steps.version.outputs.minor }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/shm-api:${{ steps.version.outputs.major }}
             ${{ steps.version.outputs.push_latest == 'true' && format('{0}/shm-api:latest', secrets.DOCKERHUB_USERNAME) || format('{0}/shm-api:skip-latest-{1}', secrets.DOCKERHUB_USERNAME, steps.version.outputs.rev) }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
