@@ -1341,13 +1341,6 @@ sub api_report {
         @_,
     );
 
-    my $subscription = get_service('Cloud::Subscription');
-    unless ($subscription->check_subscription()) {
-        report->status(403);
-        report->add_error('Требуется активация подписки');
-        return undef;
-    }
-
     # Приводим months к числу для корректного сравнения
     $args{months} = int($args{months} // 6);
 
