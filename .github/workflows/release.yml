@@ -91,6 +91,10 @@ jobs:
         VERSION_MINOR=$(echo $DOCKER_TAG | cut -d '.' -f 1,2)
         echo "minor=${VERSION_MINOR}" >> $GITHUB_OUTPUT
 
+        # Get major version (1 from 1.2.3)
+        VERSION_MAJOR=$(echo $DOCKER_TAG | cut -d '.' -f 1)
+        echo "major=${VERSION_MAJOR}" >> $GITHUB_OUTPUT
+
         # Get git revision
         REV=$(git rev-parse --short HEAD)
         echo "rev=${REV}" >> $GITHUB_OUTPUT
@@ -108,13 +112,14 @@ jobs:
         fi
         echo "minor_with_suffix=${MINOR_WITH_SUFFIX}" >> $GITHUB_OUTPUT
 
-        # A tag without a suffix (e.g. 1.2.3) is a release and also gets a minor
-        # version tag (e.g. 1.2). A '-latest' suffix (e.g. 1.2.3-latest) is
-        # treated as a release too. Any other suffix (e.g. 1.2.3-beta) is a
-        # pre-release and does not get the minor version tag.
+        # A tag without a suffix (e.g. 1.2.3) is a release and also gets major
+        # and minor version tags (e.g. 1 and 1.2). A '-latest' suffix
+        # (e.g. 1.2.3-latest) is treated as a release too. Any other suffix
+        # (e.g. 1.2.3-beta) is a pre-release and does not get the major/minor
+        # version tags.
         if [ -z "$TAG_SUFFIX" ] || [ "$TAG_SUFFIX_LOWER" = "latest" ]; then
           IS_RELEASE="true"
-          echo "Tag has no suffix (or 'latest' suffix) - treated as a release, will also push minor version tag"
+          echo "Tag has no suffix (or 'latest' suffix) - treated as a release, will also push major/minor version tags"
         else
           IS_RELEASE="false"
           echo "Tag has suffix - will also push suffix tags instead"
@@ -163,6 +168,7 @@ jobs:
         tags: |
           ${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.docker_tag) }}
           ${{ steps.version.outputs.is_release == 'true' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
+          ${{ steps.version.outputs.is_release == 'true' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.major) || '' }}
           ${{ steps.version.outputs.minor_with_suffix != '' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
           ${{ steps.version.outputs.tag_suffix != '' && format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.tag_suffix) || '' }}
         cache-from: type=gha,scope=api
@@ -178,6 +184,7 @@ jobs:
         tags: |
           ${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.docker_tag) }}
           ${{ steps.version.outputs.is_release == 'true' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
+          ${{ steps.version.outputs.is_release == 'true' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.major) || '' }}
           ${{ steps.version.outputs.minor_with_suffix != '' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
           ${{ steps.version.outputs.tag_suffix != '' && format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.tag_suffix) || '' }}
         cache-from: type=gha,scope=core
@@ -194,12 +201,14 @@ jobs:
           ### API Image
           - `${{ format('{0}-api:{1}', env.IMAGE_NAME, steps.version.outputs.docker_tag) }}`
           ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
+          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.major) || '' }}
           ${{ steps.version.outputs.minor_with_suffix != '' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
           ${{ steps.version.outputs.tag_suffix != '' && format('- `{0}-api:{1}`', env.IMAGE_NAME, steps.version.outputs.tag_suffix) || '' }}
 
           ### Core Image
           - `${{ format('{0}-core:{1}', env.IMAGE_NAME, steps.version.outputs.docker_tag) }}`
           ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.minor) || '' }}
+          ${{ steps.version.outputs.is_release == 'true' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.major) || '' }}
           ${{ steps.version.outputs.minor_with_suffix != '' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.minor_with_suffix) || '' }}
           ${{ steps.version.outputs.tag_suffix != '' && format('- `{0}-core:{1}`', env.IMAGE_NAME, steps.version.outputs.tag_suffix) || '' }}
 

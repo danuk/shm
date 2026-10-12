@@ -125,6 +125,10 @@ jobs:
           VERSION_MINOR=$(echo "$DOCKER_TAG" | cut -d '.' -f 1,2)
           echo "minor=${VERSION_MINOR}" >> $GITHUB_OUTPUT
 
+          # Мажорная версия (1 из 1.2.3)
+          VERSION_MAJOR=$(echo "$DOCKER_TAG" | cut -d '.' -f 1)
+          echo "major=${VERSION_MAJOR}" >> $GITHUB_OUTPUT
+
           # Комбинированный тег минор+суффикс (например, '3.0-rc'); не создаётся для 'latest'
           if [ -n "$TAG_SUFFIX" ] && [ "$TAG_SUFFIX_LOWER" != "latest" ]; then
             MINOR_WITH_SUFFIX="${VERSION_MINOR}-${TAG_SUFFIX}"
@@ -147,6 +151,7 @@ jobs:
           IMAGE_NAME="${{ env.IMAGE_NAME }}"
           DOCKER_TAG="${{ steps.release_info.outputs.docker_tag }}"
           MINOR="${{ steps.release_info.outputs.minor }}"
+          MAJOR="${{ steps.release_info.outputs.major }}"
           MINOR_WITH_SUFFIX="${{ steps.release_info.outputs.minor_with_suffix }}"
           TAG_SUFFIX="${{ steps.release_info.outputs.tag_suffix }}"
 
@@ -164,6 +169,7 @@ jobs:
           for IMG in api core; do
             echo "• ${IMAGE_NAME}-${IMG}:${DOCKER_TAG}" >> "$DOCKER_TAGS_FILE"
             echo "• ${IMAGE_NAME}-${IMG}:${MINOR}" >> "$DOCKER_TAGS_FILE"
+            echo "• ${IMAGE_NAME}-${IMG}:${MAJOR}" >> "$DOCKER_TAGS_FILE"
             if [ -n "$MINOR_WITH_SUFFIX" ]; then
               echo "• ${IMAGE_NAME}-${IMG}:${MINOR_WITH_SUFFIX}" >> "$DOCKER_TAGS_FILE"
             fi
