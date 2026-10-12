@@ -224,13 +224,6 @@ sub apply {
     my $self = shift;
     my $code = shift;
 
-    my $subscription = get_service('Cloud::Subscription');
-    unless ( $ENV{SHM_TEST} || $subscription->check_subscription() ) {
-        report->status(403);
-        report->error( "Требуется активация подписки" );
-        return;
-    }
-
     $self = $self->id( $code ) if $code;
 
     unless ( $self && $self->get ) {
