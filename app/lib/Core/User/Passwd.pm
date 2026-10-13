@@ -31,16 +31,42 @@ sub passwd {
         $user = get_service('user', _id => $args{user_id} );
     }
 
-    unless ( $args{admin} ) {
-        my $stored = $user->get->{password};
+    # auth() checks the account's own password (accounts.settings.password.hash)
+    # first and falls back to users.password, so both must be handled here.
+    # Without an explicit `login` the password is changed for all login/email
+    # accounts of the user, since any of them can be used to log in.
+    my @logins;
+    if ( $args{login} ) {
+        my $login_obj = $user->logins->id( $args{login}, ['login','email'], user_id => $user->user_id );
+        unless ( $login_obj ) {
+            $report->add_error('Account not found');
+            return undef;
+        }
+        @logins = ( $login_obj );
+    } else {
+        @logins = @{ $user->logins->items(
+            admin => 1,
+            where => {
+                user_id => $user->user_id,
+                type => { '-in' => ['login','email'] },
+            },
+        ) || [] };
+    }
 
-        if ( $stored ) {
+    unless ( $args{admin} ) {
+        my $user_password = $user->get->{password};
+        my @stored = grep { $_->[0] } (
+            ( map { [ $_->get_password || $user_password, $_->get_login ] } @logins ),
+            [ $user_password, $user->get_login ],
+        );
+
+        if ( @stored ) {
             # User has an existing password — must verify it before changing.
             unless ( $args{old_password} ) {
                 $report->add_error('OLD_PASSWORD_REQUIRED');
                 return undef;
             }
-            unless ( $user->verify_password( $args{old_password}, $stored, $user->get_login ) ) {
+            unless ( grep { $user->verify_password( $args{old_password}, $_->[0], $_->[1] ) } @stored ) {
                 $report->add_error('INVALID_OLD_PASSWORD');
                 return undef;
             }
@@ -49,11 +75,11 @@ sub passwd {
         # a new password without verification.
     }
 
-    my $password = $user->make_password( $args{password} );
+    $_->set_password( $args{password} ) for @logins;
 
     get_service('sessions')->delete_user_sessions( user_id => $user->user_id );
 
-    $user->set( password => $password );
+    $user->set( password => $user->make_password( $args{password} ) );
     return scalar $user->get;
 }
 
