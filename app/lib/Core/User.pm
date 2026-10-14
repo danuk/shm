@@ -1157,7 +1157,7 @@ sub profile {
     return %{ $item->{data} || {} };
 }
 
-sub login { shift->{login} };
+sub auth_login { shift->{login} };
 
 sub logins {
     my $self = shift;
