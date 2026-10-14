@@ -1157,7 +1157,8 @@ sub profile {
     return %{ $item->{data} || {} };
 }
 
-sub login { shift->{login} };
+# users.login. Аккаунт текущего входа лежит в $self->{login} (см. account_group)
+sub login { shift->get_login };
 
 sub logins {
     my $self = shift;

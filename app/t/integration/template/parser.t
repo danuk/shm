@@ -84,4 +84,14 @@ subtest 'Check forecast via template' => sub {
     is( $t->parse( data => '{{ user.pays.forecast.total }}' ), 1035.01 );
 };
 
+subtest 'Check user.login via template' => sub {
+    my $t = get_service('template');
+
+    is( $t->parse( data => '{{ user.login }}' ), 'danuk', 'user.login without account of current auth' );
+
+    local $user->{login} = $user->logins->id( 'danuk@domain.ru', ['email'] );
+    is( $t->parse( data => '{{ user.login }}' ), 'danuk', 'user.login with account of current auth' );
+    is( $user->{login}->get_type, 'email', 'account of current auth is kept' );
+};
+
 done_testing();
