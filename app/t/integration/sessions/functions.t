@@ -18,7 +18,7 @@ subtest 'Check user gen_session()' => sub {
     is( length $user_session_id , 32 , 'Check gen_session() length');
 
     my $session = get_service('sessions', _id => get_service('sessions')->hash_id( $user_session_id ) );
-    is ( $session->id eq $user_session_id, 1, 'Check Session module' );
+    is ( $session->id eq get_service('sessions')->hash_id( $user_session_id ), 1, 'Check Session module' );
 };
 
 subtest 'Check session add' => sub {

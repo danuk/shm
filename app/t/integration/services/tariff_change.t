@@ -146,7 +146,7 @@ subtest 'Check WAIT_FOR_PAY -> ACTIVE with allow_partial_period' => sub {
     is( $user->balance, 0 );
 };
 
-subtest 'Check WAIT_FOR_PAY -> WAIT_FOR_PAY when allow_partial_period is not allowed by tariff' => sub {
+subtest 'Check WAIT_FOR_PAY -> ACTIVE when allow_partial_period is requested manually (by param)' => sub {
     $user->set( balance => 50, credit => 0 );
 
     my $us = $service->reg(
@@ -157,13 +157,14 @@ subtest 'Check WAIT_FOR_PAY -> WAIT_FOR_PAY when allow_partial_period is not all
     is( $us->status, STATUS_WAIT_FOR_PAY );
 
     # $service_next не разрешает allow_partial_period в своих настройках,
-    # поэтому клиентское allow_partial_period=1 должно игнорироваться.
+    # но клиент (например, через /admin/user/service/change) может явно
+    # запросить неполный период параметром - такой запрос должен быть выполнен.
     $us->change( service_id => $service_next->id, allow_partial_period => 1 );
 
     is( $us->service_id, $service_next->id );
-    is( $us->status, STATUS_WAIT_FOR_PAY, 'Service is not activated on partial balance' );
-    is( $us->withdraw->total, $service_next->cost, 'Withdraw is for the full cost, not the available balance' );
-    is( $user->balance, 50, 'Balance is not touched' );
+    is( $us->status, STATUS_ACTIVE, 'Service is activated on partial balance' );
+    is( $us->withdraw->total, 50, 'Withdraw equals the available balance' );
+    is( $user->balance, 0, 'Balance is fully consumed' );
 };
 
 subtest 'Check BLOCK -> ACTIVE with allow_partial_period' => sub {
@@ -194,7 +195,7 @@ subtest 'Check BLOCK -> ACTIVE with allow_partial_period' => sub {
     is( $user->balance, 0 );
 };
 
-subtest 'Check BLOCK stays BLOCK when allow_partial_period is not allowed by tariff' => sub {
+subtest 'Check BLOCK -> ACTIVE when allow_partial_period is requested manually (by param)' => sub {
     $user->set( balance => 200, credit => 0 );
 
     my $us = $service->reg(
@@ -213,13 +214,14 @@ subtest 'Check BLOCK stays BLOCK when allow_partial_period is not allowed by tar
     is( $user->balance, 0 );
 
     $user->set( balance => 50, credit => 0 );
-    # $service_next не разрешает allow_partial_period, клиентский флаг должен игнорироваться.
+    # $service_next не разрешает allow_partial_period в своих настройках, но
+    # явный клиентский параметр должен быть выполнен (manual override).
     $us->change( service_id => $service_next->id, allow_partial_period => 1 );
 
     is( $us->service_id, $service_next->id );
-    is( $us->status, STATUS_BLOCK, 'Service stays blocked, partial activation is denied' );
-    is( $us->withdraw->total, $service_next->cost, 'Withdraw is for the full cost, not the available balance' );
-    is( $user->balance, 50, 'Balance is not touched' );
+    is( $us->status, STATUS_ACTIVE, 'Service is activated by manual partial period request' );
+    is( $us->withdraw->total, 50, 'Withdraw equals the available balance' );
+    is( $user->balance, 0, 'Balance is fully consumed' );
 };
 
 subtest 'Check ACTIVE -> ACTIVE partial period with allow_partial_period' => sub {
@@ -257,7 +259,7 @@ subtest 'Check ACTIVE -> ACTIVE partial period with allow_partial_period' => sub
     Test::MockTime::restore_time();
 };
 
-subtest 'Check ACTIVE -> BLOCK when renewal with allow_partial_period is not allowed by tariff' => sub {
+subtest 'Check ACTIVE -> ACTIVE renewal when allow_partial_period is requested manually (by param)' => sub {
     Test::MockTime::set_fixed_time('2019-10-01T00:00:00Z');
 
     my $no_partial_service = get_service('service')->add(
@@ -281,12 +283,48 @@ subtest 'Check ACTIVE -> BLOCK when renewal with allow_partial_period is not all
     Test::MockTime::set_fixed_time('2019-11-02T00:00:00Z');
     $user->set( balance => 50, credit => 0 );
 
-    # Тариф не разрешает allow_partial_period, поэтому клиентский флаг
-    # должен игнорироваться и услуга блокируется как при обычном продлении
-    # без достаточных средств.
+    # Тариф не разрешает allow_partial_period в своих настройках, но явный
+    # клиентский параметр должен быть выполнен (manual override, например
+    # через /admin/user/service/change).
     $us->change( service_id => $no_partial_service->id, allow_partial_period => 1 );
 
-    is( $us->status, STATUS_BLOCK,              'Service is blocked, partial renewal is denied' );
+    is( $us->status, STATUS_ACTIVE,         'Service stays active after manual partial renewal' );
+    is( $us->withdraw->total, 50,           'Withdraw total equals available balance' );
+    isnt( $us->withdraw->months, '0.0000',  'Withdraw has partial months' );
+    is( $user->balance, 0,                  'Balance fully consumed after partial renewal' );
+
+    Test::MockTime::restore_time();
+};
+
+subtest 'Check ACTIVE -> BLOCK when renewal with allow_partial_period = 0' => sub {
+    Test::MockTime::set_fixed_time('2019-10-01T00:00:00Z');
+
+    my $no_partial_service = get_service('service')->add(
+        name          => 'test no-partial period service (explicit 0)',
+        category      => 'test',
+        cost          => 100,
+        period        => 1,
+        allow_to_order => 1,
+        no_discount   => 1,
+    );
+
+    $user->set( balance => 100, credit => 0 );
+
+    my $us = $no_partial_service->reg(
+        service_id => $no_partial_service->id,
+    );
+
+    is( $us->status, STATUS_ACTIVE, 'Service is active after creation' );
+    is( $user->balance, 0,          'Balance fully consumed after creation' );
+
+    Test::MockTime::set_fixed_time('2019-11-02T00:00:00Z');
+    $user->set( balance => 50, credit => 0 );
+
+    # Тариф не разрешает allow_partial_period, и клиент явно передал 0 -
+    # услуга блокируется как при обычном продлении без достаточных средств.
+    $us->change( service_id => $no_partial_service->id, allow_partial_period => 0 );
+
+    is( $us->status, STATUS_BLOCK,              'Service is blocked, partial renewal was not requested' );
     is( $us->withdraw->total, $no_partial_service->cost, 'Withdraw is for the full cost, not the available balance' );
     is( $user->balance, 50,                     'Balance is not touched' );
 

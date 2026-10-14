@@ -964,6 +964,7 @@ sub change {
         service_id => undef,
         finish_active => 1,
         allow_partial_period => 0,
+        skip_check_allow_to_order => 0,
         get_smart_args( @_ ),
     );
 
@@ -979,7 +980,7 @@ sub change {
     # переключается на бесплатную услугу (в том числе из статуса BLOCK) и
     # пользуется ей бесконечно: order_only_once тут не помогает, эта проверка
     # живёт только в Core::Service::price_list, а change её не вызывает.
-    unless ( get_service('user')->authenticated->is_admin ) {
+    unless ( $args{skip_check_allow_to_order} || get_service('user')->authenticated->is_admin ) {
         unless ( $service->get_cost && $service->get_cost > 0 ) {
             logger->warning(
                 sprintf "Denied change to free service %s for user service: %s", $args{service_id}, $self->id
@@ -999,14 +1000,6 @@ sub change {
             report->status( 403 );
             report->add_error('The service is prohibited for registration');
             return undef;
-        }
-
-        # Неполный период разрешаем только если это явно включено в настройках
-        # самого тарифа. Значение из запроса для не-админа игнорируем: иначе
-        # клиент сам включает allow_partial_period и получает дорогой тариф
-        # за небольшую часть его полной стоимости, даже если админ это запретил.
-        unless ( $service->settings->{allow_partial_period} ) {
-            $args{allow_partial_period} = 0;
         }
     }
 
