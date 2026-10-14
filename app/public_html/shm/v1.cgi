@@ -1687,6 +1687,30 @@ state $routes //= {
         method => 'api_report',
     },
 },
+'/admin/topology' => {
+    swagger => { tags => 'Топология' },
+    GET => {
+        params => {
+            event   => { type => 'string', pattern => '^\w+$' },
+            refresh => { type => 'boolean' },
+        },
+        controller => 'Topology',
+        method => 'api_graph',
+        args => {
+            format => 'json',
+        },
+        swagger => { summary => 'Граф связей: услуги, события, шаблоны, серверы' },
+    },
+},
+'/admin/topology/cache/clear' => {
+    swagger => { tags => 'Топология' },
+    POST => {
+        params => {},
+        controller => 'Topology',
+        method => 'clear_cache',
+        swagger => { summary => 'Очистить кеш топологии в Redis' },
+    },
+},
 '/admin/analytics/cache/clear' => {
     POST => {
         params => {},
