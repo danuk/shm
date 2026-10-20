@@ -1,9 +1,9 @@
-FROM debian:bullseye-slim AS core-base
+FROM debian:trixie-slim AS core-base
 WORKDIR /app
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     default-libmysqlclient-dev \
     openssh-client \
     curl \
@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     perl \
     libdbi-perl \
     libdbd-mysql-perl \
+    libclass-dbi-sqlite-perl \
     libredis-perl \
     libcgi-pm-perl \
     libfcgi-procmanager-perl \
