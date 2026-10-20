@@ -242,6 +242,17 @@ sub add {
     };
 }
 
+sub api_add {
+    my $self = shift;
+    my %args = @_;
+
+    my $ret = $self->SUPER::api_add( %args );
+    return $ret if !$ret || ref $ret;
+
+    my @types = grep { defined } ( $args{type}, 'login', 'email', 'phone' );
+    return $self->id( $ret, \@types ) || $ret;
+}
+
 sub api_set {
     my $self = shift;
     my %args = (
