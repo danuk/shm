@@ -3,7 +3,7 @@
 FILE=$1
 
 if [ -z $FILE ]; then
-    echo "Usage: $0 ./backups/FILE.sql.gz"
+    echo "Usage: $0 /backups/mysql/FILE.sql.gz"
     exit 1
 fi
 
