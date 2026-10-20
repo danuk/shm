@@ -1,7 +1,7 @@
 #!/bin/bash
 
 FILE=$1
-CONTAINER_NAME="mysql-master-mysql-master-1"
+CONTAINER_NAME="shm-mysql-1"
 
 if [ -z $FILE ]; then
     echo "Usage: $0 /backups/mysql/FILE.sql.gz"
