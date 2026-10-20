@@ -130,6 +130,21 @@ sub _list {
     return $self->SUPER::_list( %args );
 }
 
+# количество услуг по статусам одним запросом (для дашборда):
+# { statuses => { ACTIVE => 10, BLOCK => 2, … }, total => без REMOVED, total_all => все }
+sub statuses {
+    my $self = shift;
+    my $rows = $self->dbh->selectall_arrayref( sprintf( 'SELECT `status`, COUNT(*) FROM %s GROUP BY `status`', $self->table ) );
+    my %statuses = map { $_->[0] => $_->[1] + 0 } @$rows;
+    my $total_all = 0;
+    $total_all += $_ for values %statuses;
+    return {
+        statuses  => \%statuses,
+        total     => $total_all - ( $statuses{ STATUS_REMOVED() } // 0 ),
+        total_all => $total_all,
+    };
+}
+
 sub list_for_api {
     my $self = shift;
     my %args = (

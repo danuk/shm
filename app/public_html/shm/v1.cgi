@@ -1123,6 +1123,15 @@ state $routes //= {
         swagger => { summary => 'Удаление списания клиента' },
     },
 },
+'/admin/user/service/statuses' => {
+    swagger => { tags => 'Услуги пользователей' },
+    GET => {
+        params => {},
+        controller => 'USObject',
+        method => 'statuses',
+        swagger => { summary => 'Количество услуг по статусам' },
+    },
+},
 '/admin/user/service/status' => {
     swagger => { tags => 'Услуги пользователей' },
     POST => {
