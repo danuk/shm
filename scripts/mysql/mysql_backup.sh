@@ -10,6 +10,6 @@ FILE=${BACKUP_DIR}/shm-${VER}-$(date +%s).sql.gz
 
 docker exec ${CONTAINER_NAME} /bin/bash -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" mysqldump --single-transaction --quick --set-gtid-purged=OFF --routines --triggers --events --databases shm -u root' | gzip > ${FILE}
 
-realpath $FILE
+du -hs $(realpath $FILE)
 echo "done"
 
