@@ -666,6 +666,10 @@ sub stats {
             next unless ( $conf->{stats_use_when_add} && $action eq 'add' )
                      || ( $conf->{stats_use_when_set} && $action eq 'set' );
         }
+        # учитывать только изменения, в которых есть это поле (например, списание — когда ставится withdraw_date)
+        if ( my $req = $conf->{stats_require} ) {
+            next unless defined $args->{$req};
+        }
 
         my $value;
 
@@ -679,13 +683,29 @@ sub stats {
             $value = $args->{$field};
         }
 
-        $self->srv('statistics')->add(
-            $self->kind,
-            exists $conf->{enum} && exists $args->{$field}
-                ? sprintf("%s:%s", $field, $args->{$field})
-                : $field,
-            $value
-        );
+        my $name = exists $conf->{enum} && exists $args->{$field}
+            ? sprintf("%s:%s", $field, $args->{$field})
+            : $field;
+
+        my $stats = $self->srv('statistics');
+        $stats->add( $self->kind, $name, $value );
+
+        # stats_split_sign: отдельно поступления (field:in) и расходы (field:out, по модулю)
+        my ( $detail, $detail_value ) = ( $name, $value );
+        if ( $conf->{stats_split_sign} ) {
+            next unless $value;
+            $detail = sprintf( "%s:%s", $name, $value > 0 ? 'in' : 'out' );
+            $detail_value = abs $value;
+            $stats->add( $self->kind, $detail, $detail_value );
+        }
+
+        # stats_group_by: разрез по значению поля, например money:in:pay_system_id=yookassa
+        if ( my $g = $conf->{stats_group_by} ) {
+            my $method = "get_$g";
+            my $gv = $args->{ $g } // eval { $self->$method };
+            $stats->add( $self->kind, sprintf( "%s:%s=%s", $detail, $g, $gv ), $detail_value )
+                if defined $gv && length $gv;
+        }
     }
 }
 

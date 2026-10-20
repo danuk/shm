@@ -29,6 +29,7 @@ sub structure {
             title => 'кол-во бонусов',
             use_for_stats => 1,
             stats_use_when_add => 1,
+            stats_split_sign => 1,                  # bonus:in — начислено, bonus:out — потрачено
         },
         comment => {
             type => 'json',

@@ -38,7 +38,6 @@ sub structure {
             type => 'number',
             required => 1,
             title => 'стоимость',
-            use_for_stats => 1,
         },
         discount => {
             type => 'number',
@@ -50,6 +49,8 @@ sub structure {
             default => 0,
             title => 'кол-во бонусов',
             use_for_stats => 1,
+            stats_use_when_set => 1,
+            stats_require => 'withdraw_date',
         },
         months => {
             type => 'number',
@@ -60,6 +61,9 @@ sub structure {
             type => 'number',
             title => 'итоговая стоимость',
             use_for_stats => 1,
+            stats_use_when_set => 1,
+            stats_require => 'withdraw_date',
+            stats_group_by => 'service_id',
         },
         service_id => {
             type => 'number',

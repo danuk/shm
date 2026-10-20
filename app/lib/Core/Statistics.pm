@@ -62,7 +62,7 @@ sub add {
             sum = sum + VALUES(sum),
             min = LEAST(min, VALUES(min)),
             max = GREATEST(max, VALUES(max)),
-            avg = (sum + VALUES(sum)) / (count + 1)
+            avg = sum / count
     },
         now(),
         lc $kind,
@@ -74,9 +74,86 @@ sub add {
     );
 }
 
+my %PERIOD = (
+    day   => '`date`',
+    week  => 'DATE_SUB(`date`, INTERVAL WEEKDAY(`date`) DAY)',
+    month => "DATE_FORMAT(`date`, '%Y-%m-01')",
+    total => 'NULL',
+);
+
+# GET /admin/statistics?kind=pay&field=money:in:%&from=2026-01-01&to=2026-01-31&group=day
+# без group — обычный список строк таблицы (limit/offset/filter/sort), как у логов
+sub api_series {
+    my ( $self, %args ) = @_;
+
+    unless ( $args{group} ) {
+        my $filter = ref $args{filter} eq 'HASH' ? $args{filter} : {};
+        my $kind  = delete $args{kind};
+        my $field = delete $args{field};    # в списке `field` — колонка даты для start/stop
+        $filter->{kind}  = lc $kind  if length( $kind // '' );
+        $filter->{field} = lc $field if length( $field // '' );
+        $args{start} //= delete $args{from};
+        $args{stop}  //= delete $args{to};
+        return $self->SUPER::list_for_api( %args, filter => $filter );
+    }
+
+    my $period = $PERIOD{ $args{group} } // $PERIOD{day};
+
+    my @where = (
+        $args{from} ? '`date` >= ?' : '`date` >= CURDATE() - INTERVAL 30 DAY',
+        $args{to}   ? '`date` <= ?' : '`date` <= CURDATE()',
+    );
+    my @bind = grep { defined } @args{qw(from to)};
+    if ( length( $args{kind} // '' ) ) {
+        push @where, '`kind` = ?';
+        push @bind, lc $args{kind};
+    }
+    if ( length( $args{field} // '' ) ) {
+        push @where, $args{field} =~ /%/ ? '`field` LIKE ?' : '`field` = ?';
+        push @bind, lc $args{field};
+    }
+
+    my $rows = $self->dbh->selectall_arrayref( sprintf( q{
+        SELECT %s AS `date`, `kind`, `field`,
+               SUM(`count`) AS `count`, SUM(`sum`) AS `sum`, MIN(`min`) AS `min`, MAX(`max`) AS `max`,
+               ROUND(SUM(`sum`) / NULLIF(SUM(`count`), 0), 2) AS `avg`
+        FROM statistics
+        WHERE %s
+        GROUP BY 1, `kind`, `field`
+        ORDER BY 1, `kind`, `field`
+    }, $period, join( ' AND ', @where ) ), { Slice => {} }, @bind );
+
+    $self->{_series_rows} = scalar @$rows;
+    return @$rows;
+}
+
+sub found_rows {
+    my $self = shift;
+    return exists $self->{_series_rows} ? delete $self->{_series_rows} : $self->SUPER::found_rows();
+}
+
+sub put {
+    my ( $self, %args ) = @_;
+    my $count = $args{count} || 0;
+    return $self->do(q{
+        REPLACE INTO statistics
+        (`date`,`kind`,`field`,`count`,`sum`,`min`,`max`,`avg`)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    },
+        $args{date},
+        lc $args{kind},
+        lc $args{field},
+        $count,
+        $args{sum} || 0,
+        $args{min} || 0,
+        $args{max} || 0,
+        $count ? ( $args{sum} || 0 ) / $count : 0,
+    );
+}
+
 sub cleanup {
     my $self = shift;
-    my $days = cfg('billing')->{cleanup}->{Statistics} // 30;
+    my $days = cfg('billing')->{cleanup}->{Statistics} // 0;
     return $self unless $days;
 
     $self->_delete( where => {

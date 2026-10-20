@@ -36,6 +36,8 @@ sub structure {
             title => 'сумма платежа',
             use_for_stats => 1,
             stats_use_when_add => 1,
+            stats_split_sign => 1,                  # money:in — поступления, money:out — возвраты/списания
+            stats_group_by => 'pay_system_id',      # money:in:pay_system_id=yookassa
         },
         date => {
             type => 'now',
