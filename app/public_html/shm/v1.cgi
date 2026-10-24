@@ -1336,6 +1336,52 @@ state $routes //= {
         },
     },
 },
+'/telegram/delete_webhook' => {
+    POST => {
+        controller => 'Transport::Telegram',
+        method => 'delete_webhook',
+        required => [
+            'token',
+        ],
+        args => {
+            format => 'json',
+        },
+        swagger => {
+            summary => 'Удаление Webhook в Telegram бота',
+        },
+    },
+},
+'/telegram/get_updates' => {
+    POST => {
+        controller => 'Transport::Telegram',
+        method => 'get_updates',
+        required => [
+            'token',
+        ],
+        args => {
+            format => 'json',
+        },
+        swagger => {
+            summary => 'Получение обновлений Telegram бота (getUpdates)',
+        },
+    },
+},
+'/telegram/send_message' => {
+    POST => {
+        controller => 'Transport::Telegram',
+        method => 'send_test_message',
+        required => [
+            'token',
+            'chat_id',
+        ],
+        args => {
+            format => 'json',
+        },
+        swagger => {
+            summary => 'Отправка тестового сообщения Telegram ботом',
+        },
+    },
+},
 '/telegram/webapp/auth' => {
     swagger => {
         tags => 'Telegram bot',

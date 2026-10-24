@@ -2052,6 +2052,70 @@ sub web_auth_callback {
     exit 0;
 }
 
+sub delete_webhook {
+    my $self = shift;
+    my %args = (
+        token => undef,
+        @_,
+    );
+
+    my $delete_webhook = $self->http_transport->http(
+        method => 'get',
+        url => sprintf('%s/bot%s/deleteWebhook?drop_pending_updates=True', $self->telegram_server, $args{token}),
+    );
+
+    unless ( $delete_webhook->is_success ) {
+        logger->error( $delete_webhook->decoded_content );
+    }
+
+    return $delete_webhook->decoded_content;
+}
+
+sub get_updates {
+    my $self = shift;
+    my %args = (
+        token => undef,
+        @_,
+    );
+
+    my $response = $self->http_transport->http(
+        method => 'get',
+        url => sprintf('%s/bot%s/getUpdates', $self->telegram_server, $args{token}),
+    );
+
+    unless ( $response->is_success ) {
+        logger->error( $response->decoded_content );
+    }
+
+    return $response->decoded_content;
+}
+
+sub send_test_message {
+    my $self = shift;
+    my %args = (
+        token => undef,
+        chat_id => undef,
+        text => undef,
+        @_,
+    );
+
+    my $response = $self->http_transport->http(
+        method => 'post',
+        url => sprintf('%s/bot%s/sendMessage', $self->telegram_server, $args{token}),
+        content_type => 'application/json; charset=utf-8',
+        content => encode_json({
+            chat_id => $args{chat_id},
+            text => $args{text} || 'Тестовое сообщение от SHM',
+        }),
+    );
+
+    unless ( $response->is_success ) {
+        logger->error( $response->decoded_content );
+    }
+
+    return $response->decoded_content;
+}
+
 sub set_webhook {
     my $self = shift;
     my %args = (
