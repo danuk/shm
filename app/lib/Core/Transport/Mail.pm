@@ -18,6 +18,19 @@ use Core::Utils qw(
     encode_utf8
 );
 
+# Message-ID по RFC 5322: <время.pid.случайное@домен>
+sub message_id {
+    my $from = shift // '';
+    my ( $domain ) = $from =~ /\@([^\s<>@]+)>?\s*$/;
+    $domain ||= eval {
+        my ( $host ) = map { m{^\w+://([^/:?#]+)} ? $1 : () } grep { $_ } ( cfg('api')->{url}, cfg('cli')->{url} );
+        $host;
+    };
+    $domain ||= 'localhost';
+    my $rand = join '', map { sprintf '%02x', int rand 256 } 1 .. 8;
+    return sprintf( '<%d.%d.%s@%s>', time, $$, $rand, $domain );
+}
+
 sub init {
     my $self = shift;
     my %args = @_;
@@ -231,6 +244,9 @@ sub send_mail {
     my $email = Email::Simple->create(
         header => [
             From    => sprintf("%s <%s>", $encoded_from_name, $args{from} ),
+            # 550 5.7.1, RFC 5322
+            'Message-ID' => $args{message_id} || message_id( $args{from} ),
+            'MIME-Version' => '1.0',
             To      => $args{to},
             $args{cc} ? ( Cc => $args{cc} ) : (),
             $args{bcc} ? ( BCc => $args{bcc} ) : (),
