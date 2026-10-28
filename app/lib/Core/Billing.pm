@@ -259,7 +259,7 @@ sub calc_payment {
                     $check_total > 0 &&
                     $user->get_balance + $user->get_credit + $bonus < $check_total &&
                     !$user->get_can_overdraft &&
-                    !$self->get_pay_in_credit );
+                    !$self->service->get_pay_in_credit );
 
     if ( $bonus >= $total ) {
         $bonus = $total;
