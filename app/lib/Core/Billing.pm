@@ -547,7 +547,7 @@ sub money_back {
             balance => $wd{total},
             bonus   => $wd{bonus},
         );
-        $self->user->bonus->add( bonus => $wd{bonus}, comment => { withdraw_id => $wd{id} } ) if $wd{bonus};
+        $self->user->bonus->add( bonus => $wd{bonus}, comment => { withdraw_id => $wd->id } ) if $wd{bonus};
         return ($wd{total}, $wd{bonus});
     }
 
