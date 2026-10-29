@@ -786,6 +786,8 @@ state $routes //= {
     GET => {
         params => {
             service_id => { type => 'integer', min => 1 },
+            parent     => { type => 'integer', min => 1 },
+            category   => { type => 'string' },
         },
         controller => 'Service',
         swagger => { summary => 'Получение услуги' },
@@ -957,7 +959,7 @@ state $routes //= {
             login   => { type => 'string', required => 1, min_length => 1, max_length => 128 },
             type    => { type => 'string', required => 1, min_length => 1, max_length => 32 },
             user_id => { type => 'integer', required => 1, min => 1 },
-            password => { type => 'string', min_length => 8, max_length => 64 },
+            password => { type => 'string', min_length => 6, max_length => 64 },
             settings => { type => 'object' },
             primary => { type => 'boolean' },
         },
@@ -1153,6 +1155,7 @@ state $routes //= {
         params => {
             user_id         => { type => 'integer', required => 1, min => 1 },
             user_service_id => { type => 'integer', required => 1, min => 1 },
+            auto_bill       => { type => 'boolean' },
         },
         swagger => { summary => 'Остановка услуги клиента' },
     },
@@ -1165,6 +1168,7 @@ state $routes //= {
         params => {
             user_id         => { type => 'integer', required => 1, min => 1 },
             user_service_id => { type => 'integer', required => 1, min => 1 },
+            auto_bill       => { type => 'boolean' },
         },
         swagger => { summary => 'Возобновление услуги клиента' },
     },
