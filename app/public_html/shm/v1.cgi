@@ -2532,7 +2532,6 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
         my $structure = $service->structure;
         for my $field ( keys %{ $structure } ) {
             my $type = $structure->{ $field }->{type} // 'string';
-            $type = 'object' if $type eq 'json';
             $type = 'string' if $type =~ /^(?:text|now|date)$/;
             $schema{ $field } = { type => $type };
         }
@@ -2835,7 +2834,7 @@ sub get_service_id {
 
 # Validate %args against a params schema defined in the route.
 # Schema format (per field):
-#   type         => 'integer' | 'number' | 'string' | 'email' | 'boolean' | 'object' | 'array'
+#   type         => 'integer' | 'number' | 'string' | 'email' | 'boolean' | 'object' | 'array' | 'json' (object или array)
 #   required     => 1   (field must be present and non-empty)
 #   min / max    => numeric bounds (for integer/number)
 #   min_length   => minimum string length
@@ -2901,6 +2900,10 @@ sub validate_params {
         elsif ( $type eq 'object' ) {
             return sprintf( "Field '%s' must be an object", $field )
                 unless ref($value) eq 'HASH';
+        }
+        elsif ( $type eq 'json' ) {
+            return sprintf( "Field '%s' must be an object or an array", $field )
+                unless ref($value) eq 'HASH' || ref($value) eq 'ARRAY';
         }
         elsif ( $type eq 'array' ) {
             return sprintf( "Field '%s' must be an array", $field )
