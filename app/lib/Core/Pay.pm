@@ -156,7 +156,7 @@ sub forecast {
 
     my $user_services = $self->forecast_candidates(%args);
 
-    my $bonus = $user->get_bonus,
+    my $bonus = $user->get_bonus;
 
     my @forecast_services;
 
@@ -185,6 +185,10 @@ sub forecast {
                 # Skip if already paid for
                 next if $wd_next{withdraw_date};
                 %wd = %wd_next;
+                # следующее списание может быть уже по другому тарифу (смена тарифа)
+                if ( $wd{service_id} != $service_next->id ) {
+                    $service_next = get_service('service', _id => $wd{service_id} ) || $service_next;
+                }
             } elsif ( $obj->{next} ) {
                 if ( my $s_next = get_service('service', _id => $obj->{next} ) ) {
                     $service_next = $s_next;
