@@ -1231,7 +1231,7 @@ sub add_period_by_money {
         period => $self->service->get_period,
         total => $money,
     );
-    return undef if $period eq "0.0000";
+    return undef unless $period > 0; # Honest возвращает '0.00', Simpler - '0.0000'
 
     my $months = sum_period( $wd{months}, $period );
 

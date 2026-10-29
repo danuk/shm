@@ -188,7 +188,8 @@ sub calc_period_by_total {
         @_,
     );
 
-    return '0.00' unless $args{total} && $args{cost} && $args{cost} > 0;
+    # отрицательная сумма (долг) - это тоже ноль, а не период
+    return '0.00' unless $args{total} && $args{total} > 0 && $args{cost} && $args{cost} > 0;
 
     my $total = $args{total};
     my $cost = $args{cost};

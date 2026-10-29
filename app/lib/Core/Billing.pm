@@ -238,9 +238,11 @@ sub calc_withdraw {
 sub calc_payment {
     my $self  = shift;
     my $total = shift;
+    # тариф, по которому платим: при переходе на следующий тариф он ещё не записан в услугу
+    my $service = shift || $self->service;
 
     my $user  = $self->user;
-    my $bonus = calc_available_bonuses( $self->service, $user->get_bonus, $total );
+    my $bonus = calc_available_bonuses( $service, $user->get_bonus, $total );
 
     my $check_total = $total;
     my $root = $self->top_parent;
@@ -260,7 +262,7 @@ sub calc_payment {
                     $user->get_balance + $user->get_credit + $bonus < $check_total &&
                     !$user->get_can_overdraft &&
                     # флаг «списывать даже в минус» хранится у тарифа (services), а не у услуги пользователя
-                    !$self->service->get_pay_in_credit );
+                    !$service->get_pay_in_credit );
 
     if ( $bonus >= $total ) {
         $bonus = $total;
@@ -446,7 +448,7 @@ sub switch_to_next_service {
         delete @wd{ qw/ create_date end_date withdraw_date user_service_id / };
 
         if ( $args{allow_partial_period} || $service->settings->{allow_partial_period} ) {
-            apply_partial_period( $us, \%wd, $service->get_period );
+            apply_partial_period( $us, \%wd, $service->get_period, $service );
         }
 
         my $wd_id;
@@ -637,22 +639,46 @@ sub apply_partial_period {
     my $us     = shift;
     my $wd_ref = shift;
     my $period = shift;
+    my $service = shift || $us->service;
 
-    my $pay = calc_payment( $us, $wd_ref->{total} );
+    my $pay = calc_payment( $us, $wd_ref->{total}, $service );
     return if $pay;
 
     my $user  = $us->user;
-    my $total = $user->get_balance;
-    my $bonus = calc_available_bonuses( $us->service, $user->get_bonus, $total );
+    # деньги = баланс + кредит, как в calc_payment.
+    # Баланс может быть отрицательным: долг уменьшает доступную сумму
+    my $money = $user->get_balance + ( $user->get_credit || 0 );
+    my $bonus = $user->get_bonus;
+    $bonus = 0 if $bonus < 0;
+
+    # Сколько можно оплатить: лимит бонусов (limit_bonus_percent) считается от суммы списания,
+    # а не от баланса. С лимитом p% сумма T такая, что бонусы = p% от T, а деньги покрывают остальное
+    my $total = $money + $bonus;
+    my $limit = $service->config->{limit_bonus_percent};
+    if ( length $limit && int($limit) < 100 ) {
+        my $percent = int($limit) > 0 ? int($limit) : 0;
+        my $by_limit = $money * 100 / ( 100 - $percent );
+        $total = $by_limit if $by_limit < $total;
+    }
+    # вниз до копеек, чтобы деньгами не пришлось доплачивать больше баланса и кредита
+    $total = int( $total * 100 + 1e-6 ) / 100;
+
+    # платить нечем (или долг больше кредита и бонусов)
+    return if $total <= 0;
+
     my $months = calc_period_by_total(
         $us->billing,
-        total  => $total + $bonus,
+        total  => $total,
         cost   => $wd_ref->{cost},
         period => $period,
     );
 
-    if ( $months ne '0.0000' ) {
-        $wd_ref->{total}  = $total + $bonus;
+    # Денег и бонусов нет, неполный период разрешён.
+    # calc_period_by_total у Honest в этом случае возвращает '0.00'
+    # Старая проверка ne '0.0000' принимала это за ненулевой период.
+    # В итоге создавалось списание на 0 ₽ и 0 месяцев, оплата нуля проходила, услуга становилась активной со сроком «сейчас».
+    if ( $months > 0 ) {
+        $wd_ref->{total}  = $total;
         $wd_ref->{months} = $months;
     }
 }

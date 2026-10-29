@@ -43,6 +43,14 @@ subtest 'can_overdraft works for all services' => sub {
     $user->set( can_overdraft => 0 );
 };
 
+subtest 'Switch to next service uses flag of the next service' => sub {
+    cmp_deeply( Core::Billing::calc_payment( $us, 100, $service_credit ), { bonus => 0, total => 100 },
+        'next service with pay_in_credit is paid' );
+
+    is( Core::Billing::calc_payment( $us_credit, 100, $service ), 0,
+        'next service without pay_in_credit is not paid' );
+};
+
 subtest 'Enough money' => sub {
     $user->set( balance => 100 );
 

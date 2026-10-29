@@ -297,6 +297,13 @@ is( calc_period_by_total(
 );
 
 is( calc_period_by_total(
+        total => -50,
+        cost => 1000,
+        period => 1
+    ), '0.00', 'calc_period_by_total: negative total (debt)'
+);
+
+is( calc_period_by_total(
         total => 100,
         cost => 0,
         period => 1
