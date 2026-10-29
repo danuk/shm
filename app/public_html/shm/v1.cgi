@@ -1645,6 +1645,18 @@ state $routes //= {
         swagger => { summary => 'Список промокодов' },
     },
     PUT => {
+        params => {
+            code        => { type => 'string', max_length => 64 },
+            template_id => { type => 'string' },
+            expire      => { type => 'string' },
+            settings    => { type => 'object' },
+            reusable    => { type => 'integer', min => 0, max => 1 },
+            status      => { type => 'integer', min => 0, max => 1 },
+            count       => { type => 'integer', min => 1, max => 1000 },
+            quantity    => { type => 'integer', min => 1 },
+            length      => { type => 'integer', min => 1, max => 30 },
+            prefix      => { type => 'string', max_length => 32 },
+        },
         controller => 'Promo',
         method => 'generate',
         swagger => { summary => 'Генерация промокодов' },
