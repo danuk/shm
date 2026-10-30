@@ -225,23 +225,41 @@ sub exec {
             close $in;
         }
 
-        eval {
+        my $read_error;
+        {
             local $SIG{ALRM} = sub { die "timeout\n" };
-            alarm($args{timeout} || 10);
-            while (<$rout>) {
-                $out .= $_;
-                $console->append( html_escape($_) );
-            }
+            eval {
+                alarm($args{timeout} || 10);
+                while (<$rout>) {
+                    $out .= $_;
+                    $console->append( html_escape($_) );
+                }
+            };
+            $read_error = $@;
             alarm(0);
-        };
-        if ($@ && $@ eq "timeout\n") {
+        }
+
+        my $timed_out = $read_error eq "timeout\n";
+        if ($timed_out) {
             kill 'TERM', $ssh_pid if $ssh_pid;
             $console->append('<font color="red">TIMEOUT</font><br/>');
         }
         close $rout;
 
-        my $ssh_kid = waitpid $ssh_pid, 0;
-        $ret_code = $?>>8;
+        my $ssh_kid = ($ssh_pid && $ssh_pid > 0) ? waitpid($ssh_pid, 0) : -1;
+        my $wait_status = $?;
+
+        if ($timed_out) {
+            $ret_code = 124;
+        } elsif ($read_error || $ssh_kid != $ssh_pid) {
+            # An unexpected read error or failed waitpid is never success.
+            $ret_code = 125;
+        } elsif ($wait_status & 127) {
+            # Signal number occupies the low seven bits of wait status.
+            $ret_code = 128 + ($wait_status & 127);
+        } else {
+            $ret_code = $wait_status >> 8;
+        }
     }
 
     if ( $ret_code ) {
