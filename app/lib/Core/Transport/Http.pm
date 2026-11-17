@@ -223,6 +223,9 @@ sub http {
             utf8::decode($content);
             # Заменяем контент в response объекте
             $response->{_content} = $content;
+            # контент уже распакован: иначе повторный decoded_content (json_content, Telegram jwks)
+            # снова применит Content-Encoding к распакованному тексту и вернёт undef
+            $response->remove_header('Content-Encoding');
         }
     }
 
