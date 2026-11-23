@@ -223,6 +223,7 @@ sub http {
             utf8::decode($content);
             # Заменяем контент в response объекте
             $response->{_content} = $content;
+            $response->remove_header('Content-Encoding');
         }
     }
 
