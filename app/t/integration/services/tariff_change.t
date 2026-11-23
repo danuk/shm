@@ -28,6 +28,14 @@ my $service_next = get_service('service')->add(
     next => 1,
 );
 
+my $service_partial = get_service('service')->add(
+    name => 'test service partial',
+    category => 'test-category-1',
+    cost => 100,
+    allow_to_order => 1,
+    config => { allow_partial_period => 1 },
+);
+
 subtest 'Check WAIT_FOR_PAY -> WAIT_FOR_PAY' => sub {
     $user->set( balance => 10, credit => 0 );
 
@@ -125,9 +133,9 @@ subtest 'Check WAIT_FOR_PAY -> ACTIVE with allow_partial_period' => sub {
     is( $us->service_id, $service->id );
     is( $us->status, STATUS_WAIT_FOR_PAY );
 
-    $us->change( service_id => $service_next->id, allow_partial_period => 1 );
+    $us->change( service_id => $service_partial->id, allow_partial_period => 1 );
 
-    is( $us->service_id, $service_next->id );
+    is( $us->service_id, $service_partial->id );
     is( $us->status, STATUS_ACTIVE );
     is( $us->withdraw->total, 50 );
     isnt( $us->withdraw->months, '0.0000' );
@@ -153,9 +161,9 @@ subtest 'Check BLOCK -> ACTIVE with allow_partial_period' => sub {
     is( $user->balance, 0 );
 
     $user->set( balance => 50, credit => 0 );
-    $us->change( service_id => $service_next->id, allow_partial_period => 1 );
+    $us->change( service_id => $service_partial->id, allow_partial_period => 1 );
 
-    is( $us->service_id, $service_next->id );
+    is( $us->service_id, $service_partial->id );
     is( $us->status, STATUS_ACTIVE );
     is( $us->withdraw->total, 50 );
     isnt( $us->withdraw->months, '0.0000' );
@@ -172,6 +180,7 @@ subtest 'Check ACTIVE -> ACTIVE partial period with allow_partial_period' => sub
         period        => 1,
         allow_to_order => 1,
         no_discount   => 1,
+        config        => { allow_partial_period => 1 },
     );
 
     $user->set( balance => 100, credit => 0 );
