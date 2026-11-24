@@ -1245,7 +1245,7 @@ state $routes //= {
     },
 },
 '/admin/server' => {
-    swagger => { tags => 'Сервера' },
+    swagger => { tags => 'Серверы' },
     GET => {
         params => {
             server_id  => { type => 'integer', min => 1 },
